@@ -4,6 +4,7 @@ import sys
 import argparse
 import logging
 from pathlib import Path
+from typing import Optional, Union
 
 from src.config import config
 from src.extractors.service import IngestionService
@@ -348,13 +349,13 @@ def parse_args():
     parser.add_argument(
         "--inputs-dir",
         type=Path,
-        default=config.inputs_dir,
+        default=None,
         help="Path to inputs directory containing SOWs and decks (default: inputs/)"
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=config.output_dir,
+        default=None,
         help="Path to output directory for generated Word reports (default: output/)"
     )
     parser.add_argument(
@@ -399,7 +400,7 @@ def parse_args():
     parser.add_argument(
         "--non-interactive",
         action="store_true",
-        help="Disable interactive role prompts (defaults to '[UNASSIGNED - TO BE CONFIRMED]')"
+        help="Disable interactive directory and role prompts (uses default paths and unassigned roles)"
     )
     parser.add_argument(
         "--mock",
@@ -417,6 +418,33 @@ def parse_args():
         help="Enable verbose debug logging"
     )
     return parser.parse_args()
+
+
+def prompt_directories(
+    inputs_dir: Optional[Union[str, Path]] = None,
+    output_dir: Optional[Union[str, Path]] = None,
+    interactive: bool = True,
+    default_inputs_dir: Path = config.inputs_dir,
+    default_output_dir: Path = config.output_dir
+) -> tuple[Path, Path]:
+    """Request input and output directory paths via CLI arguments or interactive prompts, falling back to defaults."""
+    def _resolve(prompt_label: str, val: Optional[Union[str, Path]], default_path: Path) -> Path:
+        if val is not None:
+            if isinstance(val, str):
+                cleaned = val.strip()
+                return Path(cleaned) if cleaned else default_path
+            return val
+        if interactive:
+            try:
+                entered = input(f"Enter {prompt_label} [default: {default_path}]: ").strip()
+                return Path(entered) if entered else default_path
+            except (EOFError, OSError):
+                return default_path
+        return default_path
+
+    resolved_inputs = _resolve("inputs directory", inputs_dir, default_inputs_dir)
+    resolved_output = _resolve("output directory", output_dir, default_output_dir)
+    return resolved_inputs, resolved_output
 
 
 def prompt_role_names(
@@ -456,6 +484,16 @@ def main():
 
     try:
         is_interactive = not args.non_interactive
+
+        inputs_dir, output_dir = prompt_directories(
+            inputs_dir=args.inputs_dir,
+            output_dir=args.output_dir,
+            interactive=is_interactive,
+            default_inputs_dir=config.inputs_dir,
+            default_output_dir=config.output_dir
+        )
+        logger.info("Directories -> Inputs: %s | Output: %s", inputs_dir, output_dir)
+
         pmo_lead, delivery_lead, talent_pm = prompt_role_names(
             pmo_lead=args.pmo_lead,
             delivery_lead=args.delivery_lead,
@@ -486,8 +524,8 @@ def main():
         )
 
         output_file = controller.run(
-            inputs_dir=args.inputs_dir,
-            output_dir=args.output_dir,
+            inputs_dir=inputs_dir,
+            output_dir=output_dir,
             tier_override=args.tier,
             contract_type_override=args.contract_type,
             pmo_lead=pmo_lead,
