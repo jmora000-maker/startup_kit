@@ -1,6 +1,8 @@
 """Workflow controller orchestrating Ingestion, LLM multi-pass extraction, Aggregation, and Word Generation."""
 
+import shutil
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
@@ -8,9 +10,11 @@ from src.config import config
 from src.core.interfaces import (
     ILLMClient,
     IDocumentWriter,
+    IStartupKitDocxParser,
 )
 from src.core.models import StartupKitBaseline
 from src.extractors.service import IngestionService
+from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.llm.client import LangChainLLMClient
 from src.llm.parsers import (
     CharterDomainExtractor,
@@ -58,6 +62,7 @@ class StartupKitController:
         talent_extractor: Optional[TalentOnboardingDomainExtractor] = None,
         decisions_extractor: Optional[DecisionsDomainExtractor] = None,
         conflicts_extractor: Optional[ContractConflictsDomainExtractor] = None,
+        docx_parser: Optional[IStartupKitDocxParser] = None,
     ):
         self.ingestion_service = ingestion_service or IngestionService()
         self.llm_client = llm_client or LangChainLLMClient(
@@ -67,6 +72,7 @@ class StartupKitController:
         )
         self.aggregator = aggregator or BaselineAggregator()
         self.doc_writer = doc_writer or DocxGenerator()
+        self.docx_parser = docx_parser or StartupKitDocxParser()
 
         # Domain Extractors
         self.charter_extractor = charter_extractor or CharterDomainExtractor()
@@ -188,4 +194,113 @@ class StartupKitController:
             export_all_pmo_tools(baseline, out_path)
 
         logger.info("Startup Kit Generation complete! File created at: %s", generated_file)
+        return generated_file
+
+    def run_reingest(
+        self,
+        docx_path: Path,
+        output_dir: Optional[Path] = None,
+        output_file: Optional[Path] = None,
+        pmo_lead: Optional[str] = None,
+        delivery_lead: Optional[str] = None,
+        delivery_manager: Optional[str] = None,
+        talent_pm: Optional[str] = None,
+        tier_override: Optional[str] = None,
+        contract_type_override: Optional[str] = None,
+        export_tools: bool = False,
+        create_backup: bool = True,
+    ) -> Path:
+        """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report."""
+        docx_file = Path(docx_path)
+        if not docx_file.exists():
+            raise FileNotFoundError(f"Target Startup Kit Word document not found at: {docx_file}")
+
+        logger.info("Executing Single-Document Ingestion for: %s", docx_file)
+        baseline = self.docx_parser.parse_startup_kit_docx(docx_file)
+
+        # Apply leadership overrides if supplied
+        dm = delivery_lead or delivery_manager
+        if dm is not None:
+            logger.info("Applying Delivery Lead override: %s", dm)
+            if baseline.charter:
+                baseline.charter.delivery_manager = dm
+            if baseline.talent_onboarding:
+                baseline.talent_onboarding.delivery_manager = dm
+            if baseline.governance_context:
+                baseline.governance_context.delivery_manager = dm
+
+        if talent_pm is not None:
+            logger.info("Applying Talent PM override: %s", talent_pm)
+            if baseline.charter:
+                baseline.charter.talent_pm = talent_pm
+            if baseline.talent_onboarding:
+                baseline.talent_onboarding.talent_pm = talent_pm
+            if baseline.governance_context:
+                baseline.governance_context.talent_pm = talent_pm
+
+        if pmo_lead is not None:
+            logger.info("Applying PMO Lead override: %s", pmo_lead)
+            baseline.author_name = pmo_lead
+            if baseline.charter:
+                baseline.charter.pmo_lead = pmo_lead
+            if baseline.talent_onboarding:
+                baseline.talent_onboarding.pmo_lead = pmo_lead
+            if baseline.governance_context:
+                baseline.governance_context.pmo_lead = pmo_lead
+
+        if tier_override is not None:
+            logger.info("Applying Governance Tier override: %s", tier_override)
+            baseline.governance_tier = tier_override
+            if baseline.charter:
+                baseline.charter.governance_tier = tier_override
+            if baseline.governance_context:
+                baseline.governance_context.governance_tier = tier_override
+
+        if contract_type_override is not None:
+            logger.info("Applying Contract Type override: %s", contract_type_override)
+            baseline.contract_type = contract_type_override
+            if baseline.charter:
+                baseline.charter.contract_type = contract_type_override
+            if baseline.governance_context:
+                baseline.governance_context.contract_type = contract_type_override
+
+        # Recalculate readiness and gate decision
+        logger.info("Recalculating Startup Readiness Score and G-01 Gate Decision...")
+        baseline = self.aggregator.recalculate_readiness(baseline)
+
+        # Determine target output path
+        if output_file is not None:
+            target_path = Path(output_file)
+        elif output_dir is not None:
+            target_dir = Path(output_dir)
+            target_path = target_dir / docx_file.name
+        else:
+            target_path = docx_file
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Create backup if overwriting in place and backup is enabled
+        if create_backup and target_path.resolve() == docx_file.resolve() and docx_file.exists():
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = docx_file.with_name(f"{docx_file.stem}_backup_{timestamp}.docx")
+            try:
+                shutil.copy2(str(docx_file), str(backup_path))
+                logger.info("Created backup before overwrite at: %s", backup_path)
+            except Exception as e:
+                logger.warning("Could not create backup of %s: %s", docx_file, e)
+
+        logger.info("Regenerating updated Word document at: %s", target_path)
+        generated_file = self.doc_writer.write_docx(baseline, target_path)
+
+        if export_tools:
+            export_dir = target_path.parent
+            logger.info("Exporting downstream PMO Operating System workbook toolkits to: %s", export_dir)
+            export_all_pmo_tools(baseline, export_dir)
+
+        logger.info(
+            "Startup Kit Re-evaluation complete! Updated file: %s (Readiness Score: %s%%, Status: %s)",
+            generated_file,
+            baseline.readiness_score,
+            baseline.gate_decision.gate_decision_status if baseline.gate_decision else "N/A"
+        )
         return generated_file

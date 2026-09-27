@@ -215,8 +215,9 @@ def test_cli_main_interactive_directories_and_roles(populated_inputs_dir, tmp_pa
     """Verify that interactive prompting for both directories and roles properly executes end-to-end."""
     output_dir = tmp_path / "cli_interactive_dirs_output"
 
-    # User inputs for: inputs_dir, output_dir, pmo_lead, delivery_lead, talent_pm
+    # User inputs for: mode (1: Initial Generation), inputs_dir, output_dir, pmo_lead, delivery_lead, talent_pm
     inputs = iter([
+        "1",
         str(populated_inputs_dir),
         str(output_dir),
         "Interactive PMO",
@@ -249,8 +250,8 @@ def test_cli_main_interactive_directories_and_roles(populated_inputs_dir, tmp_pa
 
 def test_cli_main_interactive_empty_directories_fallback(monkeypatch):
     """Verify that interactive empty directory inputs fall back to config default directories."""
-    # User inputs: "" for inputs_dir, "" for output_dir, then unassigned roles
-    inputs = iter(["", "", "", "", ""])
+    # User inputs: "1" for mode, "" for inputs_dir, "" for output_dir, then unassigned roles
+    inputs = iter(["1", "", "", "", "", ""])
     monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
 
     # Mock controller.run to verify resolved directory arguments without actually running full extraction on root inputs

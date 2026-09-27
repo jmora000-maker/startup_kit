@@ -119,13 +119,18 @@ python main.py --mock
 ### Interactive vs Non-Interactive Execution
 
 - **Interactive Mode (Default)**:
-  When launched without specific directory or leadership flags, the CLI interactively prompts for:
-  1. `inputs directory` (default: `inputs/`)
-  2. `output directory` (default: `output/`)
-  3. `PMO Lead` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
-  4. `Delivery Lead` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
-  5. `Talent PM` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
-  Pressing `Enter` accepts the default value for each prompt.
+  When launched without `--non-interactive` or `--reingest-docx`, the CLI prompts:
+  1. `Execution Mode`: Select between `[1] Initial Generation` and `[2] Re-evaluate & Ingest updated *_Startup_Kit.docx`.
+  2. If Mode 1:
+     - `inputs directory` (default: `inputs/`)
+     - `output directory` (default: `output/`)
+     - `PMO Lead` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
+     - `Delivery Lead` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
+     - `Talent PM` name (default: `[UNASSIGNED - TO BE CONFIRMED]`)
+  3. If Mode 2:
+     - `path to updated *_Startup_Kit.docx file` (path/filename is required, no default, or type 'exit' to quit)
+     - Optional role name overrides.
+  Pressing `Enter` accepts the default value for directory and role prompts.
 
 - **Non-Interactive Mode**:
   Pass `--non-interactive` to disable all terminal prompts and automatically use configured defaults for any unspecified directories or roles.
@@ -134,6 +139,8 @@ python main.py --mock
 
 | Flag | Type | Description | Default |
 |---|---|---|---|
+| `--reingest-docx` / `--docx-file` | Path | Path to existing `*_Startup_Kit.docx` to re-ingest and recalculate readiness score (bypasses raw ingestion in `inputs/`) | `None` |
+| `--output-file` | Path | Explicit destination file path for regenerated Word report | In-place overwrite / parent dir |
 | `--inputs-dir` | Path | Path to directory containing input documents | `inputs/` (interactive prompt if omitted) |
 | `--output-dir` | Path | Directory where generated reports are saved | `output/` (interactive prompt if omitted) |
 | `--model` | String | OpenAI model name | `gpt-4o` |
@@ -150,17 +157,20 @@ python main.py --mock
 ### Example Commands
 
 ```bash
-# Run interactively in offline mock mode (prompts for directories and leadership roles):
-python main.py --mock
+# Run interactively (prompts for mode, directories, and leadership roles):
+python main.py
+
+# Re-evaluate an updated Word report and recalculate readiness score (non-interactive):
+python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
+
+# Re-evaluate and re-export downstream PMO tools with leadership role overrides:
+python main.py --reingest-docx output/Project_Startup_Kit.docx --pmo-lead "Sarah Connor" --delivery-lead "Alex Smith" --talent-pm "Taylor Brown" --export-tools --non-interactive
 
 # Export downstream PMO tools with custom directories and leadership roles specified:
 python main.py --mock --inputs-dir ./inputs --output-dir ./output --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --export-tools
 
 # Run non-interactively in automated CI/CD using defaults:
 python main.py --mock --non-interactive
-
-# Custom inputs and outputs with a tier override:
-python main.py --inputs-dir ./client_docs --output-dir ./reports --tier Elevated --non-interactive
 ```
 
 ---

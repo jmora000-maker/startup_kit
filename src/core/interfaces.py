@@ -69,3 +69,12 @@ class IDocumentWriter(ABC):
     ) -> Path:
         """Generate and save the Microsoft Word Startup Kit document."""
         pass
+
+
+class IStartupKitDocxParser(ABC):
+    """Interface for extracting a structured StartupKitBaseline from an existing Startup Kit DOCX."""
+
+    @abstractmethod
+    def parse_startup_kit_docx(self, file_path: Path) -> StartupKitBaseline:
+        """Parse an existing *_Startup_Kit.docx file into a StartupKitBaseline model."""
+        pass

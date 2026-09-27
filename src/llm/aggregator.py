@@ -902,3 +902,179 @@ class BaselineAggregator:
             concurring_approver_name=concurring_approver,
             segregation_of_duties_verified=segregation_verified
         )
+
+    def recalculate_readiness(self, baseline: StartupKitBaseline) -> StartupKitBaseline:
+        """Recalculate dimensional readiness scores and G-01 Gate Decision for an existing or updated baseline."""
+        status_points = {
+            "Complete": 1.0,
+            "Approved": 1.0,
+            "Approved with Exception": 0.85,
+            "In Progress": 0.5,
+            "Review Required": 0.5,
+            "Confirmation Required": 0.3,
+            "Exception Required": 0.2,
+            "Rework Required": 0.0,
+            "Not Started": 0.0,
+        }
+
+        # 1. Synchronize checklist items with baseline data state
+        dm_val = baseline.charter.delivery_manager if baseline.charter else None
+        tpm_val = baseline.charter.talent_pm if baseline.charter else None
+        pmo_val = baseline.charter.pmo_lead if baseline.charter else (baseline.author_name or "PMO Lead")
+
+        has_unconfirmed_delivs = any(d.acceptance_criteria is None or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria for d in baseline.deliverables) if baseline.deliverables else False
+        has_unconfirmed_dates = any(m.external_date is None for m in baseline.milestones) if baseline.milestones else False
+        has_unassigned_roles = any("UNASSIGNED" in str(x).upper() for x in [dm_val, tpm_val]) if (dm_val or tpm_val) else True
+        has_ambiguities = len(baseline.contract_ambiguities) > 0
+        has_questions = len(baseline.open_questions) > 0
+
+        for item in baseline.readiness_checklist:
+            if item.item_id == "G01-01" and baseline.sla_met:
+                if item.status == "Exception Required":
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-03" and not has_questions:
+                if item.status in ("Review Required", "Exception Required", "In Progress"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-04" and not has_unconfirmed_dates and baseline.milestones:
+                if item.status in ("Confirmation Required", "Review Required", "In Progress"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-06" and not has_unconfirmed_delivs and baseline.deliverables:
+                if item.status in ("Review Required", "Confirmation Required", "In Progress"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-13" and not has_unassigned_roles:
+                if item.status in ("In Progress", "Review Required", "Confirmation Required"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-14" and not has_ambiguities:
+                if item.status in ("Review Required", "Exception Required"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            elif item.item_id == "G01-15" and not has_questions:
+                if item.status in ("Review Required", "Exception Required"):
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+
+            # Keep exception_required aligned with status
+            if item.status in ("Complete", "Approved"):
+                item.exception_required = False
+                item.exception_details = None
+                item.approval_status = "Approved"
+            elif item.status == "Exception Required":
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = f"Exception logged for {item.gate_criterion}."
+
+        # 2. Dim 1: Mandatory G-01 Controls (40% Weight)
+        total_items = len(baseline.readiness_checklist)
+        total_score_items = sum(status_points.get(item.status, 0.5) for item in baseline.readiness_checklist)
+        dim1 = (total_score_items / total_items) if total_items > 0 else 0.0
+        open_exceptions = [i for i in baseline.readiness_checklist if i.exception_required or i.status == "Exception Required"]
+        dim1 = max(0.0, min(1.0, dim1 - (len(open_exceptions) * 0.03)))
+
+        # 3. Dim 2: Deliverable & Acceptance Rigor (25% Weight)
+        if baseline.deliverables:
+            deliv_scores = []
+            for d in baseline.deliverables:
+                s = 0.0
+                if d.acceptance_criteria and "[CONFIRMATION REQUIRED]" not in d.acceptance_criteria:
+                    s += 0.4
+                if d.owner and "UNASSIGNED" not in d.owner.upper() and d.owner != "Unassigned":
+                    s += 0.3
+                if d.client_approver and "UNASSIGNED" not in d.client_approver.upper():
+                    s += 0.3
+                deliv_scores.append(s)
+            dim2 = sum(deliv_scores) / len(baseline.deliverables)
+        else:
+            dim2 = 0.0
+        dim2 = max(0.0, min(1.0, dim2))
+
+        # 4. Dim 3: Talent & Staffing Readiness (20% Weight)
+        dim3 = 0.0
+        t_rec = baseline.talent_onboarding
+        dm_name = t_rec.delivery_manager if t_rec else dm_val
+        tpm_name = t_rec.talent_pm if t_rec else tpm_val
+        if dm_name and "UNASSIGNED" not in dm_name.upper():
+            dim3 += 0.35
+        if tpm_name and "UNASSIGNED" not in tpm_name.upper():
+            dim3 += 0.35
+        if t_rec and t_rec.delivery_talent_roster:
+            confirmed_cnt = sum(1 for tm in t_rec.delivery_talent_roster if tm.status.lower() in ("confirmed", "active", "approved", "ready"))
+            dim3 += 0.30 * (confirmed_cnt / max(1, len(t_rec.delivery_talent_roster)))
+        else:
+            dim3 += 0.15
+        dim3 = max(0.0, min(1.0, dim3))
+
+        # 5. Dim 4: Commercial & Risk Mitigation (15% Weight)
+        dim4 = 0.0
+        if baseline.raid_items:
+            owned_risks = sum(1 for r in baseline.raid_items if r.owner and "UNASSIGNED" not in r.owner.upper() and r.owner != "Unassigned")
+            dim4 += 0.40 * min(1.0, (owned_risks / max(1, len(baseline.raid_items))))
+        else:
+            dim4 += 0.20
+        if baseline.commercial_guardrails:
+            dim4 += 0.30
+        q_penalty = max(0.0, 1.0 - (len(baseline.open_questions) * 0.05))
+        dim4 += 0.30 * q_penalty
+        dim4 = max(0.0, min(1.0, dim4))
+
+        composite_score = round((dim1 * 0.40 + dim2 * 0.25 + dim3 * 0.20 + dim4 * 0.15) * 100, 1)
+        readiness_breakdown = {
+            "mandatory_g01_controls": round(dim1 * 100, 1),
+            "deliverable_acceptance_rigor": round(dim2 * 100, 1),
+            "talent_staffing_readiness": round(dim3 * 100, 1),
+            "commercial_risk_mitigation": round(dim4 * 100, 1),
+        }
+
+        # 6. Gate Decision and Workflow State
+        if composite_score >= 85.0 and not open_exceptions:
+            gate_status = "Approved for Mobilize"
+            workflow_state = "Approved for Mobilize"
+        elif open_exceptions or composite_score >= 70.0:
+            gate_status = "Approved with Exception"
+            workflow_state = "Approved with Exception"
+        else:
+            gate_status = "Rework Required"
+            workflow_state = "Clarification Pending"
+
+        author_name = baseline.author_name or pmo_val or "PMO Lead"
+        gate_decision = GateDecision(
+            gate_decision_status=gate_status,
+            approver_name=author_name,
+            approval_date=date.today(),
+            decision_comments="Readiness baseline recalculated against Section 4 requirements. " + (
+                f"{len(open_exceptions)} exceptions noted; open validation items flagged for Mobilize kickoff." if open_exceptions or has_questions else "All controls baselined."
+            ),
+            approved_with_exception=bool(open_exceptions),
+            rework_required=(composite_score < 70.0),
+            bypass_reason="Baseline drafted within 1 day; pending minor client confirmations" if open_exceptions else None,
+            bypass_approving_authority="PMO Lead",
+            readiness_score=composite_score,
+            readiness_breakdown=readiness_breakdown,
+            workflow_state=workflow_state,
+            sla_met=baseline.sla_met,
+            segregation_of_duties_verified=baseline.segregation_of_duties_verified,
+            author_name=author_name,
+            reviewer_names=baseline.reviewer_names,
+            concurring_approver_name=baseline.concurring_approver_name,
+            open_exceptions_count=len(open_exceptions),
+        )
+
+        baseline.readiness_score = composite_score
+        baseline.readiness_breakdown = readiness_breakdown
+        baseline.workflow_state = workflow_state
+        baseline.gate_decision = gate_decision
+        if baseline.governance_context:
+            baseline.governance_context.workflow_state = workflow_state
+
+        return baseline

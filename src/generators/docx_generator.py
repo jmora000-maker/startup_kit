@@ -153,16 +153,22 @@ class DocxGenerator(IDocumentWriter):
                 p_obj = doc.add_paragraph()
                 p_obj.add_run("Delivery Objectives & Success Criteria:").bold = True
                 for obj in charter.delivery_objectives:
-                    doc.add_paragraph(f"• {obj}", style='List Bullet')
+                    clean_obj = re.sub(r'^[•\-\*]\s*', '', obj).strip()
+                    doc.add_paragraph(clean_obj, style='List Bullet')
                 for sc in charter.success_criteria:
-                    doc.add_paragraph(f"• Success Criteria: {sc}", style='List Bullet')
+                    clean_sc = re.sub(r'^[•\-\*]\s*', '', sc).strip()
+                    if not clean_sc.lower().startswith("success criteria:"):
+                        doc.add_paragraph(f"Success Criteria: {clean_sc}", style='List Bullet')
+                    else:
+                        doc.add_paragraph(clean_sc, style='List Bullet')
 
             if charter.exclusions:
                 doc.add_paragraph().paragraph_format.space_after = Pt(2)
                 p_exc = doc.add_paragraph()
                 p_exc.add_run("High-Level Scope Exclusions:").bold = True
                 for exc in charter.exclusions:
-                    doc.add_paragraph(f"• {exc}", style='List Bullet')
+                    clean_exc = re.sub(r'^[•\-\*]\s*', '', exc).strip()
+                    doc.add_paragraph(clean_exc, style='List Bullet')
 
         # 1.2 SOW Interpretation Summary
         add_section_heading(doc, "SOW Interpretation Summary", level=2)

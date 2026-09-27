@@ -359,6 +359,20 @@ def parse_args():
         help="Path to output directory for generated Word reports (default: output/)"
     )
     parser.add_argument(
+        "--output-file",
+        type=Path,
+        default=None,
+        help="Explicit destination file path for regenerated Word report"
+    )
+    parser.add_argument(
+        "--reingest-docx",
+        "--docx-file",
+        type=Path,
+        dest="reingest_docx",
+        default=None,
+        help="Path to existing *_Startup_Kit.docx to re-ingest and recalculate readiness score"
+    )
+    parser.add_argument(
         "--model",
         type=str,
         default=config.openai_model,
@@ -447,6 +461,56 @@ def prompt_directories(
     return resolved_inputs, resolved_output
 
 
+def prompt_reingest_file(
+    docx_file: Optional[Union[str, Path]] = None,
+    interactive: bool = True
+) -> Optional[Path]:
+    """Prompt for the path to the updated Startup Kit .docx file to re-ingest.
+
+    A path/filename is required; there is no default. Typing 'exit' cancels and exits.
+    """
+    if docx_file is not None:
+        if isinstance(docx_file, str):
+            cleaned = docx_file.strip().strip("\"'")
+            if cleaned:
+                if cleaned.lower() in ("exit", "quit"):
+                    return None
+                return Path(cleaned)
+            return None
+        return docx_file
+
+    if not interactive:
+        return None
+
+    while True:
+        try:
+            entered = input("Enter path to updated *_Startup_Kit.docx file (or type 'exit'): ").strip().strip("\"'")
+            if not entered:
+                print("Path/filename is required. Please enter a valid file path or type 'exit' to quit.")
+                continue
+            if entered.lower() in ("exit", "quit"):
+                return None
+            return Path(entered)
+        except (EOFError, KeyboardInterrupt):
+            return None
+
+
+def prompt_execution_mode(interactive: bool = True) -> str:
+    """Prompt user to select between Initial Generation (1) and DOCX Re-ingestion (2)."""
+    if not interactive:
+        return "1"
+    try:
+        print("Select Startup Kit execution mode:")
+        print("  [1] Initial Generation (Ingest raw SOWs/decks from inputs directory)")
+        print("  [2] Re-evaluate & Ingest updated *_Startup_Kit.docx")
+        choice = input("Enter choice [1/2, default: 1]: ").strip()
+        if choice in ("2", "re-evaluate", "reingest", "docx"):
+            return "2"
+        return "1"
+    except (EOFError, OSError):
+        return "1"
+
+
 def prompt_role_names(
     pmo_lead: Optional[str] = None,
     delivery_lead: Optional[str] = None,
@@ -485,6 +549,60 @@ def main():
     try:
         is_interactive = not args.non_interactive
 
+        # Determine execution mode: Flag takes priority, then interactive prompt
+        if args.reingest_docx is not None:
+            mode = "2"
+        elif is_interactive:
+            mode = prompt_execution_mode(interactive=True)
+        else:
+            mode = "1"
+
+        if mode == "2":
+            target_docx = prompt_reingest_file(
+                docx_file=args.reingest_docx,
+                interactive=is_interactive,
+            )
+            if target_docx is None:
+                if is_interactive:
+                    logger.info("Exiting Startup Kit re-ingestion.")
+                    return 0
+                else:
+                    logger.error("No DOCX file provided for re-ingestion mode. Specify --reingest-docx <path>.")
+                    return 1
+
+            logger.info("Mode: DOCX Re-ingestion & Readiness Recalculation")
+            logger.info("Target Document: %s", target_docx)
+
+            pmo_lead, delivery_lead, talent_pm = prompt_role_names(
+                pmo_lead=args.pmo_lead,
+                delivery_lead=args.delivery_lead,
+                talent_pm=args.talent_pm,
+                interactive=is_interactive
+            )
+
+            controller = StartupKitController(
+                doc_writer=DocxGenerator(),
+                aggregator=BaselineAggregator()
+            )
+
+            output_file = controller.run_reingest(
+                docx_path=target_docx,
+                output_dir=args.output_dir,
+                output_file=args.output_file,
+                pmo_lead=pmo_lead if (args.pmo_lead is not None or (is_interactive and pmo_lead != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
+                delivery_lead=delivery_lead if (args.delivery_lead is not None or (is_interactive and delivery_lead != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
+                talent_pm=talent_pm if (args.talent_pm is not None or (is_interactive and talent_pm != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
+                tier_override=args.tier,
+                contract_type_override=args.contract_type,
+                export_tools=args.export_tools,
+            )
+
+            logger.info("SUCCESS: Project Startup Kit re-evaluated and updated successfully!")
+            logger.info("Updated Report File: %s", output_file.resolve())
+            return 0
+
+        # Mode 1: Initial Generation
+        logger.info("Mode: Initial Generation (From SOWs and input artifacts)")
         inputs_dir, output_dir = prompt_directories(
             inputs_dir=args.inputs_dir,
             output_dir=args.output_dir,
