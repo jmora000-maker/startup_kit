@@ -125,6 +125,10 @@ python main.py --mock
 | `--model` | String | OpenAI model name | `gpt-4o` |
 | `--tier` | Choice | Override Governance Tier (`Guided`, `Partnered`, `Elevated`) | Extracted / `Partnered` |
 | `--contract-type` | String | Override Contract Type (e.g., `'Fixed Bid'`, `'Time and Materials'`) | Extracted |
+| `--pmo-lead` | String | Set PMO Lead name | `[UNASSIGNED - TO BE CONFIRMED]` |
+| `--delivery-lead` | String | Set Delivery Lead / Manager name (alias: `--delivery-manager`) | `[UNASSIGNED - TO BE CONFIRMED]` |
+| `--talent-pm` | String | Set Talent PM name | `[UNASSIGNED - TO BE CONFIRMED]` |
+| `--non-interactive` | Flag | Disable interactive role prompts and use default unassigned | `False` |
 | `--mock` | Flag | Run offline deterministic mock extraction | `False` |
 | `--export-tools` | Flag | Export downstream PMO workbook toolkits (CSV/JSON) to output | `False` |
 | `-v`, `--verbose` | Flag | Enable verbose debug logging | `False` |
@@ -132,8 +136,11 @@ python main.py --mock
 ### Example Commands
 
 ```bash
-# Export downstream PMO tools and run with verbose logging in mock mode:
-python main.py --mock --export-tools -v
+# Export downstream PMO tools with leadership roles specified:
+python main.py --mock --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --export-tools
+
+# Run non-interactively using unassigned defaults:
+python main.py --mock --non-interactive
 
 # Custom inputs and outputs with a tier override:
 python main.py --inputs-dir ./client_docs --output-dir ./reports --tier Elevated

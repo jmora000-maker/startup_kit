@@ -1,0 +1,451 @@
+"""Pydantic data models and schemas for the Startup Kit Generator."""
+
+from datetime import date
+from typing import List, Optional, Literal, Dict, Any, Union
+from dataclasses import dataclass, field
+from pathlib import Path
+from pydantic import BaseModel, Field, ConfigDict
+
+
+@dataclass
+class DocumentSection:
+    """Represents an extracted structural section or slide of a document."""
+    title: str
+    content: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ExtractedDocument:
+    """Represents normalized extracted content from a single input file."""
+    file_name: str
+    file_type: str
+    file_path: Path
+    text_content: str
+    sections: List[DocumentSection] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class SourceReference(BaseModel):
+    """Traceability reference linking extracted data to source files and clauses."""
+    document_name: str
+    clause_or_slide: Optional[str] = None
+    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class Deliverable(BaseModel):
+    """Project deliverable with explicit acceptance criteria, ownership, and acceptance route."""
+    id: str
+    name: str = ""
+    description: str = ""
+    source_reference: SourceReference
+    owner: str = "Unassigned"
+    acceptance_criteria: Optional[str] = None
+    sow_reference: Optional[str] = None
+    evidence_required: str = "[CONFIRMATION REQUIRED]"
+    client_approver: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    submission_target_date: Optional[date] = None
+    review_window: str = "5 business days"
+    rejection_rework_path: str = "Talent PM / Team rework within 3 business days of notice"
+    unresolved_acceptance_clarifications: List[str] = Field(default_factory=list)
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.name and self.description:
+            self.name = self.description
+        elif not self.description and self.name:
+            self.description = self.name
+        if not self.sow_reference and self.source_reference:
+            loc = f" ({self.source_reference.clause_or_slide})" if self.source_reference.clause_or_slide else ""
+            self.sow_reference = f"{self.source_reference.document_name}{loc}"
+
+
+class Milestone(BaseModel):
+    """Project milestone tracking external commitment dates, internal buffer dates, and dependencies."""
+    id: str
+    description: str
+    external_date: Optional[date] = None
+    internal_buffer_date: Optional[date] = None
+    owner: str = "Delivery Manager"
+    key_dependencies: List[str] = Field(default_factory=list)
+    critical_path_assumptions: List[str] = Field(default_factory=list)
+    source_reference: SourceReference
+
+
+class RiskAssumption(BaseModel):
+    """Risk, Assumption, Issue, or Dependency (RAID) item."""
+    type: Literal["Risk", "Assumption", "Issue", "Dependency"]
+    description: str
+    owner: str = "Unassigned"
+    status: str = "Open"
+    source_reference: SourceReference
+    category: str = "Technical"
+    probability: Optional[str] = "Medium"
+    impact: str = "Medium"
+    severity: str = "Medium"
+    trigger_or_early_warning: str = "Initial startup assessment"
+    mitigation_or_response: str = "Active monitoring by PMO and Delivery Manager"
+    due_date: Optional[date] = None
+    linked_decision: Optional[str] = None
+    linked_dependency_or_assumption: Optional[str] = None
+
+
+class DependencyAssumptionItem(BaseModel):
+    """Dedicated Dependency and Assumption log item."""
+    id: str
+    type: Literal["Dependency", "Assumption"]
+    description: str
+    category: str = "Technical"
+    source_reference: SourceReference
+    owner: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    required_validation_date: Optional[date] = None
+    impact_if_unmet: str = "Delivery delay / milestone impediment"
+    status: str = "Open"
+    escalation_trigger: str = "Milestone delay or unconfirmed prerequisite"
+    linked_milestone: Optional[str] = None
+    linked_deliverable: Optional[str] = None
+    linked_open_question: Optional[str] = None
+
+
+class DecisionItem(BaseModel):
+    """Decision log record seeded during Readiness."""
+    id: str
+    decision_text: str
+    decision_owner: str = "PMO Lead"
+    decision_date: Optional[date] = None
+    rationale: str = ""
+    linked_raid_item: Optional[str] = None
+    linked_artifact: Optional[str] = None
+    source_reference: Optional[SourceReference] = None
+    status: str = "Approved"
+
+
+class WorkPackageSeed(BaseModel):
+    """Scope decomposition / backlog seed item."""
+    id: str
+    parent_deliverable_id: str
+    title: str
+    description: str = ""
+    preliminary_sequence: int = 1
+    owner: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    dependency_references: List[str] = Field(default_factory=list)
+    linked_milestones: List[str] = Field(default_factory=list)
+    linked_acceptance_items: List[str] = Field(default_factory=list)
+    uncertain_scope: bool = False
+    status: str = "Draft"
+
+
+class ProjectStartupCharter(BaseModel):
+    """Project Startup Charter model (Layer 1)."""
+    project_name: str = "Project Baseline"
+    client_name: Optional[str] = None
+    project_purpose: str = "[CONFIRMATION REQUIRED]"
+    delivery_objectives: List[str] = Field(default_factory=list)
+    success_criteria: List[str] = Field(default_factory=list)
+    high_level_scope: List[str] = Field(default_factory=list)
+    exclusions: List[str] = Field(default_factory=list)
+    key_deliverables_summary: List[str] = Field(default_factory=list)
+    key_milestones_summary: List[str] = Field(default_factory=list)
+    contract_type: str = "Time and Materials"
+    governance_tier: Literal["Guided", "Partnered", "Elevated"] = "Partnered"
+    delivery_model: str = "Toptal Talent Team (Agile/Milestone Hybrid)"
+    governance_model: str = "PMO Standard Governance Model"
+    major_startup_risks: List[str] = Field(default_factory=list)
+    delivery_manager: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    talent_pm: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    pmo_lead: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    escalation_path: str = "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+    unresolved_assumptions_status: str = "[CONFIRMATION REQUIRED]"
+    source_reference: Optional[SourceReference] = None
+
+
+class SOWInterpretationSummary(BaseModel):
+    """SOW Interpretation Summary model (Layer 1)."""
+    contracted_deliverables: List[str] = Field(default_factory=list)
+    out_of_scope_items: List[str] = Field(default_factory=list)
+    customer_obligations: List[str] = Field(default_factory=list)
+    assumptions: List[str] = Field(default_factory=list)
+    constraints: List[str] = Field(default_factory=list)
+    platform_environment_commitments: List[str] = Field(default_factory=list)
+    dependencies: List[str] = Field(default_factory=list)
+    approval_expectations: str = "[CONFIRMATION REQUIRED]"
+    ambiguity_notes: List[str] = Field(default_factory=list)
+    confirmation_required_items: List[str] = Field(default_factory=list)
+    contract_ambiguities: List["ContractAmbiguityItem"] = Field(default_factory=list)
+    source_reference: Optional[SourceReference] = None
+
+
+class ContractAmbiguityItem(BaseModel):
+    """Detected contractual ambiguity, conflict, or non-testable clause (NFR-02)."""
+    anomaly_id: str
+    category: str = "Scope Contradiction"  # Date Conflict, Scope Contradiction, Ambiguous Acceptance, Unclear SLA, Ownership Gap
+    conflicting_clauses: str
+    risk_impact: str = "Potential schedule or cost variance"
+    recommended_clarification: str
+    status: str = "Open"  # Open, Escalated, Resolved
+    source_reference: Optional[SourceReference] = None
+
+
+ReadinessWorkflowState = Literal[
+    "Awarded",
+    "Drafting in Progress",
+    "Review in Progress",
+    "Clarification Pending",
+    "Talent Onboarding in Progress",
+    "Ready for G-01 Gate Review",
+    "Approved for Mobilize",
+    "Approved with Exception",
+    "Rework Required"
+]
+
+
+class CommunicationsPlanItem(BaseModel):
+    """Communications and Reporting Plan item (Layer 2)."""
+    id: str
+    name: str
+    audience: str
+    content_owner: str
+    cadence: str
+    governance_tier_applicability: str = "All Tiers"
+    format: str = "Meeting / Written Report"
+    delivery_day: str = "Weekly"
+    escalation_route: str = "PMO Lead -> Director, PMO"
+    pmo_health_rating_notes: str = "PMO Lead issues independent health rating after evidence exchange"
+
+
+class Stakeholder(BaseModel):
+    """Stakeholder record (Layer 3)."""
+    name: str
+    role: str
+    organization: str = "Toptal"
+    decision_rights: str = "Standard"
+    approver_responsibilities: str = "N/A"
+    escalation_responsibility: str = "PMO Lead"
+    reporting_accountability: str = "Weekly PSR"
+
+
+class RACIItem(BaseModel):
+    """RACI decision rights matrix entry (Layer 3)."""
+    decision_or_activity: str
+    pmo_lead: str = "A"
+    delivery_manager: str = "C"
+    talent_pm: str = "R"
+    sales_accounts: str = "I"
+    client: str = "I"
+
+
+class CommercialGuardrail(BaseModel):
+    """Commercial and Margin Guardrails model (Layer 3)."""
+    contract_type_implication: str = ""
+    billing_consumption_assumption: str = ""
+    staffing_assumption: str = ""
+    commercial_exposure_note: str = ""
+    approved_work_rule: str = "Only explicitly contracted SOW scope and approved Change Orders are authorized for execution."
+    non_approved_work_rule: str = "No out-of-scope tasks shall be performed without written Change Order."
+    work_at_risk_rule: str = "Work-at-risk requires written PMO Lead approval and executive exception sign-off."
+    change_control_trigger: str = "Material scope shift, timeline variance > 5 days, or budget variance > 10%"
+    change_order_route: str = "PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order"
+    budget_baseline: str = "[CONFIRMATION REQUIRED]"
+    variance_indicator: str = "Green (<5% variance)"
+    margin_risk_indicator: str = "Low"
+    escalation_threshold: str = "Budget burn rate exceeding weekly cap by >10%"
+
+
+class TalentMember(BaseModel):
+    """Member in talent onboarding roster."""
+    role: str
+    name: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    required_skills: str = "TBD"
+    status: str = "Staffed"
+
+
+class TalentOnboardingRecord(BaseModel):
+    """Talent Onboarding Record model (Layer 3)."""
+    talent_pm: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    delivery_manager: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    pmo_lead: str = "[UNASSIGNED - TO BE CONFIRMED]"
+    onboarding_completion_date: Optional[date] = None
+    onboarding_attendees: List[str] = Field(default_factory=list)
+    artifacts_walked_through: List[str] = Field(default_factory=list)
+    delivery_talent_roster: List[TalentMember] = Field(default_factory=list)
+    required_roles: List[str] = Field(default_factory=list)
+    required_skills: List[str] = Field(default_factory=list)
+    staffing_gaps: List[str] = Field(default_factory=list)
+    replacement_plan: str = "PMO Lead coordinates talent matching within 5 business days if replacement needed"
+    team_baseline_review_confirmation: bool = True
+
+
+class ReadinessChecklistItem(BaseModel):
+    """Structured readiness checklist record for G-01 Gate."""
+    item_id: str
+    gate_criterion: str
+    related_section4_artifact: str
+    owner: str
+    reviewer: str = "PMO Lead"
+    approver: str = "PMO Lead / Director, PMO"
+    due_date: Optional[date] = None
+    status: Literal[
+        "Not Started",
+        "In Progress",
+        "Review Required",
+        "Confirmation Required",
+        "Complete",
+        "Exception Required",
+        "Approved",
+        "Approved with Exception",
+        "Rework Required"
+    ] = "In Progress"
+    evidence: str = ""
+    exception_required: bool = False
+    exception_details: Optional[str] = None
+    approval_status: str = "Pending Review"
+
+
+class GateDecision(BaseModel):
+    """G-01 Gate Decision record."""
+    gate_decision_status: str = "Pending Gate Review"
+    approver_name: str = "PMO Lead"
+    approval_date: Optional[date] = None
+    decision_comments: str = "Readiness baseline reviewed; awaiting mobilization sign-off."
+    approved_with_exception: bool = False
+    rework_required: bool = False
+    bypass_reason: Optional[str] = None
+    bypass_approving_authority: Optional[str] = None
+    exception_expiry_date: Optional[date] = None
+    readiness_score: float = 0.0
+    readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
+    workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
+    sla_met: bool = True
+    segregation_of_duties_verified: bool = True
+    author_name: str = "PMO Lead"
+    reviewer_names: List[str] = Field(default_factory=lambda: ["Delivery Manager", "Technical Lead"])
+    concurring_approver_name: Optional[str] = None
+    open_exceptions_count: int = 0
+
+
+class GovernanceContext(BaseModel):
+    """Overall project governance context, roles, and commercial summary."""
+    project_name: str
+    governance_tier: Literal["Guided", "Partnered", "Elevated"] = "Partnered"
+    contract_type: str = "Time and Materials"
+    client_name: Optional[str] = None
+    delivery_manager: Optional[str] = None
+    talent_pm: Optional[str] = None
+    pmo_lead: Optional[str] = None
+    executive_summary: Optional[str] = None
+    workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
+    sla_met: bool = True
+
+
+class StartupKitBaseline(BaseModel):
+    """Consolidated project startup baseline model carrying all Section 4 artifacts."""
+    project_name: str
+    governance_tier: Literal["Guided", "Partnered", "Elevated"] = "Partnered"
+    contract_type: str = "Time and Materials"
+    governance_context: Optional[GovernanceContext] = None
+    charter: Optional[ProjectStartupCharter] = None
+    sow_interpretation: Optional[SOWInterpretationSummary] = None
+    deliverables: List[Deliverable] = Field(default_factory=list)
+    milestones: List[Milestone] = Field(default_factory=list)
+    backlog_seed: List[WorkPackageSeed] = Field(default_factory=list)
+    dependencies_assumptions: List[DependencyAssumptionItem] = Field(default_factory=list)
+    raid_items: List[RiskAssumption] = Field(default_factory=list)
+    decisions: List[DecisionItem] = Field(default_factory=list)
+    communications_plan: List[CommunicationsPlanItem] = Field(default_factory=list)
+    stakeholders: List[Stakeholder] = Field(default_factory=list)
+    raci_matrix: List[RACIItem] = Field(default_factory=list)
+    commercial_guardrails: Optional[CommercialGuardrail] = None
+    talent_onboarding: Optional[TalentOnboardingRecord] = None
+    readiness_checklist: List[ReadinessChecklistItem] = Field(default_factory=list)
+    gate_decision: Optional[GateDecision] = None
+    open_questions: List[str] = Field(default_factory=list)
+    contract_ambiguities: List[ContractAmbiguityItem] = Field(default_factory=list)
+    readiness_score: float = 0.0
+    readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
+    workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
+    sow_awarded_date: Optional[date] = None
+    kit_drafted_date: Optional[date] = None
+    sla_met: bool = True
+    author_name: str = "PMO Lead"
+    reviewer_names: List[str] = Field(default_factory=lambda: ["Delivery Manager", "Technical Lead"])
+    approver_name: str = "PMO Lead"
+    concurring_approver_name: Optional[str] = None
+    segregation_of_duties_verified: bool = True
+
+
+# Intermediate domain extraction schemas for multi-pass LLM prompts
+class CharterExtraction(BaseModel):
+    project_name: str
+    client_name: Optional[str] = None
+    governance_tier: Literal["Guided", "Partnered", "Elevated"] = "Partnered"
+    contract_type: str = "Time and Materials"
+    delivery_manager: Optional[str] = None
+    talent_pm: Optional[str] = None
+    pmo_lead: Optional[str] = None
+    executive_summary: Optional[str] = None
+    project_purpose: Optional[str] = None
+    delivery_objectives: List[str] = Field(default_factory=list)
+    success_criteria: List[str] = Field(default_factory=list)
+    high_level_scope: List[str] = Field(default_factory=list)
+    exclusions: List[str] = Field(default_factory=list)
+    source_reference: SourceReference
+
+
+class DeliverablesExtraction(BaseModel):
+    deliverables: List[Deliverable] = Field(default_factory=list)
+
+
+class MilestonesExtraction(BaseModel):
+    milestones: List[Milestone] = Field(default_factory=list)
+
+
+class RAIDExtraction(BaseModel):
+    items: List[RiskAssumption] = Field(default_factory=list)
+
+
+class QuestionsExtraction(BaseModel):
+    open_questions: List[str] = Field(default_factory=list)
+
+
+class SOWInterpretationExtraction(BaseModel):
+    contracted_deliverables: List[str] = Field(default_factory=list)
+    out_of_scope_items: List[str] = Field(default_factory=list)
+    customer_obligations: List[str] = Field(default_factory=list)
+    assumptions: List[str] = Field(default_factory=list)
+    constraints: List[str] = Field(default_factory=list)
+    platform_environment_commitments: List[str] = Field(default_factory=list)
+    dependencies: List[str] = Field(default_factory=list)
+    approval_expectations: Optional[str] = None
+    ambiguity_notes: List[str] = Field(default_factory=list)
+    source_reference: Optional[SourceReference] = None
+
+
+class ScopeDecompositionExtraction(BaseModel):
+    work_packages: List[WorkPackageSeed] = Field(default_factory=list)
+
+
+class AcceptanceProcessExtraction(BaseModel):
+    acceptance_matrix_items: List[Deliverable] = Field(default_factory=list)
+
+
+class StakeholdersExtraction(BaseModel):
+    stakeholders: List[Stakeholder] = Field(default_factory=list)
+
+
+class CommunicationsExtraction(BaseModel):
+    communications: List[CommunicationsPlanItem] = Field(default_factory=list)
+
+
+class CommercialGuardrailsExtraction(BaseModel):
+    commercial_guardrails: Optional[CommercialGuardrail] = None
+
+
+class TalentOnboardingExtraction(BaseModel):
+    talent_onboarding: Optional[TalentOnboardingRecord] = None
+
+
+class DecisionsExtraction(BaseModel):
+    decisions: List[DecisionItem] = Field(default_factory=list)
+
+
+class ContractConflictsExtraction(BaseModel):
+    ambiguities: List[ContractAmbiguityItem] = Field(default_factory=list)

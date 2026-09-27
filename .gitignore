@@ -1,0 +1,37 @@
+# Python environment & artifacts
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# PyCharm / IDE & Assistant settings
+.idea/
+.vscode/
+.junie/
+**/.idea/
+**/.junie/
+
+# Outputs & Runtime Logs
+outputs/
+*.log
+
+#Inputs
+input/
+*.ppt
+*.pdf
+*.docx
+*.doc
+
+#specification
+spec/
+
+# Test & coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment / Secret variables
+.env
