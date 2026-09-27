@@ -35,6 +35,7 @@ from src.llm.parsers import (
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
 from src.generators.export_payloads import export_all_pmo_tools
+from src.scoring.cli_reporter import print_readiness_cli_summary
 
 logger = logging.getLogger(__name__)
 
@@ -80,15 +81,15 @@ class StartupKitController:
         self.milestones_extractor = milestones_extractor or MilestonesDomainExtractor()
         self.raid_extractor = raid_extractor or RAIDDomainExtractor()
         self.questions_extractor = questions_extractor or QuestionsDomainExtractor()
-        self.sow_interpretation_extractor = sow_interpretation_extractor
-        self.backlog_extractor = backlog_extractor
-        self.acceptance_extractor = acceptance_extractor
-        self.stakeholders_extractor = stakeholders_extractor
-        self.communications_extractor = communications_extractor
-        self.commercial_extractor = commercial_extractor
-        self.talent_extractor = talent_extractor
-        self.decisions_extractor = decisions_extractor
-        self.conflicts_extractor = conflicts_extractor
+        self.sow_interpretation_extractor = sow_interpretation_extractor or SOWInterpretationDomainExtractor()
+        self.backlog_extractor = backlog_extractor or ScopeDecompositionDomainExtractor()
+        self.acceptance_extractor = acceptance_extractor or AcceptanceProcessDomainExtractor()
+        self.stakeholders_extractor = stakeholders_extractor or StakeholdersDomainExtractor()
+        self.communications_extractor = communications_extractor or CommunicationsDomainExtractor()
+        self.commercial_extractor = commercial_extractor or CommercialGuardrailsDomainExtractor()
+        self.talent_extractor = talent_extractor or TalentOnboardingDomainExtractor()
+        self.decisions_extractor = decisions_extractor or DecisionsDomainExtractor()
+        self.conflicts_extractor = conflicts_extractor or ContractConflictsDomainExtractor()
 
     def run(
         self,
@@ -193,6 +194,9 @@ class StartupKitController:
             logger.info("Exporting downstream PMO Operating System workbook toolkits to %s...", out_path)
             export_all_pmo_tools(baseline, out_path)
 
+        # 6. Output CLI Telemetry Summary
+        print_readiness_cli_summary(baseline, generated_file)
+
         logger.info("Startup Kit Generation complete! File created at: %s", generated_file)
         return generated_file
 
@@ -296,6 +300,9 @@ class StartupKitController:
             export_dir = target_path.parent
             logger.info("Exporting downstream PMO Operating System workbook toolkits to: %s", export_dir)
             export_all_pmo_tools(baseline, export_dir)
+
+        # Output CLI Telemetry Summary
+        print_readiness_cli_summary(baseline, generated_file)
 
         logger.info(
             "Startup Kit Re-evaluation complete! Updated file: %s (Readiness Score: %s%%, Status: %s)",

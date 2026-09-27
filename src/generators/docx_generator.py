@@ -4,18 +4,21 @@ import re
 import logging
 from pathlib import Path
 from datetime import datetime
+from typing import List, Optional, Dict, Any, Union
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 
 from src.core.interfaces import IDocumentWriter
-from src.core.models import StartupKitBaseline
+from src.core.models import StartupKitBaseline, ActionRequiredItem
 from src.generators.formatting import (
     add_section_heading,
     add_callout_box,
     style_table,
     set_cell_background,
     set_cell_margins,
+    format_cell_text_and_highlight,
+    ACTION_TAG_REGEX,
     COLOR_NAVY_HEX,
     COLOR_PRIMARY_BLUE_HEX,
     COLOR_LIGHT_BG_HEX,
@@ -24,6 +27,165 @@ from src.generators.formatting import (
 from src.generators.checklist import G01ChecklistRenderer
 
 logger = logging.getLogger(__name__)
+
+
+PLACEHOLDER_REGEX = re.compile(
+    r'(?:\[|\()?\s*(?:CONFIRMATION\s*REQUIRED|CONFIRMATION_REQUIRED|UNDEFINED|UNASSIGNED(?:\s*-\s*TO\s*BE\s*CONFIRMED)?|TO\s*BE\s*CONFIRMED|TO\s*BE\s*DETERMINED|TBD|NOT\s*STATED|PENDING|NEEDS\s*ALIGNMENT|STAFFING\s*REQUIRED)(?:\s*:[^\]\)\n]*)?(?:\]|\))?',
+    re.IGNORECASE
+)
+
+
+def format_cell_with_action(
+    cell,
+    text: str,
+    action: Optional[Union[ActionRequiredItem, List[ActionRequiredItem]]] = None,
+    is_warning: bool = False,
+    fallback_checklist_id: Optional[str] = None,
+    fallback_action_desc: Optional[str] = None,
+    fallback_delta: float = 2.0,
+) -> None:
+    """Formats cell text, cleanly subsumes raw placeholder tokens, attaches exactly ONE [ACT-XX: Remediation (+Delta%)], and applies amber fill."""
+    if text is None:
+        text = ""
+
+    raw_text = str(text).strip()
+    # Strip any preexisting/corrupted action badges or residual recovery markers
+    cleaned_raw = re.sub(r'\[ACT(?:-REQ)?-.*?\+\d+(?:\.\d+)?%\s*Recovery\]', '', raw_text, flags=re.IGNORECASE)
+    cleaned_raw = re.sub(r'\[ACT-[^\]]+\]', '', cleaned_raw, flags=re.IGNORECASE)
+    cleaned_raw = re.sub(r'\[ACT-REQ-[^\]]+\]', '', cleaned_raw, flags=re.IGNORECASE)
+    cleaned_raw = re.sub(r'\(\+\d+(?:\.\d+)?%\s*Recovery\)?\]?', '', cleaned_raw, flags=re.IGNORECASE).strip()
+
+    target_action: Optional[ActionRequiredItem] = None
+    if isinstance(action, list):
+        valid_actions = [a for a in action if a is not None]
+        if valid_actions:
+            target_action = valid_actions[0]
+    elif action is not None:
+        target_action = action
+
+    has_placeholder_match = bool(PLACEHOLDER_REGEX.search(cleaned_raw))
+    is_bare_placeholder = (
+        has_placeholder_match
+        or cleaned_raw.upper() in (
+            "UNASSIGNED", "[UNASSIGNED]", "TBD", "[TBD]", "PENDING", "[UNDEFINED]",
+            "CONFIRMATION REQUIRED", "[CONFIRMATION REQUIRED]", "STAFFING REQUIRED",
+            "TO BE DETERMINED", "[TO BE DETERMINED]", "TO BE CONFIRMED", "[TO BE CONFIRMED]",
+            "NOT STATED", "[NOT STATED]"
+        )
+    )
+
+    # Clean lines and remove orphaned bullet points, colons, or empty placeholders
+    lines = cleaned_raw.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        has_bullet = bool(re.match(r'^\s*(?:[•\-\*]|\d+[\.\)])\s*', line))
+        c_line = PLACEHOLDER_REGEX.sub('', line).strip()
+        # Clean leading bullet markers or punctuation left behind, but preserve alphanumeric content
+        c_line = re.sub(r'^\s*(?:[•\-\*]|\d+[\.\)])\s*', '', c_line).strip()
+        c_line = re.sub(r'^[\s\:\—\(\)\[\]]+', '', c_line).strip()
+        c_line = re.sub(r'[\s\:\-\—\(\)\[\]]+$', '', c_line).strip()
+        if c_line:
+            if has_bullet:
+                cleaned_lines.append(f"• {c_line}")
+            else:
+                cleaned_lines.append(c_line)
+
+    cleaned_body = "\n".join(cleaned_lines).strip()
+
+    if target_action:
+        is_warning = True
+        act_tag = f"[{target_action.action_id}: {target_action.required_action} (+{target_action.score_recovery_delta:.1f}% Recovery)]"
+        formatted_text = f"{cleaned_body} {act_tag}" if cleaned_body else act_tag
+    elif is_bare_placeholder or is_warning or has_placeholder_match:
+        is_warning = True
+        act_id = f"ACT-REQ-{fallback_checklist_id.replace('G01-', '')}" if fallback_checklist_id else "ACT-REQ"
+        action_desc = fallback_action_desc or "Confirm requirement and assign owner prior to kickoff"
+        fallback_tag = f"[{act_id}: {action_desc} (+{fallback_delta:.1f}% Recovery)]"
+        formatted_text = f"{cleaned_body} {fallback_tag}" if cleaned_body else fallback_tag
+    else:
+        formatted_text = cleaned_body
+
+    format_cell_text_and_highlight(cell, formatted_text, is_warning=is_warning)
+
+
+def find_cell_action(
+    baseline: StartupKitBaseline,
+    table_title: str,
+    column_header: str,
+    entity_id: Optional[str] = None,
+    linked_action_id: Optional[str] = None,
+    used_actions: Optional[set] = None,
+) -> Optional[ActionRequiredItem]:
+    """Find a single unique ActionRequiredItem targeting a specific cell to enforce strict 1-to-1 traceability without broadcasting."""
+    if not baseline.action_required_items:
+        return None
+
+    if used_actions is None:
+        used_actions = set()
+
+    # 1. Match by linked_action_id first
+    if linked_action_id:
+        for a in baseline.action_required_items:
+            if a.action_id == linked_action_id and a.action_id not in used_actions:
+                used_actions.add(a.action_id)
+                return a
+
+    clean_tbl = (table_title or "").lower().strip()
+    clean_col = (column_header or "").lower().strip()
+    clean_ent = (entity_id or "").lower().strip()
+
+    # 2. Strict Match by entity_id, table_title, and column_header
+    if clean_ent:
+        for a in baseline.action_required_items:
+            if a.action_id in used_actions:
+                continue
+            act_ent = (a.target_entity_id or "").lower().strip()
+            if not act_ent:
+                continue
+
+            ent_match = (act_ent == clean_ent or act_ent in clean_ent or clean_ent in act_ent)
+            if not ent_match:
+                continue
+
+            act_tbl = (a.target_table_title or "").lower().strip()
+            tbl_match = (not act_tbl or act_tbl in clean_tbl or clean_tbl in act_tbl)
+            if not tbl_match:
+                continue
+
+            act_col = (a.target_column_header or "").lower().strip()
+            col_match = (not act_col or act_col == "general" or act_col in clean_col or clean_col in act_col)
+            if not col_match:
+                continue
+
+            used_actions.add(a.action_id)
+            return a
+
+        return None
+
+    # 3. Match for non-entity table cells (table_title and column_header)
+    if clean_tbl and clean_col:
+        for a in baseline.action_required_items:
+            if a.action_id in used_actions:
+                continue
+            if a.target_entity_id:
+                continue
+
+            act_tbl = (a.target_table_title or "").lower().strip()
+            tbl_match = (not act_tbl or act_tbl in clean_tbl or clean_tbl in act_tbl)
+            if not tbl_match:
+                continue
+
+            act_col = (a.target_column_header or "").lower().strip()
+            col_match = (not act_col or act_col == "general" or act_col in clean_col or clean_col in act_col)
+            if not col_match:
+                continue
+
+            used_actions.add(a.action_id)
+            return a
+
+        return None
+
+    return None
 
 
 def sanitize_filename(name: str) -> str:
@@ -59,6 +221,7 @@ class DocxGenerator(IDocumentWriter):
 
         ctx = baseline.governance_context
         charter = baseline.charter
+        used_actions = set()
 
         # ==========================================
         # Document Header
@@ -116,36 +279,40 @@ class DocxGenerator(IDocumentWriter):
         doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
         # =========================================================================
-        # EXECUTIVE READINESS GATEWAY: STARTUP READINESS CHECKLIST (G-01) & GATE DECISION
+        # STARTUP KIT READINESS SCORE & LAYER 1: EXECUTIVE STARTUP PACK
         # =========================================================================
-        self.checklist_renderer.render(doc, baseline)
-
-        # Open Questions Callout Box (if any)
-        if baseline.open_questions:
-            questions_text = "\n".join(f"• {q}" for q in baseline.open_questions)
-            add_callout_box(
-                doc,
-                text=questions_text,
-                title="Action Required: Unresolved Validation Points / Clarifications Pending Mobilize Kickoff:",
-                bg_color=COLOR_WARNING_BG_HEX,
-                border_color="D97706"
-            )
-
-        # =========================================================================
-        # LAYER 1: EXECUTIVE STARTUP PACK
-        # =========================================================================
+        add_section_heading(doc, f"Startup Kit Readiness Score: {baseline.readiness_score:.1f}%", level=1)
         add_section_heading(doc, "Layer 1: Executive Startup Pack", level=1)
 
         # 1.1 Project Startup Charter
         add_section_heading(doc, "Project Startup Charter", level=2)
         if charter:
-            charter_text = (
-                f"Project Purpose: {charter.project_purpose}\n\n"
-                f"Delivery Model: {charter.delivery_model} | Governance Model: {charter.governance_model}\n"
-                f"Escalation Path: {charter.escalation_path}\n"
-                f"Unresolved Assumptions Status: {charter.unresolved_assumptions_status}"
-            )
-            add_callout_box(doc, text=charter_text, title="Startup Charter & Delivery Purpose", bg_color=COLOR_LIGHT_BG_HEX)
+            charter_table = doc.add_table(rows=1, cols=2)
+            charter_table.cell(0, 0).text = "Startup Charter Dimension"
+            charter_table.cell(0, 1).text = "Charter Commitment & Governance Baseline"
+
+            g01_01_act = find_cell_action(baseline, "Project Startup Charter", "Turnaround SLA & PMO Authorization", used_actions=used_actions) if (not baseline.sla_met or any(a.checklist_id == "G01-01" for a in baseline.action_required_items)) else None
+            g01_02_act = find_cell_action(baseline, "Project Startup Charter", "Delivery Model & Governance Tier", used_actions=used_actions)
+
+            sla_val = f"SLA Met ({'Yes' if baseline.sla_met else 'No - Retroactive PMO Waiver Required'})"
+            model_val = f"Delivery: {charter.delivery_model} | Governance: {charter.governance_model}"
+
+            charter_rows = [
+                ("Project Purpose & Delivery Baseline", charter.project_purpose, g01_02_act if PLACEHOLDER_REGEX.search(charter.project_purpose) else None, "G01-02", "Confirm project purpose and delivery objectives"),
+                ("Delivery Model & Governance Tier", model_val, g01_02_act if not PLACEHOLDER_REGEX.search(charter.project_purpose) else None, "G01-02", "Confirm governance tier and delivery cadence"),
+                ("Turnaround SLA & PMO Authorization", sla_val, g01_01_act, "G01-01", "Log retroactive PMO waiver for SLA"),
+                ("Escalation Path & Decision Hierarchy", charter.escalation_path, None, "G01-02", "Confirm escalation path"),
+                ("Unresolved Assumptions Status", charter.unresolved_assumptions_status, None, "G01-05", "Review unresolved assumptions"),
+            ]
+
+            for dim, val, act, fallback_id, fallback_desc in charter_rows:
+                r = charter_table.add_row()
+                r.cells[0].text = dim
+                is_flagged = bool(act or PLACEHOLDER_REGEX.search(val))
+                format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
+
+            style_table(charter_table, col_widths=[2.4, 4.8])
+            doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
             # Objectives & Scope
             if charter.delivery_objectives:
@@ -178,21 +345,31 @@ class DocxGenerator(IDocumentWriter):
             sow_table.cell(0, 0).text = "SOW Interpretation Dimension"
             sow_table.cell(0, 1).text = "Contractual Summary & Operational Meaning"
 
+            cust_ob = "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', c).strip()}" for c in sow_sum.customer_obligations if c.strip()) if sow_sum.customer_obligations else "[CONFIRMATION REQUIRED]"
+            amb_notes = "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', n).strip()}" for n in sow_sum.ambiguity_notes if n.strip()) if sow_sum.ambiguity_notes else "No critical ambiguities"
+            plat_commit = "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', p).strip()}" for p in sow_sum.platform_environment_commitments if p.strip()) if sow_sum.platform_environment_commitments else "[UNDEFINED]"
+            approval_exp = sow_sum.approval_expectations or "[CONFIRMATION REQUIRED]"
+
+            g01_07_act = find_cell_action(baseline, "SOW Interpretation Summary", "Customer Obligations & Prerequisites", used_actions=used_actions)
+            g01_15_act = find_cell_action(baseline, "SOW Interpretation Summary", "Ambiguities & Clarification Notes", used_actions=used_actions)
+
             sow_rows = [
-                ("Contracted Deliverables", "\n".join(f"• {d}" for d in sow_sum.contracted_deliverables) or "See Deliverables Matrix"),
-                ("Explicit Exclusions & Out-of-Scope", "\n".join(f"• {e}" for e in sow_sum.out_of_scope_items) or "None documented"),
-                ("Customer Obligations & Prerequisites", "\n".join(f"• {c}" for c in sow_sum.customer_obligations) or "[CONFIRMATION REQUIRED]"),
-                ("Baseline Assumptions & Constraints", "\n".join(f"• {a}" for a in sow_sum.assumptions + sow_sum.constraints) or "Standard working assumptions"),
-                ("Platform & Environment Commitments", "\n".join(f"• {p}" if not p.startswith("[") else p for p in sow_sum.platform_environment_commitments) or "[UNDEFINED]"),
-                ("External Dependencies", "\n".join(f"• {d}" for d in sow_sum.dependencies) or "Logged in Dependency Log"),
-                ("Approval & Acceptance Expectations", sow_sum.approval_expectations),
-                ("Ambiguities & Clarification Notes", "\n".join(f"• {n}" for n in sow_sum.ambiguity_notes) or "No critical ambiguities")
+                ("Contracted Deliverables", "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', d).strip()}" for d in sow_sum.contracted_deliverables if d.strip()) if sow_sum.contracted_deliverables else "See Deliverables Matrix", None, "G01-03", "Baseline contracted deliverables"),
+                ("Explicit Exclusions & Out-of-Scope", "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', e).strip()}" for e in sow_sum.out_of_scope_items if e.strip()) if sow_sum.out_of_scope_items else "None documented", None, "G01-02", "Confirm scope boundaries"),
+                ("Customer Obligations & Prerequisites", cust_ob, g01_07_act, "G01-07", "Issue access prerequisites list to client sponsor"),
+                ("Baseline Assumptions & Constraints", "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', a).strip()}" for a in sow_sum.assumptions + sow_sum.constraints if a.strip()) if (sow_sum.assumptions or sow_sum.constraints) else "Standard working assumptions", None, "G01-05", "Confirm baseline assumptions"),
+                ("Platform & Environment Commitments", plat_commit, None, "G01-07", "Confirm client platform and environment access"),
+                ("External Dependencies", "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', d).strip()}" for d in sow_sum.dependencies if d.strip()) if sow_sum.dependencies else "Logged in Dependency Log", None, "G01-05", "Confirm external dependencies"),
+                ("Approval & Acceptance Expectations", approval_exp, None, "G01-03", "Finalize acceptance test criteria and approval expectations"),
+                ("Ambiguities & Clarification Notes", amb_notes, g01_15_act, "G01-15", "Resolve contract ambiguities and open questions"),
             ]
 
-            for dim, val in sow_rows:
+            for dim, val, act, fallback_id, fallback_desc in sow_rows:
                 r = sow_table.add_row()
                 r.cells[0].text = dim
-                r.cells[1].text = val
+                is_placeholder = bool(PLACEHOLDER_REGEX.search(val))
+                is_flagged = bool(act or is_placeholder or (dim == "Ambiguities & Clarification Notes" and val != "No critical ambiguities" and bool(val.strip())))
+                format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
 
             style_table(sow_table, col_widths=[2.2, 5.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -213,8 +390,8 @@ class DocxGenerator(IDocumentWriter):
                     row.cells[1].text = amb.category
                     row.cells[2].text = amb.conflicting_clauses
                     row.cells[3].text = amb.risk_impact
-                    row.cells[4].text = amb.recommended_clarification
-                    set_cell_background(row.cells[0], COLOR_WARNING_BG_HEX)
+                    act = find_cell_action(baseline, "Contract Ambiguity & Conflict Analysis", "Recommended Clarification", entity_id=amb.anomaly_id, linked_action_id=amb.linked_action_id, used_actions=used_actions)
+                    format_cell_with_action(row.cells[4], amb.recommended_clarification, action=act, is_warning=True, fallback_checklist_id="G01-14", fallback_action_desc="Execute formal clarification note with client accounts")
 
                 style_table(amb_table, col_widths=[1.0, 1.2, 2.0, 1.8, 1.8])
                 doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -232,15 +409,16 @@ class DocxGenerator(IDocumentWriter):
             buf_str = m.internal_buffer_date.strftime("%Y-%m-%d") if m.internal_buffer_date else "N/A"
             src_str = f"{m.source_reference.document_name} ({m.source_reference.clause_or_slide or 'N/A'})" if m.source_reference else "N/A"
 
+            ext_act = find_cell_action(baseline, "Milestone Delivery Plan", "External Date", entity_id=m.id, linked_action_id=m.linked_action_id if m.external_date is None else None, used_actions=used_actions) if m.external_date is None else None
+            buf_act = find_cell_action(baseline, "Milestone Delivery Plan", "Internal Buffer Date", entity_id=m.id, used_actions=used_actions) if m.internal_buffer_date is None else None
+            owner_act = find_cell_action(baseline, "Milestone Delivery Plan", "Owner", entity_id=m.id, used_actions=used_actions) if (not m.owner or "UNASSIGNED" in m.owner.upper() or m.owner == "Unassigned") else None
+
             row.cells[0].text = m.id
             row.cells[1].text = m.description
-            row.cells[2].text = ext_str
-            row.cells[3].text = buf_str
-            row.cells[4].text = m.owner
+            format_cell_with_action(row.cells[2], ext_str, action=ext_act, is_warning=(not m.external_date or bool(ext_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Lock client milestone date for {m.id}")
+            format_cell_with_action(row.cells[3], buf_str, action=buf_act, is_warning=(m.internal_buffer_date is None or bool(buf_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Log 7-day internal buffer date for {m.id}")
+            format_cell_with_action(row.cells[4], m.owner, action=owner_act, is_warning=("UNASSIGNED" in m.owner.upper() or m.owner == "Unassigned" or bool(owner_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Assign delivery owner for {m.id}")
             row.cells[5].text = src_str
-
-            if not m.external_date:
-                set_cell_background(row.cells[2], COLOR_WARNING_BG_HEX)
 
         style_table(ms_table, col_widths=[0.9, 2.2, 1.1, 1.1, 1.0, 1.5])
         doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -260,11 +438,14 @@ class DocxGenerator(IDocumentWriter):
 
             for wp in baseline.backlog_seed:
                 row = wp_table.add_row()
+                is_unassigned = ("UNASSIGNED" in wp.owner.upper() or wp.owner == "Unassigned")
+                act = find_cell_action(baseline, "Scope Decomposition / Backlog Seed", "Owner", entity_id=wp.id, linked_action_id=wp.linked_action_id, used_actions=used_actions) if is_unassigned else None
+
                 row.cells[0].text = wp.id
                 row.cells[1].text = wp.parent_deliverable_id
                 row.cells[2].text = wp.title
                 row.cells[3].text = str(wp.preliminary_sequence)
-                row.cells[4].text = wp.owner
+                format_cell_with_action(row.cells[4], wp.owner, action=act, is_warning=is_unassigned, fallback_checklist_id="G01-03", fallback_action_desc="Assign work package delivery owner")
                 row.cells[5].text = wp.status
 
             style_table(wp_table, col_widths=[0.8, 1.0, 3.2, 0.6, 1.2, 0.8])
@@ -280,16 +461,24 @@ class DocxGenerator(IDocumentWriter):
         for d in baseline.deliverables:
             row = deliv_table.add_row()
             ac_text = d.acceptance_criteria if d.acceptance_criteria else "[CONFIRMATION REQUIRED]"
+            owner_text = d.owner if (d.owner and d.owner != "Unassigned") else "[UNASSIGNED]"
+            approver_text = d.client_approver if (d.client_approver and "UNASSIGNED" not in d.client_approver.upper()) else "[CONFIRMATION REQUIRED]"
+
+            is_criteria_unconfirmed = (not d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria or "UNASSIGNED" in d.acceptance_criteria)
+            is_owner_unassigned = (d.owner == "Unassigned" or "UNASSIGNED" in d.owner.upper() or not d.owner)
+            is_approver_unassigned = (not d.client_approver or d.client_approver == "[UNASSIGNED - TO BE CONFIRMED]" or "UNASSIGNED" in d.client_approver.upper() or "[CONFIRMATION REQUIRED]" in d.client_approver)
+
+            ac_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Acceptance Criteria", entity_id=d.id, linked_action_id=d.linked_action_id if is_criteria_unconfirmed else None, used_actions=used_actions) if is_criteria_unconfirmed else None
+            owner_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Owner", entity_id=d.id, used_actions=used_actions) if is_owner_unassigned else None
+            approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, used_actions=used_actions) if is_approver_unassigned else None
+
             row.cells[0].text = d.id
             row.cells[1].text = d.name or d.description
-            row.cells[2].text = ac_text
-            row.cells[3].text = d.evidence_required
-            row.cells[4].text = d.client_approver
-            row.cells[5].text = d.owner
-            row.cells[6].text = d.review_window
-
-            if not d.acceptance_criteria:
-                set_cell_background(row.cells[2], COLOR_WARNING_BG_HEX)
+            format_cell_with_action(row.cells[2], ac_text, action=ac_act, is_warning=is_criteria_unconfirmed, fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize acceptance test criteria and evidence expectations for {d.id}")
+            format_cell_with_action(row.cells[3], d.evidence_required, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.evidence_required), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize deliverable evidence expectations for {d.id}")
+            format_cell_with_action(row.cells[4], approver_text, action=approver_act, is_warning=is_approver_unassigned, fallback_checklist_id="G01-03", fallback_action_desc=f"Confirm client sign-off approver for {d.id}")
+            format_cell_with_action(row.cells[5], owner_text, action=owner_act, is_warning=is_owner_unassigned, fallback_checklist_id="G01-03", fallback_action_desc=f"Assign named delivery owner for {d.id}")
+            format_cell_with_action(row.cells[6], d.review_window, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.review_window), fallback_checklist_id="G01-03", fallback_action_desc="Confirm deliverable review window")
 
         style_table(deliv_table, col_widths=[0.7, 1.8, 2.0, 1.3, 1.1, 0.9, 0.9])
         doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -304,12 +493,16 @@ class DocxGenerator(IDocumentWriter):
 
             for da in baseline.dependencies_assumptions:
                 row = da_table.add_row()
+                is_unassigned = ("UNASSIGNED" in da.owner.upper() or da.owner == "Unassigned")
+                is_open = da.status.lower() in ("open", "pending", "unconfirmed")
+                act = find_cell_action(baseline, "Dependency and Assumption Log", "Owner", entity_id=da.id, linked_action_id=da.linked_action_id, used_actions=used_actions) if is_unassigned else None
+
                 row.cells[0].text = da.id
                 row.cells[1].text = da.type
                 row.cells[2].text = da.description
                 row.cells[3].text = da.category
-                row.cells[4].text = da.owner
-                row.cells[5].text = da.status
+                format_cell_with_action(row.cells[4], da.owner, action=act if is_unassigned else None, is_warning=is_unassigned, fallback_checklist_id="G01-05", fallback_action_desc="Assign dependency/assumption owner")
+                format_cell_with_action(row.cells[5], da.status, action=act if (is_open and not is_unassigned) else None, is_warning=is_open, fallback_checklist_id="G01-05", fallback_action_desc="Confirm dependency status")
 
             style_table(da_table, col_widths=[0.8, 1.0, 3.2, 1.0, 1.2, 0.8])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -323,11 +516,19 @@ class DocxGenerator(IDocumentWriter):
 
         for item in baseline.raid_items:
             row = raid_table.add_row()
+            mitigation_text = item.mitigation_or_response if hasattr(item, "mitigation_or_response") and item.mitigation_or_response else "[TBD]"
+            is_unowned = ("UNASSIGNED" in item.owner.upper() or item.owner == "Unassigned")
+            is_mitigation_missing = ("TBD" in mitigation_text.upper() or not mitigation_text or "[CONFIRMATION REQUIRED]" in mitigation_text)
+            r_id = getattr(item, "id", None) or item.description[:25]
+
+            owner_act = find_cell_action(baseline, "RAID Log", "Owner", entity_id=r_id, linked_action_id=item.linked_action_id if is_unowned else None, used_actions=used_actions) if is_unowned else None
+            mit_act = find_cell_action(baseline, "RAID Log", "Mitigation / Response", entity_id=r_id, linked_action_id=item.linked_action_id if is_mitigation_missing else None, used_actions=used_actions) if is_mitigation_missing else None
+
             row.cells[0].text = item.type
             row.cells[1].text = item.description
             row.cells[2].text = item.category if hasattr(item, "category") else "Technical"
-            row.cells[3].text = item.owner
-            row.cells[4].text = item.mitigation_or_response if hasattr(item, "mitigation_or_response") else "Active monitoring"
+            format_cell_with_action(row.cells[3], item.owner, action=owner_act, is_warning=is_unowned, fallback_checklist_id="G01-05", fallback_action_desc="Assign risk owner")
+            format_cell_with_action(row.cells[4], mitigation_text, action=mit_act, is_warning=is_mitigation_missing, fallback_checklist_id="G01-05", fallback_action_desc="Document fallback mitigation workflow")
             row.cells[5].text = item.status
 
         style_table(raid_table, col_widths=[0.9, 2.6, 1.0, 1.1, 2.2, 0.8])
@@ -346,9 +547,9 @@ class DocxGenerator(IDocumentWriter):
             for dec in baseline.decisions:
                 row = dec_table.add_row()
                 row.cells[0].text = dec.id
-                row.cells[1].text = dec.decision_text
-                row.cells[2].text = dec.decision_owner
-                row.cells[3].text = dec.status
+                format_cell_with_action(row.cells[1], dec.decision_text, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.decision_text), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision text")
+                format_cell_with_action(row.cells[2], dec.decision_owner, action=None, is_warning=("UNASSIGNED" in dec.decision_owner.upper() or dec.decision_owner == "Unassigned"), fallback_checklist_id="G01-10", fallback_action_desc="Assign decision owner")
+                format_cell_with_action(row.cells[3], dec.status, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.status), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision status")
 
             style_table(dec_table, col_widths=[1.0, 4.4, 1.4, 1.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -363,8 +564,11 @@ class DocxGenerator(IDocumentWriter):
 
             for com in baseline.communications_plan:
                 row = com_table.add_row()
+                is_unconfirmed_aud = ("[CONFIRMATION REQUIRED]" in com.audience)
+                act = find_cell_action(baseline, "Communications and Reporting Plan", "Audience", entity_id=com.name, linked_action_id=com.linked_action_id, used_actions=used_actions) if is_unconfirmed_aud else None
+
                 row.cells[0].text = com.name
-                row.cells[1].text = com.audience
+                format_cell_with_action(row.cells[1], com.audience, action=act, is_warning=is_unconfirmed_aud, fallback_checklist_id="G01-11", fallback_action_desc="Confirm weekly status distribution list")
                 row.cells[2].text = com.content_owner
                 row.cells[3].text = com.cadence
                 row.cells[4].text = com.format
@@ -388,11 +592,14 @@ class DocxGenerator(IDocumentWriter):
 
             for stk in baseline.stakeholders:
                 row = stk_table.add_row()
-                row.cells[0].text = stk.name
-                row.cells[1].text = stk.role
-                row.cells[2].text = stk.organization
-                row.cells[3].text = stk.decision_rights
-                row.cells[4].text = stk.escalation_responsibility
+                is_unconfirmed = ("[CONFIRMATION REQUIRED]" in stk.decision_rights or "UNASSIGNED" in stk.name.upper())
+                act = find_cell_action(baseline, "Stakeholder and Responsibility Model", "Decision Rights", entity_id=stk.name, linked_action_id=stk.linked_action_id, used_actions=used_actions) if is_unconfirmed else None
+
+                format_cell_with_action(row.cells[0], stk.name, action=None, is_warning=("UNASSIGNED" in stk.name.upper()), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder named representative")
+                format_cell_with_action(row.cells[1], stk.role, action=None, is_warning=("UNASSIGNED" in stk.role.upper() or "[CONFIRMATION REQUIRED]" in stk.role), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder role")
+                format_cell_with_action(row.cells[2], stk.organization, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.organization), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder organization")
+                format_cell_with_action(row.cells[3], stk.decision_rights, action=act, is_warning=is_unconfirmed, fallback_checklist_id="G01-09", fallback_action_desc="Confirm client sign-off sponsor authority")
+                format_cell_with_action(row.cells[4], stk.escalation_responsibility, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.escalation_responsibility), fallback_checklist_id="G01-09", fallback_action_desc="Confirm escalation responsibility")
 
             style_table(stk_table, col_widths=[1.6, 1.4, 1.0, 2.6, 1.4])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -405,14 +612,16 @@ class DocxGenerator(IDocumentWriter):
             for idx, h in enumerate(raci_headers):
                 raci_table.cell(0, idx).text = h
 
+            g01_10_act = find_cell_action(baseline, "RACI / Decision Rights Matrix", "Startup Control / Decision Activity", used_actions=used_actions)
             for r in baseline.raci_matrix:
                 row = raci_table.add_row()
-                row.cells[0].text = r.decision_or_activity
+                format_cell_with_action(row.cells[0], r.decision_or_activity, action=g01_10_act, is_warning=bool(g01_10_act), fallback_checklist_id="G01-10", fallback_action_desc="Align RACI matrix decision rights with client")
                 row.cells[1].text = r.pmo_lead
                 row.cells[2].text = r.delivery_manager
                 row.cells[3].text = r.talent_pm
                 row.cells[4].text = r.sales_accounts
                 row.cells[5].text = r.client
+                g01_10_act = None  # Attach to first row only
 
             style_table(raci_table, col_widths=[2.8, 1.0, 1.1, 1.0, 1.0, 0.9])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -421,17 +630,33 @@ class DocxGenerator(IDocumentWriter):
         add_section_heading(doc, "Commercial and Margin Guardrails", level=2)
         cg = baseline.commercial_guardrails
         if cg:
-            cg_text = (
-                f"Contract Implications: {cg.contract_type_implication}\n\n"
-                f"• Approved Work Rule: {cg.approved_work_rule}\n"
-                f"• Non-Approved Work Rule: {cg.non_approved_work_rule}\n"
-                f"• Work-at-Risk Policy: {cg.work_at_risk_rule}\n"
-                f"• Change Control Triggers: {cg.change_control_trigger}\n"
-                f"• Change Order Route: {cg.change_order_route}\n"
-                f"• Budget Baseline: {cg.budget_baseline} | Variance Indicator: {cg.variance_indicator} | Margin Risk: {cg.margin_risk_indicator}\n"
-                f"• Escalation Threshold: {cg.escalation_threshold}"
-            )
-            add_callout_box(doc, text=cg_text, title="Commercial Guardrails & Margin Protection Rules", bg_color=COLOR_LIGHT_BG_HEX)
+            g01_12_act = find_cell_action(baseline, "Commercial and Margin Guardrails", "Budget Baseline & Commercial Terms", used_actions=used_actions)
+            g01_13_act = find_cell_action(baseline, "Commercial and Margin Guardrails", "Change Order Route", used_actions=used_actions)
+
+            cg_table = doc.add_table(rows=1, cols=2)
+            cg_table.cell(0, 0).text = "Commercial Guardrail Area"
+            cg_table.cell(0, 1).text = "Contract Policy & Baseline Rule"
+
+            cg_rows = [
+                ("Contract Implications", cg.contract_type_implication, None, "G01-12", "Confirm contract type implication"),
+                ("Approved Work Rule", cg.approved_work_rule, None, "G01-12", "Confirm approved work rule"),
+                ("Non-Approved Work Rule", cg.non_approved_work_rule, None, "G01-12", "Confirm non-approved work rule"),
+                ("Work-at-Risk Policy", cg.work_at_risk_rule, None, "G01-12", "Confirm work-at-risk ceiling"),
+                ("Change Control Triggers", cg.change_control_trigger, None, "G01-13", "Confirm change control triggers"),
+                ("Change Order Route", cg.change_order_route, g01_13_act, "G01-13", "Confirm written change order sign-off route"),
+                ("Budget Baseline & Commercial Terms", cg.budget_baseline, g01_12_act, "G01-12", "Baseline SOW total value and margin floor"),
+                ("Variance & Margin Risk Indicators", f"Variance: {cg.variance_indicator} | Margin: {cg.margin_risk_indicator}", None, "G01-12", "Confirm margin indicators"),
+                ("Escalation Threshold", cg.escalation_threshold, None, "G01-12", "Confirm commercial escalation threshold"),
+            ]
+
+            for area, rule, act, fallback_id, fallback_desc in cg_rows:
+                r = cg_table.add_row()
+                r.cells[0].text = area
+                is_flagged = bool(act or "[CONFIRMATION REQUIRED" in rule or "[UNASSIGNED" in rule)
+                format_cell_with_action(r.cells[1], rule, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
+
+            style_table(cg_table, col_widths=[2.4, 4.8])
+            doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
         # 3.4 Talent Onboarding Record
         add_section_heading(doc, "Talent Onboarding Record", level=2)
@@ -450,15 +675,36 @@ class DocxGenerator(IDocumentWriter):
 
                 for tm in talent_rec.delivery_talent_roster:
                     row = roster_table.add_row()
+                    is_unstaffed = (
+                        "UNASSIGNED" in tm.name.upper()
+                        or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")
+                    )
+                    act = find_cell_action(baseline, "Talent Onboarding Record", "Named Talent", entity_id=tm.role, linked_action_id=tm.linked_action_id, used_actions=used_actions) if is_unstaffed else None
+
                     row.cells[0].text = tm.role
-                    row.cells[1].text = tm.name
+                    format_cell_with_action(row.cells[1], tm.name, action=act, is_warning=is_unstaffed, fallback_checklist_id="G01-08", fallback_action_desc=f"Complete candidate selection and lock staffing for {tm.role}")
                     row.cells[2].text = tm.required_skills
-                    row.cells[3].text = tm.status
+                    format_cell_with_action(row.cells[3], tm.status, action=None, is_warning=is_unstaffed, fallback_checklist_id="G01-08", fallback_action_desc="Update staffing status to Confirmed")
 
                 style_table(roster_table, col_widths=[1.8, 2.0, 2.8, 1.2])
                 doc.add_paragraph().paragraph_format.space_after = Pt(6)
+
+        # =========================================================================
+        # EXECUTIVE READINESS GATEWAY: STARTUP READINESS CHECKLIST (G-01) & GATE DECISION
+        # =========================================================================
+        self.checklist_renderer.render(doc, baseline)
 
         # Save document
         doc.save(str(target_file))
         logger.info("Successfully generated Startup Kit Word document at: %s", target_file)
         return target_file
+
+    def _render_artifact_action_banner(
+        self,
+        doc: docx.Document,
+        baseline: StartupKitBaseline,
+        checklist_ids: List[str],
+        artifact_name: str,
+    ) -> None:
+        """Deprecated: Actions are embedded directly into tables."""
+        return

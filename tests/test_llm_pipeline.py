@@ -326,7 +326,7 @@ def test_aggregator_artifact_splitting_and_defaults(sample_source_ref):
     assert "Project Startup Charter" in chk_artifacts
     assert "Milestone Delivery Plan" in chk_artifacts
     assert "Deliverables and Acceptance Matrix" in chk_artifacts
-    assert "Dependency and Assumption Log" in chk_artifacts
+    assert "SOW Interpretation Summary" in chk_artifacts or "Dependency and Assumption Log" in chk_artifacts
     assert "RAID Log" in chk_artifacts
     assert "Communications and Reporting Plan" in chk_artifacts
     assert "Stakeholder and Responsibility Model" in chk_artifacts

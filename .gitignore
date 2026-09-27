@@ -14,16 +14,15 @@ __pycache__/
 **/.idea/
 **/.junie/
 
+.claude/
+
 # Outputs & Runtime Logs
-outputs/
-*.log
+output/
+
 
 #Inputs
-input/
-*.ppt
-*.pdf
-*.docx
-*.doc
+inputs/
+
 
 #specification
 spec/

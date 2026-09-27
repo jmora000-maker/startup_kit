@@ -1,9 +1,10 @@
 """Word (.docx) styling and formatting helpers."""
 
 from typing import Optional, Sequence
+import re
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
@@ -17,11 +18,19 @@ COLOR_WARNING_BG_HEX = "FEF3C7"
 COLOR_BORDER_HEX = "CBD5E1"
 COLOR_TEXT_MUTED_HEX = "64748B"
 
+ACTION_TAG_REGEX = re.compile(
+    r'(\[(?:ACT|ACT-REQ)(?:-[A-Za-z0-9_]+)?(?::[^\n\]]*)?\])',
+    re.IGNORECASE
+)
+
 
 def set_cell_background(cell, hex_color: str):
     """Set the background color of a table cell."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    for shd in tcPr.findall(qn('w:shd')):
+        tcPr.remove(shd)
     shading_xml = f'<w:shd {nsdecls("w")} w:fill="{hex_color}"/>'
-    cell._tc.get_or_add_tcPr().append(parse_xml(shading_xml))
+    tcPr.append(parse_xml(shading_xml))
 
 
 def set_cell_margins(cell, top: int = 120, bottom: int = 120, left: int = 160, right: int = 160):
@@ -105,6 +114,28 @@ def add_callout_box(
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
 
+def format_cell_text_and_highlight(cell, text: str, is_warning: bool = False):
+    """Format cell text and apply WD_COLOR_INDEX.YELLOW highlight to every [ACT-...] tag run."""
+    cell.text = ""
+    p = cell.paragraphs[0] if cell.paragraphs else cell.add_paragraph()
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+
+    parts = ACTION_TAG_REGEX.split(text or "")
+    for part in parts:
+        if not part:
+            continue
+        run = p.add_run(part)
+        run.font.name = "Arial"
+        run.font.size = Pt(9)
+        if ACTION_TAG_REGEX.match(part):
+            run.bold = True
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+            run.font.color.rgb = RGBColor(15, 23, 42)
+        else:
+            run.font.color.rgb = RGBColor(15, 23, 42)
+
+
 def style_table(
     table: docx.table.Table,
     col_widths: Optional[Sequence[float]] = None
@@ -137,7 +168,11 @@ def style_table(
                 for run in p.runs:
                     run.font.name = "Arial"
                     run.font.size = Pt(9)
-                    run.font.color.rgb = RGBColor(15, 23, 42)
+                    if ACTION_TAG_REGEX.search(run.text):
+                        run.bold = True
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    if not run.font.color.rgb:
+                        run.font.color.rgb = RGBColor(15, 23, 42)
 
     # Apply column widths if specified (in inches)
     if col_widths:

@@ -30,18 +30,21 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "TOPTAL PMO STARTUP KIT" in full_text
     assert "Pfizer Cloud Migration" in full_text
+    assert "Startup Kit Readiness Score:" in full_text
 
-    # Verify G-01 Executive Readiness Gateway comes BEFORE Layer 1
-    g01_idx = full_text.find("Executive Readiness Gateway: Startup Readiness Checklist (G-01)")
+    # Verify Layer 1 is the first section and G-01 Executive Readiness Gateway comes AFTER Layer 3
+    score_idx = full_text.find("Startup Kit Readiness Score:")
     layer1_idx = full_text.find("Layer 1: Executive Startup Pack")
     layer2_idx = full_text.find("Layer 2: Delivery Control Pack")
     layer3_idx = full_text.find("Layer 3: Assurance Pack")
+    g01_idx = full_text.find("Executive Readiness Gateway: Startup Readiness Checklist (G-01)")
 
-    assert g01_idx != -1, "G-01 Executive Readiness Gateway must be present"
+    assert score_idx != -1, "Startup Kit Readiness Score heading must be present"
     assert layer1_idx != -1, "Layer 1 must be present"
     assert layer2_idx != -1, "Layer 2 must be present"
     assert layer3_idx != -1, "Layer 3 must be present"
-    assert g01_idx < layer1_idx < layer2_idx < layer3_idx, "Document sections must follow: G-01 Gateway -> Layer 1 -> Layer 2 -> Layer 3"
+    assert g01_idx != -1, "G-01 Executive Readiness Gateway must be present"
+    assert score_idx < layer1_idx < layer2_idx < layer3_idx < g01_idx, "Document sections must follow: Readiness Score -> Layer 1 -> Layer 2 -> Layer 3 -> G-01 Gateway"
 
     # Verify all Section 4 layer headings
     assert "Layer 1: Executive Startup Pack" in full_text
@@ -72,7 +75,7 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     all_table_content = "\n".join(table_texts)
     assert "DEL-01" in all_table_content
     assert "Cloud Migration Architecture Design" in all_table_content
-    assert "[CONFIRMATION REQUIRED]" in all_table_content  # DEL-02 acceptance criteria placeholder
+    assert "ACT-" in all_table_content  # DEL-02 in-table action item annotation
     assert "M1" in all_table_content
     assert "2026-10-15" in all_table_content
     assert "G01-01" in all_table_content  # Checklist item
@@ -88,9 +91,9 @@ def test_checklist_renderer(sample_baseline, tmp_path):
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "Startup Readiness Checklist" in full_text
 
-    # Verify that a page break is inserted after the Decision Criteria callout box
+    # Verify that no page break is inserted between Gate Decision box and Checklist table
     has_page_break = any('<w:br w:type="page"' in p._p.xml for p in doc.paragraphs)
-    assert has_page_break, "A page break must be inserted after G-01 Readiness Gate Decision box"
+    assert not has_page_break, "No page break should be inserted between G-01 Readiness Gate Decision box and the Checklist table"
 
 
 def test_checklist_artifact_coverage_and_exceptions(sample_source_ref):
@@ -213,7 +216,7 @@ def test_sow_interpretation_platform_environment_commitments_fallback(sample_sou
     assert baseline.sow_interpretation is not None
     assert baseline.sow_interpretation.platform_environment_commitments == ["[UNDEFINED]"]
 
-    # When rendered to docx, table cell should contain [UNDEFINED]
+    # When rendered to docx, table cell should contain authoritative [ACT-XX] tag
     generator = DocxGenerator()
     out_file = generator.write_docx(baseline, tmp_path / "output")
     doc = docx.Document(str(out_file))
@@ -224,5 +227,122 @@ def test_sow_interpretation_platform_environment_commitments_fallback(sample_sou
             for cell in row.cells:
                 table_cells.append(cell.text.strip())
 
-    assert "[UNDEFINED]" in table_cells
+    assert any("[ACT-" in cell for cell in table_cells)
     assert "Cloud Infrastructure: AWS / Azure / GCP" not in "\n".join(table_cells)
+
+
+def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
+    """Verify that after Layer 3 Artifacts, the Executive Readiness Gateway callout box and G-01 Checklist table are rendered as the final section."""
+    # Ensure baseline has action required items
+    sample_baseline.open_questions = [
+        "Confirm deliverable DEL-01 named owner and acceptance test criteria.",
+        "Verify third-party API dependencies.",
+    ]
+    generator = DocxGenerator()
+    out_file = generator.write_docx(sample_baseline, tmp_path / "Action_Order_Test.docx")
+    doc = docx.Document(str(out_file))
+
+    # Verify order of body elements (paragraphs and tables in document flow)
+    body_elements = []
+    for child in doc.element.body:
+        if child.tag.endswith("p"):
+            p = docx.text.paragraph.Paragraph(child, doc)
+            if p.text.strip():
+                body_elements.append(p.text.strip())
+        elif child.tag.endswith("tbl"):
+            tbl = docx.table.Table(child, doc)
+            tbl_text = " ".join(c.text.strip() for row in tbl.rows for c in row.cells)
+            if tbl_text:
+                body_elements.append(tbl_text)
+
+    full_body_text = "\n---\n".join(body_elements)
+    action_heading_idx = full_body_text.find("Action Required: Unresolved Validation Points / Clarifications")
+    gateway_heading_idx = full_body_text.find("Executive Readiness Gateway: Startup Readiness Checklist (G-01) & Gate Decision")
+    checklist_heading_idx = full_body_text.find("Startup Readiness Checklist Table (G-01)")
+
+    assert action_heading_idx == -1, "Action Required heading must not be present in report"
+    assert gateway_heading_idx != -1, "Executive Readiness Gateway heading must be present"
+    assert checklist_heading_idx != -1, "Startup Readiness Checklist Table heading must be present"
+    assert gateway_heading_idx < checklist_heading_idx, (
+        "Document flow order must strictly be: Executive Readiness Gateway -> Startup Readiness Checklist"
+    )
+
+    # Find the tables
+    table_headers = []
+    for tbl in doc.tables:
+        header_row = [c.text.strip() for c in tbl.rows[0].cells]
+        table_headers.append(header_row)
+
+    # Check for Action Required Table header (should be absent) and Checklist Table header (should be last)
+    action_tbl_idx = -1
+    checklist_tbl_idx = -1
+    for idx, headers in enumerate(table_headers):
+        if "Action ID" in headers and "Score Impact" in headers:
+            action_tbl_idx = idx
+        elif "Gate ID" in headers and "Gate Criterion" in headers:
+            checklist_tbl_idx = idx
+
+    assert action_tbl_idx == -1, "Action Required Table must not be present in generated document"
+    assert checklist_tbl_idx != -1, "G-01 Checklist Table must be present in document"
+    assert checklist_tbl_idx == len(table_headers) - 1, (
+        f"G-01 Checklist Table (idx={checklist_tbl_idx}) must be the last table in document (total={len(table_headers)})"
+    )
+
+
+def test_action_required_table_columns_and_formatting(sample_baseline, tmp_path):
+    """Verify that standalone rendering of Action Required table produces all 8 specified column headers and contents."""
+    from src.generators.checklist import G01ChecklistRenderer
+    sample_baseline.open_questions = ["Clarify milestone delivery schedule."]
+    doc = docx.Document()
+    renderer = G01ChecklistRenderer()
+    renderer.render_action_required_table(doc, sample_baseline)
+
+    action_tbl = None
+    for tbl in doc.tables:
+        if len(tbl.columns) == 8 and tbl.rows[0].cells[0].text.strip() == "Action ID":
+            action_tbl = tbl
+            break
+
+    assert action_tbl is not None, "Action Required Table with 8 columns must be found when rendered standalone"
+    headers = [c.text.strip() for c in action_tbl.rows[0].cells]
+    expected_headers = [
+        "Action ID",
+        "Type",
+        "Gate ID",
+        "Related Artifact",
+        "Validation Finding & Required Action",
+        "Owner",
+        "Deadline",
+        "Score Impact",
+    ]
+    assert headers == expected_headers
+
+    # Check first row content
+    first_row = [c.text.strip() for c in action_tbl.rows[1].cells]
+    assert first_row[0] == "ACT-01"
+    assert first_row[1] in ("Open Exception", "Open Clarification")
+    assert first_row[2].startswith("G01-")
+    assert first_row[5] != ""
+    assert first_row[6] == "Prior to Mobilize Kickoff"
+    assert first_row[7].startswith("+") and first_row[7].endswith("%")
+
+
+def test_no_duplicate_trailing_action_callout(sample_baseline, tmp_path):
+    """Verify that Action Required callout does not appear in generated report."""
+    sample_baseline.open_questions = ["Verify API security protocols."]
+    generator = DocxGenerator()
+    out_file = generator.write_docx(sample_baseline, tmp_path / "No_Dup_Callout_Test.docx")
+    doc = docx.Document(str(out_file))
+
+    all_texts = [p.text for p in doc.paragraphs]
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                all_texts.append(cell.text)
+    full_text = "\n".join(all_texts)
+
+    # Count occurrences of the Action Required callout title
+    callout_count = full_text.count("Action Required: Unresolved Validation Points / Clarifications")
+    assert callout_count == 0, (
+        f"Action Required heading should be removed from report, found {callout_count}"
+    )

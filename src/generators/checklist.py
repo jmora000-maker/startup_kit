@@ -3,12 +3,15 @@
 from typing import List
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from src.core.models import StartupKitBaseline, ReadinessChecklistItem
+from src.core.models import StartupKitBaseline, ReadinessChecklistItem, ActionRequiredItem
+from src.scoring.readiness_engine import ReadinessScoringEngine
 from src.generators.formatting import (
     add_section_heading,
+    add_callout_box,
     style_table,
     set_cell_background,
     set_cell_margins,
+    format_cell_text_and_highlight,
     COLOR_NAVY_HEX,
     COLOR_LIGHT_BG_HEX,
     COLOR_WARNING_BG_HEX,
@@ -176,10 +179,15 @@ class G01ChecklistRenderer:
         d_run.font.size = Pt(9)
         d_run.font.color.rgb = RGBColor(30, 41, 59)
 
-        # Page break after G-01 Readiness Gate Decision criteria box so the checklist table starts on a new page
-        doc.add_page_break()
+        doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-        # 2. Mandatory G-01 Checklist Table
+        # Prepare Action Items for in-table linkage in checklist table
+        action_items = baseline.action_required_items
+        if not action_items and (exceptions_count > 0 or baseline.open_questions):
+            action_items = ReadinessScoringEngine.generate_action_required_items(baseline)
+            baseline.action_required_items = action_items
+
+        # 2. Mandatory G-01 Checklist Table (Final section of the document)
         add_section_heading(doc, "Startup Readiness Checklist Table (G-01)", level=2)
 
         table = doc.add_table(rows=1, cols=8)
@@ -206,14 +214,91 @@ class G01ChecklistRenderer:
             row.cells[5].text = item.reviewer
             row.cells[6].text = item.approver
 
+            matching_act = next((a for a in action_items if a.checklist_id == item.item_id), None)
             ev_text = item.evidence
             if item.exception_required and item.exception_details:
                 ev_text += f"\n[EXCEPTION: {item.exception_details}]"
-            row.cells[7].text = ev_text
-
-            # Highlight items requiring review/confirmation/exception
-            if item.status in ("Review Required", "Confirmation Required", "Exception Required", "In Progress"):
-                set_cell_background(row.cells[3], COLOR_WARNING_BG_HEX)
+            if matching_act and f"[{matching_act.action_id}]" not in ev_text:
+                ev_text += f" [{matching_act.action_id}]"
+            format_cell_text_and_highlight(row.cells[7], ev_text)
 
         style_table(table, col_widths=[0.7, 2.0, 1.4, 1.1, 0.9, 0.9, 1.0, 1.6])
         doc.add_paragraph().paragraph_format.space_after = Pt(8)
+
+    def render_action_required_table(
+        self, doc: docx.Document, baseline: StartupKitBaseline
+    ):
+        """Render the structured Action Required table with open exceptions, clarifications, and score recovery."""
+        action_items = baseline.action_required_items
+        if not action_items:
+            exceptions_count = len([i for i in baseline.readiness_checklist if i.exception_required or i.status == "Exception Required"])
+            if exceptions_count > 0 or baseline.open_questions:
+                action_items = ReadinessScoringEngine.generate_action_required_items(baseline)
+                baseline.action_required_items = action_items
+
+        if action_items:
+            self._render_action_required_table(doc, baseline, action_items)
+
+    def _render_action_required_table(
+        self, doc: docx.Document, baseline: StartupKitBaseline, action_items: List[ActionRequiredItem]
+    ):
+        """Render the structured Action Required table with open exceptions, clarifications, and score recovery."""
+        total_recovery = sum(a.score_recovery_delta for a in action_items)
+        target_score = min(100.0, round(baseline.readiness_score + total_recovery, 1))
+        if target_score >= 85.0:
+            target_cat = "READY FOR GATE REVIEW (Green)"
+        elif target_score >= 70.0:
+            target_cat = "CONDITIONAL / EXCEPTION REQUIRED (Amber)"
+        else:
+            target_cat = "NOT READY / REWORK REQUIRED (Red)"
+
+        recovery_summary = (
+            f"Total Score Recovery Potential: +{total_recovery:.1f}% -> "
+            f"Target Achievable Readiness Score: {target_score:.1f}% ({target_cat})\n"
+            f"Resolving the {len(action_items)} validation points / clarifications below prior to or during the Mobilize "
+            f"kickoff closes all open governance gaps and unblocks full gate clearance."
+        )
+
+        add_callout_box(
+            doc,
+            text=recovery_summary,
+            title="Action Required: Unresolved Validation Points / Clarifications Pending Mobilize Kickoff:",
+            bg_color=COLOR_WARNING_BG_HEX,
+            border_color="D97706",
+        )
+
+        table = doc.add_table(rows=1, cols=8)
+        headers = [
+            "Action ID",
+            "Type",
+            "Gate ID",
+            "Related Artifact",
+            "Validation Finding & Required Action",
+            "Owner",
+            "Deadline",
+            "Score Impact",
+        ]
+        for idx, name in enumerate(headers):
+            table.cell(0, idx).text = name
+
+        for item in action_items:
+            row = table.add_row()
+            row.cells[0].text = item.action_id
+            if row.cells[0].paragraphs and row.cells[0].paragraphs[0].runs:
+                row.cells[0].paragraphs[0].runs[0].bold = True
+
+            row.cells[1].text = item.item_type
+            if item.item_type == "Open Exception":
+                set_cell_background(row.cells[1], COLOR_WARNING_BG_HEX)
+            else:
+                set_cell_background(row.cells[1], COLOR_LIGHT_BG_HEX)
+
+            row.cells[2].text = item.checklist_id
+            row.cells[3].text = item.related_artifact
+            row.cells[4].text = f"{item.finding_description}\n• Action: {item.required_action}"
+            row.cells[5].text = item.owner
+            row.cells[6].text = item.resolution_deadline
+            row.cells[7].text = f"+{item.score_recovery_delta:.1f}%"
+
+        style_table(table, col_widths=[0.8, 1.1, 0.8, 1.3, 2.5, 1.0, 1.0, 0.8])
+        doc.add_paragraph().paragraph_format.space_after = Pt(6)

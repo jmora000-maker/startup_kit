@@ -113,8 +113,8 @@ def create_mock_llm_client() -> MockLLMClient:
                     name="Automated CI/CD Data Ingestion Pipeline",
                     description="Automated CI/CD Data Ingestion Pipeline",
                     source_reference=ref,
-                    owner="Unassigned",
-                    acceptance_criteria=None,  # Flagged [CONFIRMATION REQUIRED]
+                    owner="Talent PM",
+                    acceptance_criteria="Passing automated test suite report & pipeline run logs approved by Pfizer Data Engineering Lead",
                     evidence_required="Passing automated test suite report & pipeline run logs",
                     client_approver="Pfizer Data Engineering Lead"
                 ),
@@ -335,6 +335,97 @@ def create_mock_llm_client() -> MockLLMClient:
                     approver_responsibilities="Deliverables acceptance, SOW amendments",
                     escalation_responsibility="Pfizer Executive Leadership",
                     reporting_accountability="Recipient of Weekly PSR & MBR"
+                )
+            ]
+        )
+    )
+    client.set_response(
+        CommercialGuardrailsExtraction,
+        CommercialGuardrailsExtraction(
+            commercial_guardrails=CommercialGuardrail(
+                contract_type_implication="Time and Materials contract: Weekly burn oversight and milestone alignment.",
+                billing_consumption_assumption="Weekly timesheet approval against contracted SOW rate card.",
+                staffing_assumption="Dedicated core delivery team staffing as defined in Section 3.",
+                commercial_exposure_note="Client dependency delays must be logged in RAID to prevent unfunded burn.",
+                approved_work_rule="Only explicitly contracted SOW scope and approved Change Orders are authorized for execution.",
+                non_approved_work_rule="Tasks exceeding agreed monthly burn ceiling require written client authorization.",
+                work_at_risk_rule="Work-at-risk requires written PMO Lead approval and executive exception sign-off.",
+                change_control_trigger="Budget burndown exceeding forecast by >10% or scope modification.",
+                change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order.",
+                budget_baseline="$250,000 USD T&M Budget Cap",
+                variance_indicator="Green (<5% variance)",
+                margin_risk_indicator="Low",
+                escalation_threshold="Budget burn rate exceeding weekly cap by >10%",
+                source_reference=ref
+            )
+        )
+    )
+    client.set_response(
+        TalentOnboardingExtraction,
+        TalentOnboardingExtraction(
+            talent_onboarding=TalentOnboardingRecord(
+                talent_pm="John Smith",
+                delivery_manager="Jane Doe",
+                pmo_lead="Sarah Connor",
+                onboarding_completion_date=date(2026, 10, 1),
+                onboarding_attendees=["Sarah Connor", "Jane Doe", "John Smith"],
+                artifacts_walked_through=["Startup Readiness Checklist", "Charter", "Deliverables Matrix", "RAID Log", "Commercial Guardrails"],
+                delivery_talent_roster=[
+                    TalentMember(role="Delivery Manager", name="Jane Doe", required_skills="Delivery Governance, Client Management", status="Confirmed"),
+                    TalentMember(role="Talent PM", name="John Smith", required_skills="Agile Coordination, PMO Delivery", status="Confirmed"),
+                    TalentMember(role="Cloud Architect", name="Alex Vance", required_skills="AWS Architecture, Terraform, Security", status="Confirmed"),
+                    TalentMember(role="Data Engineer", name="Gordon Freeman", required_skills="Python, ETL Pipelines, CI/CD", status="Confirmed")
+                ],
+                required_roles=["Delivery Manager", "Talent PM", "Cloud Architect", "Data Engineer"],
+                required_skills=["AWS Architecture", "Python ETL", "Agile Execution", "CI/CD Pipelines"],
+                staffing_gaps=[],
+                replacement_plan="PMO Lead coordinates talent matching within 5 business days if replacement needed.",
+                team_baseline_review_confirmation=True,
+                source_reference=ref
+            )
+        )
+    )
+    client.set_response(
+        ScopeDecompositionExtraction,
+        ScopeDecompositionExtraction(
+            work_packages=[
+                WorkPackageSeed(id="WP-01", parent_deliverable_id="DEL-01", title="AWS IAM & VPC Architecture", description="Provision core network and security baseline.", preliminary_sequence=1, owner="Cloud Architect", status="Draft"),
+                WorkPackageSeed(id="WP-02", parent_deliverable_id="DEL-02", title="Automated Ingestion Pipeline", description="Develop CI/CD automated pipeline.", preliminary_sequence=2, owner="Data Engineer", status="Draft"),
+                WorkPackageSeed(id="WP-03", parent_deliverable_id="DEL-03", title="Compliance & Traceability", description="Generate 21 CFR Part 11 validation evidence.", preliminary_sequence=3, owner="Talent PM", status="Draft")
+            ]
+        )
+    )
+    client.set_response(
+        AcceptanceProcessExtraction,
+        AcceptanceProcessExtraction(
+            acceptance_matrix_items=[
+                Deliverable(id="DEL-01", name="Cloud Architecture & Security Design", description="Cloud Architecture & Security Design", source_reference=ref, owner="Talent PM", acceptance_criteria="Approved by Pfizer Enterprise Architecture Board", evidence_required="Architecture Blueprint & Threat Model Document", client_approver="Pfizer Chief Architect"),
+                Deliverable(id="DEL-02", name="Automated CI/CD Data Ingestion Pipeline", description="Automated CI/CD Data Ingestion Pipeline", source_reference=ref, owner="Talent PM", acceptance_criteria="Passing automated test suite report & pipeline run logs approved by Pfizer Data Engineering Lead", evidence_required="Passing automated test suite report & pipeline run logs", client_approver="Pfizer Data Engineering Lead"),
+                Deliverable(id="DEL-03", name="Validation and Compliance Documentation", description="Validation and Compliance Documentation", source_reference=ref, owner="Talent PM", acceptance_criteria="Signed off by Compliance Lead", evidence_required="21 CFR Part 11 Validation Matrix & Traceability Report", client_approver="Pfizer Regulatory Compliance Officer")
+            ]
+        )
+    )
+    client.set_response(
+        CommunicationsExtraction,
+        CommunicationsExtraction(
+            communications_plan=[
+                CommunicationsPlanItem(
+                    id="COM-01",
+                    name="Weekly Project Status Report (PSR)",
+                    audience="Pfizer & Toptal Leadership",
+                    content_owner="Talent PM",
+                    cadence="Weekly (Fridays)",
+                    format="Email & PDF attachment",
+                    delivery_day="Friday"
+                ),
+                CommunicationsPlanItem(
+                    id="COM-02",
+                    name="Monthly Business Review (MBR)",
+                    audience="Pfizer Executive Sponsor & Toptal DM",
+                    content_owner="Delivery Manager",
+                    cadence="Monthly",
+                    format="Virtual Presentation",
+                    delivery_day="Last Thursday"
                 )
             ]
         )

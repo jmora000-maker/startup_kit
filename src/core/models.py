@@ -94,6 +94,10 @@ class Deliverable(BaseModel):
     review_window: str = "5 business days"
     rejection_rework_path: str = "Talent PM / Team rework within 3 business days of notice"
     unresolved_acceptance_clarifications: List[str] = Field(default_factory=list)
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID if unassigned or unconfirmed (e.g. 'ACT-03')"
+    )
 
     def model_post_init(self, __context: Any) -> None:
         if not self.name and self.description:
@@ -115,6 +119,10 @@ class Milestone(BaseModel):
     key_dependencies: List[str] = Field(default_factory=list)
     critical_path_assumptions: List[str] = Field(default_factory=list)
     source_reference: SourceReference
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID if date unconfirmed (e.g. 'ACT-04')"
+    )
 
 
 class RiskAssumption(BaseModel):
@@ -133,6 +141,10 @@ class RiskAssumption(BaseModel):
     due_date: Optional[date] = None
     linked_decision: Optional[str] = None
     linked_dependency_or_assumption: Optional[str] = None
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID if unassigned or unmitigated (e.g. 'ACT-05')"
+    )
 
 
 class DependencyAssumptionItem(BaseModel):
@@ -150,6 +162,10 @@ class DependencyAssumptionItem(BaseModel):
     linked_milestone: Optional[str] = None
     linked_deliverable: Optional[str] = None
     linked_open_question: Optional[str] = None
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID if unassigned or open (e.g. 'ACT-05')"
+    )
 
 
 class DecisionItem(BaseModel):
@@ -163,6 +179,10 @@ class DecisionItem(BaseModel):
     linked_artifact: Optional[str] = None
     source_reference: Optional[SourceReference] = None
     status: str = "Approved"
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID"
+    )
 
 
 class WorkPackageSeed(BaseModel):
@@ -178,6 +198,10 @@ class WorkPackageSeed(BaseModel):
     linked_acceptance_items: List[str] = Field(default_factory=list)
     uncertain_scope: bool = False
     status: str = "Draft"
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID"
+    )
 
 
 class ProjectStartupCharter(BaseModel):
@@ -229,6 +253,10 @@ class ContractAmbiguityItem(BaseModel):
     recommended_clarification: str
     status: str = "Open"  # Open, Escalated, Resolved
     source_reference: Optional[SourceReference] = None
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID (e.g. 'ACT-14')"
+    )
 
 
 ReadinessWorkflowState = Literal[
@@ -256,6 +284,10 @@ class CommunicationsPlanItem(BaseModel):
     delivery_day: str = "Weekly"
     escalation_route: str = "PMO Lead -> Director, PMO"
     pmo_health_rating_notes: str = "PMO Lead issues independent health rating after evidence exchange"
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID (e.g. 'ACT-11')"
+    )
 
 
 class Stakeholder(BaseModel):
@@ -267,6 +299,10 @@ class Stakeholder(BaseModel):
     approver_responsibilities: str = "N/A"
     escalation_responsibility: str = "PMO Lead"
     reporting_accountability: str = "Weekly PSR"
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID (e.g. 'ACT-09')"
+    )
 
 
 class RACIItem(BaseModel):
@@ -302,6 +338,10 @@ class TalentMember(BaseModel):
     name: str = "[UNASSIGNED - TO BE CONFIRMED]"
     required_skills: str = "TBD"
     status: str = "Staffed"
+    linked_action_id: Optional[str] = Field(
+        default=None,
+        description="Associated Action ID if unstaffed or unassigned (e.g. 'ACT-08')"
+    )
 
 
 class TalentOnboardingRecord(BaseModel):
@@ -318,6 +358,45 @@ class TalentOnboardingRecord(BaseModel):
     staffing_gaps: List[str] = Field(default_factory=list)
     replacement_plan: str = "PMO Lead coordinates talent matching within 5 business days if replacement needed"
     team_baseline_review_confirmation: bool = True
+
+
+class ActionRequiredItem(BaseModel):
+    """Represents a specific unresolved validation point, open exception, or clarification."""
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str = Field(..., description="Unique ID, e.g. 'ACT-01', 'ACT-02'")
+    item_type: Literal["Open Exception", "Open Clarification"] = Field(
+        ..., description="Classification: formal exception vs contractual ambiguity"
+    )
+    checklist_id: str = Field(..., description="Mapped G-01 Checklist ID (e.g., 'G01-03')")
+    related_artifact: str = Field(..., description="Section 4 artifact title")
+    target_table_title: str = Field(
+        default="",
+        description="Section 4 artifact table title where action is embedded"
+    )
+    target_column_header: str = Field(
+        default="",
+        description="Target table column header where remediation is located"
+    )
+    target_entity_id: Optional[str] = Field(
+        default=None,
+        description="Unique entity identifier if applicable, e.g. 'DEL-01', 'MS-02'"
+    )
+    finding_description: str = Field(..., description="Specific validation gap or ambiguity identified")
+    required_action: str = Field(..., description="Explicit corrective step required to close the item")
+    owner: str = Field(..., description="Accountable role responsible for resolution")
+    resolution_deadline: str = Field(
+        default="Prior to Mobilize Kickoff",
+        description="Target resolution milestone"
+    )
+    score_recovery_delta: float = Field(
+        default=0.0,
+        description="Estimated points added to composite Readiness Score upon closure"
+    )
+    target_gate_impact: str = Field(
+        default="Clears G-01 checklist item to Approved",
+        description="Impact on gate health upon resolution"
+    )
 
 
 class ReadinessChecklistItem(BaseModel):
@@ -367,6 +446,18 @@ class GateDecision(BaseModel):
     concurring_approver_name: Optional[str] = None
     open_exceptions_count: int = 0
 
+    @model_validator(mode="before")
+    @classmethod
+    def handle_status_alias(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "decision_status" in data and "gate_decision_status" not in data:
+                data["gate_decision_status"] = data["decision_status"]
+        return data
+
+    @property
+    def decision_status(self) -> str:
+        return self.gate_decision_status
+
 
 class GovernanceContext(BaseModel):
     """Overall project governance context, roles, and commercial summary."""
@@ -403,6 +494,7 @@ class StartupKitBaseline(BaseModel):
     talent_onboarding: Optional[TalentOnboardingRecord] = None
     readiness_checklist: List[ReadinessChecklistItem] = Field(default_factory=list)
     gate_decision: Optional[GateDecision] = None
+    action_required_items: List[ActionRequiredItem] = Field(default_factory=list)
     open_questions: List[str] = Field(default_factory=list)
     contract_ambiguities: List[ContractAmbiguityItem] = Field(default_factory=list)
     readiness_score: float = 0.0

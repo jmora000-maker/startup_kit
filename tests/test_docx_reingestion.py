@@ -559,3 +559,193 @@ def test_prompt_reingest_file_behaviors(tmp_path: Path):
     with patch("builtins.input", side_effect=["", "  ", str(target)]):
         result = main.prompt_reingest_file(interactive=True)
         assert result == target
+
+
+def test_docx_reingestion_rescores_with_engine(tmp_path: Path):
+    """Test that modifying a Word doc to resolve gaps recalculates dimensions and increases score."""
+    import docx as docx_module
+    ref = SourceReference(document_name="SOW.pdf", clause_or_slide="Sec 1", confidence_score=1.0)
+    baseline = StartupKitBaseline(
+        project_name="Reingest Test",
+        governance_tier="Partnered",
+        contract_type="Time and Materials",
+        deliverables=[
+            Deliverable(
+                id="DEL-01",
+                name="Architecture Blueprint",
+                description="Architecture Blueprint",
+                source_reference=ref,
+                owner="Unassigned",
+                acceptance_criteria="[CONFIRMATION REQUIRED]",
+            )
+        ],
+        milestones=[
+            Milestone(
+                id="M01",
+                description="Kickoff",
+                external_date=None,
+                owner="Delivery Manager",
+                source_reference=ref,
+            )
+        ],
+        readiness_checklist=[
+            ReadinessChecklistItem(
+                item_id="G01-03",
+                gate_criterion="Deliverables mapped to owners",
+                related_section4_artifact="Deliverables and Acceptance Matrix",
+                owner="Talent PM",
+                reviewer="Delivery Manager",
+                approver="PMO Lead",
+                status="Exception Required",
+                exception_required=True,
+            )
+        ],
+        open_questions=["Confirm acceptance route"],
+    )
+
+    aggregator = BaselineAggregator()
+    writer = DocxGenerator()
+    initial_base = aggregator.recalculate_readiness(baseline)
+    initial_score = initial_base.readiness_score
+    initial_docx = writer.write_docx(initial_base, tmp_path / "Initial_Gap_Startup_Kit.docx")
+
+    # Open docx and simulate user edits: resolve deliverable owner & acceptance criteria, update checklist status
+    doc = docx_module.Document(str(initial_docx))
+
+    # Update Deliverables table
+    for tbl in doc.tables:
+        if len(tbl.rows) > 1 and any("acceptance criteria" in c.text.lower() for c in tbl.rows[0].cells):
+            tbl.rows[1].cells[2].text = "Formally approved by Client Architect"
+            tbl.rows[1].cells[5].text = "Lead Architect Jane"
+        if len(tbl.rows) > 1 and any("gate criterion" in c.text.lower() for c in tbl.rows[0].cells):
+            tbl.rows[1].cells[3].text = "Complete"
+            tbl.rows[1].cells[7].text = "Fully assigned and approved"
+
+    edited_docx = tmp_path / "Edited_Startup_Kit.docx"
+    doc.save(str(edited_docx))
+
+    parser = StartupKitDocxParser()
+    parsed_base = parser.parse_startup_kit_docx(edited_docx)
+    rescored_base = aggregator.recalculate_readiness(parsed_base)
+
+    assert rescored_base.readiness_score > initial_score
+    # G01-03 exception should be cleared
+    assert not any(i.item_id == "G01-03" and i.exception_required for i in rescored_base.readiness_checklist)
+
+
+def test_reingest_clears_resolved_action_items(tmp_path: Path):
+    """Test that resolving deliverable owner removes the corresponding ActionRequiredItem."""
+    import docx as docx_module
+    ref = SourceReference(document_name="SOW.pdf", clause_or_slide="Sec 1", confidence_score=1.0)
+    baseline = StartupKitBaseline(
+        project_name="Action Clear Test",
+        governance_tier="Partnered",
+        contract_type="Time and Materials",
+        deliverables=[
+            Deliverable(
+                id="DEL-01",
+                name="Architecture Blueprint",
+                description="Architecture Blueprint",
+                source_reference=ref,
+                owner="Unassigned",
+                acceptance_criteria="[CONFIRMATION REQUIRED]",
+            )
+        ],
+        readiness_checklist=[
+            ReadinessChecklistItem(
+                item_id="G01-03",
+                gate_criterion="Deliverables mapped to owners",
+                related_section4_artifact="Deliverables and Acceptance Matrix",
+                owner="Talent PM",
+                reviewer="Delivery Manager",
+                approver="PMO Lead",
+                status="Exception Required",
+                exception_required=True,
+            )
+        ],
+    )
+
+    aggregator = BaselineAggregator()
+    writer = DocxGenerator()
+    initial_base = aggregator.recalculate_readiness(baseline)
+    assert any(a.checklist_id == "G01-03" for a in initial_base.action_required_items)
+    initial_docx = writer.write_docx(initial_base, tmp_path / "Action_Gap_Startup_Kit.docx")
+
+    # Edit docx to resolve DEL-01 and G01-03
+    doc = docx_module.Document(str(initial_docx))
+    for tbl in doc.tables:
+        if len(tbl.rows) > 1 and any("acceptance criteria" in c.text.lower() for c in tbl.rows[0].cells):
+            tbl.rows[1].cells[2].text = "Explicit sign-off criteria verified"
+            tbl.rows[1].cells[5].text = "Jane Architect"
+        if len(tbl.rows) > 1 and any("gate criterion" in c.text.lower() for c in tbl.rows[0].cells):
+            tbl.rows[1].cells[3].text = "Complete"
+
+    doc.save(str(initial_docx))
+
+    parser = StartupKitDocxParser()
+    parsed_base = parser.parse_startup_kit_docx(initial_docx)
+    rescored_base = aggregator.recalculate_readiness(parsed_base)
+
+    assert not any(a.checklist_id == "G01-03" for a in rescored_base.action_required_items)
+
+
+def test_docx_reingestion_idempotence(sample_baseline: StartupKitBaseline, tmp_path: Path):
+    """Test that re-ingesting an unedited Word doc produces identical scores down to 0.1%."""
+    aggregator = BaselineAggregator()
+    writer = DocxGenerator()
+    parser = StartupKitDocxParser()
+
+    initial_base = aggregator.recalculate_readiness(sample_baseline)
+    doc_path = writer.write_docx(initial_base, tmp_path / "Idempotence_Startup_Kit.docx")
+
+    # Re-ingest without edits
+    parsed_base = parser.parse_startup_kit_docx(doc_path)
+    reingested_base = aggregator.recalculate_readiness(parsed_base)
+
+    assert round(reingested_base.readiness_score, 1) == round(initial_base.readiness_score, 1)
+    assert len(reingested_base.action_required_items) == len(initial_base.action_required_items)
+
+
+def test_parser_strips_action_tags(tmp_path: Path):
+    """Test that extracted cell text strips [ACT-XX] badges completely."""
+    import docx as docx_module
+    ref = SourceReference(document_name="SOW.pdf", clause_or_slide="Sec 1", confidence_score=1.0)
+    baseline = StartupKitBaseline(
+        project_name="Strip Tag Test",
+        governance_tier="Partnered",
+        contract_type="Time and Materials",
+        deliverables=[
+            Deliverable(
+                id="DEL-01",
+                name="Blueprint",
+                description="Blueprint",
+                source_reference=ref,
+                owner="[UNASSIGNED - TO BE CONFIRMED]",
+                acceptance_criteria="[CONFIRMATION REQUIRED]",
+            )
+        ],
+        readiness_checklist=[
+            ReadinessChecklistItem(
+                item_id="G01-03",
+                gate_criterion="Deliverables mapped to owners",
+                related_section4_artifact="Deliverables and Acceptance Matrix",
+                owner="Talent PM",
+                reviewer="Delivery Manager",
+                approver="PMO Lead",
+                status="Exception Required",
+                exception_required=True,
+            )
+        ],
+    )
+
+    aggregator = BaselineAggregator()
+    writer = DocxGenerator()
+    base = aggregator.recalculate_readiness(baseline)
+    doc_path = writer.write_docx(base, tmp_path / "Tagged_Startup_Kit.docx")
+
+    parser = StartupKitDocxParser()
+    reloaded = parser.parse_startup_kit_docx(doc_path)
+
+    for d in reloaded.deliverables:
+        assert "[ACT-" not in d.owner
+        assert "[ACT-" not in (d.acceptance_criteria or "")

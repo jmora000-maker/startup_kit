@@ -36,11 +36,23 @@ from src.core.models import (
 logger = logging.getLogger(__name__)
 
 
+def clean_text(text: Optional[str]) -> str:
+    """Strip [ACT-XX] badges and normalize whitespace from extracted table cell text."""
+    if not text:
+        return ""
+    # Strip any [ACT-...] or [ACT-REQ-...] badge (including any nested bracket content up to Recovery])
+    cleaned = re.sub(r'\[ACT(?:-REQ)?-.*?\+\d+(?:\.\d+)?%\s*Recovery\]', '', text, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\[ACT-[^\]]+\]', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\[ACT-REQ-[^\]]+\]', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\(\+\d+(?:\.\d+)?%\s*Recovery\)?\]?', '', cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
 def parse_date_safely(date_str: Optional[str]) -> Optional[date]:
     """Parse date from string with multiple format attempts; returns None on failure/placeholder."""
     if not date_str:
         return None
-    cleaned = date_str.strip()
+    cleaned = clean_text(date_str)
     if cleaned.upper() in ("", "NONE", "N/A", "TBD", "TO BE DETERMINED", "[CONFIRMATION REQUIRED]", "UNASSIGNED"):
         return None
 
@@ -122,11 +134,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             confidence_score=1.0
         )
 
-        # 2. Open Questions & Clarifications
-        open_questions = self._parse_open_questions(doc)
-
-        # 3. G-01 Checklist Table
+        # 2. G-01 Checklist Table
         readiness_checklist = self._parse_g01_table(tables, pmo_lead, src_ref)
+        exceptions_count = len([i for i in readiness_checklist if i.exception_required or i.status == "Exception Required"])
+
+        # 3. Open Questions & Clarifications
+        open_questions = self._parse_open_questions(doc, tables, exceptions_count=exceptions_count)
 
         # 4. Project Startup Charter
         charter = self._parse_charter(doc, tables, project_name, client_name, governance_tier, contract_type, delivery_manager, talent_pm, pmo_lead, src_ref)
@@ -153,7 +166,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         stakeholders, raci_matrix = self._parse_stakeholders_and_raci(tables)
 
         # 12. Commercial Guardrails
-        commercial_guardrails = self._parse_commercial_guardrails(doc, contract_type, src_ref)
+        commercial_guardrails = self._parse_commercial_guardrails(doc, tables, contract_type, src_ref)
 
         # 13. Talent Onboarding Record & Delivery Roster
         talent_onboarding = self._parse_talent_onboarding(doc, tables, pmo_lead, delivery_manager, talent_pm, src_ref)
@@ -278,8 +291,13 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         elif "workflow state" in label_clean:
             res["workflow_state"] = value
 
-    def _parse_open_questions(self, doc: docx.Document) -> List[str]:
-        """Extract unresolved open questions from warning callout boxes or paragraphs."""
+    def _parse_open_questions(
+        self,
+        doc: docx.Document,
+        tables: Optional[List[Table]] = None,
+        exceptions_count: int = 0
+    ) -> List[str]:
+        """Extract unresolved open questions from callout boxes, paragraphs, Action Required table, or in-cell badges."""
         questions: List[str] = []
         in_questions_section = False
 
@@ -301,14 +319,54 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 # Split lines
                 for line in text.split("\n"):
                     l_clean = line.strip()
+                    if (
+                        l_clean.startswith("Total Score Recovery Potential:")
+                        or l_clean.startswith("Resolving the ")
+                        or l_clean.startswith("Action Required:")
+                        or l_clean.startswith("• Corrective")
+                        or l_clean.startswith("• Action:")
+                    ):
+                        continue
                     if l_clean.startswith("•") or l_clean.startswith("-") or l_clean.startswith("*"):
                         q_text = re.sub(r'^[•\-\*]\s*', '', l_clean).strip()
-                        # If explicitly resolved, skip it
-                        if q_text and "[RESOLVED]" not in q_text.upper():
-                            questions.append(q_text)
+                        q_clean = clean_text(q_text)
+                        if q_clean and "[RESOLVED]" not in q_clean.upper():
+                            questions.append(q_clean)
                     elif l_clean and not l_clean.startswith("Action Required:"):
-                        if "[RESOLVED]" not in l_clean.upper():
-                            questions.append(l_clean)
+                        q_clean = clean_text(l_clean)
+                        if q_clean and "[RESOLVED]" not in q_clean.upper():
+                            questions.append(q_clean)
+
+        # Also check Action Required table if present (legacy support)
+        if tables:
+            act_tbl = self._find_table_by_header(tables, ["action id", "type", "gate id"])
+            if act_tbl:
+                for row in act_tbl.rows[1:]:
+                    cells = [clean_text(c.text) for c in row.cells]
+                    if len(cells) >= 5 and cells[1] == "Open Clarification":
+                        finding = cells[4].split("\n• Action:")[0].replace("• Action:", "").strip()
+                        if finding and "[RESOLVED]" not in finding.upper() and finding not in questions:
+                            questions.append(finding)
+
+        # Also check in-table cell action badges if questions were not in a separate table
+        if tables and not questions:
+            for tbl in tables:
+                # Exclude header/metadata and checklist tables
+                if any(c.text.strip().lower() in ("gate id", "project baseline:", "governance tier") for row in tbl.rows[:1] for c in row.cells):
+                    continue
+                for row in tbl.rows[1:]:
+                    for cell in row.cells:
+                        for m in re.finditer(r'\[ACT-(\d+):\s*(.*?)(?:\s*\(\+\d+\.?\d*%\s*Recovery\))?\]', cell.text):
+                            act_num = int(m.group(1))
+                            desc = m.group(2).strip()
+                            if act_num > exceptions_count:
+                                desc = re.sub(
+                                    r'^(?:Review and clarify during mobilization kickoff|Issue access prerequisites list to client sponsor|Clarify and confirm acceptance criteria for \w+|Confirm milestone schedule during kickoff|Review deliverable validation point during kickoff|Review staffing requirements during kickoff):\s*',
+                                    '',
+                                    desc
+                                ).strip()
+                                if desc and "[RESOLVED]" not in desc.upper() and desc not in questions:
+                                    questions.append(desc)
 
         return questions
 
@@ -345,7 +403,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         ev_idx = next((i for i, h in enumerate(header_cells) if "evidence" in h or "exception" in h), 7)
 
         for row in tbl.rows[1:]:
-            cells = [c.text.strip() for c in row.cells]
+            cells = [clean_text(c.text) for c in row.cells]
             if len(cells) < 4:
                 continue
             item_id = cells[id_idx] if id_idx < len(cells) else f"G01-{len(items)+1:02d}"
@@ -358,15 +416,19 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             ev_text = cells[ev_idx] if ev_idx < len(cells) else ""
 
             # Extract exception info if embedded
-            exception_required = (status == "Exception Required")
-            exception_details = None
-            if "[EXCEPTION:" in ev_text:
-                m = re.search(r'\[EXCEPTION:\s*(.*?)\]', ev_text)
-                if m:
-                    exception_details = m.group(1).strip()
-                    exception_required = True
-            elif exception_required:
-                exception_details = ev_text
+            if status in ("Complete", "Approved"):
+                exception_required = False
+                exception_details = None
+            else:
+                exception_required = (status == "Exception Required")
+                exception_details = None
+                if "[EXCEPTION:" in ev_text:
+                    m = re.search(r'\[EXCEPTION:\s*(.*?)\]', ev_text)
+                    if m:
+                        exception_details = m.group(1).strip()
+                        exception_required = True
+                elif exception_required:
+                    exception_details = ev_text
 
             items.append(ReadinessChecklistItem(
                 item_id=item_id,
@@ -468,6 +530,27 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     if clean_line:
                         exclusions.append(clean_line)
 
+        # Check for structured Charter table
+        ch_tbl = self._find_table_by_header(tables, ["startup charter dimension", "charter commitment"])
+        if ch_tbl:
+            for row in ch_tbl.rows[1:]:
+                cells = [clean_text(c.text) for c in row.cells]
+                if len(cells) >= 2:
+                    dim, val = cells[0].lower(), cells[1]
+                    if "project purpose" in dim and val:
+                        project_purpose = val
+                    elif "delivery model" in dim:
+                        m_del = re.search(r'Delivery:\s*(.*?)(?:\s*\|\s*Governance:|$)', val)
+                        if m_del and m_del.group(1).strip():
+                            delivery_model = m_del.group(1).strip()
+                        m_gov = re.search(r'Governance:\s*(.*?)(?:$)', val)
+                        if m_gov and m_gov.group(1).strip():
+                            governance_model = m_gov.group(1).strip()
+                    elif "escalation path" in dim and val:
+                        escalation_path = val
+                    elif "assumptions" in dim and val:
+                        unresolved_assumptions = val
+
         return ProjectStartupCharter(
             project_name=project_name,
             client_name=client_name,
@@ -507,7 +590,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         tbl = self._find_table_by_header(tables, ["sow interpretation dimension", "contractual summary"])
         if tbl:
             for row in tbl.rows[1:]:
-                cells = [c.text.strip() for c in row.cells]
+                cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) < 2:
                     continue
                 dim, val = cells[0].lower(), cells[1]
@@ -532,17 +615,19 @@ class StartupKitDocxParser(IStartupKitDocxParser):
 
         # Parse contract ambiguities table
         ambiguities: List[ContractAmbiguityItem] = []
-        amb_tbl = self._find_table_by_header(tables, ["ambiguity id", "clause / topic", "identified conflict"])
+        amb_tbl = self._find_table_by_header(tables, ["anomaly id", "category"])
+        if not amb_tbl:
+            amb_tbl = self._find_table_by_header(tables, ["ambiguity id", "clause / topic", "identified conflict"])
         if amb_tbl:
             for row in amb_tbl.rows[1:]:
-                cells = [c.text.strip() for c in row.cells]
+                cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) >= 5:
                     ambiguities.append(ContractAmbiguityItem(
-                        ambiguity_id=cells[0],
-                        clause_or_topic=cells[1],
-                        identified_conflict=cells[2],
-                        operational_impact=cells[3],
-                        recommended_alignment=cells[4]
+                        anomaly_id=cells[0],
+                        category=cells[1],
+                        conflicting_clauses=cells[2],
+                        risk_impact=cells[3],
+                        recommended_clarification=cells[4]
                     ))
 
         summary = SOWInterpretationSummary(
@@ -585,7 +670,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         dep_idx = next((i for i, h in enumerate(header_cells) if "dep" in h), 5)
 
         for row in tbl.rows[1:]:
-            cells = [c.text.strip() for c in row.cells]
+            cells = [clean_text(c.text) for c in row.cells]
             if len(cells) < 2:
                 continue
             m_id = cells[id_idx] if id_idx < len(cells) else f"M{len(milestones)+1:02d}"
@@ -618,7 +703,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             return backlog
 
         for row in tbl.rows[1:]:
-            cells = [c.text.strip() for c in row.cells]
+            cells = [clean_text(c.text) for c in row.cells]
             if len(cells) >= 3:
                 wp_id = cells[0]
                 parent_id = cells[1]
@@ -662,7 +747,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), 5)
 
         for row in tbl.rows[1:]:
-            cells = [c.text.strip() for c in row.cells]
+            cells = [clean_text(c.text) for c in row.cells]
             if len(cells) < 2:
                 continue
             d_id = cells[id_idx] if id_idx < len(cells) else f"DEL-{len(deliverables)+1:02d}"
@@ -711,7 +796,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             imp_idx = next((i for i, h in enumerate(header_cells) if "impact" in h or "severity" in h), 6)
 
             for row in tbl.rows[1:]:
-                cells = [c.text.strip() for c in row.cells]
+                cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) < 3:
                     continue
                 r_type = cells[type_idx] if type_idx < len(cells) else "Risk"
@@ -730,7 +815,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     description=r_desc,
                     owner=r_owner,
                     status=r_status,
-                    mitigation_strategy=r_mit,
+                    mitigation_or_response=r_mit,
                     impact=r_imp,
                     source_reference=src_ref
                 ))
@@ -739,7 +824,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         dec_tbl = self._find_table_by_header(tables, ["decision id", "decision text", "status"])
         if dec_tbl:
             for row in dec_tbl.rows[1:]:
-                cells = [c.text.strip() for c in row.cells]
+                cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) >= 4:
                     decisions.append(DecisionItem(
                         id=cells[0],
@@ -819,6 +904,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
     def _parse_commercial_guardrails(
         self,
         doc: docx.Document,
+        tables: List[Table],
         contract_type: str,
         src_ref: SourceReference
     ) -> CommercialGuardrail:
@@ -865,6 +951,37 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     m = re.search(r'Escalation Threshold:\s*(.*?)(?:\n|$)', t)
                     if m and m.group(1).strip():
                         escalation_thresh = m.group(1).strip()
+
+        # Check for structured Commercial Guardrails table
+        cg_tbl = self._find_table_by_header(tables, ["commercial guardrail area", "contract policy"])
+        if cg_tbl:
+            for row in cg_tbl.rows[1:]:
+                cells = [clean_text(c.text) for c in row.cells]
+                if len(cells) >= 2:
+                    dim, val = cells[0].lower(), cells[1]
+                    if "contract implications" in dim and val:
+                        contract_implications = val
+                    elif "approved work" in dim and val:
+                        approved_rule = val
+                    elif "non-approved" in dim and val:
+                        non_approved_rule = val
+                    elif "work-at-risk" in dim and val:
+                        work_at_risk = val
+                    elif "change control triggers" in dim and val:
+                        change_trigger = val
+                    elif "change order route" in dim and val:
+                        change_route = val
+                    elif "budget baseline" in dim and val:
+                        budget_baseline = val
+                    elif ("variance" in dim or "margin" in dim) and val:
+                        m_var = re.search(r'Variance:\s*(.*?)(?:\s*\|\s*Margin:|$)', val)
+                        if m_var:
+                            variance_ind = m_var.group(1).strip()
+                        m_mar = re.search(r'Margin:\s*(.*?)$', val)
+                        if m_mar:
+                            margin_risk = m_mar.group(1).strip()
+                    elif "escalation" in dim and val:
+                        escalation_thresh = val
 
         return CommercialGuardrail(
             contract_type_implication=contract_implications,
@@ -913,11 +1030,15 @@ class StartupKitDocxParser(IStartupKitDocxParser):
 
         if tbl:
             for row in tbl.rows[1:]:
-                cells = [c.text.strip() for c in row.cells]
+                cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) >= 4:
                     status_val = cells[3]
-                    if status_val not in ("Confirmed", "Pending", "Needs Alignment"):
-                        status_val = "Confirmed" if status_val.lower() in ("confirmed", "active", "approved") else "Pending"
+                    if status_val.lower() in ("confirmed", "active", "approved", "staffed", "ready"):
+                        status_val = "Confirmed"
+                    elif status_val.lower() in ("pending", "needs alignment", "unassigned"):
+                        status_val = "Pending"
+                    elif status_val not in ("Confirmed", "Pending", "Needs Alignment"):
+                        status_val = "Confirmed" if status_val.lower() in ("confirmed", "active", "approved", "staffed") else "Pending"
 
                     roster.append(TalentMember(
                         role=cells[0],
