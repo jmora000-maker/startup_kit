@@ -30,6 +30,7 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
 Startup_Kit/
 ├── inputs/                 # Input directory for SOWs, decks, and contracts (.pdf, .docx, .pptx, .txt)
 ├── output/                 # Output directory for generated Word reports and toolkits
+├── spec/                   # Business and PMO functional requirements specification
 ├── src/
 │   ├── config.py           # Application settings and environment configuration
 │   ├── orchestrator.py     # End-to-end pipeline execution controller
