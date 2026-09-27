@@ -176,7 +176,8 @@ class G01ChecklistRenderer:
         d_run.font.size = Pt(9)
         d_run.font.color.rgb = RGBColor(30, 41, 59)
 
-        doc.add_paragraph().paragraph_format.space_after = Pt(6)
+        # Page break after G-01 Readiness Gate Decision criteria box so the checklist table starts on a new page
+        doc.add_page_break()
 
         # 2. Mandatory G-01 Checklist Table
         add_section_heading(doc, "Startup Readiness Checklist Table (G-01)", level=2)

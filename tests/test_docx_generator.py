@@ -88,6 +88,10 @@ def test_checklist_renderer(sample_baseline, tmp_path):
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "Startup Readiness Checklist" in full_text
 
+    # Verify that a page break is inserted after the Decision Criteria callout box
+    has_page_break = any('<w:br w:type="page"' in p._p.xml for p in doc.paragraphs)
+    assert has_page_break, "A page break must be inserted after G-01 Readiness Gate Decision box"
+
 
 def test_checklist_artifact_coverage_and_exceptions(sample_source_ref):
     from src.llm.aggregator import BaselineAggregator
@@ -175,3 +179,50 @@ def test_checklist_artifact_coverage_and_exceptions(sample_source_ref):
     ms_check = next(c for c in baseline.readiness_checklist if "Milestone" in c.related_section4_artifact)
     assert ms_check.status == "Confirmation Required"
     assert ms_check.exception_required is True
+
+
+def test_sow_interpretation_platform_environment_commitments_fallback(sample_source_ref, tmp_path):
+    """Verify that when platform commitments are unassigned or empty, [UNDEFINED] is used as fallback."""
+    from src.llm.aggregator import BaselineAggregator
+    from src.core.models import (
+        CharterExtraction,
+        DeliverablesExtraction,
+        MilestonesExtraction,
+        RAIDExtraction,
+        Deliverable,
+        Milestone,
+        RiskAssumption,
+    )
+
+    aggregator = BaselineAggregator()
+    charter = CharterExtraction(
+        project_name="Platform Test Project",
+        governance_tier="Partnered",
+        contract_type="Time and Materials",
+        source_reference=sample_source_ref
+    )
+
+    baseline = aggregator.aggregate(
+        charter=charter,
+        deliverables_ext=DeliverablesExtraction(deliverables=[Deliverable(id="D1", description="Test Deliv", source_reference=sample_source_ref)]),
+        milestones_ext=MilestonesExtraction(milestones=[Milestone(id="M1", description="Test MS", source_reference=sample_source_ref)]),
+        raid_ext=RAIDExtraction(items=[RiskAssumption(type="Risk", description="Test Risk", source_reference=sample_source_ref)])
+    )
+
+    # Baseline SOW interpretation should have ["[UNDEFINED]"]
+    assert baseline.sow_interpretation is not None
+    assert baseline.sow_interpretation.platform_environment_commitments == ["[UNDEFINED]"]
+
+    # When rendered to docx, table cell should contain [UNDEFINED]
+    generator = DocxGenerator()
+    out_file = generator.write_docx(baseline, tmp_path / "output")
+    doc = docx.Document(str(out_file))
+
+    table_cells = []
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                table_cells.append(cell.text.strip())
+
+    assert "[UNDEFINED]" in table_cells
+    assert "Cloud Infrastructure: AWS / Azure / GCP" not in "\n".join(table_cells)

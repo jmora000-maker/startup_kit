@@ -279,7 +279,7 @@ class BaselineAggregator:
                     f"Contractual model: {charter.contract_type}"
                 ],
                 platform_environment_commitments=sow_interpretation_ext.platform_environment_commitments or [
-                    "Cloud Infrastructure: AWS / Azure / GCP environments per SOW specifications"
+                    "[UNDEFINED]"
                 ],
                 dependencies=sow_interpretation_ext.dependencies or [da.description for da in dependencies_assumptions if da.type == "Dependency"],
                 approval_expectations=sow_interpretation_ext.approval_expectations or "Written sign-off by Client Approver within 5 business days of submission.",
@@ -306,7 +306,7 @@ class BaselineAggregator:
                     f"Contractual model: {charter.contract_type}"
                 ],
                 platform_environment_commitments=[
-                    "Cloud Infrastructure: AWS / Azure / GCP environments per SOW specifications"
+                    "[UNDEFINED]"
                 ],
                 dependencies=[da.description for da in dependencies_assumptions if da.type == "Dependency"] or [
                     "Third-party API access tokens and enterprise credentials",

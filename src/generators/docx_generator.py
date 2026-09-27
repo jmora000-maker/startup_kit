@@ -183,7 +183,7 @@ class DocxGenerator(IDocumentWriter):
                 ("Explicit Exclusions & Out-of-Scope", "\n".join(f"• {e}" for e in sow_sum.out_of_scope_items) or "None documented"),
                 ("Customer Obligations & Prerequisites", "\n".join(f"• {c}" for c in sow_sum.customer_obligations) or "[CONFIRMATION REQUIRED]"),
                 ("Baseline Assumptions & Constraints", "\n".join(f"• {a}" for a in sow_sum.assumptions + sow_sum.constraints) or "Standard working assumptions"),
-                ("Platform & Environment Commitments", "\n".join(f"• {p}" for p in sow_sum.platform_environment_commitments) or "Cloud infrastructure per SOW"),
+                ("Platform & Environment Commitments", "\n".join(f"• {p}" if not p.startswith("[") else p for p in sow_sum.platform_environment_commitments) or "[UNDEFINED]"),
                 ("External Dependencies", "\n".join(f"• {d}" for d in sow_sum.dependencies) or "Logged in Dependency Log"),
                 ("Approval & Acceptance Expectations", sow_sum.approval_expectations),
                 ("Ambiguities & Clarification Notes", "\n".join(f"• {n}" for n in sow_sum.ambiguity_notes) or "No critical ambiguities")
