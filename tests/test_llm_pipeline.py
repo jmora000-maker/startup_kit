@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from src.core.models import (
+    DocumentSection,
     SourceReference,
     Deliverable,
     Milestone,
@@ -42,7 +43,15 @@ def mock_extracted_doc():
         file_name="pfizer_sow.pdf",
         file_type="pdf",
         file_path=Path("inputs/pfizer_sow.pdf"),
-        text_content="Statement of Work for Pfizer Clinical Trial Analytics Platform."
+        text_content="Statement of Work for Pfizer Clinical Trial Analytics Platform.",
+        sections=[
+            DocumentSection(
+                title="Page 1",
+                content="Statement of Work for Pfizer Clinical Trial Analytics Platform.",
+                metadata={"page_number": 1, "rect": [0.0, 0.0, 612.0, 792.0]}
+            )
+        ],
+        metadata={"total_pages": 1, "title": "Pfizer SOW"}
     )
 
 

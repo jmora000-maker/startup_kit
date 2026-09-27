@@ -15,6 +15,10 @@ from src.core.models import (
     RAIDExtraction,
     QuestionsExtraction,
 )
+from src.core.pdf_models import (
+    PDFPageMetadata,
+    PDFDocumentMetadata,
+)
 from src.core.interfaces import (
     IDocumentExtractor,
     ILLMClient,
@@ -25,6 +29,8 @@ from src.core.interfaces import (
 __all__ = [
     "DocumentSection",
     "ExtractedDocument",
+    "PDFPageMetadata",
+    "PDFDocumentMetadata",
     "SourceReference",
     "Deliverable",
     "Milestone",

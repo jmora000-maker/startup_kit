@@ -2,8 +2,11 @@
 
 import pytest
 from datetime import date
+from pathlib import Path
 from pydantic import ValidationError
 from src.core.models import (
+    DocumentSection,
+    ExtractedDocument,
     SourceReference,
     Deliverable,
     Milestone,
@@ -327,3 +330,178 @@ def test_contract_ambiguity_model(sample_source_ref):
     assert item.anomaly_id == "CONF-01"
     assert item.category == "Date Conflict"
     assert item.status == "Open"
+
+
+# ==========================================
+# Extraction Models & PDF Invariants Tests
+# ==========================================
+
+def test_document_section_valid():
+    """DocumentSection instantiates cleanly and matches model_dump."""
+    sec = DocumentSection(title="Section 1", content="Hello world", metadata={"custom": 123})
+    assert sec.title == "Section 1"
+    assert sec.content == "Hello world"
+    assert sec.metadata == {"custom": 123}
+    assert sec.model_dump() == {
+        "title": "Section 1",
+        "content": "Hello world",
+        "metadata": {"custom": 123}
+    }
+
+
+def test_document_section_extra_forbid():
+    """Unknown top-level fields on DocumentSection raise ValidationError."""
+    with pytest.raises(ValidationError):
+        DocumentSection(title="A", content="B", unknown_field=123)
+
+
+def test_extracted_document_path_coercion():
+    """String file_path is automatically coerced to pathlib.Path."""
+    doc = ExtractedDocument(
+        file_name="test.txt",
+        file_type="txt",
+        file_path="C:/docs/test.txt",
+        text_content="content"
+    )
+    assert isinstance(doc.file_path, Path)
+    assert str(doc.file_path).replace("\\", "/") == "C:/docs/test.txt"
+
+
+def test_model_default_isolation():
+    """Independent instances have isolated default list and dict references."""
+    sec1 = DocumentSection()
+    sec2 = DocumentSection()
+    sec1.metadata["key"] = "val"
+    assert "key" not in sec2.metadata
+
+    doc1 = ExtractedDocument(file_name="d1.txt", file_type="txt", file_path=Path("d1.txt"))
+    doc2 = ExtractedDocument(file_name="d2.txt", file_type="txt", file_path=Path("d2.txt"))
+    doc1.sections.append(sec1)
+    doc1.metadata["key"] = "val"
+    assert len(doc2.sections) == 0
+    assert "key" not in doc2.metadata
+
+
+def test_pdf_invariant_total_pages_mismatch():
+    """PDF metadata total_pages mismatch with section count raises ValidationError mentioning file_name."""
+    with pytest.raises(ValidationError, match="total_pages \\(2\\) does not match section count \\(1\\)"):
+        ExtractedDocument(
+            file_name="mismatch.pdf",
+            file_type="pdf",
+            file_path=Path("mismatch.pdf"),
+            sections=[
+                DocumentSection(
+                    title="Page 1",
+                    content="Text 1",
+                    metadata={"page_number": 1, "rect": [0.0, 0.0, 100.0, 100.0]}
+                )
+            ],
+            metadata={"total_pages": 2}
+        )
+
+
+def test_pdf_invariant_page_sequence_gap():
+    """Gaps in page_number sequence raise ValidationError."""
+    with pytest.raises(ValidationError, match="page_number 3, expected 2"):
+        ExtractedDocument(
+            file_name="gap.pdf",
+            file_type="pdf",
+            file_path=Path("gap.pdf"),
+            sections=[
+                DocumentSection(
+                    title="Page 1",
+                    content="Text 1",
+                    metadata={"page_number": 1, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+                DocumentSection(
+                    title="Page 3",
+                    content="Text 3",
+                    metadata={"page_number": 3, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+            ],
+            metadata={"total_pages": 2}
+        )
+
+
+def test_pdf_invariant_page_sequence_dup():
+    """Duplicate page numbers in sequence raise ValidationError."""
+    with pytest.raises(ValidationError, match="page_number 1, expected 2"):
+        ExtractedDocument(
+            file_name="dup.pdf",
+            file_type="pdf",
+            file_path=Path("dup.pdf"),
+            sections=[
+                DocumentSection(
+                    title="Page 1",
+                    content="Text 1",
+                    metadata={"page_number": 1, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+                DocumentSection(
+                    title="Page 1",
+                    content="Text 1 dup",
+                    metadata={"page_number": 1, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+            ],
+            metadata={"total_pages": 2}
+        )
+
+
+def test_pdf_invariant_page_sequence_swap():
+    """Out-of-order page numbers raise ValidationError."""
+    with pytest.raises(ValidationError, match="page_number 2, expected 1"):
+        ExtractedDocument(
+            file_name="swap.pdf",
+            file_type="pdf",
+            file_path=Path("swap.pdf"),
+            sections=[
+                DocumentSection(
+                    title="Page 2",
+                    content="Text 2",
+                    metadata={"page_number": 2, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+                DocumentSection(
+                    title="Page 1",
+                    content="Text 1",
+                    metadata={"page_number": 1, "rect": [0.0, 0.0, 100.0, 100.0]}
+                ),
+            ],
+            metadata={"total_pages": 2}
+        )
+
+
+def test_pdf_invariant_zero_indexed_pages():
+    """0-indexed page numbers raise ValidationError."""
+    with pytest.raises(ValidationError):
+        ExtractedDocument(
+            file_name="zero_idx.pdf",
+            file_type="pdf",
+            file_path=Path("zero_idx.pdf"),
+            sections=[
+                DocumentSection(
+                    title="Page 0",
+                    content="Text 0",
+                    metadata={"page_number": 0, "rect": [0.0, 0.0, 100.0, 100.0]}
+                )
+            ],
+            metadata={"total_pages": 1}
+        )
+
+
+def test_pdf_validation_mutation_isolation():
+    """Failed validation leaves caller's original DocumentSection unmutated."""
+    orig_meta = {"page_number": 1, "rect": [0, 0, 100, 100], "unnormalized_key": 42}
+    sec = DocumentSection(title="Page 1", content="Text", metadata=orig_meta)
+
+    # Attempt to construct invalid document (total_pages=2 with 1 section)
+    with pytest.raises(ValidationError):
+        ExtractedDocument(
+            file_name="isolation.pdf",
+            file_type="pdf",
+            file_path=Path("isolation.pdf"),
+            sections=[sec],
+            metadata={"total_pages": 2}
+        )
+
+    # Verify original section metadata is untouched
+    assert sec.metadata == orig_meta
+    assert sec.metadata["rect"] == [0, 0, 100, 100]  # Not mutated into floats in caller object

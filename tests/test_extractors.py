@@ -161,3 +161,153 @@ def test_ingestion_service_ocp_custom_extractor(temp_test_dir):
     assert doc is not None
     assert doc.file_type == "log"
     assert "System startup log" in doc.text_content
+
+
+def test_pdf_extractor_closes_on_error(temp_test_dir, monkeypatch):
+    """PyMuPDF doc.close() is guaranteed to execute even if validation fails."""
+    pdf_file = temp_test_dir / "valid_for_close_test.pdf"
+    doc_fitz = fitz.open()
+    doc_fitz.new_page()
+    doc_fitz.save(str(pdf_file))
+    doc_fitz.close()
+
+    close_called = False
+    original_close = fitz.Document.close
+
+    def mock_close(self):
+        nonlocal close_called
+        close_called = True
+        return original_close(self)
+
+    monkeypatch.setattr(fitz.Document, "close", mock_close)
+
+    # Monkeypatch ExtractedDocument to simulate invariant validation error during construction
+    def failing_extracted_doc(*args, **kwargs):
+        raise ValueError("Simulated validation failure")
+
+    monkeypatch.setattr("src.extractors.pdf_extractor.ExtractedDocument", failing_extracted_doc)
+
+    extractor = PDFExtractor()
+    with pytest.raises(ValueError, match="Simulated validation failure"):
+        extractor.extract(pdf_file)
+
+    assert close_called is True
+
+
+def test_pdf_extraction_json_roundtrip(temp_test_dir):
+    """ExtractedDocument serializes to JSON and restores identically with Path object reconstruction."""
+    pdf_file = temp_test_dir / "roundtrip.pdf"
+    doc_fitz = fitz.open()
+    p1 = doc_fitz.new_page()
+    p1.insert_text((50, 50), "Page 1 content")
+    p2 = doc_fitz.new_page()
+    p2.insert_text((50, 50), "Page 2 content")
+    doc_fitz.save(str(pdf_file))
+    doc_fitz.close()
+
+    extractor = PDFExtractor()
+    doc = extractor.extract(pdf_file)
+
+    # JSON serialization and deserialization
+    json_str = doc.model_dump_json()
+    restored = ExtractedDocument.model_validate_json(json_str)
+
+    assert restored.file_name == doc.file_name
+    assert restored.file_type == doc.file_type
+    assert isinstance(restored.file_path, Path)
+    assert restored.file_path == doc.file_path
+    assert restored.text_content == doc.text_content
+    assert len(restored.sections) == len(doc.sections)
+    assert restored.metadata == doc.metadata
+    for orig_sec, rest_sec in zip(doc.sections, restored.sections):
+        assert rest_sec.title == orig_sec.title
+        assert rest_sec.content == orig_sec.content
+        assert rest_sec.metadata == orig_sec.metadata
+
+
+def test_pdf_load_when_source_deleted(temp_test_dir):
+    """Deserializing from stored JSON does not depend on the source file existing on disk."""
+    pdf_file = temp_test_dir / "to_delete.pdf"
+    doc_fitz = fitz.open()
+    p1 = doc_fitz.new_page()
+    p1.insert_text((50, 50), "Temporary doc text")
+    doc_fitz.save(str(pdf_file))
+    doc_fitz.close()
+
+    extractor = PDFExtractor()
+    doc = extractor.extract(pdf_file)
+    json_data = doc.model_dump_json()
+
+    # Delete original file
+    pdf_file.unlink()
+    assert not pdf_file.exists()
+
+    # Restoration should succeed cleanly
+    restored = ExtractedDocument.model_validate_json(json_data)
+    assert restored.file_name == "to_delete.pdf"
+    assert restored.file_path == pdf_file
+    assert "Temporary doc text" in restored.text_content
+
+
+def test_pdf_blank_pages_handling(temp_test_dir):
+    """Blank pages produce DocumentSections with empty content and are omitted from combined text."""
+    pdf_file = temp_test_dir / "mixed_blank.pdf"
+    doc_fitz = fitz.open()
+    p1 = doc_fitz.new_page()
+    p1.insert_text((50, 50), "Content on page 1")
+    p2 = doc_fitz.new_page()  # Blank page
+    p3 = doc_fitz.new_page()
+    p3.insert_text((50, 50), "Content on page 3")
+    doc_fitz.save(str(pdf_file))
+    doc_fitz.close()
+
+    extractor = PDFExtractor()
+    extracted = extractor.extract(pdf_file)
+
+    assert extracted.metadata["total_pages"] == 3
+    assert len(extracted.sections) == 3
+
+    assert extracted.sections[0].title == "Page 1"
+    assert extracted.sections[0].content == "Content on page 1"
+    assert extracted.sections[0].metadata["page_number"] == 1
+
+    assert extracted.sections[1].title == "Page 2"
+    assert extracted.sections[1].content == ""
+    assert extracted.sections[1].metadata["page_number"] == 2
+
+    assert extracted.sections[2].title == "Page 3"
+    assert extracted.sections[2].content == "Content on page 3"
+    assert extracted.sections[2].metadata["page_number"] == 3
+
+    # Combined text omits blank page markers
+    assert "--- Page 1 ---" in extracted.text_content
+    assert "--- Page 2 ---" not in extracted.text_content
+    assert "--- Page 3 ---" in extracted.text_content
+
+
+def test_docx_pptx_txt_log_unaffected(temp_test_dir):
+    """Non-PDF extractors continue functioning without PDF-specific validation interference."""
+    # Test txt
+    txt_path = temp_test_dir / "simple.txt"
+    txt_path.write_text("Plain text note", encoding="utf-8")
+    txt_doc = TxtExtractor().extract(txt_path)
+    assert txt_doc.file_type == "txt"
+    assert len(txt_doc.sections) == 1
+
+    # Test custom log
+    class LogExtractor(BaseDocumentExtractor):
+        supported_extensions = {".log"}
+        def extract(self, file_path: Path) -> ExtractedDocument:
+            return ExtractedDocument(
+                file_name=file_path.name,
+                file_type="log",
+                file_path=file_path,
+                text_content=file_path.read_text(encoding="utf-8"),
+                sections=[]
+            )
+
+    log_path = temp_test_dir / "test.log"
+    log_path.write_text("Log line 1", encoding="utf-8")
+    log_doc = LogExtractor().extract(log_path)
+    assert log_doc.file_type == "log"
+    assert log_doc.text_content == "Log line 1"

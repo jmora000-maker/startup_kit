@@ -2,28 +2,74 @@
 
 from datetime import date
 from typing import List, Optional, Literal, Dict, Any, Union
-from dataclasses import dataclass, field
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+from src.core.pdf_models import PDFDocumentMetadata, PDFPageMetadata
 
 
-@dataclass
-class DocumentSection:
+class DocumentSection(BaseModel):
     """Represents an extracted structural section or slide of a document."""
-    title: str
-    content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = ""
+    content: str = ""
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-@dataclass
-class ExtractedDocument:
+class ExtractedDocument(BaseModel):
     """Represents normalized extracted content from a single input file."""
+    model_config = ConfigDict(extra="forbid")
+
     file_name: str
     file_type: str
     file_path: Path
-    text_content: str
-    sections: List[DocumentSection] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    text_content: str = ""
+    sections: List[DocumentSection] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_pdf_invariants(self) -> "ExtractedDocument":
+        if self.file_type.lower() != "pdf":
+            return self
+
+        # 1. Validate document-level metadata
+        try:
+            doc_meta = PDFDocumentMetadata.model_validate(self.metadata)
+        except Exception as exc:
+            raise ValueError(f"Invalid PDF document metadata in '{self.file_name}': {exc}") from exc
+
+        # 2. Total pages invariant
+        if doc_meta.total_pages != len(self.sections):
+            raise ValueError(
+                f"PDF metadata total_pages ({doc_meta.total_pages}) does not match "
+                f"section count ({len(self.sections)}) in '{self.file_name}'"
+            )
+
+        # 3. Section page metadata & sequential order invariant
+        normalized_sections: List[DocumentSection] = []
+        for idx, sec in enumerate(self.sections):
+            try:
+                page_meta = PDFPageMetadata.model_validate(sec.metadata)
+            except Exception as exc:
+                raise ValueError(
+                    f"Invalid PDF page metadata in '{self.file_name}' at section index {idx}: {exc}"
+                ) from exc
+
+            expected_page_num = idx + 1
+            if page_meta.page_number != expected_page_num:
+                raise ValueError(
+                    f"PDF page sequence error in '{self.file_name}': section index {idx} "
+                    f"has page_number {page_meta.page_number}, expected {expected_page_num}"
+                )
+
+            # Build normalized section copy without mutating caller-owned objects
+            normalized_sec = sec.model_copy(update={"metadata": page_meta.model_dump()})
+            normalized_sections.append(normalized_sec)
+
+        # 4. Commit validated metadata and sections
+        self.metadata = doc_meta.model_dump()
+        self.sections = normalized_sections
+        return self
 
 
 class SourceReference(BaseModel):
