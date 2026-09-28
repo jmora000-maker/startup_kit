@@ -1,4 +1,4 @@
-# Toptal PMO Startup Kit Generator
+git# Toptal PMO Startup Kit Generator
 
 Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests Statements of Work (SOWs), client contracts, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized Word (`.docx`) Startup Kit reports and PMO Operating System seed data.
 
