@@ -2,6 +2,7 @@ pydantic>=2.0
 langchain>=0.2.0
 langchain-core>=0.2.0
 langchain-openai>=0.1.0
+langchain-anthropic>=0.1.15
 python-docx>=1.1.0
 python-pptx>=0.6.21
 pymupdf>=1.23.0

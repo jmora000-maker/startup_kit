@@ -505,3 +505,35 @@ def test_pdf_validation_mutation_isolation():
     # Verify original section metadata is untouched
     assert sec.metadata == orig_meta
     assert sec.metadata["rect"] == [0, 0, 100, 100]  # Not mutated into floats in caller object
+
+
+def test_flexible_date_and_schema_resilience():
+    """Verify that descriptive dates, variations, and missing optional fields are parsed resiliently."""
+    # 1. Descriptive non-ISO date string resolves to None without raising ValidationError
+    ms = Milestone(id="MS-01", description="Beta Release", external_date="Mid-November 2026")
+    assert ms.external_date is None
+
+    # 2. ISO date string parses correctly
+    ms2 = Milestone(id="MS-02", description="Launch", external_date="2026-11-30")
+    assert ms2.external_date == date(2026, 11, 30)
+
+    # 3. Empty string / None / TBD date resolves to None
+    d = Deliverable(id="DEL-01", description="Architecture Doc", submission_target_date="")
+    assert d.submission_target_date is None
+
+    d_tbd = Deliverable(id="DEL-02", description="Test Doc", submission_target_date="TBD")
+    assert d_tbd.submission_target_date is None
+
+    # 4. Governance tier case tolerance
+    charter = CharterExtraction(project_name="Test", governance_tier="guided")
+    assert charter.governance_tier == "Guided"
+
+    charter_partnered = CharterExtraction(project_name="Test", governance_tier="partnered tier")
+    assert charter_partnered.governance_tier == "Partnered"
+
+    # 5. RAID type normalization
+    raid_item = RiskAssumption(type="risk", description="Security issue")
+    assert raid_item.type == "Risk"
+
+    dep_item = DependencyAssumptionItem(id="DEP-01", type="dependency", description="Network setup")
+    assert dep_item.type == "Dependency"

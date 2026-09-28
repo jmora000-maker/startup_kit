@@ -82,3 +82,31 @@ def test_cli_main_execution_with_export_tools(populated_inputs_dir, tmp_path, mo
 
     created_json = list(output_dir.glob("*.json"))
     assert len(created_json) == 3  # Milestone Plan, PSA Seed, Budget Burndown Seed
+
+
+def test_concurrent_extraction_all_domain_passes(populated_inputs_dir, tmp_path):
+    """Verify that concurrent multi-pass extraction properly executes all domain extractors."""
+    output_dir = tmp_path / "concurrent_output"
+    mock_llm = create_mock_llm_client()
+
+    controller = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=mock_llm,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    generated_file = controller.run(
+        inputs_dir=populated_inputs_dir,
+        output_dir=output_dir,
+        pmo_lead="Sarah Connor",
+        delivery_lead="John Connor",
+        talent_pm="Kyle Reese",
+    )
+
+    assert generated_file.exists()
+    doc = docx.Document(str(generated_file))
+    full_text = "\n".join(p.text for p in doc.paragraphs)
+    assert "Sarah Connor" in full_text
+    assert "John Connor" in full_text
+    assert "Kyle Reese" in full_text

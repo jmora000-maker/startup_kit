@@ -2,11 +2,12 @@
 
 import shutil
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
-from src.config import config
+from src.config import config, normalize_person_name
 from src.core.interfaces import (
     ILLMClient,
     IDocumentWriter,
@@ -67,8 +68,10 @@ class StartupKitController:
     ):
         self.ingestion_service = ingestion_service or IngestionService()
         self.llm_client = llm_client or LangChainLLMClient(
-            api_key=config.openai_api_key,
-            model_name=config.openai_model,
+            api_key=config.anthropic_api_key,
+            model_name=config.anthropic_model,
+            openai_api_key=config.openai_api_key,
+            openai_model_name=config.openai_model,
             temperature=config.temperature
         )
         self.aggregator = aggregator or BaselineAggregator()
@@ -119,10 +122,67 @@ class StartupKitController:
 
         logger.info("Ingested %d document(s): %s", len(documents), [d.file_name for d in documents])
 
-        # 2. Multi-Pass LLM Extraction
-        logger.info("Executing Pass 1: Charter & Governance Metadata...")
-        charter = self.charter_extractor.extract(documents, self.llm_client)
+        # 2. Multi-Pass LLM Extraction (Concurrent Execution)
+        logger.info("Executing concurrent multi-pass LLM extractions (14 domain passes)...")
+        with ThreadPoolExecutor(max_workers=14) as executor:
+            future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
+            future_deliverables = executor.submit(self.deliverables_extractor.extract, documents, self.llm_client)
+            future_milestones = executor.submit(self.milestones_extractor.extract, documents, self.llm_client)
+            future_raid = executor.submit(self.raid_extractor.extract, documents, self.llm_client)
+            future_questions = executor.submit(self.questions_extractor.extract, documents, self.llm_client)
+            future_sow = (
+                executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)
+                if self.sow_interpretation_extractor else None
+            )
+            future_backlog = (
+                executor.submit(self.backlog_extractor.extract, documents, self.llm_client)
+                if self.backlog_extractor else None
+            )
+            future_acceptance = (
+                executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)
+                if self.acceptance_extractor else None
+            )
+            future_stakeholders = (
+                executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)
+                if self.stakeholders_extractor else None
+            )
+            future_communications = (
+                executor.submit(self.communications_extractor.extract, documents, self.llm_client)
+                if self.communications_extractor else None
+            )
+            future_commercial = (
+                executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
+                if self.commercial_extractor else None
+            )
+            future_talent = (
+                executor.submit(self.talent_extractor.extract, documents, self.llm_client)
+                if self.talent_extractor else None
+            )
+            future_decisions = (
+                executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
+                if self.decisions_extractor else None
+            )
+            future_conflicts = (
+                executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
+                if self.conflicts_extractor else None
+            )
 
+            charter = future_charter.result()
+            deliverables = future_deliverables.result()
+            milestones = future_milestones.result()
+            raid = future_raid.result()
+            questions = future_questions.result()
+            sow_interpretation = future_sow.result() if future_sow else None
+            backlog = future_backlog.result() if future_backlog else None
+            acceptance = future_acceptance.result() if future_acceptance else None
+            stakeholders = future_stakeholders.result() if future_stakeholders else None
+            communications = future_communications.result() if future_communications else None
+            commercial = future_commercial.result() if future_commercial else None
+            talent = future_talent.result() if future_talent else None
+            decisions = future_decisions.result() if future_decisions else None
+            conflicts = future_conflicts.result() if future_conflicts else None
+
+        # Apply leadership and governance overrides
         if tier_override and tier_override in ("Guided", "Partnered", "Elevated"):
             logger.info("Overriding Governance Tier with: %s", tier_override)
             charter.governance_tier = tier_override
@@ -132,39 +192,20 @@ class StartupKitController:
             charter.contract_type = contract_type_override
 
         if pmo_lead is not None:
-            logger.info("Setting PMO Lead: %s", pmo_lead)
-            charter.pmo_lead = pmo_lead
+            norm_pmo = normalize_person_name(pmo_lead)
+            logger.info("Setting PMO Lead: %s", norm_pmo)
+            charter.pmo_lead = norm_pmo
 
         dm = delivery_lead if delivery_lead is not None else delivery_manager
         if dm is not None:
-            logger.info("Setting Delivery Lead / Manager: %s", dm)
-            charter.delivery_manager = dm
+            norm_dm = normalize_person_name(dm)
+            logger.info("Setting Delivery Lead / Manager: %s", norm_dm)
+            charter.delivery_manager = norm_dm
 
         if talent_pm is not None:
-            logger.info("Setting Talent PM: %s", talent_pm)
-            charter.talent_pm = talent_pm
-
-        logger.info("Executing Pass 2: Deliverables & Acceptance Criteria...")
-        deliverables = self.deliverables_extractor.extract(documents, self.llm_client)
-
-        logger.info("Executing Pass 3: Milestones & Internal Buffers...")
-        milestones = self.milestones_extractor.extract(documents, self.llm_client)
-
-        logger.info("Executing Pass 4: RAID Log Items...")
-        raid = self.raid_extractor.extract(documents, self.llm_client)
-
-        logger.info("Executing Pass 5: Open Questions & Clarifications...")
-        questions = self.questions_extractor.extract(documents, self.llm_client)
-
-        sow_interpretation = self.sow_interpretation_extractor.extract(documents, self.llm_client) if self.sow_interpretation_extractor else None
-        backlog = self.backlog_extractor.extract(documents, self.llm_client) if self.backlog_extractor else None
-        acceptance = self.acceptance_extractor.extract(documents, self.llm_client) if self.acceptance_extractor else None
-        stakeholders = self.stakeholders_extractor.extract(documents, self.llm_client) if self.stakeholders_extractor else None
-        communications = self.communications_extractor.extract(documents, self.llm_client) if self.communications_extractor else None
-        commercial = self.commercial_extractor.extract(documents, self.llm_client) if self.commercial_extractor else None
-        talent = self.talent_extractor.extract(documents, self.llm_client) if self.talent_extractor else None
-        decisions = self.decisions_extractor.extract(documents, self.llm_client) if self.decisions_extractor else None
-        conflicts = self.conflicts_extractor.extract(documents, self.llm_client) if self.conflicts_extractor else None
+            norm_tpm = normalize_person_name(talent_pm)
+            logger.info("Setting Talent PM: %s", norm_tpm)
+            charter.talent_pm = norm_tpm
 
         # 3. Aggregation & Business Rules
         logger.info("Synthesizing baseline model and enforcing business rules...")
@@ -225,32 +266,35 @@ class StartupKitController:
         # Apply leadership overrides if supplied
         dm = delivery_lead or delivery_manager
         if dm is not None:
-            logger.info("Applying Delivery Lead override: %s", dm)
+            norm_dm = normalize_person_name(dm)
+            logger.info("Applying Delivery Lead override: %s", norm_dm)
             if baseline.charter:
-                baseline.charter.delivery_manager = dm
+                baseline.charter.delivery_manager = norm_dm
             if baseline.talent_onboarding:
-                baseline.talent_onboarding.delivery_manager = dm
+                baseline.talent_onboarding.delivery_manager = norm_dm
             if baseline.governance_context:
-                baseline.governance_context.delivery_manager = dm
+                baseline.governance_context.delivery_manager = norm_dm
 
         if talent_pm is not None:
-            logger.info("Applying Talent PM override: %s", talent_pm)
+            norm_tpm = normalize_person_name(talent_pm)
+            logger.info("Applying Talent PM override: %s", norm_tpm)
             if baseline.charter:
-                baseline.charter.talent_pm = talent_pm
+                baseline.charter.talent_pm = norm_tpm
             if baseline.talent_onboarding:
-                baseline.talent_onboarding.talent_pm = talent_pm
+                baseline.talent_onboarding.talent_pm = norm_tpm
             if baseline.governance_context:
-                baseline.governance_context.talent_pm = talent_pm
+                baseline.governance_context.talent_pm = norm_tpm
 
         if pmo_lead is not None:
-            logger.info("Applying PMO Lead override: %s", pmo_lead)
-            baseline.author_name = pmo_lead
+            norm_pmo = normalize_person_name(pmo_lead)
+            logger.info("Applying PMO Lead override: %s", norm_pmo)
+            baseline.author_name = norm_pmo
             if baseline.charter:
-                baseline.charter.pmo_lead = pmo_lead
+                baseline.charter.pmo_lead = norm_pmo
             if baseline.talent_onboarding:
-                baseline.talent_onboarding.pmo_lead = pmo_lead
+                baseline.talent_onboarding.pmo_lead = norm_pmo
             if baseline.governance_context:
-                baseline.governance_context.pmo_lead = pmo_lead
+                baseline.governance_context.pmo_lead = norm_pmo
 
         if tier_override is not None:
             logger.info("Applying Governance Tier override: %s", tier_override)

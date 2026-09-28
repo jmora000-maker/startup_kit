@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 
-from src.config import config
+from src.config import config, normalize_person_name
 from src.extractors.service import IngestionService
 from src.llm.client import LangChainLLMClient, MockLLMClient
 from src.llm.aggregator import BaselineAggregator
@@ -464,10 +464,30 @@ def parse_args():
         help="Path to existing *_Startup_Kit.docx to re-ingest and recalculate readiness score"
     )
     parser.add_argument(
+        "--provider",
+        "--llm-provider",
+        type=str,
+        default=config.default_provider,
+        choices=["anthropic", "openai", "claude", "gpt"],
+        help="LLM provider to use: 'anthropic' (Claude, default) or 'openai' (GPT)"
+    )
+    parser.add_argument(
+        "--openai",
+        "--open-ai",
+        action="store_true",
+        help="Use OpenAI as the LLM provider"
+    )
+    parser.add_argument(
+        "--anthropic",
+        "--claude",
+        action="store_true",
+        help="Use Anthropic Claude as the LLM provider (default)"
+    )
+    parser.add_argument(
         "--model",
         type=str,
-        default=config.openai_model,
-        help="OpenAI Model name (default: gpt-4o)"
+        default=None,
+        help="LLM model name (defaults to 'claude-sonnet-5-5' for Anthropic or 'gpt-4o' for OpenAI)"
     )
     parser.add_argument(
         "--tier",
@@ -508,9 +528,24 @@ def parse_args():
         help="Disable interactive directory and role prompts (uses default paths and unassigned roles)"
     )
     parser.add_argument(
+        "--api-key",
+        "--anthropic-api-key",
+        type=str,
+        dest="api_key",
+        default=None,
+        help="Anthropic API Key (overrides ANTHROPIC_API_KEY environment variable and .env)"
+    )
+    parser.add_argument(
+        "--openai-api-key",
+        type=str,
+        dest="openai_api_key",
+        default=None,
+        help="OpenAI API Key for fallback or direct execution (overrides OPENAI_API_KEY environment variable and .env)"
+    )
+    parser.add_argument(
         "--mock",
         action="store_true",
-        help="Run using offline deterministic Mock LLM client (no OpenAI API key required)"
+        help="Run using offline deterministic Mock LLM client (no API keys required)"
     )
     parser.add_argument(
         "--export-tools",
@@ -613,11 +648,11 @@ def prompt_role_names(
     def _resolve(role_name: str, val: Optional[str]) -> str:
         if val is not None:
             cleaned = val.strip()
-            return cleaned if cleaned else default
+            return normalize_person_name(cleaned, default=default) if cleaned else default
         if interactive:
             try:
                 entered = input(f"Enter {role_name} name [default: {default}]: ").strip()
-                return entered if entered else default
+                return normalize_person_name(entered, default=default) if entered else default
             except (EOFError, OSError):
                 return default
         return default
@@ -626,6 +661,19 @@ def prompt_role_names(
     resolved_delivery_lead = _resolve("Delivery Lead", delivery_lead)
     resolved_talent_pm = _resolve("Talent PM", talent_pm)
     return resolved_pmo_lead, resolved_delivery_lead, resolved_talent_pm
+
+
+def prompt_api_keys(
+    api_key: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    interactive: bool = False,
+    default_anthropic_key: str = "",
+    default_openai_key: str = "",
+) -> tuple[str, str]:
+    """Resolve Anthropic and OpenAI API keys via CLI arguments, environment variables, or configuration."""
+    resolved_anthropic = api_key if api_key is not None else (default_anthropic_key or config.anthropic_api_key)
+    resolved_openai = openai_api_key if openai_api_key is not None else (default_openai_key or config.openai_api_key)
+    return resolved_anthropic, resolved_openai
 
 
 def main():
@@ -711,19 +759,62 @@ def main():
         )
         logger.info("Leadership Roles -> PMO Lead: %s | Delivery Lead: %s | Talent PM: %s", pmo_lead, delivery_lead, talent_pm)
 
-        if args.mock or not config.openai_api_key:
-            if not args.mock and not config.openai_api_key:
-                logger.warning("OPENAI_API_KEY is not set. Falling back to offline Mock LLM client.")
-            else:
-                logger.info("Using offline Mock LLM client for deterministic generation.")
-            llm_client = create_mock_llm_client()
+        # Determine selected LLM provider
+        if args.openai or (args.provider and args.provider.lower() in ("openai", "open-ai", "gpt", "chatgpt")):
+            selected_provider = "openai"
         else:
-            logger.info("Using OpenAI LangChain client with model: %s", args.model)
-            llm_client = LangChainLLMClient(
-                api_key=config.openai_api_key,
-                model_name=args.model,
-                temperature=config.temperature
-            )
+            selected_provider = "anthropic"
+
+        active_api_key, active_openai_key = prompt_api_keys(
+            api_key=args.api_key,
+            openai_api_key=getattr(args, "openai_api_key", None),
+            interactive=False,
+            default_anthropic_key=config.anthropic_api_key,
+            default_openai_key=config.openai_api_key,
+        )
+
+        if args.mock:
+            logger.info("Using offline Mock LLM client for deterministic generation.")
+            llm_client = create_mock_llm_client()
+        elif selected_provider == "openai":
+            if not active_openai_key:
+                logger.warning("OPENAI_API_KEY is not set. Falling back to offline Mock LLM client.")
+                llm_client = create_mock_llm_client()
+            else:
+                openai_model = args.model if (args.model and args.model != config.anthropic_model) else config.openai_model
+                logger.info("Using OpenAI LangChain client with model: %s", openai_model)
+                llm_client = LangChainLLMClient(
+                    api_key="",
+                    openai_api_key=active_openai_key,
+                    openai_model_name=openai_model,
+                    temperature=config.temperature,
+                )
+        else:  # anthropic (default)
+            if not active_api_key and not active_openai_key:
+                logger.warning("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set. Falling back to offline Mock LLM client.")
+                llm_client = create_mock_llm_client()
+            elif not active_api_key and active_openai_key:
+                logger.info("ANTHROPIC_API_KEY is not set; using OpenAI LangChain client with model: %s", config.openai_model)
+                llm_client = LangChainLLMClient(
+                    api_key="",
+                    openai_api_key=active_openai_key,
+                    openai_model_name=config.openai_model,
+                    temperature=config.temperature,
+                )
+            else:
+                anthropic_model = args.model or config.anthropic_model
+                if active_openai_key:
+                    logger.info("Using Anthropic Claude client (%s) with OpenAI fallback (%s)", anthropic_model, config.openai_model)
+                else:
+                    logger.info("Using Anthropic Claude LangChain client with model: %s", anthropic_model)
+
+                llm_client = LangChainLLMClient(
+                    api_key=active_api_key,
+                    model_name=anthropic_model,
+                    temperature=config.temperature,
+                    openai_api_key=active_openai_key,
+                    openai_model_name=config.openai_model,
+                )
 
         controller = StartupKitController(
             ingestion_service=IngestionService(),
@@ -742,6 +833,9 @@ def main():
             talent_pm=talent_pm,
             export_tools=args.export_tools,
         )
+
+        if hasattr(llm_client, "fallback_domains") and llm_client.fallback_domains:
+            logger.info("Notice: The following extraction domain(s) used secondary OpenAI fallback: %s", ", ".join(llm_client.fallback_domains))
 
         logger.info("SUCCESS: Project Startup Kit generated successfully!")
         logger.info("Report File: %s", output_file.resolve())

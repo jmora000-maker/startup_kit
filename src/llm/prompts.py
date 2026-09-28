@@ -5,14 +5,15 @@ Your goal is to extract structured project management data from provided Stateme
 
 STRICT BUSINESS RULES & CONSTRAINTS:
 1. NO HALLUCINATION: Extract only factual information present in the input documents.
-2. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).
-3. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).
-4. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:
+2. CONCISE & FOCUSED: Keep all field values concise, specific, and factual (1-2 sentences per field). Avoid verbose repetition.
+3. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).
+4. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).
+5. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:
    - document_name: exact filename where the information was found
    - clause_or_slide: the section number, heading, or slide number (e.g. "Section 3.2", "Slide 4", "Page 2")
    - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.
-5. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.
-6. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
+6. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.
+7. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
 """
 
 CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter and Governance metadata.
@@ -58,7 +59,11 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-RAID_PROMPT = """Analyze the provided project documents and extract all RAID items (Risks, Assumptions, Issues, Dependencies).
+RAID_PROMPT = """Analyze the provided project documents and extract key RAID items (Risks, Assumptions, Issues, Dependencies).
+
+CONSTRAINTS:
+1. Extract the most critical items (maximum 20 items total across all 4 categories).
+2. Keep descriptions concise and actionable (1-2 sentences).
 
 For each item:
 - type: Must be exactly one of: 'Risk', 'Assumption', 'Issue', 'Dependency'.
@@ -73,7 +78,9 @@ DOCUMENTS CONTENT:
 
 QUESTIONS_PROMPT = """Review the provided project documents and identify critical open clarification questions, ambiguous statements, unconfirmed dates, or unstated acceptance criteria that require confirmation from the client or delivery team.
 
-Return a list of clear, actionable questions (strings).
+CONSTRAINTS:
+- Return a concise, prioritized list of the top 10-15 actionable questions (strings).
+- Keep each question direct and focused on delivery/commercial risk.
 
 DOCUMENTS CONTENT:
 {documents_text}
@@ -96,13 +103,13 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages.
+SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages (maximum 15 work packages). Keep titles and descriptions concise.
 
 For each work package:
 - id: e.g. WP-01, WP-02
 - parent_deliverable_id: e.g. DEL-01
 - title: Concise work package title
-- description: Brief description of tasks
+- description: Brief description of tasks (1-2 sentences)
 - preliminary_sequence: Integer sequence order (1, 2, 3...)
 - owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'
 - dependency_references: List of IDs or descriptions of prerequisites
@@ -202,14 +209,14 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-DECISIONS_PROMPT = """Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness.
+DECISIONS_PROMPT = """Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness (maximum 15 key decisions). Keep descriptions concise.
 
 For each decision:
 - id: DEC-01, DEC-02...
-- decision_text: Statement of decision
+- decision_text: Concise statement of decision
 - decision_owner: Responsible owner
 - decision_date: Date if known
-- rationale: Context or reason for decision
+- rationale: Concise context or reason for decision
 - linked_raid_item: Linked risk or assumption ID if applicable
 - status: Status (default 'Approved')
 
@@ -217,14 +224,19 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-CONTRACT_CONFLICTS_PROMPT = """Analyze the provided project documents and extract all contractual ambiguities, contradictory clauses, conflicting dates, subjective acceptance terms, and duplicate or unaligned commitments (NFR-02).
+CONTRACT_CONFLICTS_PROMPT = """Analyze the provided project documents and extract the most critical contractual ambiguities, contradictory clauses, conflicting dates, subjective acceptance terms, and duplicate or unaligned commitments (NFR-02).
+
+CRITICAL CONSTRAINTS:
+1. Focus on the most material ambiguities and conflicts (maximum 15 items).
+2. Keep descriptions, quotes, and recommendations concise and direct (1-2 sentences per field).
+3. Do not duplicate similar items.
 
 For each detected ambiguity or conflict:
-- anomaly_id: Sequential identifier (e.g., AMB-01, CONF-01, CONF-02...)
+- anomaly_id: Sequential identifier (e.g., AMB-01, AMB-02...)
 - category: One of 'Date Conflict', 'Scope Contradiction', 'Ambiguous Acceptance', 'Unclear SLA', 'Ownership Gap'
-- conflicting_clauses: Exact quotes from the source documents with document names and clause/page references
-- risk_impact: Concise analysis of the potential delivery schedule, margin, or contractual risk
-- recommended_clarification: Actionable clarification question for Sales, Contracting, or the Client
+- conflicting_clauses: Concise quotes or citations from source documents with document name and section/page reference
+- risk_impact: Concise summary of the schedule, margin, or contractual risk (1-2 sentences)
+- recommended_clarification: Actionable clarification question for Client/Contracting
 - status: 'Open'
 
 DOCUMENTS CONTENT:
