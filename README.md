@@ -34,7 +34,6 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
 Startup_Kit/
 ├── inputs/                 # Input directory for SOWs, decks, and contracts (.pdf, .docx, .pptx, .txt)
 ├── output/                 # Output directory for generated Word reports and toolkits
-├── spec/                   # Technical and functional specifications
 ├── src/
 │   ├── config.py           # Application settings and environment configuration
 │   ├── orchestrator.py     # End-to-end pipeline execution controller
@@ -44,8 +43,23 @@ Startup_Kit/
 │   │   ├── models.py       # Pydantic domain models, baselines, and action items
 │   │   └── pdf_models.py   # PDF page and document coordinate validation models
 │   ├── extractors/         # File parsers (PDF, DOCX, PPTX, TXT), Word parser, and ingestion service
+│   │   ├── base.py         # Extractor base classes
+│   │   ├── docx_extractor.py # Word document extractor
+│   │   ├── pdf_extractor.py  # PyMuPDF coordinate-aware PDF extractor
+│   │   ├── pptx_extractor.py # PowerPoint presentation extractor
+│   │   ├── service.py      # Multi-format ingestion coordinator
+│   │   ├── startup_kit_docx_parser.py # Round-trip Word report parser for re-evaluation
+│   │   └── txt_extractor.py  # Plain text extractor
 │   ├── generators/         # Word document builder, formatting, G-01 checklist, and data exporters
+│   │   ├── checklist.py    # Authoritative 15-row G-01 checklist generator
+│   │   ├── docx_generator.py # Word document builder and table renderer
+│   │   ├── export_payloads.py # PMO Operating System JSON/CSV exporter
+│   │   └── formatting.py   # Style and visual formatting utilities
 │   ├── llm/                # LangChain LLM client, prompts, parsers, and aggregation logic
+│   │   ├── aggregator.py   # Baseline aggregator and readiness scoring bridge
+│   │   ├── client.py       # OpenAI LangChain and Mock LLM clients
+│   │   ├── parsers.py      # Domain extractors and Pydantic schema parsers
+│   │   └── prompts.py      # System and domain-specific extraction prompts
 │   └── scoring/            # Centralized readiness scoring engine and CLI telemetry reporter
 │       ├── readiness_engine.py  # 4-dimension scoring, action mapping, and gate decision logic
 │       └── cli_reporter.py      # Console dashboard and ANSI telemetry output
@@ -293,6 +307,54 @@ The engine automatically synthesizes open exceptions and clarifications into dis
 | `G01-13` | **Change Control Procedure** | Layer 3 | Open Clarification | Change Control Route Marker `[ACT-XX]` | Scope Baseline |
 | `G01-14` | **Contract Ambiguity Analysis**| Layer 1 | Open Exception | Ambiguity Resolution Marker `[ACT-XX]` | SOW Clauses |
 | `G01-15` | **Startup Readiness Checklist** | Gateway | Open Clarification | Executive Gate Decision Evidence Tag | Gate Governance |
+
+### Action Item Resolution & Score Recovery Guide (From -> To Remediation Table)
+
+When a Startup Kit report is initially generated, missing information, unassigned roles, and unconfirmed criteria trigger embedded action badges (e.g., `[ACT-01: ... (+X.X% Recovery)]` or fallback `[ACT-REQ-XX: ...]`) and reduce the Startup Readiness Score across the four scoring dimensions.
+
+During **Re-evaluation (`main.py --reingest-docx <path>`)**, the user edits the generated Word (`.docx`) file to resolve these open action items. The re-ingestion parser reads the modified document, detects that placeholders and action badges have been replaced with valid project data, clears the action badges, and dynamically recomputes the Readiness Score.
+
+The following **To and From Table** outlines how each action item is resolved in the Word document tables, the exact text transitions required, the affected scoring dimensions, and the mathematical score recovery impact:
+
+#### Action Item Resolution Reference Table (From $\rightarrow$ To)
+
+| Gate ID | Target Artifact & Location | Initial Unresolved State ("FROM") | Remediated Resolved State ("TO") | Affected Dimension | Score Recovery Impact | Operational Remediation Guidance |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Header** | **Document Metadata Header** (Table 1, Row 1–3 Col 3) | `[UNASSIGNED - TO BE CONFIRMED]` for PMO Lead, Delivery Lead, or Talent PM | Named leadership individuals (e.g., `Sarah Connor`, `Alex Mercer`, `Elena Rostova`) | $D_3$ (Talent & Staffing) | **+4.0% per role** (Up to **+12.0%** composite) | Replace unassigned placeholders in header table metadata with confirmed leadership personnel names or pass via CLI flags (`--pmo-lead`, `--delivery-lead`, `--talent-pm`). |
+| `G01-01` | **Project Startup Charter** (Turnaround SLA & PMO Authorization) | `[CONFIRMATION REQUIRED]` / Delayed drafting SLA without waiver `[ACT-XX]` | `"Approved by PMO Lead with SLA turnaround validated / retroactive waiver recorded"` | $D_1$ (Mandatory Controls) | **+1.5% to +2.0%** | Enter explicit PMO authorization notes and confirm 1-business-day turnaround SLA compliance or log PMO approval waiver. |
+| `G01-02` | **Project Startup Charter** (Delivery Model & Governance Tier) | `[CONFIRMATION REQUIRED]` / Unconfirmed governance cadence `[ACT-XX]` | Confirmed Governance Tier (`Partnered` / `Guided` / `Elevated`) and meeting cadence (e.g., `"Weekly Delivery Sync & Monthly SteerCo"`) | $D_1$ (Mandatory Controls) | **+2.0%** | Select and document the aligned governance tier and formal executive meeting cadence agreed with client stakeholders. |
+| `G01-03` | **Deliverables Matrix** (Acceptance Criteria, Owner, Approver) | Criteria: `[CONFIRMATION REQUIRED]`, Owner: `Unassigned`, Approver: `[UNASSIGNED]` `[ACT-XX]` | Concrete test criteria (e.g., `"Approved upon passing automated CI/CD security test suite"`), named Owner (`"Alex Mercer"`), named Approver (`"Dr. Aris Thorne"`) | $D_2$ (Deliverable Rigor) + $D_1$ (Gate Control) | **+3.5% per deliverable** (Up to **+25.0%** total $D_2$) | Replace confirmation placeholders with objective, testable acceptance criteria, assign an internal delivery owner, and designate client sign-off approver. |
+| `G01-04` | **Milestone Delivery Plan** (Target External Date & Internal Buffer) | External Date: `None` / `TBD` / `[CONFIRMATION REQUIRED]`, Buffer: empty `[ACT-XX]` | Valid external commitment date (e.g., `2026-11-15`) and 7-day internal buffer date (e.g., `2026-11-08`) | $D_1$ (Mandatory Controls) | **+3.0%** | Input agreed external milestone deadlines in `YYYY-MM-DD` format with proactive internal contingency buffer dates. |
+| `G01-05` | **RAID & Dependency Log** (Owner & Mitigation Strategy) | Owner: `Unassigned` / `[UNASSIGNED]`, generic mitigation text `[ACT-XX]` | Assigned named risk/issue owner (e.g., `"Taylor Brown"`), documented mitigation steps and escalation trigger | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+2.0%** | Assign named individuals to all RAID entries and articulate concrete mitigation actions and target resolution dates. |
+| `G01-06` | **Talent Onboarding Record** (PMO Briefing & Kickoff Deck) | Briefing Status: `Pending` / `Unassigned` / `[CONFIRMATION REQUIRED]` `[ACT-XX]` | Briefing Status: `"Completed"`, kickoff deck confirmed and approved by PMO | $D_1$ (Mandatory Controls) + $D_3$ (Talent) | **+1.5%** | Mark PMO leadership briefings as completed and attach confirmation of project kickoff presentation readiness. |
+| `G01-07` | **SOW Interpretation Summary** (Customer Obligations & Access) | `[CONFIRMATION REQUIRED]` / Undefined VPN, environment, or data prerequisites `[ACT-XX]` | Explicit customer obligations defined (e.g., `"Client to provision AWS tenant and VPN credentials by Day 3"`) | $D_1$ (Mandatory Controls) + $D_4$ (Clarifications) | **+2.5%** | Enumerate all mandatory client prerequisites, security access requirements, and dependency timelines. |
+| `G01-08` | **Talent Roster** (Named Talent & Staffing Status) | Named Talent: `[UNASSIGNED - TO BE CONFIRMED]`, Status: `Pending` / `Open` `[ACT-XX]` | Named talent entered (e.g., `"Marcus Vance"`), Staffing Status: `"Confirmed"` / `"Ready"` / `"Active"` | $D_3$ (Talent & Staffing) + $D_1$ (Gate Control) | **+2.5% to +5.0%** | Replace placeholder text with vetted, contracted team members and update staffing status to Confirmed. |
+| `G01-09` | **Stakeholder Model** (Decision Rights & Sign-off Authority) | Decision Rights: `[CONFIRMATION REQUIRED]` / Unconfirmed escalation authority `[ACT-XX]` | Specific authority defined (e.g., `"VP of Engineering - Sign-off on architecture blueprints and budget changes > $25k"`) | $D_1$ (Mandatory Controls) | **+2.0%** | Designate explicit decision rights, financial approval thresholds, and escalation pathways for each client stakeholder. |
+| `G01-10` | **RACI / Decision Rights Matrix** (Activity Ownership) | Ambiguous role definitions or unassigned Accountable/Responsible designations `[ACT-XX]` | Complete RACI mapping with designated Accountable (`A`), Responsible (`R`), Consulted (`C`), and Informed (`I`) roles | $D_1$ (Mandatory Controls) | **+1.5%** | Verify each lifecycle governance activity has exactly one Accountable role and clearly identified Responsible delivery leads. |
+| `G01-11` | **Communications Plan** (Distribution Cadence & Audience) | Distribution cadence undefined / missing stakeholder distribution list `[ACT-XX]` | Defined weekly status report recipient list, monthly steerco cadence, and sprint demo schedule | $D_1$ (Mandatory Controls) | **+1.5%** | Document report recipients, communication channels (Slack/Email), meeting frequencies, and executive briefing schedules. |
+| `G01-12` | **Commercial & Margin Guardrails** (Budget Baseline & Cap Hours) | SOW Budget: `[CONFIRMATION REQUIRED]`, Cap Hours: unconfirmed, margin unstated `[ACT-XX]` | Confirmed Total Contract Value (e.g., `"$450,000"`), Cap Hours (`"2,400 hrs"`), and target margin floor (`"38%"`) | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.0%** | Fill in verified commercial financial figures, billing caps, overtime/expense policies, and margin boundaries. |
+| `G01-13` | **Commercial Guardrails** (Change Control Procedure) | Change route: `[CONFIRMATION REQUIRED]` / Undefined out-of-scope procedure `[ACT-XX]` | Documented formal Change Order request process, impact assessment workflow, and client sign-off route | $D_1$ (Mandatory Controls) | **+2.0%** | Outline the formal change request process, threshold for scope amendments, and commercial impact sign-off rules. |
+| `G01-14` | **Contract Ambiguity Analysis** (Anomalies & Conflicts) | Anomaly Status: `Open` / `Exception Required`, unresolved clause discrepancies `[ACT-XX]` | Anomaly Resolution: `"[RESOLVED] Locked milestone date and scope boundary aligned with client sponsor"` | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.5%** | Prefix resolution notes with `[RESOLVED]` to clear contractual ambiguity deductions ($Q \times 0.05$) and gate exceptions. |
+| `G01-15` | **Executive Startup Readiness Checklist** (G-01 Gateway) | Gate Criteria: `Exception Required` / `Review Required`, unresolved questions `[ACT-XX]` | Gate Criteria: `"Complete"` / `"Approved"`, with clear audit evidence documented in Evidence column | $D_1$ (Mandatory Controls) + $D_4$ (Commercial) | **+2.5%** | Update G-01 checklist row statuses to Complete/Approved with supporting evidence summaries and clear all open questions. |
+
+#### Step-by-Step Re-evaluation Workflow
+
+To execute a re-evaluation cycle and observe score recovery:
+
+1. **Open the Generated Word Document**: Open `output/<Project_Name>_Startup_Kit.docx` in Microsoft Word or any compatible DOCX editor.
+2. **Locate Highlighted Action Badges**: Look for yellow-highlighted `[ACT-XX: ... (+X.X% Recovery)]` tags in the artifact tables (Deliverables, Milestones, Talent Roster, RAID, Guardrails, Ambiguities).
+3. **Apply Remediation Updates**:
+   - Replace placeholder text (e.g., `[CONFIRMATION REQUIRED]`, `[UNASSIGNED]`, `TBD`) with confirmed project details as shown in the table above.
+   - For leadership, enter names directly in Table 1 (Metadata Header) or pass them via CLI flags (`--pmo-lead`, `--delivery-lead`, `--talent-pm`).
+   - For contract ambiguities, prefix your resolution note with `[RESOLVED]`.
+4. **Save the Modified Document**: Save the document (e.g., as `output/Project_Startup_Kit_Updated.docx` or overwrite the original).
+5. **Run Re-evaluation**:
+   ```bash
+   python main.py --reingest-docx output/Project_Startup_Kit_Updated.docx --non-interactive
+   ```
+6. **Verify Score Improvement**:
+   - The CLI displays the updated composite score, showing recovery across $D_1$, $D_2$, $D_3$, and $D_4$.
+   - The output Word document is regenerated with resolved action badges automatically stripped and the updated G-01 Gate Decision status reflected in the executive gateway dashboard.
 
 ### Tri-directional Alignment Guarantees
 
