@@ -749,3 +749,422 @@ def test_parser_strips_action_tags(tmp_path: Path):
     for d in reloaded.deliverables:
         assert "[ACT-" not in d.owner
         assert "[ACT-" not in (d.acceptance_criteria or "")
+
+
+def test_docx_reingestion_with_ambiguities_and_questions_idempotence(tmp_path: Path):
+    """Verify that re-evaluating an unedited startup kit docx with contract ambiguities and questions yields identical scores."""
+    from main import create_mock_llm_client
+    from src.extractors.service import IngestionService
+
+    ctrl = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=create_mock_llm_client(),
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    out_file = ctrl.run(
+        inputs_dir=Path("inputs"),
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="Jane Doe",
+        talent_pm="John Smith"
+    )
+
+    p1 = ctrl.docx_parser.parse_startup_kit_docx(out_file)
+    p1_recalc = ctrl.aggregator.recalculate_readiness(p1)
+
+    reingest_file = ctrl.run_reingest(
+        docx_path=out_file,
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="Jane Doe",
+        talent_pm="John Smith"
+    )
+
+    p2 = ctrl.docx_parser.parse_startup_kit_docx(reingest_file)
+    p2_recalc = ctrl.aggregator.recalculate_readiness(p2)
+
+    assert round(p1_recalc.readiness_score, 1) == round(p2_recalc.readiness_score, 1)
+    assert p1_recalc.readiness_breakdown == p2_recalc.readiness_breakdown
+    assert len(p1_recalc.open_questions) == len(p2_recalc.open_questions)
+    assert len(p1_recalc.action_required_items) == len(p2_recalc.action_required_items)
+
+
+def test_docx_reingestion_unassigned_roles_and_incomplete_staffing_idempotence(tmp_path: Path):
+    """Verify that generating and re-ingesting a startup kit with unassigned roles and incomplete staffing yields identical scores."""
+    from main import create_mock_llm_client
+    from src.extractors.service import IngestionService
+    from src.scoring.cli_reporter import format_readiness_cli_summary
+
+    ctrl = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=create_mock_llm_client(),
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    out_file = ctrl.run(
+        inputs_dir=Path("inputs"),
+        output_dir=tmp_path,
+        pmo_lead="[UNASSIGNED - TO BE CONFIRMED]",
+        delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+    )
+
+    p1 = ctrl.docx_parser.parse_startup_kit_docx(out_file)
+    p1_recalc = ctrl.aggregator.recalculate_readiness(p1)
+
+    reingest_file = ctrl.run_reingest(
+        docx_path=out_file,
+        output_dir=tmp_path,
+        pmo_lead=None,
+        delivery_lead=None,
+        talent_pm=None
+    )
+
+    p2 = ctrl.docx_parser.parse_startup_kit_docx(reingest_file)
+    p2_recalc = ctrl.aggregator.recalculate_readiness(p2)
+
+    assert round(p1_recalc.readiness_score, 1) == round(p2_recalc.readiness_score, 1)
+    assert p1_recalc.readiness_breakdown["mandatory_g01_controls"] == p2_recalc.readiness_breakdown["mandatory_g01_controls"]
+    assert p1_recalc.readiness_breakdown["talent_staffing_readiness"] == p2_recalc.readiness_breakdown["talent_staffing_readiness"]
+    assert p1_recalc.readiness_breakdown["deliverable_acceptance_rigor"] == p2_recalc.readiness_breakdown["deliverable_acceptance_rigor"]
+    assert p1_recalc.readiness_breakdown["commercial_risk_mitigation"] == p2_recalc.readiness_breakdown["commercial_risk_mitigation"]
+    assert p1_recalc.gate_decision.gate_decision_status == p2_recalc.gate_decision.gate_decision_status
+    assert p1_recalc.gate_decision.open_exceptions_count == p2_recalc.gate_decision.open_exceptions_count
+    assert len(p1_recalc.open_questions) == len(p2_recalc.open_questions)
+    assert len(p1_recalc.action_required_items) == len(p2_recalc.action_required_items)
+
+    # CLI report output check
+    cli_p1 = format_readiness_cli_summary(p1_recalc, out_file)
+    cli_p2 = format_readiness_cli_summary(p2_recalc, reingest_file)
+    assert f"{p1_recalc.readiness_score:.1f}%" in cli_p1
+    assert f"{p2_recalc.readiness_score:.1f}%" in cli_p2
+
+
+def test_docx_reingestion_recalculates_score_upon_edits(tmp_path: Path):
+    """Verify that editing deliverables, leadership, talent roster, and budget updates the readiness score upon re-evaluation."""
+    import docx as docx_module
+    from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction, QuestionsExtraction
+
+    client = create_mock_llm_client()
+    charter = client.responses_by_schema[CharterExtraction]
+    charter.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+    charter.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
+    delivs = client.responses_by_schema[DeliverablesExtraction]
+    delivs.deliverables[0].acceptance_criteria = "[CONFIRMATION REQUIRED]"
+    delivs.deliverables[0].owner = "Unassigned"
+    ms = client.responses_by_schema[MilestonesExtraction]
+    ms.milestones[0].external_date = None
+
+    aggregator = BaselineAggregator()
+    baseline = aggregator.aggregate(
+        charter=charter,
+        deliverables_ext=delivs,
+        milestones_ext=ms,
+        raid_ext=client.responses_by_schema[RAIDExtraction],
+        questions_ext=client.responses_by_schema[QuestionsExtraction]
+    )
+    initial_score = baseline.readiness_score
+
+    writer = DocxGenerator()
+    doc_path = writer.write_docx(baseline, tmp_path / "Initial_Startup_Kit.docx")
+
+    # 1. Edit Deliverables
+    doc = docx_module.Document(str(doc_path))
+    tbl_deliv = next(t for t in doc.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    tbl_deliv.rows[1].cells[2].text = "Approved by Pfizer Chief Architect"
+    tbl_deliv.rows[1].cells[5].text = "John Smith"
+    p_deliv = tmp_path / "Edited_Deliv.docx"
+    doc.save(str(p_deliv))
+
+    parsed_deliv = StartupKitDocxParser().parse_startup_kit_docx(p_deliv)
+    res_deliv = aggregator.recalculate_readiness(parsed_deliv)
+    assert res_deliv.readiness_score > initial_score
+    assert res_deliv.readiness_breakdown["deliverable_acceptance_rigor"] > baseline.readiness_breakdown["deliverable_acceptance_rigor"]
+
+    # 2. Edit Leadership in Metadata Header Table
+    doc = docx_module.Document(str(doc_path))
+    doc.tables[0].rows[1].cells[3].text = "Alice Wonder"
+    doc.tables[0].rows[2].cells[3].text = "Bob Builder"
+    p_lead = tmp_path / "Edited_Leadership.docx"
+    doc.save(str(p_lead))
+
+    parsed_lead = StartupKitDocxParser().parse_startup_kit_docx(p_lead)
+    res_lead = aggregator.recalculate_readiness(parsed_lead)
+    assert res_lead.readiness_score > initial_score
+    assert res_lead.readiness_breakdown["talent_staffing_readiness"] > baseline.readiness_breakdown["talent_staffing_readiness"]
+
+    # 3. Edit Milestones
+    doc = docx_module.Document(str(doc_path))
+    tbl_ms = next(t for t in doc.tables if any("milestone id" in c.text.lower() for c in t.rows[0].cells))
+    tbl_ms.rows[1].cells[2].text = "2026-11-01"
+    tbl_ms.rows[1].cells[3].text = "2026-10-25"
+    p_ms = tmp_path / "Edited_Milestone.docx"
+    doc.save(str(p_ms))
+
+    parsed_ms = StartupKitDocxParser().parse_startup_kit_docx(p_ms)
+    res_ms = aggregator.recalculate_readiness(parsed_ms)
+    assert res_ms.readiness_score > initial_score
+
+
+def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(tmp_path: Path):
+    """Verify that updating table cells in an ingested docx eliminates open actions and does not rewrite action badges on top."""
+    import docx as docx_module
+    from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction, QuestionsExtraction
+    from src.extractors.service import IngestionService
+
+    client = create_mock_llm_client()
+    charter = client.responses_by_schema[CharterExtraction]
+    charter.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+    charter.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    delivs = client.responses_by_schema[DeliverablesExtraction]
+    delivs.deliverables[0].acceptance_criteria = "[CONFIRMATION REQUIRED]"
+    delivs.deliverables[0].owner = "Unassigned"
+    delivs.deliverables[0].client_approver = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    ms = client.responses_by_schema[MilestonesExtraction]
+    ms.milestones[0].external_date = None
+    ms.milestones[0].internal_buffer_date = None
+
+    ctrl = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=client,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    initial_docx = ctrl.run(
+        inputs_dir=Path("inputs"),
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+    )
+
+    # Verify initial document has action badges
+    doc_init = docx_module.Document(str(initial_docx))
+    deliv_tbl_init = next(t for t in doc_init.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    assert "[ACT-" in deliv_tbl_init.rows[1].cells[2].text
+
+    # User updates the cells in the docx file:
+    doc_edit = docx_module.Document(str(initial_docx))
+
+    # 1. Update Deliverable DEL-01 Acceptance Criteria, Approver, and Owner
+    deliv_tbl = next(t for t in doc_edit.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    deliv_tbl.rows[1].cells[2].text = "Approved by Pfizer Lead Architect upon automated test passing."
+    deliv_tbl.rows[1].cells[4].text = "Dr. Aris Thorne"
+    deliv_tbl.rows[1].cells[5].text = "Alex Mercer"
+
+    # 2. Update Milestone M01 Dates and Owner
+    ms_tbl = next(t for t in doc_edit.tables if any("milestone id" in c.text.lower() for c in t.rows[0].cells))
+    ms_tbl.rows[1].cells[2].text = "2026-11-15"
+    ms_tbl.rows[1].cells[3].text = "2026-11-08"
+    ms_tbl.rows[1].cells[4].text = "Alex Mercer"
+
+    # 3. Update Talent Roster Named Talent and Status
+    roster_tbl = next((t for t in doc_edit.tables if any("staffing status" in c.text.lower() for c in t.rows[0].cells)), None)
+    if roster_tbl:
+        for r in roster_tbl.rows[1:]:
+            r.cells[1].text = "Jane Doe"
+            r.cells[3].text = "Confirmed"
+
+    # 4. Update Ambiguities Table (if present) to Resolved
+    amb_tbl = next((t for t in doc_edit.tables if any("anomaly id" in c.text.lower() for c in t.rows[0].cells)), None)
+    if amb_tbl:
+        for r in amb_tbl.rows[1:]:
+            r.cells[4].text = "[RESOLVED] Locked milestone date aligned with client sponsor."
+
+    # 5. Update Metadata header
+    doc_edit.tables[0].rows[1].cells[3].text = "Alex Mercer"
+    doc_edit.tables[0].rows[2].cells[3].text = "Elena Rostova"
+
+    edited_path = tmp_path / "User_Updated_Startup_Kit.docx"
+    doc_edit.save(str(edited_path))
+
+    # Run Re-ingest (Option 2)
+    reingest_output = ctrl.run_reingest(
+        docx_path=edited_path,
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="Alex Mercer",
+        talent_pm="Elena Rostova"
+    )
+
+    parsed = ctrl.docx_parser.parse_startup_kit_docx(reingest_output)
+    recalculated = ctrl.aggregator.recalculate_readiness(parsed)
+
+    # Assert that score improved
+    assert recalculated.readiness_score > 90.0
+
+    # Read the re-evaluated document output
+    doc_final = docx_module.Document(str(reingest_output))
+
+    # Verify DEL-01 Acceptance Criteria has NO action badges written on top
+    deliv_tbl_final = next(t for t in doc_final.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    ac_text = deliv_tbl_final.rows[1].cells[2].text
+    assert "[ACT-" not in ac_text, f"Expected no action badge on updated criteria, got: {ac_text}"
+    assert "[ACT-REQ" not in ac_text, f"Expected no fallback action badge, got: {ac_text}"
+    assert "Approved by Pfizer Lead Architect upon automated test passing." in ac_text
+
+    # Verify Milestone M01 External Date has NO action badges written on top
+    ms_tbl_final = next(t for t in doc_final.tables if any("milestone id" in c.text.lower() for c in t.rows[0].cells))
+    ms_date_text = ms_tbl_final.rows[1].cells[2].text
+    assert "[ACT-" not in ms_date_text, f"Expected no action badge on updated date, got: {ms_date_text}"
+    assert "2026-11-15" in ms_date_text
+
+    # Verify Talent Roster has NO action badges written on top
+    roster_tbl_final = next((t for t in doc_final.tables if any("staffing status" in c.text.lower() for c in t.rows[0].cells)), None)
+    if roster_tbl_final:
+        for r in roster_tbl_final.rows[1:]:
+            assert "[ACT-" not in r.cells[1].text
+            assert "[ACT-" not in r.cells[3].text
+
+
+def test_docx_reingestion_monotonic_multi_cycle_updates(tmp_path: Path):
+    """Verify that multiple iterative cycles of user edits monotonically improve the readiness score and do not regress."""
+    import docx as docx_module
+    from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction, QuestionsExtraction
+    from src.extractors.service import IngestionService
+
+    client = create_mock_llm_client()
+    charter = client.responses_by_schema[CharterExtraction]
+    charter.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+    charter.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    delivs = client.responses_by_schema[DeliverablesExtraction]
+    delivs.deliverables[0].acceptance_criteria = "[CONFIRMATION REQUIRED]"
+    delivs.deliverables[0].owner = "Unassigned"
+    delivs.deliverables[0].client_approver = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    ms = client.responses_by_schema[MilestonesExtraction]
+    ms.milestones[0].external_date = None
+    ms.milestones[0].internal_buffer_date = None
+
+    ctrl = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=client,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    # Initial generation (Cycle 0)
+    p0 = ctrl.run(
+        inputs_dir=Path("inputs"),
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+    )
+    b0 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p0))
+    score_0 = b0.readiness_score
+
+    # Cycle 1: Fix leadership and deliverable
+    doc1 = docx_module.Document(str(p0))
+    doc1.tables[0].rows[1].cells[3].text = "Jane Doe"
+    doc1.tables[0].rows[2].cells[3].text = "Alex Mercer"
+    deliv_tbl = next(t for t in doc1.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    deliv_tbl.rows[1].cells[2].text = "Approved by Pfizer Lead Architect upon automated test passing."
+    deliv_tbl.rows[1].cells[4].text = "Dr. Aris Thorne"
+    deliv_tbl.rows[1].cells[5].text = "Jane Doe"
+
+    p1_in = tmp_path / "Cycle1_Edit.docx"
+    doc1.save(str(p1_in))
+    p1 = ctrl.run_reingest(
+        docx_path=p1_in,
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="Jane Doe",
+        talent_pm="Alex Mercer"
+    )
+    b1 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p1))
+    score_1 = b1.readiness_score
+    assert score_1 > score_0, f"Expected score_1 ({score_1}) > score_0 ({score_0})"
+
+    # Cycle 2: Fix milestones and contract ambiguities
+    doc2 = docx_module.Document(str(p1))
+    ms_tbl = next(t for t in doc2.tables if any("milestone id" in c.text.lower() for c in t.rows[0].cells))
+    ms_tbl.rows[1].cells[2].text = "2026-11-15"
+    ms_tbl.rows[1].cells[3].text = "2026-11-08"
+    ms_tbl.rows[1].cells[4].text = "Jane Doe"
+
+    amb_tbl = next((t for t in doc2.tables if any("anomaly id" in c.text.lower() for c in t.rows[0].cells)), None)
+    if amb_tbl:
+        for r in amb_tbl.rows[1:]:
+            r.cells[4].text = "[RESOLVED] Aligned with Pfizer sponsor on fixed timeline."
+
+    p2_in = tmp_path / "Cycle2_Edit.docx"
+    doc2.save(str(p2_in))
+    p2 = ctrl.run_reingest(
+        docx_path=p2_in,
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="Jane Doe",
+        talent_pm="Alex Mercer"
+    )
+    b2 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p2))
+    score_2 = b2.readiness_score
+    assert score_2 >= score_1, f"Expected score_2 ({score_2}) >= score_1 ({score_1})"
+
+    # Verify no action badges reapplied
+    doc2_final = docx_module.Document(str(p2))
+    deliv_tbl_final = next(t for t in doc2_final.tables if any("acceptance criteria" in c.text.lower() for c in t.rows[0].cells))
+    assert "[ACT-" not in deliv_tbl_final.rows[1].cells[2].text
+    ms_tbl_final = next(t for t in doc2_final.tables if any("milestone id" in c.text.lower() for c in t.rows[0].cells))
+    assert "[ACT-" not in ms_tbl_final.rows[1].cells[2].text
+
+
+def test_docx_reingestion_evaluates_roster_ambiguity_and_table_edits_dynamically(tmp_path: Path):
+    """Verify that editing roster tables, ambiguity tables, and deliverable tables updates scores dynamically."""
+    import docx as docx_module
+    from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction
+    from src.extractors.service import IngestionService
+
+    client = create_mock_llm_client()
+    ch = client.responses_by_schema[CharterExtraction]
+    ch.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+    ch.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    delivs = client.responses_by_schema[DeliverablesExtraction]
+    delivs.deliverables[0].acceptance_criteria = "[CONFIRMATION REQUIRED]"
+    delivs.deliverables[0].owner = "Unassigned"
+    delivs.deliverables[0].client_approver = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    ms = client.responses_by_schema[MilestonesExtraction]
+    ms.milestones[0].external_date = None
+
+    ctrl = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=client,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+    p0 = ctrl.run(
+        inputs_dir=Path("inputs"),
+        output_dir=tmp_path,
+        pmo_lead="Sarah Connor",
+        delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+    )
+    b0 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p0))
+    initial_score = b0.readiness_score
+
+    # Edit roster directly in docx
+    doc = docx_module.Document(str(p0))
+    roster_tbl = next(t for t in doc.tables if any("staffing status" in c.text.lower() for c in t.rows[0].cells))
+    for row in roster_tbl.rows[1:]:
+        if "delivery" in row.cells[0].text.lower():
+            row.cells[1].text = "Jane Doe"
+            row.cells[3].text = "Confirmed"
+        elif "talent pm" in row.cells[0].text.lower():
+            row.cells[1].text = "Alex Mercer"
+            row.cells[3].text = "Confirmed"
+
+    p_edited = tmp_path / "Roster_Edited.docx"
+    doc.save(str(p_edited))
+
+    b_edited = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p_edited))
+    assert b_edited.readiness_breakdown["talent_staffing_readiness"] > b0.readiness_breakdown["talent_staffing_readiness"]
+    assert b_edited.readiness_score > initial_score

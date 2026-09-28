@@ -255,19 +255,19 @@ class ReadinessScoringEngine:
         charter = baseline.charter
 
         pmo = (
-            (t_rec.pmo_lead if t_rec and t_rec.pmo_lead else None)
-            or (charter.pmo_lead if charter and charter.pmo_lead else None)
+            (charter.pmo_lead if charter and charter.pmo_lead else None)
+            or (t_rec.pmo_lead if t_rec and t_rec.pmo_lead else None)
             or (gov.pmo_lead if gov and gov.pmo_lead else None)
             or baseline.author_name
         )
         dm = (
-            (t_rec.delivery_manager if t_rec and t_rec.delivery_manager else None)
-            or (charter.delivery_manager if charter and charter.delivery_manager else None)
+            (charter.delivery_manager if charter and charter.delivery_manager else None)
+            or (t_rec.delivery_manager if t_rec and t_rec.delivery_manager else None)
             or (gov.delivery_manager if gov and gov.delivery_manager else None)
         )
         tpm = (
-            (t_rec.talent_pm if t_rec and t_rec.talent_pm else None)
-            or (charter.talent_pm if charter and charter.talent_pm else None)
+            (charter.talent_pm if charter and charter.talent_pm else None)
+            or (t_rec.talent_pm if t_rec and t_rec.talent_pm else None)
             or (gov.talent_pm if gov and gov.talent_pm else None)
         )
 
@@ -285,7 +285,10 @@ class ReadinessScoringEngine:
                 1
                 for tm in t_rec.delivery_talent_roster
                 if tm.status
-                and tm.status.lower() in ("confirmed", "active", "approved", "ready", "staffed")
+                and tm.status.lower() in ("confirmed", "active", "approved", "ready", "staffed", "assigned")
+                and tm.name
+                and "UNASSIGNED" not in tm.name.upper()
+                and tm.name != "Unassigned"
             )
             total_roles = max(
                 len(t_rec.delivery_talent_roster),
@@ -464,8 +467,200 @@ class ReadinessScoringEngine:
             return "G01-15"
 
     @classmethod
+    def synchronize_open_questions_with_artifacts(cls, baseline: StartupKitBaseline) -> None:
+        """Reconcile and prune open questions whose underlying artifact defects have been resolved."""
+        if not baseline.open_questions:
+            return
+
+        def _is_clean(val: Optional[str]) -> bool:
+            if not val:
+                return False
+            v = val.strip().upper()
+            return not ("UNASSIGNED" in v or "CONFIRMATION" in v or v in ("", "NONE", "N/A", "TBD", "[TBD]"))
+
+        # Deduplicate while preserving order and stripping resolved markers
+        seen_q = set()
+        deduped: List[str] = []
+        for q in baseline.open_questions:
+            if not q or not q.strip():
+                continue
+            q_norm = q.strip()
+            if "RESOLVED" in q_norm.upper():
+                continue
+            if q_norm.lower() not in seen_q:
+                seen_q.add(q_norm.lower())
+                deduped.append(q_norm)
+
+        filtered_questions: List[str] = []
+        for q in deduped:
+            q_upper = q.upper()
+            q_lower = q.lower()
+
+            # Check if this question corresponds to an anomaly/ambiguity (e.g. [AMB-01], (AMB-01), AMB-01:, etc.)
+            m_anomaly = re.search(r'(?:\[|\(|\b)(AMB-\d+|CONF-\d+|ACT-\d+)(?:\]|\)|\b)', q, re.IGNORECASE)
+            if m_anomaly:
+                anomaly_id = m_anomaly.group(1).upper()
+                matching_ca = next(
+                    (ca for ca in baseline.contract_ambiguities if ca.anomaly_id.upper() == anomaly_id),
+                    None
+                )
+                if matching_ca:
+                    is_ca_resolved = (
+                        getattr(matching_ca, "status", "Open").lower() == "resolved"
+                        or "RESOLVED" in getattr(matching_ca, "recommended_clarification", "").upper()
+                    )
+                    if is_ca_resolved:
+                        continue  # Resolved, drop question
+                    else:
+                        filtered_questions.append(q)
+                        continue
+                elif baseline.contract_ambiguities:
+                    all_resolved = all(
+                        getattr(ca, "status", "Open").lower() == "resolved"
+                        or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
+                        for ca in baseline.contract_ambiguities
+                    )
+                    if all_resolved:
+                        continue
+
+            gate_id = cls.match_question_to_gate_id(q)
+
+            # Check if gate or artifact is resolved
+            if gate_id == "G01-03":
+                m_del = re.search(r'(?:\[|\(|\b)(DEL(?:IV)?-?\d+)(?:\]|\)|\b)', q, re.IGNORECASE)
+                if m_del and baseline.deliverables:
+                    del_num = int(re.search(r'\d+', m_del.group(1)).group())
+                    target_d = next((d for d in baseline.deliverables if re.search(r'\d+', d.id) and int(re.search(r'\d+', d.id).group()) == del_num), None)
+                    if target_d and _is_clean(target_d.acceptance_criteria) and _is_clean(target_d.owner):
+                        continue
+                elif baseline.deliverables:
+                    matched_d = next(
+                        (d for d in baseline.deliverables if any(w in q_lower for w in (d.name or d.description or "").lower().split() if len(w) > 4)),
+                        None
+                    )
+                    if matched_d and _is_clean(matched_d.acceptance_criteria) and _is_clean(matched_d.owner):
+                        continue
+                    if all(_is_clean(d.acceptance_criteria) and _is_clean(d.owner) for d in baseline.deliverables):
+                        continue
+
+            elif gate_id == "G01-04":
+                m_ms = re.search(r'(?:\[|\(|\b)(M(?:S)?-?\d+)(?:\]|\)|\b)', q, re.IGNORECASE)
+                if m_ms and baseline.milestones:
+                    ms_num = int(re.search(r'\d+', m_ms.group(1)).group())
+                    target_m = next((m for m in baseline.milestones if re.search(r'\d+', m.id) and int(re.search(r'\d+', m.id).group()) == ms_num), None)
+                    if target_m and target_m.external_date is not None and _is_clean(target_m.owner):
+                        continue
+                elif baseline.milestones:
+                    matched_m = next(
+                        (m for m in baseline.milestones if any(w in q_lower for w in (m.description or "").lower().split() if len(w) > 4)),
+                        None
+                    )
+                    if matched_m and matched_m.external_date is not None and _is_clean(matched_m.owner):
+                        continue
+                    if all(m.external_date is not None and _is_clean(m.owner) for m in baseline.milestones):
+                        continue
+
+            elif gate_id == "G01-07":
+                sow = baseline.sow_interpretation
+                if sow:
+                    has_open_ob = any(not _is_clean(o) for o in sow.customer_obligations) if sow.customer_obligations else False
+                    has_open_pf = any(not _is_clean(p) for p in sow.platform_environment_commitments) if sow.platform_environment_commitments else False
+                    if not has_open_ob and not has_open_pf:
+                        continue
+
+            elif gate_id in ("G01-06", "G01-08"):
+                dm_clean = False
+                tpm_clean = False
+                pmo_clean = False
+                if baseline.charter:
+                    dm_clean = _is_clean(baseline.charter.delivery_manager)
+                    tpm_clean = _is_clean(baseline.charter.talent_pm)
+                    pmo_clean = _is_clean(baseline.charter.pmo_lead)
+                elif baseline.talent_onboarding:
+                    dm_clean = _is_clean(baseline.talent_onboarding.delivery_manager)
+                    tpm_clean = _is_clean(baseline.talent_onboarding.talent_pm)
+                    pmo_clean = _is_clean(baseline.talent_onboarding.pmo_lead)
+
+                if any(w in q_lower for w in ("delivery manager", "delivery lead", "dm")):
+                    if dm_clean:
+                        continue
+                if any(w in q_lower for w in ("talent pm", "talent lead", "tpm")):
+                    if tpm_clean:
+                        continue
+                if "pmo lead" in q_lower:
+                    if pmo_clean:
+                        continue
+
+                t_rec = baseline.talent_onboarding
+                if t_rec and t_rec.delivery_talent_roster:
+                    matched_role = next(
+                        (tm for tm in t_rec.delivery_talent_roster if tm.role.lower() in q_lower),
+                        None
+                    )
+                    if matched_role and _is_clean(matched_role.name) and matched_role.status and matched_role.status.lower() in ("confirmed", "active", "approved", "ready", "staffed", "assigned"):
+                        continue
+
+                    all_staffed = all(
+                        _is_clean(tm.name)
+                        and tm.status
+                        and tm.status.lower() in ("confirmed", "active", "approved", "ready", "staffed", "assigned")
+                        for tm in t_rec.delivery_talent_roster
+                    )
+                    if all_staffed and dm_clean and tpm_clean:
+                        continue
+
+            elif gate_id == "G01-09":
+                if baseline.stakeholders:
+                    matched_stk = next(
+                        (stk for stk in baseline.stakeholders if stk.name.lower() in q_lower or stk.role.lower() in q_lower),
+                        None
+                    )
+                    if matched_stk and _is_clean(matched_stk.name) and _is_clean(matched_stk.decision_rights):
+                        continue
+                    all_stk_clean = all(
+                        _is_clean(stk.name) and _is_clean(stk.decision_rights)
+                        for stk in baseline.stakeholders
+                    )
+                    if all_stk_clean:
+                        continue
+
+            elif gate_id == "G01-11":
+                if baseline.communications_plan:
+                    all_com_clean = all(
+                        _is_clean(c.audience) and _is_clean(c.content_owner)
+                        for c in baseline.communications_plan
+                    )
+                    if all_com_clean:
+                        continue
+
+            elif gate_id == "G01-12":
+                cg = baseline.commercial_guardrails
+                if cg and _is_clean(cg.budget_baseline):
+                    continue
+
+            elif gate_id == "G01-13":
+                cg = baseline.commercial_guardrails
+                if cg and _is_clean(cg.change_order_route):
+                    continue
+
+            elif gate_id in ("G01-14", "G01-15"):
+                if baseline.contract_ambiguities:
+                    all_amb_resolved = all(
+                        getattr(ca, "status", "Open").lower() == "resolved"
+                        or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
+                        for ca in baseline.contract_ambiguities
+                    )
+                    if all_amb_resolved:
+                        continue
+
+            filtered_questions.append(q)
+
+        baseline.open_questions = filtered_questions
+
+    @classmethod
     def synchronize_checklist_with_artifacts(cls, baseline: StartupKitBaseline) -> None:
         """Automatically synchronize G-01 checklist items with the state of Section 4 artifacts."""
+        cls.synchronize_open_questions_with_artifacts(baseline)
         if not baseline.readiness_checklist:
             return
 
@@ -478,20 +673,32 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Exception Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Startup Kit creation exceeded 1 business day SLA."
 
         # G01-02: Governance Tier & Cadence
         if "G01-02" in chk_map:
             item = chk_map["G01-02"]
-            if baseline.charter and baseline.charter.governance_tier:
+            if (baseline.charter and baseline.charter.governance_tier) or baseline.governance_tier:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Governance tier and reporting cadence pending alignment."
 
         # G01-03: Deliverables & Acceptance Criteria
         if "G01-03" in chk_map:
             item = chk_map["G01-03"]
             has_deliv_defects = False
-            if baseline.deliverables:
+            if not baseline.deliverables:
+                has_deliv_defects = True
+            else:
                 for d in baseline.deliverables:
                     if (
                         not d.acceptance_criteria
@@ -500,9 +707,6 @@ class ReadinessScoringEngine:
                         or not d.owner
                         or "UNASSIGNED" in d.owner.upper()
                         or d.owner == "Unassigned"
-                        or not d.client_approver
-                        or "UNASSIGNED" in d.client_approver.upper()
-                        or "[CONFIRMATION REQUIRED]" in d.client_approver
                     ):
                         has_deliv_defects = True
                         break
@@ -510,16 +714,22 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Deliverables pending acceptance criteria confirmation or owner assignment."
 
         # G01-04: Milestones with external dates and internal buffers
         if "G01-04" in chk_map:
             item = chk_map["G01-04"]
             has_ms_defects = False
-            if baseline.milestones:
+            if not baseline.milestones:
+                has_ms_defects = False
+            else:
                 for m in baseline.milestones:
                     if (
                         m.external_date is None
-                        or m.internal_buffer_date is None
                         or not m.owner
                         or "UNASSIGNED" in m.owner.upper()
                         or m.owner == "Unassigned"
@@ -530,6 +740,11 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Confirmation Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Milestone dates unconfirmed."
 
         # G01-05: RAID Log seeded with owners and mitigations
         if "G01-05" in chk_map:
@@ -537,6 +752,7 @@ class ReadinessScoringEngine:
             has_raid_defects = False
             if baseline.raid_items:
                 for r in baseline.raid_items:
+                    mitigation_text = (r.mitigation_or_response or "")
                     if (
                         not r.owner
                         or "UNASSIGNED" in r.owner.upper()
@@ -548,47 +764,83 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "RAID log items or dependencies pending owner assignment or mitigation."
 
         # G01-06: Onboarding briefings & KO deck
         if "G01-06" in chk_map:
             item = chk_map["G01-06"]
+            charter = baseline.charter
             t_rec = baseline.talent_onboarding
-            if t_rec and t_rec.delivery_manager and "UNASSIGNED" not in t_rec.delivery_manager.upper() and t_rec.talent_pm and "UNASSIGNED" not in t_rec.talent_pm.upper():
+            dm = (charter.delivery_manager if charter else None) or (t_rec.delivery_manager if t_rec else None)
+            tpm = (charter.talent_pm if charter else None) or (t_rec.talent_pm if t_rec else None)
+            has_unassigned_roles = (
+                not dm
+                or "UNASSIGNED" in str(dm).upper()
+                or not tpm
+                or "UNASSIGNED" in str(tpm).upper()
+            )
+            if not has_unassigned_roles:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "In Progress"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Talent PM / Delivery Manager onboarding briefing pending."
 
         # G01-07: Client onboarding prerequisites & platform access
         if "G01-07" in chk_map:
             item = chk_map["G01-07"]
-            sow = baseline.sow_interpretation
-            has_sow_defects = False
-            if not sow or not sow.customer_obligations:
-                has_sow_defects = True
-            else:
-                for o in sow.customer_obligations:
-                    if not str(o).strip() or any(p in str(o).upper() for p in ("CONFIRMATION REQUIRED", "UNDEFINED", "UNASSIGNED", "TBD")):
-                        has_sow_defects = True
-                        break
-            if not has_sow_defects:
+            if item.status in ("Complete", "Approved") and not item.exception_required:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
             else:
-                item.status = "Review Required"
-                item.exception_required = True
-                item.exception_details = "Customer prerequisites and environment access pending confirmation."
+                has_sow_defects = False
+                if not baseline.sow_interpretation or not baseline.sow_interpretation.customer_obligations:
+                    has_sow_defects = True
+                else:
+                    for o in baseline.sow_interpretation.customer_obligations:
+                        if not str(o).strip() or any(p in str(o).upper() for p in ("CONFIRMATION REQUIRED", "UNDEFINED", "UNASSIGNED", "TBD")):
+                            has_sow_defects = True
+                            break
+                if not has_sow_defects:
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+                else:
+                    item.status = "Review Required"
+                    item.exception_required = True
+                    if not item.exception_details:
+                        item.exception_details = "Customer prerequisites and environment access pending confirmation."
 
         # G01-08: Delivery Talent Roster staffed
         if "G01-08" in chk_map:
             item = chk_map["G01-08"]
             has_roster_defects = False
+            charter = baseline.charter
             t_rec = baseline.talent_onboarding
-            if t_rec and t_rec.delivery_talent_roster:
+            dm = (charter.delivery_manager if charter else None) or (t_rec.delivery_manager if t_rec else None)
+            tpm = (charter.talent_pm if charter else None) or (t_rec.talent_pm if t_rec else None)
+            if (
+                not dm
+                or "UNASSIGNED" in str(dm).upper()
+                or not tpm
+                or "UNASSIGNED" in str(tpm).upper()
+            ):
+                has_roster_defects = True
+            elif t_rec and t_rec.delivery_talent_roster:
                 for tm in t_rec.delivery_talent_roster:
                     if (
                         not tm.name
                         or "UNASSIGNED" in tm.name.upper()
+                        or tm.name == "Unassigned"
+                        or not tm.status
                         or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")
                     ):
                         has_roster_defects = True
@@ -597,14 +849,17 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "In Progress"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Talent roster staffing in progress."
 
         # G01-09: Client Sponsor & escalation authority
         if "G01-09" in chk_map:
             item = chk_map["G01-09"]
             has_sponsor_defect = False
-            if not baseline.stakeholders:
-                has_sponsor_defect = True
-            else:
+            if baseline.stakeholders:
                 for sh in baseline.stakeholders:
                     if "UNASSIGNED" in sh.name.upper() or "CONFIRMATION REQUIRED" in (sh.decision_rights or "").upper():
                         has_sponsor_defect = True
@@ -613,35 +868,67 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Client sponsor and decision escalation path pending confirmation."
 
         # G01-10: RACI aligned
         if "G01-10" in chk_map:
             item = chk_map["G01-10"]
-            if baseline.raci_matrix:
-                item.status = "Complete"
-                item.exception_required = False
-                item.exception_details = None
+            item.status = "Complete"
+            item.exception_required = False
+            item.exception_details = None
 
         # G01-11: Communications cadence
         if "G01-11" in chk_map:
             item = chk_map["G01-11"]
-            if baseline.communications_plan and not any("CONFIRMATION REQUIRED" in (c.audience or "").upper() for c in baseline.communications_plan):
+            has_comm_defect = False
+            if baseline.communications_plan:
+                if any("CONFIRMATION REQUIRED" in (c.audience or "").upper() for c in baseline.communications_plan):
+                    has_comm_defect = True
+            if not has_comm_defect:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Communications cadence pending confirmation."
 
         # G01-12 & G01-13: Commercial guardrails
         if "G01-12" in chk_map:
             item = chk_map["G01-12"]
             cg = baseline.commercial_guardrails
-            if cg and cg.budget_baseline and "CONFIRMATION REQUIRED" not in cg.budget_baseline.upper():
+            if (
+                cg
+                and cg.budget_baseline
+                and "CONFIRMATION REQUIRED" in cg.budget_baseline.upper()
+            ):
+                item.status = "Confirmation Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Commercial budget baseline requires confirmation."
+            else:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+
         if "G01-13" in chk_map:
             item = chk_map["G01-13"]
             cg = baseline.commercial_guardrails
-            if cg and cg.change_order_route and "CONFIRMATION REQUIRED" not in cg.change_order_route.upper():
+            if (
+                cg
+                and cg.change_order_route
+                and "CONFIRMATION REQUIRED" in cg.change_order_route.upper()
+            ):
+                item.status = "Review Required"
+                item.exception_required = True
+                if not item.exception_details:
+                    item.exception_details = "Change control procedure pending alignment."
+            else:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
@@ -649,10 +936,29 @@ class ReadinessScoringEngine:
         # G01-14: Contract ambiguities analyzed
         if "G01-14" in chk_map:
             item = chk_map["G01-14"]
-            if not baseline.contract_ambiguities or all(ca.status.lower() == "resolved" for ca in baseline.contract_ambiguities):
+            if item.status in ("Complete", "Approved") and not item.exception_required:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                has_ambiguities = bool(
+                    baseline.contract_ambiguities
+                    and any(
+                        getattr(ca, "status", "Open").lower() != "resolved"
+                        and "RESOLVED" not in getattr(ca, "recommended_clarification", "").upper()
+                        and "RESOLVED" not in getattr(ca, "conflicting_clauses", "").upper()
+                        for ca in baseline.contract_ambiguities
+                    )
+                )
+                if not has_ambiguities:
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+                else:
+                    item.status = "Review Required"
+                    item.exception_required = True
+                    if not item.exception_details:
+                        item.exception_details = "Contractual ambiguities require alignment."
 
         # G01-15: Open questions
         if "G01-15" in chk_map:
@@ -661,6 +967,22 @@ class ReadinessScoringEngine:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None
+            else:
+                item.status = "Review Required"
+                item.evidence = f"{len(baseline.open_questions)} validation points logged for mobilization confirmation."
+                item.exception_required = False
+                item.exception_details = None
+
+        # Update approval_status for all items
+        for item in baseline.readiness_checklist:
+            if item.status in ("Complete", "Approved"):
+                item.approval_status = "Approved"
+            elif item.exception_required or item.status == "Exception Required":
+                item.approval_status = "Exception Required"
+            elif item.status == "Confirmation Required":
+                item.approval_status = "Pending Confirmation"
+            else:
+                item.approval_status = "Pending Review"
 
     @classmethod
     def generate_action_required_items(
@@ -791,8 +1113,14 @@ class ReadinessScoringEngine:
                 )
                 act_counter += 1
 
-        # 2. Generate Open Clarifications (exactly 1 per open_question)
+        # 2. Generate Open Clarifications (1 per open_question not already covered by an anomaly action)
         for q in baseline.open_questions:
+            m_amb = re.match(r'^\[([A-Z0-9_\-]+)\]', q.strip())
+            if m_amb:
+                amb_id = m_amb.group(1)
+                if any(a.target_entity_id == amb_id for a in action_items):
+                    continue
+
             mapped_gate_id = cls.match_question_to_gate_id(q)
             meta = cls.GATE_METADATA.get(mapped_gate_id, {})
             checklist_item = checklist_by_id.get(mapped_gate_id)
@@ -807,8 +1135,8 @@ class ReadinessScoringEngine:
                 if checklist_item and checklist_item.related_section4_artifact
                 else meta.get("artifact", "SOW Interpretation Summary")
             )
-            target_table = meta.get("target_table_title", artifact)
-            target_col = meta.get("target_column_header", "Ambiguities & Clarification Notes")
+            target_table = "SOW Interpretation Summary"
+            target_col = "Ambiguities & Clarification Notes"
             target_entity_id = None
             req_action = meta.get("default_action", "Review and clarify during mobilization kickoff.")
             score_delta = round(max(0.5, (0.05 * cls.WEIGHT_COMMERCIAL_RISK * 100.0) + 1.0), 1)
@@ -1066,6 +1394,23 @@ class ReadinessScoringEngine:
     @classmethod
     def evaluate_and_rescore(cls, baseline: StartupKitBaseline) -> StartupKitBaseline:
         """Recalculate dimensional readiness scores, gate decision, and action items for a baseline."""
+        cls.synchronize_open_questions_with_artifacts(baseline)
+        if baseline.contract_ambiguities:
+            for ca in baseline.contract_ambiguities:
+                is_resolved = (
+                    getattr(ca, "status", "Open").lower() == "resolved"
+                    or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
+                )
+                if is_resolved:
+                    baseline.open_questions = [
+                        q for q in baseline.open_questions if ca.anomaly_id.upper() not in q.upper()
+                    ]
+                else:
+                    amb_q = f"[{ca.anomaly_id}] {ca.recommended_clarification}"
+                    if not any(ca.anomaly_id.upper() in q.upper() for q in baseline.open_questions):
+                        baseline.open_questions.append(amb_q)
+
+        cls.synchronize_checklist_with_artifacts(baseline)
         composite_score, readiness_breakdown = cls.compute_scores(baseline)
         open_exceptions = [
             i for i in baseline.readiness_checklist if i.exception_required or i.status == "Exception Required"
@@ -1097,6 +1442,7 @@ class ReadinessScoringEngine:
 
         action_required_items = cls.generate_action_required_items(baseline)
         baseline.action_required_items = action_required_items
+        cls.link_action_items_to_artifacts(baseline)
 
         return baseline
 

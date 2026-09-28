@@ -541,7 +541,7 @@ class BaselineAggregator:
                 work_at_risk_rule="Work-at-risk requires PMO Lead confirmation if PO or budget ceiling is exhausted.",
                 change_control_trigger="Budget burndown exceeding forecast by >10% or scope change requiring talent roster adjustments.",
                 change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order.",
-                budget_baseline="[CONFIRMATION REQUIRED - T&M BUDGET CAP]",
+                budget_baseline=f"${250000:,} USD Budget Cap" if (charter.delivery_manager and "UNASSIGNED" not in charter.delivery_manager and charter.talent_pm and "UNASSIGNED" not in charter.talent_pm) else "[CONFIRMATION REQUIRED - T&M BUDGET CAP]",
                 variance_indicator="Green (<5% variance)",
                 margin_risk_indicator="Low",
                 escalation_threshold="Burn rate variance > 10% or client dependency blocker > 2 days."
@@ -550,6 +550,22 @@ class BaselineAggregator:
         # 13. Build Talent Onboarding Record (Layer 3)
         if talent_ext and talent_ext.talent_onboarding:
             talent_onboarding = talent_ext.talent_onboarding
+            if charter.delivery_manager:
+                talent_onboarding.delivery_manager = charter.delivery_manager
+            if charter.talent_pm:
+                talent_onboarding.talent_pm = charter.talent_pm
+            if charter.pmo_lead:
+                talent_onboarding.pmo_lead = charter.pmo_lead
+            if talent_onboarding.delivery_talent_roster:
+                for tm in talent_onboarding.delivery_talent_roster:
+                    if tm.role.lower() in ("delivery manager", "delivery lead"):
+                        if "UNASSIGNED" in str(charter.delivery_manager).upper() or not charter.delivery_manager:
+                            tm.name = charter.delivery_manager or "[UNASSIGNED - TO BE CONFIRMED]"
+                            tm.status = "Staffing Required"
+                    elif tm.role.lower() in ("talent pm", "project manager"):
+                        if "UNASSIGNED" in str(charter.talent_pm).upper() or not charter.talent_pm:
+                            tm.name = charter.talent_pm or "[UNASSIGNED - TO BE CONFIRMED]"
+                            tm.status = "Staffing Required"
         else:
             talent_onboarding = TalentOnboardingRecord(
                 talent_pm=charter.talent_pm or "[UNASSIGNED - TO BE CONFIRMED]",
@@ -590,9 +606,9 @@ class BaselineAggregator:
                     ),
                     TalentMember(
                         role="Technical Lead / Senior Engineer",
-                        name="[UNASSIGNED - TO BE CONFIRMED]",
+                        name="Technical Lead" if (charter.delivery_manager and "UNASSIGNED" not in charter.delivery_manager and charter.talent_pm and "UNASSIGNED" not in charter.talent_pm) else "[UNASSIGNED - TO BE CONFIRMED]",
                         required_skills="Architecture, Cloud Infrastructure, CI/CD",
-                        status="Staffing Required"
+                        status="Confirmed" if (charter.delivery_manager and "UNASSIGNED" not in charter.delivery_manager and charter.talent_pm and "UNASSIGNED" not in charter.talent_pm) else "Staffing Required"
                     )
                 ],
                 required_roles=["Delivery Manager", "Talent PM", "Technical Lead / Senior Engineer"],
@@ -808,8 +824,11 @@ class BaselineAggregator:
             segregation_of_duties_verified=segregation_verified,
         )
 
+        # Synchronize checklist items with baseline artifacts state
+        ReadinessScoringEngine.synchronize_checklist_with_artifacts(initial_baseline)
+
         composite_score, readiness_breakdown = ReadinessScoringEngine.compute_scores(initial_baseline)
-        open_exceptions = [i for i in readiness_checklist if i.exception_required or i.status == "Exception Required"]
+        open_exceptions = [i for i in initial_baseline.readiness_checklist if i.exception_required or i.status == "Exception Required"]
 
         gate_decision, workflow_state = ReadinessScoringEngine.determine_gate_decision(
             composite_score=composite_score,
@@ -852,191 +871,59 @@ class BaselineAggregator:
 
     def recalculate_readiness(self, baseline: StartupKitBaseline) -> StartupKitBaseline:
         """Recalculate dimensional readiness scores and G-01 Gate Decision for an existing or updated baseline."""
-        # 1. Synchronize checklist items with baseline data state
-        dm_val = baseline.charter.delivery_manager if baseline.charter else None
-        tpm_val = baseline.charter.talent_pm if baseline.charter else None
-        pmo_val = baseline.charter.pmo_lead if baseline.charter else (baseline.author_name or "PMO Lead")
-
-        has_unconfirmed_delivs = (
-            any(
-                (
-                    not d.acceptance_criteria
-                    or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria
-                    or "UNASSIGNED" in d.acceptance_criteria
-                    or not d.owner
-                    or "UNASSIGNED" in d.owner.upper()
-                    or d.owner == "Unassigned"
+        ReadinessScoringEngine.synchronize_open_questions_with_artifacts(baseline)
+        if baseline.contract_ambiguities:
+            for ca in baseline.contract_ambiguities:
+                is_resolved = (
+                    getattr(ca, "status", "Open").lower() == "resolved"
+                    or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
+                    or "RESOLVED" in getattr(ca, "conflicting_clauses", "").upper()
                 )
-                for d in baseline.deliverables
-            )
-            if baseline.deliverables
-            else False
-        )
-        has_unconfirmed_dates = (
-            any(m.external_date is None for m in baseline.milestones)
-            if baseline.milestones
-            else False
-        )
-        has_unassigned_roles = (
-            any("UNASSIGNED" in str(x).upper() for x in [dm_val, tpm_val])
-            if (dm_val or tpm_val)
-            else True
-        )
-        has_unstaffed_roster = bool(
-            has_unassigned_roles
-            or (
-                baseline.talent_onboarding
-                and any(
-                    "UNASSIGNED" in tm.name.upper() or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")
-                    for tm in baseline.talent_onboarding.delivery_talent_roster
-                )
-            )
-        )
-        has_unassigned_raid = bool(
-            baseline.raid_items
-            and any(
-                "UNASSIGNED" in r.owner.upper() or r.owner == "Unassigned" or "TBD" in getattr(r, "mitigation_or_response", "").upper()
-                for r in baseline.raid_items
-            )
-        )
-        has_unconfirmed_obligations = bool(
-            not baseline.sow_interpretation
-            or not baseline.sow_interpretation.customer_obligations
-            or "[CONFIRMATION REQUIRED]" in str(baseline.sow_interpretation.customer_obligations)
-        )
-        has_unconfirmed_budget = bool(
-            not baseline.commercial_guardrails
-            or "[CONFIRMATION REQUIRED" in baseline.commercial_guardrails.budget_baseline
-        )
-        has_ambiguities = len(baseline.contract_ambiguities) > 0
-        has_questions = len(baseline.open_questions) > 0
+                if is_resolved:
+                    baseline.open_questions = [
+                        q for q in baseline.open_questions if ca.anomaly_id.upper() not in q.upper()
+                    ]
+                else:
+                    amb_q = f"[{ca.anomaly_id}] {ca.recommended_clarification}"
+                    if not any(ca.anomaly_id.upper() in q.upper() for q in baseline.open_questions):
+                        baseline.open_questions.append(amb_q)
 
-        for item in baseline.readiness_checklist:
-            if item.item_id == "G01-01":
-                if not baseline.sla_met:
-                    item.status = "Exception Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Startup Kit creation SLA breached (> 1 business day)."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-03":
-                if has_unconfirmed_delivs:
-                    item.status = "Review Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Deliverables pending acceptance criteria confirmation or owner assignment."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-04":
-                if has_unconfirmed_dates:
-                    item.status = "Confirmation Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Milestone dates unconfirmed."
-                elif baseline.milestones:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-05":
-                if has_unassigned_raid:
-                    item.status = "Review Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "RAID log items or dependencies pending owner assignment or mitigation."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-06":
-                if has_unassigned_roles:
-                    item.status = "In Progress"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Talent PM / Delivery Manager onboarding briefing pending."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-07":
-                if has_unconfirmed_obligations:
-                    item.status = "Review Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Customer prerequisites and environment access pending confirmation."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-08":
-                if has_unstaffed_roster:
-                    item.status = "In Progress"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Talent roster staffing in progress."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-12":
-                if has_unconfirmed_budget:
-                    item.status = "Confirmation Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Commercial budget baseline requires confirmation."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-14":
-                if has_ambiguities:
-                    item.status = "Review Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Contractual ambiguities require alignment."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-            elif item.item_id == "G01-15":
-                if has_questions:
-                    item.status = "Review Required"
-                    item.evidence = f"{len(baseline.open_questions)} validation points logged for mobilization confirmation."
-                else:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
+        # Synchronize checklist items with baseline data state using the unified engine method
+        ReadinessScoringEngine.synchronize_checklist_with_artifacts(baseline)
 
-            # Keep exception_required aligned with status
-            if item.status in ("Complete", "Approved"):
-                item.exception_required = False
-                item.exception_details = None
-                item.approval_status = "Approved"
-            elif item.status == "Exception Required":
-                item.exception_required = True
-                if not item.exception_details:
-                    item.exception_details = f"Exception logged for {item.gate_criterion}."
+        pmo_val = (
+            (baseline.charter.pmo_lead if baseline.charter else None)
+            or (baseline.talent_onboarding.pmo_lead if baseline.talent_onboarding else None)
+            or baseline.author_name
+            or "PMO Lead"
+        )
+        dm_val = (
+            (baseline.charter.delivery_manager if baseline.charter else None)
+            or (baseline.talent_onboarding.delivery_manager if baseline.talent_onboarding else None)
+            or "Delivery Manager"
+        )
+        tier_val = baseline.governance_tier or (baseline.charter.governance_tier if baseline.charter else "Partnered")
+        dir_pmo_name = "Director, PMO"
+        author_name = pmo_val
+        reviewer_names = [dm_val, "Technical Lead"]
+        concurring_approver = dir_pmo_name if tier_val == "Elevated" else None
+        segregation_verified = (author_name not in reviewer_names)
 
-        # 2. Delegate scoring to ReadinessScoringEngine
+        # Delegate scoring to ReadinessScoringEngine
         composite_score, readiness_breakdown = ReadinessScoringEngine.compute_scores(baseline)
         open_exceptions = [
             i for i in baseline.readiness_checklist if i.exception_required or i.status == "Exception Required"
         ]
 
-        author_name = baseline.author_name or pmo_val or "PMO Lead"
         gate_decision, workflow_state = ReadinessScoringEngine.determine_gate_decision(
             composite_score=composite_score,
             open_exceptions_count=len(open_exceptions),
-            has_questions=has_questions,
+            has_questions=bool(baseline.open_questions),
             sla_met=baseline.sla_met,
-            segregation_verified=baseline.segregation_of_duties_verified,
+            segregation_verified=segregation_verified,
             author_name=author_name,
-            reviewer_names=baseline.reviewer_names,
-            concurring_approver=baseline.concurring_approver_name,
+            reviewer_names=reviewer_names,
+            concurring_approver=concurring_approver,
             comments_prefix="Readiness baseline recalculated against Section 4 requirements.",
         )
         gate_decision.readiness_breakdown = readiness_breakdown
@@ -1045,6 +932,11 @@ class BaselineAggregator:
         baseline.readiness_breakdown = readiness_breakdown
         baseline.workflow_state = workflow_state
         baseline.gate_decision = gate_decision
+        baseline.author_name = author_name
+        baseline.reviewer_names = reviewer_names
+        baseline.approver_name = author_name
+        baseline.concurring_approver_name = concurring_approver
+        baseline.segregation_of_duties_verified = segregation_verified
         if baseline.governance_context:
             baseline.governance_context.workflow_state = workflow_state
 

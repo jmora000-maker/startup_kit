@@ -40,10 +40,11 @@ def clean_text(text: Optional[str]) -> str:
     """Strip [ACT-XX] badges and normalize whitespace from extracted table cell text."""
     if not text:
         return ""
-    # Strip any [ACT-...] or [ACT-REQ-...] badge (including any nested bracket content up to Recovery])
-    cleaned = re.sub(r'\[ACT(?:-REQ)?-.*?\+\d+(?:\.\d+)?%\s*Recovery\]', '', text, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\[ACT-[^\]]+\]', '', cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\[ACT-REQ-[^\]]+\]', '', cleaned, flags=re.IGNORECASE)
+    # 1. Strip badges ending with (+X.X% Recovery)] even if they contain nested brackets
+    cleaned = re.sub(r'\[ACT(?:-REQ)?-[^\]:]+:\s*.*?\(\+\d+(?:\.\d+)?%\s*Recovery\)\]', '', text, flags=re.IGNORECASE)
+    # 2. Strip standard action badges [ACT-...]
+    cleaned = re.sub(r'\[ACT(?:-REQ)?-[^\]]+\]', '', cleaned, flags=re.IGNORECASE)
+    # 3. Strip any trailing/orphaned recovery tags
     cleaned = re.sub(r'\(\+\d+(?:\.\d+)?%\s*Recovery\)?\]?', '', cleaned, flags=re.IGNORECASE)
     return cleaned.strip()
 
@@ -159,6 +160,21 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         # 9. RAID Items & Decisions
         raid_items, decisions = self._parse_raid_and_decisions_tables(tables, src_ref)
 
+        # 9b. Dependency and Assumption Log Table
+        dependencies_assumptions = self._parse_dependencies_assumptions_table(tables, src_ref)
+        if not dependencies_assumptions:
+            dependencies_assumptions = [
+                DependencyAssumptionItem(
+                    id=r.id,
+                    type="Dependency" if r.type == "Dependency" else "Assumption",
+                    description=r.description,
+                    source_reference=src_ref,
+                    owner=r.owner,
+                    status=r.status
+                )
+                for r in raid_items if r.type in ("Assumption", "Dependency")
+            ]
+
         # 10. Communications Plan
         communications_plan = self._parse_communications_table(tables)
 
@@ -171,15 +187,103 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         # 13. Talent Onboarding Record & Delivery Roster
         talent_onboarding = self._parse_talent_onboarding(doc, tables, pmo_lead, delivery_manager, talent_pm, src_ref)
 
+        def _is_assigned(val_str: Optional[str]) -> bool:
+            if not val_str:
+                return False
+            v = val_str.strip().upper()
+            return not ("UNASSIGNED" in v or "CONFIRMATION" in v or v in ("", "NONE", "N/A", "TBD", "[TBD]"))
+
+        # Check roster for assigned leadership names
+        roster_dm = None
+        roster_tpm = None
+        roster_pmo = None
+        if talent_onboarding.delivery_talent_roster:
+            for tm in talent_onboarding.delivery_talent_roster:
+                if any(w in tm.role.lower() for w in ("delivery manager", "delivery lead", "dm")):
+                    if _is_assigned(tm.name):
+                        roster_dm = tm.name
+                elif any(w in tm.role.lower() for w in ("talent pm", "project manager", "tpm")):
+                    if _is_assigned(tm.name):
+                        roster_tpm = tm.name
+                elif "pmo lead" in tm.role.lower():
+                    if _is_assigned(tm.name):
+                        roster_pmo = tm.name
+
+        # Check stakeholders for assigned leadership names
+        stk_dm = None
+        stk_tpm = None
+        stk_pmo = None
+        if stakeholders:
+            for stk in stakeholders:
+                if any(w in stk.role.lower() for w in ("delivery manager", "delivery lead", "dm")):
+                    if _is_assigned(stk.name):
+                        stk_dm = stk.name
+                elif any(w in stk.role.lower() for w in ("talent pm", "project manager", "tpm")):
+                    if _is_assigned(stk.name):
+                        stk_tpm = stk.name
+                elif "pmo lead" in stk.role.lower():
+                    if _is_assigned(stk.name):
+                        stk_pmo = stk.name
+
+        # Synchronize resolved leadership across parsed structures
+        resolved_pmo = (
+            pmo_lead if _is_assigned(pmo_lead) else None
+        ) or (
+            talent_onboarding.pmo_lead if _is_assigned(talent_onboarding.pmo_lead) else None
+        ) or (
+            charter.pmo_lead if _is_assigned(charter.pmo_lead) else None
+        ) or roster_pmo or pmo_lead
+
+        resolved_dm = (
+            delivery_manager if _is_assigned(delivery_manager) else None
+        ) or (
+            talent_onboarding.delivery_manager if _is_assigned(talent_onboarding.delivery_manager) else None
+        ) or (
+            charter.delivery_manager if _is_assigned(charter.delivery_manager) else None
+        ) or roster_dm or delivery_manager
+
+        resolved_tpm = (
+            talent_pm if _is_assigned(talent_pm) else None
+        ) or (
+            talent_onboarding.talent_pm if _is_assigned(talent_onboarding.talent_pm) else None
+        ) or (
+            charter.talent_pm if _is_assigned(charter.talent_pm) else None
+        ) or roster_tpm or talent_pm
+
+        charter.pmo_lead = resolved_pmo
+        charter.delivery_manager = resolved_dm
+        charter.talent_pm = resolved_tpm
+
+        talent_onboarding.pmo_lead = resolved_pmo
+        talent_onboarding.delivery_manager = resolved_dm
+        talent_onboarding.talent_pm = resolved_tpm
+
+        if talent_onboarding.delivery_talent_roster:
+            for tm in talent_onboarding.delivery_talent_roster:
+                if any(w in tm.role.lower() for w in ("delivery manager", "delivery lead", "dm")):
+                    if _is_assigned(resolved_dm):
+                        if not _is_assigned(tm.name):
+                            tm.name = resolved_dm
+                        if not tm.status or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required"):
+                            tm.status = "Confirmed"
+                elif any(w in tm.role.lower() for w in ("talent pm", "project manager", "tpm")):
+                    if _is_assigned(resolved_tpm):
+                        if not _is_assigned(tm.name):
+                            tm.name = resolved_tpm
+                        if not tm.status or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required"):
+                            tm.status = "Confirmed"
+                elif _is_assigned(tm.name) and (not tm.status or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")):
+                    tm.status = "Confirmed"
+
         # Build Governance Context
         gov_context = GovernanceContext(
             project_name=project_name,
             governance_tier=governance_tier,
             contract_type=contract_type,
             client_name=client_name,
-            delivery_manager=delivery_manager,
-            talent_pm=talent_pm,
-            pmo_lead=pmo_lead,
+            delivery_manager=resolved_dm,
+            talent_pm=resolved_tpm,
+            pmo_lead=resolved_pmo,
             executive_summary=charter.project_purpose,
             workflow_state=workflow_state,
             sla_met=sla_met
@@ -193,7 +297,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             readiness_score=0.0,
             workflow_state=workflow_state,
             sla_met=sla_met,
-            author_name=pmo_lead
+            author_name=resolved_pmo
         )
 
         return StartupKitBaseline(
@@ -206,17 +310,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             deliverables=deliverables,
             milestones=milestones,
             backlog_seed=backlog_seed,
-            dependencies_assumptions=[
-                DependencyAssumptionItem(
-                    id=r.id,
-                    type="Dependency" if r.type == "Dependency" else "Assumption",
-                    description=r.description,
-                    source_reference=src_ref,
-                    owner=r.owner,
-                    status=r.status
-                )
-                for r in raid_items if r.type in ("Assumption", "Dependency")
-            ],
+            dependencies_assumptions=dependencies_assumptions,
             raid_items=raid_items,
             decisions=decisions,
             communications_plan=communications_plan,
@@ -233,7 +327,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             sow_awarded_date=date.today(),
             kit_drafted_date=date.today(),
             sla_met=sla_met,
-            author_name=pmo_lead
+            author_name=resolved_pmo
         )
 
     # -------------------------------------------------------------------------
@@ -284,7 +378,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             res["delivery_manager"] = value
         elif "talent pm" in label_clean:
             res["talent_pm"] = value
-        elif "pmo lead" in label_clean:
+        elif "pmo" in label_clean:
             res["pmo_lead"] = value
         elif "1-day sla status" in label_clean or "sla status" in label_clean:
             res["sla_met"] = not ("breached" in value.lower())
@@ -345,7 +439,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     cells = [clean_text(c.text) for c in row.cells]
                     if len(cells) >= 5 and cells[1] == "Open Clarification":
                         finding = cells[4].split("\n• Action:")[0].replace("• Action:", "").strip()
-                        if finding and "[RESOLVED]" not in finding.upper() and finding not in questions:
+                        if finding and "RESOLVED" not in finding.upper() and finding not in questions:
                             questions.append(finding)
 
         # Also check in-table cell action badges if questions were not in a separate table
@@ -356,16 +450,31 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     continue
                 for row in tbl.rows[1:]:
                     for cell in row.cells:
-                        for m in re.finditer(r'\[ACT-(\d+):\s*(.*?)(?:\s*\(\+\d+\.?\d*%\s*Recovery\))?\]', cell.text):
+                        # 1. Badges with recovery tag (handles nested brackets)
+                        for m in re.finditer(r'\[ACT-(\d+):\s*(.*?)\s*\(\+\d+(?:\.\d+)?%\s*Recovery\)\]', cell.text, flags=re.IGNORECASE):
                             act_num = int(m.group(1))
                             desc = m.group(2).strip()
                             if act_num > exceptions_count:
-                                desc = re.sub(
-                                    r'^(?:Review and clarify during mobilization kickoff|Issue access prerequisites list to client sponsor|Clarify and confirm acceptance criteria for \w+|Confirm milestone schedule during kickoff|Review deliverable validation point during kickoff|Review staffing requirements during kickoff):\s*',
-                                    '',
-                                    desc
-                                ).strip()
-                                if desc and "[RESOLVED]" not in desc.upper() and desc not in questions:
+                                if ":" in desc:
+                                    prefix, rest = desc.split(":", 1)
+                                    if any(w in prefix.lower() for w in ("kickoff", "clarify", "confirm", "review", "sponsor", "prerequisites", "validation", "mobilization", "align")):
+                                        desc = rest.strip()
+                                if desc and "RESOLVED" not in desc.upper() and desc not in questions:
+                                    questions.append(desc)
+
+                        # Strip the matched recovery badges before looking for simple badges
+                        remaining = re.sub(r'\[ACT(?:-REQ)?-[^\]:]+:\s*.*?\(\+\d+(?:\.\d+)?%\s*Recovery\)\]', '', cell.text, flags=re.IGNORECASE)
+
+                        # 2. Badges without recovery tag
+                        for m in re.finditer(r'\[ACT-(\d+):\s*([^\]]+)\]', remaining, flags=re.IGNORECASE):
+                            act_num = int(m.group(1))
+                            desc = m.group(2).strip()
+                            if act_num > exceptions_count:
+                                if ":" in desc:
+                                    prefix, rest = desc.split(":", 1)
+                                    if any(w in prefix.lower() for w in ("kickoff", "clarify", "confirm", "review", "sponsor", "prerequisites", "validation", "mobilization", "align")):
+                                        desc = rest.strip()
+                                if desc and "RESOLVED" not in desc.upper() and desc not in questions:
                                     questions.append(desc)
 
         return questions
@@ -601,7 +710,10 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 elif "exclusions" in dim or "out-of-scope" in dim:
                     exclusions.extend(items)
                 elif "obligations" in dim or "prerequisites" in dim:
-                    obligations.extend(items)
+                    if not items or all(not it.strip() for it in items):
+                        obligations.append("[CONFIRMATION REQUIRED]")
+                    else:
+                        obligations.extend([it for it in items if it.strip()])
                 elif "assumptions" in dim or "constraints" in dim:
                     assumptions.extend(items)
                 elif "platform" in dim or "environment" in dim:
@@ -622,12 +734,22 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             for row in amb_tbl.rows[1:]:
                 cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) >= 5:
+                    is_resolved = (
+                        "RESOLVED" in cells[4].upper()
+                        or (len(cells) >= 6 and "RESOLVED" in cells[5].upper())
+                        or "RESOLVED" in cells[0].upper()
+                        or "RESOLVED" in cells[1].upper()
+                        or "RESOLVED" in cells[2].upper()
+                        or "RESOLVED" in cells[3].upper()
+                    )
+                    amb_status = "Resolved" if is_resolved else "Open"
                     ambiguities.append(ContractAmbiguityItem(
                         anomaly_id=cells[0],
                         category=cells[1],
                         conflicting_clauses=cells[2],
                         risk_impact=cells[3],
-                        recommended_clarification=cells[4]
+                        recommended_clarification=cells[4],
+                        status=amb_status
                     ))
 
         summary = SOWInterpretationSummary(
@@ -741,10 +863,11 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
         id_idx = next((i for i, h in enumerate(header_cells) if "id" in h), 0)
         desc_idx = next((i for i, h in enumerate(header_cells) if "name" in h or "desc" in h or "deliverable" in h), 1)
-        owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 2)
-        crit_idx = next((i for i, h in enumerate(header_cells) if "criteria" in h or "acceptance" in h), 3)
+        crit_idx = next((i for i, h in enumerate(header_cells) if "criteria" in h or "acceptance" in h), 2)
+        ev_idx = next((i for i, h in enumerate(header_cells) if "evidence" in h), 3)
         app_idx = next((i for i, h in enumerate(header_cells) if "approver" in h or "client" in h), 4)
-        signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), 5)
+        owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 5)
+        signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), 6)
 
         for row in tbl.rows[1:]:
             cells = [clean_text(c.text) for c in row.cells]
@@ -754,6 +877,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             d_name = cells[desc_idx] if desc_idx < len(cells) else ""
             owner = cells[owner_idx] if owner_idx < len(cells) else "Unassigned"
             criteria_str = cells[crit_idx] if crit_idx < len(cells) else None
+            ev_str = cells[ev_idx] if (ev_idx != -1 and ev_idx < len(cells)) else "Test sign-off sheet / automated pipeline run output"
             app_str = cells[app_idx] if app_idx < len(cells) else "[UNASSIGNED - TO BE CONFIRMED]"
             signoff_str = cells[signoff_idx] if signoff_idx < len(cells) else "Formal written sign-off"
 
@@ -764,6 +888,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 source_reference=src_ref,
                 owner=owner,
                 acceptance_criteria=criteria_str,
+                evidence_required=ev_str,
                 client_approver=app_str,
                 review_window=signoff_str,
                 rejection_rework_path="Talent PM / Team rework within 3 business days of notice"
@@ -788,12 +913,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         if tbl:
             header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
             type_idx = next((i for i, h in enumerate(header_cells) if "type" in h), 0)
-            id_idx = next((i for i, h in enumerate(header_cells) if "id" in h), 1)
-            desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 2)
+            id_idx = next((i for i, h in enumerate(header_cells) if "id" in h and "raid" not in h), -1)
+            desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 1)
             owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 3)
-            status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 4)
-            mit_idx = next((i for i, h in enumerate(header_cells) if "mitigation" in h or "strategy" in h), 5)
-            imp_idx = next((i for i, h in enumerate(header_cells) if "impact" in h or "severity" in h), 6)
+            status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 5)
+            mit_idx = next((i for i, h in enumerate(header_cells) if "mitigation" in h or "strategy" in h or "response" in h), 4)
+            imp_idx = next((i for i, h in enumerate(header_cells) if "impact" in h or "severity" in h), -1)
 
             for row in tbl.rows[1:]:
                 cells = [clean_text(c.text) for c in row.cells]
@@ -802,12 +927,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 r_type = cells[type_idx] if type_idx < len(cells) else "Risk"
                 if r_type not in ("Risk", "Assumption", "Issue", "Dependency"):
                     r_type = "Risk"
-                r_id = cells[id_idx] if id_idx < len(cells) else f"RAID-{len(raid_items)+1:02d}"
+                r_id = cells[id_idx] if (id_idx != -1 and id_idx < len(cells)) else f"RAID-{len(raid_items)+1:02d}"
                 r_desc = cells[desc_idx] if desc_idx < len(cells) else ""
                 r_owner = cells[owner_idx] if owner_idx < len(cells) else "Delivery Manager"
                 r_status = cells[status_idx] if status_idx < len(cells) else "Open"
                 r_mit = cells[mit_idx] if mit_idx < len(cells) else "Active monitoring"
-                r_imp = cells[imp_idx] if imp_idx < len(cells) else "Medium"
+                r_imp = cells[imp_idx] if (imp_idx != -1 and imp_idx < len(cells)) else "Medium"
 
                 raid_items.append(RiskAssumption(
                     id=r_id,
@@ -834,6 +959,44 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     ))
 
         return raid_items, decisions
+
+    def _parse_dependencies_assumptions_table(
+        self,
+        tables: List[Table],
+        src_ref: SourceReference
+    ) -> List[DependencyAssumptionItem]:
+        """Parse Dependency and Assumption Log table."""
+        items: List[DependencyAssumptionItem] = []
+        tbl = self._find_table_by_header(tables, ["item id", "type", "category"])
+        if not tbl:
+            tbl = self._find_table_by_header(tables, ["item id", "type", "owner"])
+        if not tbl:
+            tbl = self._find_table_by_header(tables, ["dependency and assumption", "owner"])
+        if tbl:
+            header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
+            id_idx = next((i for i, h in enumerate(header_cells) if "id" in h), 0)
+            type_idx = next((i for i, h in enumerate(header_cells) if "type" in h), 1)
+            desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 2)
+            owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 4)
+            status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 5)
+            for row in tbl.rows[1:]:
+                cells = [clean_text(c.text) for c in row.cells]
+                if len(cells) < 3:
+                    continue
+                d_id = cells[id_idx] if id_idx < len(cells) else f"DA-{len(items)+1:02d}"
+                d_type = cells[type_idx] if type_idx < len(cells) else "Dependency"
+                d_desc = cells[desc_idx] if desc_idx < len(cells) else ""
+                d_owner = cells[owner_idx] if owner_idx < len(cells) else "Unassigned"
+                d_status = cells[status_idx] if status_idx < len(cells) else "Open"
+                items.append(DependencyAssumptionItem(
+                    id=d_id,
+                    type=d_type,
+                    description=d_desc,
+                    source_reference=src_ref,
+                    owner=d_owner,
+                    status=d_status
+                ))
+        return items
 
     def _parse_communications_table(self, tables: List[Table]) -> List[CommunicationsPlanItem]:
         """Parse Communications and Reporting Plan table."""
@@ -1010,6 +1173,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         roster: List[TalentMember] = []
 
         # Check for leadership paragraph overrides in Section 3.4
+        def _is_assigned(val_str: Optional[str]) -> bool:
+            if not val_str:
+                return False
+            v = val_str.strip().upper()
+            return not ("UNASSIGNED" in v or "CONFIRMATION" in v or v in ("", "NONE", "N/A", "TBD"))
+
         for p in doc.paragraphs:
             t = p.text.strip()
             if "Onboarding Leadership:" in t:
@@ -1017,11 +1186,17 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 m_dm = re.search(r'Delivery Manager:\s*([^|]+)', t)
                 m_pmo = re.search(r'PMO Lead:\s*([^|]+)', t)
                 if m_tpm and m_tpm.group(1).strip():
-                    tpm = m_tpm.group(1).strip()
+                    val = m_tpm.group(1).strip()
+                    if _is_assigned(val) or not _is_assigned(tpm):
+                        tpm = val
                 if m_dm and m_dm.group(1).strip():
-                    dm = m_dm.group(1).strip()
+                    val = m_dm.group(1).strip()
+                    if _is_assigned(val) or not _is_assigned(dm):
+                        dm = val
                 if m_pmo and m_pmo.group(1).strip():
-                    pmo_lead = m_pmo.group(1).strip()
+                    val = m_pmo.group(1).strip()
+                    if _is_assigned(val) or not _is_assigned(pmo_lead):
+                        pmo_lead = val
 
         # Parse Roster table
         tbl = self._find_table_by_header(tables, ["role", "named talent", "staffing status"])
@@ -1035,10 +1210,10 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     status_val = cells[3]
                     if status_val.lower() in ("confirmed", "active", "approved", "staffed", "ready"):
                         status_val = "Confirmed"
-                    elif status_val.lower() in ("pending", "needs alignment", "unassigned"):
-                        status_val = "Pending"
-                    elif status_val not in ("Confirmed", "Pending", "Needs Alignment"):
-                        status_val = "Confirmed" if status_val.lower() in ("confirmed", "active", "approved", "staffed") else "Pending"
+                    elif status_val.lower() in ("pending", "needs alignment", "unassigned", "staffing required"):
+                        status_val = "Staffing Required"
+                    elif status_val not in ("Confirmed", "Pending", "Needs Alignment", "Staffing Required"):
+                        status_val = "Confirmed" if status_val.lower() in ("confirmed", "active", "approved", "staffed", "ready") else "Staffing Required"
 
                     roster.append(TalentMember(
                         role=cells[0],
@@ -1052,5 +1227,6 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             delivery_manager=dm,
             talent_pm=tpm,
             delivery_talent_roster=roster,
+            required_roles=[tm.role for tm in roster],
             source_reference=src_ref
         )

@@ -824,6 +824,9 @@ def test_readiness_score_heading_action_highlighting_and_no_page_break(multi_def
         # Skip Action Required table where type column may use custom badges
         if any(c.text.strip() == "Action ID" for c in tbl.rows[0].cells):
             continue
+        # Skip Checklist table where status column may display 'Confirmation Required'
+        if any(c.text.strip() == "Gate ID" or "gate id" in c.text.lower() or "startup readiness checklist" in c.text.lower() for c in tbl.rows[0].cells):
+            continue
         # Exclude header row
         for row_idx, row in enumerate(tbl.rows[1:], start=1):
             for cell_idx, cell in enumerate(row.cells):

@@ -55,13 +55,11 @@ def format_cell_with_action(
     cleaned_raw = re.sub(r'\[ACT-REQ-[^\]]+\]', '', cleaned_raw, flags=re.IGNORECASE)
     cleaned_raw = re.sub(r'\(\+\d+(?:\.\d+)?%\s*Recovery\)?\]?', '', cleaned_raw, flags=re.IGNORECASE).strip()
 
-    target_action: Optional[ActionRequiredItem] = None
+    target_actions: List[ActionRequiredItem] = []
     if isinstance(action, list):
-        valid_actions = [a for a in action if a is not None]
-        if valid_actions:
-            target_action = valid_actions[0]
+        target_actions = [a for a in action if a is not None]
     elif action is not None:
-        target_action = action
+        target_actions = [action]
 
     has_placeholder_match = bool(PLACEHOLDER_REGEX.search(cleaned_raw))
     is_bare_placeholder = (
@@ -92,10 +90,10 @@ def format_cell_with_action(
 
     cleaned_body = "\n".join(cleaned_lines).strip()
 
-    if target_action:
+    if target_actions:
         is_warning = True
-        act_tag = f"[{target_action.action_id}: {target_action.required_action} (+{target_action.score_recovery_delta:.1f}% Recovery)]"
-        formatted_text = f"{cleaned_body} {act_tag}" if cleaned_body else act_tag
+        act_tags = " ".join(f"[{a.action_id}: {a.required_action} (+{a.score_recovery_delta:.1f}% Recovery)]" for a in target_actions)
+        formatted_text = f"{cleaned_body} {act_tags}" if cleaned_body else act_tags
     elif is_bare_placeholder or is_warning or has_placeholder_match:
         is_warning = True
         act_id = f"ACT-REQ-{fallback_checklist_id.replace('G01-', '')}" if fallback_checklist_id else "ACT-REQ"
@@ -188,6 +186,31 @@ def find_cell_action(
     return None
 
 
+def find_all_cell_actions(
+    baseline: StartupKitBaseline,
+    table_title: str,
+    column_header: str,
+    entity_id: Optional[str] = None,
+    linked_action_id: Optional[str] = None,
+    used_actions: Optional[set] = None,
+) -> List[ActionRequiredItem]:
+    """Find all matching ActionRequiredItems for a cell."""
+    matched = []
+    while True:
+        act = find_cell_action(
+            baseline,
+            table_title=table_title,
+            column_header=column_header,
+            entity_id=entity_id,
+            linked_action_id=linked_action_id if not matched else None,
+            used_actions=used_actions
+        )
+        if act is None:
+            break
+        matched.append(act)
+    return matched
+
+
 def sanitize_filename(name: str) -> str:
     """Sanitize project name for safe filename creation."""
     s = re.sub(r'[^a-zA-Z0-9_\- ]+', '', name).strip()
@@ -221,6 +244,7 @@ class DocxGenerator(IDocumentWriter):
 
         ctx = baseline.governance_context
         charter = baseline.charter
+        talent_rec = baseline.talent_onboarding
         used_actions = set()
 
         # ==========================================
@@ -245,11 +269,16 @@ class DocxGenerator(IDocumentWriter):
         # Metadata Header Table
         meta_table = doc.add_table(rows=5, cols=4)
         sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
+        dm_meta = (ctx.delivery_manager if ctx and ctx.delivery_manager else None) or (charter.delivery_manager if charter and charter.delivery_manager else None) or (talent_rec.delivery_manager if talent_rec and talent_rec.delivery_manager else None) or "[UNASSIGNED - TO BE CONFIRMED]"
+        tpm_meta = (ctx.talent_pm if ctx and ctx.talent_pm else None) or (charter.talent_pm if charter and charter.talent_pm else None) or (talent_rec.talent_pm if talent_rec and talent_rec.talent_pm else None) or "[UNASSIGNED - TO BE CONFIRMED]"
+        pmo_meta = (ctx.pmo_lead if ctx and ctx.pmo_lead else None) or (charter.pmo_lead if charter and charter.pmo_lead else None) or (talent_rec.pmo_lead if talent_rec and talent_rec.pmo_lead else None) or (baseline.author_name if baseline.author_name else None) or "[UNASSIGNED - TO BE CONFIRMED]"
+        client_meta = (ctx.client_name if ctx and ctx.client_name else None) or (charter.client_name if charter and charter.client_name else None) or "N/A"
+
         meta_data = [
-            ("Project Name", baseline.project_name, "Client Sponsor", ctx.client_name if ctx and ctx.client_name else (charter.client_name if charter and charter.client_name else "N/A")),
+            ("Project Name", baseline.project_name, "Client Sponsor", client_meta),
             ("Governance Tier", baseline.governance_tier, "Contract Type", baseline.contract_type),
-            ("Delivery Manager", ctx.delivery_manager if ctx and ctx.delivery_manager else "[UNASSIGNED - TO BE CONFIRMED]", "Talent PM", ctx.talent_pm if ctx and ctx.talent_pm else "[UNASSIGNED - TO BE CONFIRMED]"),
-            ("PMO Lead", ctx.pmo_lead if ctx and ctx.pmo_lead else "[UNASSIGNED - TO BE CONFIRMED]", "Generated Date", datetime.now().strftime("%Y-%m-%d")),
+            ("Delivery Manager", dm_meta, "Talent PM", tpm_meta),
+            ("PMO Lead", pmo_meta, "Generated Date", datetime.now().strftime("%Y-%m-%d")),
             ("1-Day SLA Status", sla_status_str, "Workflow State", baseline.workflow_state),
         ]
 
@@ -368,7 +397,11 @@ class DocxGenerator(IDocumentWriter):
                 r = sow_table.add_row()
                 r.cells[0].text = dim
                 is_placeholder = bool(PLACEHOLDER_REGEX.search(val))
-                is_flagged = bool(act or is_placeholder or (dim == "Ambiguities & Clarification Notes" and val != "No critical ambiguities" and bool(val.strip())))
+                is_flagged = bool(
+                    act
+                    or is_placeholder
+                    or (dim == "Ambiguities & Clarification Notes" and bool(baseline.open_questions) and val != "No critical ambiguities" and bool(val.strip()))
+                )
                 format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
 
             style_table(sow_table, col_widths=[2.2, 5.0])
@@ -391,7 +424,8 @@ class DocxGenerator(IDocumentWriter):
                     row.cells[2].text = amb.conflicting_clauses
                     row.cells[3].text = amb.risk_impact
                     act = find_cell_action(baseline, "Contract Ambiguity & Conflict Analysis", "Recommended Clarification", entity_id=amb.anomaly_id, linked_action_id=amb.linked_action_id, used_actions=used_actions)
-                    format_cell_with_action(row.cells[4], amb.recommended_clarification, action=act, is_warning=True, fallback_checklist_id="G01-14", fallback_action_desc="Execute formal clarification note with client accounts")
+                    is_amb_open = (getattr(amb, "status", "Open").lower() != "resolved" and "[RESOLVED]" not in getattr(amb, "recommended_clarification", "").upper())
+                    format_cell_with_action(row.cells[4], amb.recommended_clarification, action=act, is_warning=bool(act or is_amb_open), fallback_checklist_id="G01-14", fallback_action_desc="Execute formal clarification note with client accounts")
 
                 style_table(amb_table, col_widths=[1.0, 1.2, 2.0, 1.8, 1.8])
                 doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -409,9 +443,9 @@ class DocxGenerator(IDocumentWriter):
             buf_str = m.internal_buffer_date.strftime("%Y-%m-%d") if m.internal_buffer_date else "N/A"
             src_str = f"{m.source_reference.document_name} ({m.source_reference.clause_or_slide or 'N/A'})" if m.source_reference else "N/A"
 
-            ext_act = find_cell_action(baseline, "Milestone Delivery Plan", "External Date", entity_id=m.id, linked_action_id=m.linked_action_id if m.external_date is None else None, used_actions=used_actions) if m.external_date is None else None
-            buf_act = find_cell_action(baseline, "Milestone Delivery Plan", "Internal Buffer Date", entity_id=m.id, used_actions=used_actions) if m.internal_buffer_date is None else None
-            owner_act = find_cell_action(baseline, "Milestone Delivery Plan", "Owner", entity_id=m.id, used_actions=used_actions) if (not m.owner or "UNASSIGNED" in m.owner.upper() or m.owner == "Unassigned") else None
+            ext_act = find_cell_action(baseline, "Milestone Delivery Plan", "External Date", entity_id=m.id, linked_action_id=m.linked_action_id, used_actions=used_actions)
+            buf_act = find_cell_action(baseline, "Milestone Delivery Plan", "Internal Buffer Date", entity_id=m.id, used_actions=used_actions)
+            owner_act = find_cell_action(baseline, "Milestone Delivery Plan", "Owner", entity_id=m.id, used_actions=used_actions)
 
             row.cells[0].text = m.id
             row.cells[1].text = m.description
@@ -439,13 +473,13 @@ class DocxGenerator(IDocumentWriter):
             for wp in baseline.backlog_seed:
                 row = wp_table.add_row()
                 is_unassigned = ("UNASSIGNED" in wp.owner.upper() or wp.owner == "Unassigned")
-                act = find_cell_action(baseline, "Scope Decomposition / Backlog Seed", "Owner", entity_id=wp.id, linked_action_id=wp.linked_action_id, used_actions=used_actions) if is_unassigned else None
+                act = find_cell_action(baseline, "Scope Decomposition / Backlog Seed", "Owner", entity_id=wp.id, linked_action_id=wp.linked_action_id, used_actions=used_actions)
 
                 row.cells[0].text = wp.id
                 row.cells[1].text = wp.parent_deliverable_id
                 row.cells[2].text = wp.title
                 row.cells[3].text = str(wp.preliminary_sequence)
-                format_cell_with_action(row.cells[4], wp.owner, action=act, is_warning=is_unassigned, fallback_checklist_id="G01-03", fallback_action_desc="Assign work package delivery owner")
+                format_cell_with_action(row.cells[4], wp.owner, action=act, is_warning=is_unassigned or bool(act), fallback_checklist_id="G01-03", fallback_action_desc="Assign work package delivery owner")
                 row.cells[5].text = wp.status
 
             style_table(wp_table, col_widths=[0.8, 1.0, 3.2, 0.6, 1.2, 0.8])
@@ -468,16 +502,16 @@ class DocxGenerator(IDocumentWriter):
             is_owner_unassigned = (d.owner == "Unassigned" or "UNASSIGNED" in d.owner.upper() or not d.owner)
             is_approver_unassigned = (not d.client_approver or d.client_approver == "[UNASSIGNED - TO BE CONFIRMED]" or "UNASSIGNED" in d.client_approver.upper() or "[CONFIRMATION REQUIRED]" in d.client_approver)
 
-            ac_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Acceptance Criteria", entity_id=d.id, linked_action_id=d.linked_action_id if is_criteria_unconfirmed else None, used_actions=used_actions) if is_criteria_unconfirmed else None
-            owner_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Owner", entity_id=d.id, used_actions=used_actions) if is_owner_unassigned else None
-            approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, used_actions=used_actions) if is_approver_unassigned else None
+            ac_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Acceptance Criteria", entity_id=d.id, linked_action_id=d.linked_action_id, used_actions=used_actions)
+            owner_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Owner", entity_id=d.id, used_actions=used_actions)
+            approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, used_actions=used_actions)
 
             row.cells[0].text = d.id
             row.cells[1].text = d.name or d.description
-            format_cell_with_action(row.cells[2], ac_text, action=ac_act, is_warning=is_criteria_unconfirmed, fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize acceptance test criteria and evidence expectations for {d.id}")
+            format_cell_with_action(row.cells[2], ac_text, action=ac_act, is_warning=is_criteria_unconfirmed or bool(ac_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize acceptance test criteria and evidence expectations for {d.id}")
             format_cell_with_action(row.cells[3], d.evidence_required, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.evidence_required), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize deliverable evidence expectations for {d.id}")
-            format_cell_with_action(row.cells[4], approver_text, action=approver_act, is_warning=is_approver_unassigned, fallback_checklist_id="G01-03", fallback_action_desc=f"Confirm client sign-off approver for {d.id}")
-            format_cell_with_action(row.cells[5], owner_text, action=owner_act, is_warning=is_owner_unassigned, fallback_checklist_id="G01-03", fallback_action_desc=f"Assign named delivery owner for {d.id}")
+            format_cell_with_action(row.cells[4], approver_text, action=approver_act, is_warning=is_approver_unassigned or bool(approver_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Confirm client sign-off approver for {d.id}")
+            format_cell_with_action(row.cells[5], owner_text, action=owner_act, is_warning=is_owner_unassigned or bool(owner_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Assign named delivery owner for {d.id}")
             format_cell_with_action(row.cells[6], d.review_window, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.review_window), fallback_checklist_id="G01-03", fallback_action_desc="Confirm deliverable review window")
 
         style_table(deliv_table, col_widths=[0.7, 1.8, 2.0, 1.3, 1.1, 0.9, 0.9])
@@ -495,7 +529,7 @@ class DocxGenerator(IDocumentWriter):
                 row = da_table.add_row()
                 is_unassigned = ("UNASSIGNED" in da.owner.upper() or da.owner == "Unassigned")
                 is_open = da.status.lower() in ("open", "pending", "unconfirmed")
-                act = find_cell_action(baseline, "Dependency and Assumption Log", "Owner", entity_id=da.id, linked_action_id=da.linked_action_id, used_actions=used_actions) if is_unassigned else None
+                act = find_cell_action(baseline, "Dependency and Assumption Log", "Owner", entity_id=da.id, linked_action_id=da.linked_action_id, used_actions=used_actions) or find_cell_action(baseline, "Dependency and Assumption Log", "Status", entity_id=da.id, linked_action_id=da.linked_action_id, used_actions=used_actions)
 
                 row.cells[0].text = da.id
                 row.cells[1].text = da.type
@@ -521,14 +555,14 @@ class DocxGenerator(IDocumentWriter):
             is_mitigation_missing = ("TBD" in mitigation_text.upper() or not mitigation_text or "[CONFIRMATION REQUIRED]" in mitigation_text)
             r_id = getattr(item, "id", None) or item.description[:25]
 
-            owner_act = find_cell_action(baseline, "RAID Log", "Owner", entity_id=r_id, linked_action_id=item.linked_action_id if is_unowned else None, used_actions=used_actions) if is_unowned else None
-            mit_act = find_cell_action(baseline, "RAID Log", "Mitigation / Response", entity_id=r_id, linked_action_id=item.linked_action_id if is_mitigation_missing else None, used_actions=used_actions) if is_mitigation_missing else None
+            owner_act = find_cell_action(baseline, "RAID Log", "Owner", entity_id=r_id, linked_action_id=item.linked_action_id, used_actions=used_actions)
+            mit_act = find_cell_action(baseline, "RAID Log", "Mitigation / Response", entity_id=r_id, linked_action_id=item.linked_action_id, used_actions=used_actions)
 
             row.cells[0].text = item.type
             row.cells[1].text = item.description
             row.cells[2].text = item.category if hasattr(item, "category") else "Technical"
-            format_cell_with_action(row.cells[3], item.owner, action=owner_act, is_warning=is_unowned, fallback_checklist_id="G01-05", fallback_action_desc="Assign risk owner")
-            format_cell_with_action(row.cells[4], mitigation_text, action=mit_act, is_warning=is_mitigation_missing, fallback_checklist_id="G01-05", fallback_action_desc="Document fallback mitigation workflow")
+            format_cell_with_action(row.cells[3], item.owner, action=owner_act, is_warning=is_unowned or bool(owner_act), fallback_checklist_id="G01-05", fallback_action_desc="Assign risk owner")
+            format_cell_with_action(row.cells[4], mitigation_text, action=mit_act, is_warning=is_mitigation_missing or bool(mit_act), fallback_checklist_id="G01-05", fallback_action_desc="Document fallback mitigation workflow")
             row.cells[5].text = item.status
 
         style_table(raid_table, col_widths=[0.9, 2.6, 1.0, 1.1, 2.2, 0.8])
@@ -679,10 +713,10 @@ class DocxGenerator(IDocumentWriter):
                         "UNASSIGNED" in tm.name.upper()
                         or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")
                     )
-                    act = find_cell_action(baseline, "Talent Onboarding Record", "Named Talent", entity_id=tm.role, linked_action_id=tm.linked_action_id, used_actions=used_actions) if is_unstaffed else None
+                    act = find_cell_action(baseline, "Talent Onboarding Record", "Named Talent", entity_id=tm.role, linked_action_id=tm.linked_action_id, used_actions=used_actions)
 
                     row.cells[0].text = tm.role
-                    format_cell_with_action(row.cells[1], tm.name, action=act, is_warning=is_unstaffed, fallback_checklist_id="G01-08", fallback_action_desc=f"Complete candidate selection and lock staffing for {tm.role}")
+                    format_cell_with_action(row.cells[1], tm.name, action=act, is_warning=is_unstaffed or bool(act), fallback_checklist_id="G01-08", fallback_action_desc=f"Complete candidate selection and lock staffing for {tm.role}")
                     row.cells[2].text = tm.required_skills
                     format_cell_with_action(row.cells[3], tm.status, action=None, is_warning=is_unstaffed, fallback_checklist_id="G01-08", fallback_action_desc="Update staffing status to Confirmed")
 

@@ -437,7 +437,7 @@ def test_zero_orphaned_placeholders_in_all_artifact_tables(tmp_path: Path, basel
     for table_idx, tbl in enumerate(doc.tables):
         if any(c.text.strip() == "Action ID" for c in tbl.rows[0].cells):
             continue
-        if any("startup readiness checklist" in c.text.lower() for c in tbl.rows[0].cells):
+        if any(c.text.strip() == "Gate ID" or "gate id" in c.text.lower() or "startup readiness checklist" in c.text.lower() for c in tbl.rows[0].cells):
             continue
         for row_idx, row in enumerate(tbl.rows):
             for cell_idx, cell in enumerate(row.cells):
