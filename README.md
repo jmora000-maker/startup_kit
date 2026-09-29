@@ -1,4 +1,4 @@
-git# Toptal PMO Startup Kit Generator
+# Toptal PMO Startup Kit Generator
 
 Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests Statements of Work (SOWs), client contracts, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized Word (`.docx`) Startup Kit reports and PMO Operating System seed data.
 
@@ -7,15 +7,17 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
 ## Key Features
 
 - **Multi-Format Ingestion & Pydantic v2 Validation**: Ingests project inputs across multiple file formats including PDF (`.pdf`), Word (`.docx`), PowerPoint (`.pptx`), and plain text (`.txt`). Enforces strict runtime validation at extraction boundaries, including PDF coordinate geometry and sequential page invariants.
-- **Structured LLM Extraction**: Leverages LangChain and OpenAI models (e.g., `gpt-4o`) to extract critical project metadata:
+- **Concurrent Multi-Pass Structured LLM Extraction**: Executes 14 independent domain extraction passes concurrently via thread pooling, reducing full baseline extraction runtime from ~9 minutes to under 1 minute.
+- **Anthropic Claude Primary Engine with OpenAI Fallback**: Leverages Anthropic Claude (`claude-sonnet-5-5` by default) with automatic model aliasing, thinking-block content filtering, and schema complexity caching. Seamlessly fails over to OpenAI (`gpt-4o`) if network or authentication issues arise.
+- **Comprehensive Project Baseline Domains**:
   - Project Charter & Executive Summary
-  - Scope Decomposition & Exclusions
-  - Deliverables & Acceptance Criteria
-  - Milestones & Delivery Roadmap
+  - Scope Decomposition & Exclusions (Work Packages)
+  - Deliverables & Acceptance Criteria (1-to-1 Traceability)
+  - Milestones & Delivery Roadmap (with Internal Buffers)
   - RAID Logs (Risks, Assumptions, Issues, Dependencies)
   - Stakeholder Matrix & Decision Rights
   - Governance Tiers (Guided, Partnered, Elevated) & Communications Plans
-  - Commercial Guardrails & Contractual Ambiguity Analysis
+  - Commercial Guardrails & Contractual Ambiguity Analysis (NFR-02)
   - Talent Onboarding Checklist & Resourcing Records
 - **Authoritative Startup Readiness Scoring Engine**: Centralized, deterministic 4-dimension mathematical engine (`ReadinessScoringEngine`) calculating composite readiness scores, dimensional breakdowns, gate review statuses, and quantified score recovery potential.
 - **Structured Action Required Mapping & 1-to-1 In-Artifact Integration**: Generates discrete, 1-to-1 mapped action items (`ACT-01`, `ACT-02`, etc.) for open exceptions and clarifications, embedding yellow-highlighted remediation badges directly inside Section 4 Layer 1, Layer 2, and Layer 3 artifact table cells without cell background shading alteration.
@@ -23,7 +25,7 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
 - **Word Re-ingestion & Rescoring Engine**: Re-evaluates edited Word documents (`--reingest-docx`), dynamically recalculating scores across all 4 dimensions and clearing resolved action items without re-running LLM extraction.
 - **Executive CLI Readiness Telemetry**: Outputs a formatted, color-coded summary dashboard in the terminal immediately following document generation and re-ingestion passes.
 - **PMO Operating System Export**: Optional export of downstream CSV and JSON seed payloads for PMO workbooks and tracking toolkits.
-- **Offline / Mock Mode**: Fully functional offline mock client for local testing and deterministic validation without requiring OpenAI API credentials.
+- **Offline / Mock Mode**: Fully functional offline mock client for local testing and deterministic validation without requiring LLM API credentials.
 - **Automated Versioning**: Configured with `bump-my-version` for semantic versioning.
 
 ---
@@ -104,13 +106,22 @@ pip install -r requirements.txt
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the project root directory or set environment variables:
+Create a `.env` file in the project root directory (or copy from `.env.example`):
 
 ```ini
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key_here
+# Primary Provider: Anthropic Claude (Default)
+ANTHROPIC_API_KEY=sk-ant-api03-your-anthropic-key-here
+ANTHROPIC_MODEL=claude-sonnet-5-5
+LLM_PROVIDER=anthropic
+
+# Secondary / Fallback Provider: OpenAI
+OPENAI_API_KEY=sk-proj-your-openai-key-here
 OPENAI_MODEL=gpt-4o
 OPENAI_TEMPERATURE=0.0
+
+# LLM Generation Parameters
+TEMPERATURE=0.0
+MAX_TOKENS=16384
 
 # Directory Paths (Optional overrides)
 INPUTS_DIR=inputs
@@ -121,21 +132,40 @@ DEFAULT_GOVERNANCE_TIER=Partnered
 DEFAULT_CONTRACT_TYPE=Time and Materials
 ```
 
+#### Provider Precedence & Fallback Architecture
+- **Primary Execution**: By default (`LLM_PROVIDER=anthropic`), the system routes extraction passes to Anthropic Claude (`claude-sonnet-5-5`).
+- **Automatic Dual-Provider Failover**: If Anthropic encounters network timeouts, rate limits (429), or authentication errors, the client automatically falls back to OpenAI (`gpt-4o`) without halting execution.
+- **Offline Mock**: If neither API key is configured or when `--mock` is specified, the system executes using deterministic local mock extraction with zero API cost.
+
 ---
 
 ## Usage
 
 Place your project documentation (SOWs, presentation decks, contracts) into the `inputs/` folder (or specify a custom path using `--inputs-dir`).
 
+### Run with Anthropic Claude (Default)
+
+```bash
+# Uses ANTHROPIC_API_KEY from .env / environment
+python main.py
+
+# Or pass Anthropic API key explicitly via CLI
+python main.py --anthropic-api-key "sk-ant-api03-your-key-here"
+```
+
 ### Run with OpenAI LLM
 
 ```bash
-python main.py
+# Select OpenAI provider via flag
+python main.py --openai
+
+# Or specify provider and API key directly
+python main.py --provider openai --openai-api-key "sk-proj-your-key-here"
 ```
 
 ### Run in Offline Mock Mode (No API Key Required)
 
-To verify the generation pipeline without connecting to OpenAI:
+To verify the generation pipeline deterministically without external API calls:
 
 ```bash
 python main.py --mock
@@ -163,7 +193,7 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
   3. If Mode 2:
      - `path to updated *_Startup_Kit.docx file` (path/filename is required, no default, or type 'exit' to quit)
      - Optional role name overrides.
-  Pressing `Enter` accepts the default value for directory and role prompts.
+  Pressing `Enter` accepts the default value for directory and role prompts. Inverted caps-lock name entries (e.g. `jAMES`, `tINA`) are automatically normalized to title casing.
 
 - **Non-Interactive Mode**:
   Pass `--non-interactive` to disable all terminal prompts and automatically use configured defaults for any unspecified directories or roles.
@@ -172,26 +202,37 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 
 | Flag | Type | Description | Default |
 |---|---|---|---|
+| `--provider` / `--llm-provider` | Choice | LLM provider to use (`anthropic`, `openai`, `claude`, `gpt`) | `anthropic` (from `LLM_PROVIDER`) |
+| `--anthropic` / `--claude` | Flag | Use Anthropic Claude as the LLM provider | `True` (default provider) |
+| `--openai` / `--open-ai` | Flag | Use OpenAI as the LLM provider | `False` |
+| `--api-key` / `--anthropic-api-key` | String | Anthropic API Key (overrides `ANTHROPIC_API_KEY` in env/`.env`) | `config.anthropic_api_key` |
+| `--openai-api-key` | String | OpenAI API Key (overrides `OPENAI_API_KEY` in env/`.env`) | `config.openai_api_key` |
+| `--model` | String | LLM model name (e.g., `claude-sonnet-5-5`, `gpt-4o`) | `claude-sonnet-5-5` (Anthropic) / `gpt-4o` (OpenAI) |
 | `--reingest-docx` / `--docx-file` | Path | Path to existing `*_Startup_Kit.docx` to re-ingest and recalculate readiness score (bypasses raw ingestion in `inputs/`) | `None` |
 | `--output-file` | Path | Explicit destination file path for regenerated Word report | In-place overwrite / parent dir |
 | `--inputs-dir` | Path | Path to directory containing input documents | `inputs/` (interactive prompt if omitted) |
 | `--output-dir` | Path | Directory where generated reports are saved | `output/` (interactive prompt if omitted) |
-| `--model` | String | OpenAI model name | `gpt-4o` |
 | `--tier` | Choice | Override Governance Tier (`Guided`, `Partnered`, `Elevated`) | Extracted / `Partnered` |
 | `--contract-type` | String | Override Contract Type (e.g., `'Fixed Bid'`, `'Time and Materials'`) | Extracted |
 | `--pmo-lead` | String | Set PMO Lead name | `[UNASSIGNED - TO BE CONFIRMED]` |
 | `--delivery-lead` / `--delivery-manager` | String | Set Delivery Lead / Manager name | `[UNASSIGNED - TO BE CONFIRMED]` |
 | `--talent-pm` | String | Set Talent PM name | `[UNASSIGNED - TO BE CONFIRMED]` |
 | `--non-interactive` | Flag | Disable interactive directory and role prompts (uses defaults) | `False` |
-| `--mock` | Flag | Run offline deterministic mock extraction | `False` |
+| `--mock` | Flag | Run offline deterministic mock extraction (zero token cost) | `False` |
 | `--export-tools` | Flag | Export downstream PMO workbook toolkits (CSV/JSON) to output | `False` |
 | `-v`, `--verbose` | Flag | Enable verbose debug logging | `False` |
 
 ### Example Commands
 
 ```bash
-# Run interactively (prompts for mode, directories, and leadership roles):
+# Run interactively with default Claude extraction:
 python main.py
+
+# Run non-interactively with Anthropic API key and full leadership assignments:
+python main.py --anthropic-api-key "sk-ant-api03-..." --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --non-interactive
+
+# Run using OpenAI with direct API key:
+python main.py --openai --openai-api-key "sk-proj-..." --non-interactive
 
 # Re-evaluate an updated Word report and recalculate readiness score (non-interactive):
 python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
@@ -199,10 +240,7 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 # Re-evaluate and re-export downstream PMO tools with leadership role overrides:
 python main.py --reingest-docx output/Project_Startup_Kit.docx --pmo-lead "Sarah Connor" --delivery-lead "Alex Smith" --talent-pm "Taylor Brown" --export-tools --non-interactive
 
-# Export downstream PMO tools with custom directories and leadership roles specified:
-python main.py --mock --inputs-dir ./inputs --output-dir ./output --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --export-tools
-
-# Run non-interactively in automated CI/CD using defaults:
+# Run offline deterministic mock extraction:
 python main.py --mock --non-interactive
 ```
 
