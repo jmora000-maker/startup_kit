@@ -11,6 +11,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 
 from src.core.interfaces import IDocumentWriter
 from src.core.models import StartupKitBaseline, ActionRequiredItem
+from src.config import sanitize_report_text
 from src.generators.formatting import (
     add_section_heading,
     add_callout_box,
@@ -48,7 +49,7 @@ def format_cell_with_action(
     if text is None:
         text = ""
 
-    raw_text = str(text).strip()
+    raw_text = sanitize_report_text(str(text).strip())
     # Strip any preexisting/corrupted action badges or residual recovery markers
     cleaned_raw = re.sub(r'\[ACT(?:-REQ)?-.*?\+\d+(?:\.\d+)?%\s*Recovery\]', '', raw_text, flags=re.IGNORECASE)
     cleaned_raw = re.sub(r'\[ACT-[^\]]+\]', '', cleaned_raw, flags=re.IGNORECASE)
@@ -390,7 +391,7 @@ class DocxGenerator(IDocumentWriter):
                 ("Platform & Environment Commitments", plat_commit, None, "G01-07", "Confirm client platform and environment access"),
                 ("External Dependencies", "\n".join(f"• {re.sub(r'^[•\-\*]\s*', '', d).strip()}" for d in sow_sum.dependencies if d.strip()) if sow_sum.dependencies else "Logged in Dependency Log", None, "G01-05", "Confirm external dependencies"),
                 ("Approval & Acceptance Expectations", approval_exp, None, "G01-03", "Finalize acceptance test criteria and approval expectations"),
-                ("Ambiguities & Clarification Notes", amb_notes, g01_15_act, "G01-15", "Resolve contract ambiguities and open questions"),
+                ("Ambiguities & Clarification Notes", amb_notes, g01_15_act, "G01-15", "Resolve open questions and scope clarifications"),
             ]
 
             for dim, val, act, fallback_id, fallback_desc in sow_rows:
@@ -407,29 +408,6 @@ class DocxGenerator(IDocumentWriter):
             style_table(sow_table, col_widths=[2.2, 5.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-            # Contractual Ambiguities & Conflicts Table (NFR-02)
-            if baseline.contract_ambiguities:
-                doc.add_paragraph().paragraph_format.space_after = Pt(2)
-                p_amb = doc.add_paragraph()
-                p_amb.add_run("Contractual Ambiguities & Conflict Analysis (NFR-02):").bold = True
-                amb_table = doc.add_table(rows=1, cols=5)
-                amb_headers = ["Anomaly ID", "Category", "Conflicting Clauses / Citations", "Risk Impact Analysis", "Recommended Clarification"]
-                for idx, h in enumerate(amb_headers):
-                    amb_table.cell(0, idx).text = h
-
-                for amb in baseline.contract_ambiguities:
-                    row = amb_table.add_row()
-                    row.cells[0].text = amb.anomaly_id
-                    row.cells[1].text = amb.category
-                    row.cells[2].text = amb.conflicting_clauses
-                    row.cells[3].text = amb.risk_impact
-                    act = find_cell_action(baseline, "Contract Ambiguity & Conflict Analysis", "Recommended Clarification", entity_id=amb.anomaly_id, linked_action_id=amb.linked_action_id, used_actions=used_actions)
-                    is_amb_open = (getattr(amb, "status", "Open").lower() != "resolved" and "[RESOLVED]" not in getattr(amb, "recommended_clarification", "").upper())
-                    format_cell_with_action(row.cells[4], amb.recommended_clarification, action=act, is_warning=bool(act or is_amb_open), fallback_checklist_id="G01-14", fallback_action_desc="Execute formal clarification note with client accounts")
-
-                style_table(amb_table, col_widths=[1.0, 1.2, 2.0, 1.8, 1.8])
-                doc.add_paragraph().paragraph_format.space_after = Pt(6)
-
         # 1.3 Milestone Delivery Plan
         add_section_heading(doc, "Milestone Delivery Plan", level=2)
         ms_table = doc.add_table(rows=1, cols=6)
@@ -441,7 +419,10 @@ class DocxGenerator(IDocumentWriter):
             row = ms_table.add_row()
             ext_str = m.external_date.strftime("%Y-%m-%d") if m.external_date else "[CONFIRMATION REQUIRED]"
             buf_str = m.internal_buffer_date.strftime("%Y-%m-%d") if m.internal_buffer_date else "N/A"
-            src_str = f"{m.source_reference.document_name} ({m.source_reference.clause_or_slide or 'N/A'})" if m.source_reference else "N/A"
+            src_doc = sanitize_report_text(m.source_reference.document_name) if m.source_reference else "Project Baseline"
+            if not src_doc or any(k in src_doc.lower() for k in ("input document", "sow")):
+                src_doc = "Project Baseline"
+            src_str = src_doc
 
             ext_act = find_cell_action(baseline, "Milestone Delivery Plan", "External Date", entity_id=m.id, linked_action_id=m.linked_action_id, used_actions=used_actions)
             buf_act = find_cell_action(baseline, "Milestone Delivery Plan", "Internal Buffer Date", entity_id=m.id, used_actions=used_actions)
@@ -660,39 +641,7 @@ class DocxGenerator(IDocumentWriter):
             style_table(raci_table, col_widths=[2.8, 1.0, 1.1, 1.0, 1.0, 0.9])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-        # 3.3 Commercial and Margin Guardrails
-        add_section_heading(doc, "Commercial and Margin Guardrails", level=2)
-        cg = baseline.commercial_guardrails
-        if cg:
-            g01_12_act = find_cell_action(baseline, "Commercial and Margin Guardrails", "Budget Baseline & Commercial Terms", used_actions=used_actions)
-            g01_13_act = find_cell_action(baseline, "Commercial and Margin Guardrails", "Change Order Route", used_actions=used_actions)
-
-            cg_table = doc.add_table(rows=1, cols=2)
-            cg_table.cell(0, 0).text = "Commercial Guardrail Area"
-            cg_table.cell(0, 1).text = "Contract Policy & Baseline Rule"
-
-            cg_rows = [
-                ("Contract Implications", cg.contract_type_implication, None, "G01-12", "Confirm contract type implication"),
-                ("Approved Work Rule", cg.approved_work_rule, None, "G01-12", "Confirm approved work rule"),
-                ("Non-Approved Work Rule", cg.non_approved_work_rule, None, "G01-12", "Confirm non-approved work rule"),
-                ("Work-at-Risk Policy", cg.work_at_risk_rule, None, "G01-12", "Confirm work-at-risk ceiling"),
-                ("Change Control Triggers", cg.change_control_trigger, None, "G01-13", "Confirm change control triggers"),
-                ("Change Order Route", cg.change_order_route, g01_13_act, "G01-13", "Confirm written change order sign-off route"),
-                ("Budget Baseline & Commercial Terms", cg.budget_baseline, g01_12_act, "G01-12", "Baseline SOW total value and margin floor"),
-                ("Variance & Margin Risk Indicators", f"Variance: {cg.variance_indicator} | Margin: {cg.margin_risk_indicator}", None, "G01-12", "Confirm margin indicators"),
-                ("Escalation Threshold", cg.escalation_threshold, None, "G01-12", "Confirm commercial escalation threshold"),
-            ]
-
-            for area, rule, act, fallback_id, fallback_desc in cg_rows:
-                r = cg_table.add_row()
-                r.cells[0].text = area
-                is_flagged = bool(act or "[CONFIRMATION REQUIRED" in rule or "[UNASSIGNED" in rule)
-                format_cell_with_action(r.cells[1], rule, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
-
-            style_table(cg_table, col_widths=[2.4, 4.8])
-            doc.add_paragraph().paragraph_format.space_after = Pt(6)
-
-        # 3.4 Talent Onboarding Record
+        # 3.3 Talent Onboarding Record
         add_section_heading(doc, "Talent Onboarding Record", level=2)
         talent_rec = baseline.talent_onboarding
         if talent_rec:

@@ -60,7 +60,7 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert "Layer 3: Assurance Pack" in full_text
     assert "Stakeholder and Responsibility Model" in full_text
     assert "RACI / Decision Rights Matrix" in full_text
-    assert "Commercial and Margin Guardrails" in full_text
+    assert "Commercial and Margin Guardrails" not in full_text
     assert "Talent Onboarding Record" in full_text
 
     # Verify tables
@@ -346,3 +346,23 @@ def test_no_duplicate_trailing_action_callout(sample_baseline, tmp_path):
     assert callout_count == 0, (
         f"Action Required heading should be removed from report, found {callout_count}"
     )
+
+
+def test_report_text_sanitization(sample_baseline, tmp_path):
+    """Verify that report text sanitizes references to SOW, contracts, or source documents and simplifies descriptions."""
+    from src.config import sanitize_report_text
+    raw = "Deliverable per the SOW as stated in SOW Section 3.2 is required."
+    clean = sanitize_report_text(raw)
+    assert "SOW" not in clean
+    assert "Section 3.2" not in clean
+
+    # Verify document generation with raw strings does not leak SOW citations in formatted cells
+    sample_baseline.deliverables[0].description = "Cloud Migration Architecture per the SOW Section 4"
+    generator = DocxGenerator()
+    out_file = generator.write_docx(sample_baseline, tmp_path / "Sanitization_Test.docx")
+    doc = docx.Document(str(out_file))
+
+    deliv_tbl = next(t for t in doc.tables if any("deliverable name" in c.text.lower() for c in t.rows[0].cells))
+    cell_text = deliv_tbl.rows[1].cells[1].text
+    assert "per the SOW" not in cell_text
+    assert "Section 4" not in cell_text

@@ -203,7 +203,7 @@ class ExtractedDocument(BaseModel):
 
 class SourceReference(BaseModel):
     """Traceability reference linking extracted data to source files and clauses."""
-    document_name: str = "SOW / Input Document"
+    document_name: str = "Project Baseline"
     clause_or_slide: Optional[str] = None
     confidence_score: float = Field(default=1.0, ge=0.0, le=1.0)
 
@@ -214,7 +214,7 @@ class Deliverable(BaseModel):
     name: str = ""
     description: str = ""
     source_reference: SourceReference = Field(
-        default_factory=lambda: SourceReference(document_name="SOW / Input Document")
+        default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
     owner: str = "Unassigned"
     acceptance_criteria: Optional[str] = None
@@ -250,7 +250,7 @@ class Milestone(BaseModel):
     key_dependencies: List[str] = Field(default_factory=list)
     critical_path_assumptions: List[str] = Field(default_factory=list)
     source_reference: SourceReference = Field(
-        default_factory=lambda: SourceReference(document_name="SOW / Input Document")
+        default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
     linked_action_id: Optional[str] = Field(
         default=None,
@@ -265,7 +265,7 @@ class RiskAssumption(BaseModel):
     owner: str = "Unassigned"
     status: str = "Open"
     source_reference: SourceReference = Field(
-        default_factory=lambda: SourceReference(document_name="SOW / Input Document")
+        default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
     category: str = "Technical"
     probability: Optional[str] = "Medium"
@@ -289,7 +289,7 @@ class DependencyAssumptionItem(BaseModel):
     description: str = ""
     category: str = "Technical"
     source_reference: SourceReference = Field(
-        default_factory=lambda: SourceReference(document_name="SOW / Input Document")
+        default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
     owner: str = "[UNASSIGNED - TO BE CONFIRMED]"
     required_validation_date: FlexibleDate = None
@@ -458,7 +458,7 @@ class CommercialGuardrail(BaseModel):
     billing_consumption_assumption: str = ""
     staffing_assumption: str = ""
     commercial_exposure_note: str = ""
-    approved_work_rule: str = "Only explicitly contracted SOW scope and approved Change Orders are authorized for execution."
+    approved_work_rule: str = "Only authorized project scope and approved Change Orders are authorized for execution."
     non_approved_work_rule: str = "No out-of-scope tasks shall be performed without written Change Order."
     work_at_risk_rule: str = "Work-at-risk requires written PMO Lead approval and executive exception sign-off."
     change_control_trigger: str = "Material scope shift, timeline variance > 5 days, or budget variance > 10%"
@@ -653,7 +653,7 @@ class CharterExtraction(BaseModel):
     high_level_scope: List[str] = Field(default_factory=list)
     exclusions: List[str] = Field(default_factory=list)
     source_reference: SourceReference = Field(
-        default_factory=lambda: SourceReference(document_name="SOW / Input Document")
+        default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
 
 

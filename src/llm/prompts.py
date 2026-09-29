@@ -1,19 +1,20 @@
 """Prompt templates and system instructions for multi-pass LLM extraction."""
 
 SYSTEM_PROMPT = """You are an expert Toptal PMO Delivery Lead and Startup Specialist.
-Your goal is to extract structured project management data from provided Statement of Work (SOW) documents, pre-sales decks, and context notes to build the PMO Startup Kit.
+Your goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.
 
 STRICT BUSINESS RULES & CONSTRAINTS:
 1. NO HALLUCINATION: Extract only factual information present in the input documents.
-2. CONCISE & FOCUSED: Keep all field values concise, specific, and factual (1-2 sentences per field). Avoid verbose repetition.
-3. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).
-4. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).
-5. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:
+2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.
+3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.
+4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).
+5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).
+6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:
    - document_name: exact filename where the information was found
    - clause_or_slide: the section number, heading, or slide number (e.g. "Section 3.2", "Slide 4", "Page 2")
    - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.
-6. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.
-7. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
+7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.
+8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
 """
 
 CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter and Governance metadata.
@@ -26,20 +27,20 @@ Extract:
 - delivery_manager: Named Delivery Manager if mentioned, else null.
 - talent_pm: Named Talent Project Manager if mentioned, else null.
 - pmo_lead: Named PMO Lead if mentioned, else null.
-- executive_summary: A concise 2-4 sentence summary of project objectives, tech stack, and scope.
+- executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.
 - source_reference: Document name, section/slide reference, and confidence score.
 
 DOCUMENTS CONTENT:
 {documents_text}
 """
 
-DELIVERABLES_PROMPT = """Analyze the provided project documents and extract all contractual deliverables.
+DELIVERABLES_PROMPT = """Analyze the provided project documents and extract all project deliverables.
 
 For each deliverable:
 - id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)
-- description: Clear and concise statement of the deliverable outcome.
+- description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.
 - owner: Named owner or role if stated, else 'Unassigned'.
-- acceptance_criteria: Exact explicit acceptance criteria if provided in the text. If NOT explicitly stated, you MUST set this to null.
+- acceptance_criteria: Exact explicit acceptance criteria if provided in the text (state concisely and directly without referencing the SOW or documents). If NOT explicitly stated, you MUST set this to null.
 - source_reference: The source document name, section/clause, and confidence score.
 
 DOCUMENTS CONTENT:
@@ -50,7 +51,7 @@ MILESTONES_PROMPT = """Analyze the provided project documents and extract all de
 
 For each milestone:
 - id: Sequential identifier (e.g., M1, M2, M3...)
-- description: Milestone name or phase completion outcome.
+- description: Concise milestone name or phase completion outcome. Do NOT mention or refer to the SOW or other documents.
 - external_date: Contractual or committed target date in ISO format YYYY-MM-DD. If no specific date is found, set to null.
 - internal_buffer_date: Internal target date with contingency buffer in ISO format YYYY-MM-DD if explicitly mentioned, else null.
 - source_reference: The source document name, section/page, and confidence score.
@@ -63,7 +64,8 @@ RAID_PROMPT = """Analyze the provided project documents and extract key RAID ite
 
 CONSTRAINTS:
 1. Extract the most critical items (maximum 20 items total across all 4 categories).
-2. Keep descriptions concise and actionable (1-2 sentences).
+2. Keep descriptions concise, direct, and actionable (1-2 sentences).
+3. Do NOT reference the SOW or other documents in descriptions; state the risk, assumption, issue, or dependency directly.
 
 For each item:
 - type: Must be exactly one of: 'Risk', 'Assumption', 'Issue', 'Dependency'.
@@ -76,28 +78,31 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-QUESTIONS_PROMPT = """Review the provided project documents and identify critical open clarification questions, ambiguous statements, unconfirmed dates, or unstated acceptance criteria that require confirmation from the client or delivery team.
+QUESTIONS_PROMPT = """Review the provided project documents and identify critical open clarification questions, ambiguous requirements, unconfirmed dates, or unstated acceptance criteria that require confirmation from the client or delivery team.
 
 CONSTRAINTS:
 - Return a concise, prioritized list of the top 10-15 actionable questions (strings).
-- Keep each question direct and focused on delivery/commercial risk.
+- Keep each question direct, simple, and self-contained.
+- CRITICAL: Do NOT phrase questions by referencing the SOW or other documents (e.g. do NOT say 'The SOW does not specify X' or 'The document is unclear about Y'). Instead, ask direct questions about the project (e.g. 'What is the target completion date for Phase 1?', 'Who is the client sign-off approver for DEL-01?').
 
 DOCUMENTS CONTENT:
 {documents_text}
 """
 
-SOW_INTERPRETATION_PROMPT = """Analyze the provided project documents and extract the SOW Interpretation Summary.
+SOW_INTERPRETATION_PROMPT = """Analyze the provided project documents and extract the Scope & Baseline Interpretation Summary.
 
 Extract:
-- contracted_deliverables: Key deliverables explicitly contracted in the SOW.
+- contracted_deliverables: Key deliverables agreed for the project. Keep descriptions concise and self-contained.
 - out_of_scope_items: Explicit scope exclusions and out-of-scope tasks.
 - customer_obligations: Prerequisites, data, environments, or access customer must provide.
-- assumptions: Baseline delivery and commercial assumptions.
+- assumptions: Baseline delivery and project assumptions.
 - constraints: Known delivery, technical, regulatory, or schedule constraints.
 - platform_environment_commitments: Cloud platform (AWS/Azure/GCP) and infrastructure commitments.
 - dependencies: External dependencies.
 - approval_expectations: Client review windows and sign-off expectations.
-- ambiguity_notes: Unclear or conflicting contractual terms.
+- ambiguity_notes: Unclear or unconfirmed scope terms (state the scope gap concisely without referencing the SOW or documents).
+
+Keep all text concise, simplified, and self-contained without referencing the SOW or other documents.
 
 DOCUMENTS CONTENT:
 {documents_text}
@@ -121,14 +126,14 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-ACCEPTANCE_PROCESS_PROMPT = """Analyze the deliverables in the provided documents and extract explicit acceptance process details.
+ACCEPTANCE_PROCESS_PROMPT = """Analyze the deliverables in the provided documents and extract explicit acceptance process details. Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.
 
 For each deliverable:
 - id: Deliverable ID (DEL-01, etc.)
 - name: Deliverable title
-- description: Description
+- description: Concise deliverable description
 - sow_reference: Section or clause reference
-- acceptance_criteria: Explicit contractual criteria or null
+- acceptance_criteria: Explicit criteria or null (do not cite documents)
 - evidence_required: Documents, artifacts, or sign-offs required as proof
 - client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'
 - submission_target_date: Target submission date (YYYY-MM-DD) if stated
@@ -209,14 +214,14 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-DECISIONS_PROMPT = """Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness (maximum 15 key decisions). Keep descriptions concise.
+DECISIONS_PROMPT = """Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness (maximum 15 key decisions). Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.
 
 For each decision:
 - id: DEC-01, DEC-02...
 - decision_text: Concise statement of decision
 - decision_owner: Responsible owner
 - decision_date: Date if known
-- rationale: Concise context or reason for decision
+- rationale: Concise context or reason for decision (do not cite SOW or documents)
 - linked_raid_item: Linked risk or assumption ID if applicable
 - status: Status (default 'Approved')
 

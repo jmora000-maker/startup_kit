@@ -123,7 +123,7 @@ class StartupKitController:
         logger.info("Ingested %d document(s): %s", len(documents), [d.file_name for d in documents])
 
         # 2. Multi-Pass LLM Extraction (Concurrent Execution)
-        logger.info("Executing concurrent multi-pass LLM extractions (14 domain passes)...")
+        logger.info("Executing concurrent multi-pass LLM extractions (12 domain passes)...")
         with ThreadPoolExecutor(max_workers=14) as executor:
             future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
             future_deliverables = executor.submit(self.deliverables_extractor.extract, documents, self.llm_client)
@@ -150,10 +150,6 @@ class StartupKitController:
                 executor.submit(self.communications_extractor.extract, documents, self.llm_client)
                 if self.communications_extractor else None
             )
-            future_commercial = (
-                executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
-                if self.commercial_extractor else None
-            )
             future_talent = (
                 executor.submit(self.talent_extractor.extract, documents, self.llm_client)
                 if self.talent_extractor else None
@@ -161,10 +157,6 @@ class StartupKitController:
             future_decisions = (
                 executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
                 if self.decisions_extractor else None
-            )
-            future_conflicts = (
-                executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
-                if self.conflicts_extractor else None
             )
 
             charter = future_charter.result()
@@ -177,10 +169,10 @@ class StartupKitController:
             acceptance = future_acceptance.result() if future_acceptance else None
             stakeholders = future_stakeholders.result() if future_stakeholders else None
             communications = future_communications.result() if future_communications else None
-            commercial = future_commercial.result() if future_commercial else None
+            commercial = None
             talent = future_talent.result() if future_talent else None
             decisions = future_decisions.result() if future_decisions else None
-            conflicts = future_conflicts.result() if future_conflicts else None
+            conflicts = None
 
         # Apply leadership and governance overrides
         if tier_override and tier_override in ("Guided", "Partnered", "Elevated"):

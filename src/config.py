@@ -1,6 +1,7 @@
 """Core configuration and settings."""
 
 import os
+import re
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
@@ -57,6 +58,32 @@ def normalize_person_name(name: Optional[str], default: str = "[UNASSIGNED - TO 
             # Preserves title case ('James', 'McCullough', 'O'Connor') and short acronyms ('PMO', 'PM', 'QA')
             normalized_words.append(w)
     return " ".join(normalized_words)
+
+
+def sanitize_report_text(text: Optional[str]) -> str:
+    """Sanitize report text to remove references to SOW, Statement of Work, or external/source documents, making text self-contained, simplified, and concise."""
+    if not text:
+        return "" if text is None else str(text)
+
+    cleaned = str(text)
+    # Remove phrases like 'as stated in the SOW', 'per the SOW', 'in accordance with the SOW', 'detailed in SOW', etc.
+    cleaned = re.sub(
+        r'\b(?:as\s+(?:stated|defined|specified|referenced|stipulated|outlined|detailed)\s+in|per|in\s+accordance\s+with|according\s+to|based\s+on)\s+(?:the\s+)?(?:SOW|Statement\s+of\s+Work|source\s+documents?|input\s+documents?|contract\s+documents?)\b',
+        '',
+        cleaned,
+        flags=re.IGNORECASE
+    )
+    # Replace standalone 'Statement of Work' or 'SOW' or 'source documents' with 'baseline' or 'project scope'
+    cleaned = re.sub(r'\b(?:the\s+)?Statement\s+of\s+Work\b', 'project baseline', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b(?:the\s+)?SOW\b', 'project baseline', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b(?:the\s+)?(?:source|input)\s+documents?\b', 'project baseline', cleaned, flags=re.IGNORECASE)
+    # Remove clause / section / slide / page references if they appear in text (e.g. 'in Section 3.2', 'Slide 4')
+    cleaned = re.sub(r'\b(?:in\s+)?(?:Section|Clause|Slide|Page)\s+\d+(?:\.\d+)*\b', '', cleaned, flags=re.IGNORECASE)
+    # Clean up double spaces, dangling punctuation
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+    cleaned = re.sub(r'\s+([,.:;])', r'\1', cleaned)
+    cleaned = re.sub(r'^[,\s.:;-]+', '', cleaned)
+    return cleaned.strip()
 
 
 @dataclass

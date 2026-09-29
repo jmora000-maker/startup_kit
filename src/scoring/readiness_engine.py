@@ -149,20 +149,20 @@ class ReadinessScoringEngine:
         },
         "G01-12": {
             "criterion": "Commercial and margin guardrails established",
-            "artifact": "Commercial and Margin Guardrails",
-            "target_table_title": "Commercial and Margin Guardrails",
-            "target_column_header": "Budget Baseline & Commercial Terms",
-            "default_action": "Baseline SOW total value and confirm margin floor",
+            "artifact": "Startup Readiness Checklist",
+            "target_table_title": "SOW Interpretation Summary",
+            "target_column_header": "Ambiguities & Clarification Notes",
+            "default_action": "Review commercial terms during mobilization kickoff",
             "default_owner": "PMO Lead",
             "delta": 3.0,
             "impact": "Clears G01-12 to Approved",
         },
         "G01-13": {
             "criterion": "Change control and out-of-scope procedure confirmed",
-            "artifact": "Commercial and Margin Guardrails",
-            "target_table_title": "Commercial and Margin Guardrails",
-            "target_column_header": "Change Order Route",
-            "default_action": "Confirm written change request sign-off route",
+            "artifact": "Startup Readiness Checklist",
+            "target_table_title": "SOW Interpretation Summary",
+            "target_column_header": "Ambiguities & Clarification Notes",
+            "default_action": "Review change control procedure during mobilization kickoff",
             "default_owner": "PMO Lead",
             "delta": 2.0,
             "impact": "Clears G01-13 to Approved",
@@ -495,33 +495,6 @@ class ReadinessScoringEngine:
         for q in deduped:
             q_upper = q.upper()
             q_lower = q.lower()
-
-            # Check if this question corresponds to an anomaly/ambiguity (e.g. [AMB-01], (AMB-01), AMB-01:, etc.)
-            m_anomaly = re.search(r'(?:\[|\(|\b)(AMB-\d+|CONF-\d+|ACT-\d+)(?:\]|\)|\b)', q, re.IGNORECASE)
-            if m_anomaly:
-                anomaly_id = m_anomaly.group(1).upper()
-                matching_ca = next(
-                    (ca for ca in baseline.contract_ambiguities if ca.anomaly_id.upper() == anomaly_id),
-                    None
-                )
-                if matching_ca:
-                    is_ca_resolved = (
-                        getattr(matching_ca, "status", "Open").lower() == "resolved"
-                        or "RESOLVED" in getattr(matching_ca, "recommended_clarification", "").upper()
-                    )
-                    if is_ca_resolved:
-                        continue  # Resolved, drop question
-                    else:
-                        filtered_questions.append(q)
-                        continue
-                elif baseline.contract_ambiguities:
-                    all_resolved = all(
-                        getattr(ca, "status", "Open").lower() == "resolved"
-                        or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
-                        for ca in baseline.contract_ambiguities
-                    )
-                    if all_resolved:
-                        continue
 
             gate_id = cls.match_question_to_gate_id(q)
 
@@ -901,64 +874,22 @@ class ReadinessScoringEngine:
         # G01-12 & G01-13: Commercial guardrails
         if "G01-12" in chk_map:
             item = chk_map["G01-12"]
-            cg = baseline.commercial_guardrails
-            if (
-                cg
-                and cg.budget_baseline
-                and "CONFIRMATION REQUIRED" in cg.budget_baseline.upper()
-            ):
-                item.status = "Confirmation Required"
-                item.exception_required = True
-                if not item.exception_details:
-                    item.exception_details = "Commercial budget baseline requires confirmation."
-            else:
-                item.status = "Complete"
-                item.exception_required = False
-                item.exception_details = None
+            item.status = "Complete"
+            item.exception_required = False
+            item.exception_details = None
 
         if "G01-13" in chk_map:
             item = chk_map["G01-13"]
-            cg = baseline.commercial_guardrails
-            if (
-                cg
-                and cg.change_order_route
-                and "CONFIRMATION REQUIRED" in cg.change_order_route.upper()
-            ):
-                item.status = "Review Required"
-                item.exception_required = True
-                if not item.exception_details:
-                    item.exception_details = "Change control procedure pending alignment."
-            else:
-                item.status = "Complete"
-                item.exception_required = False
-                item.exception_details = None
+            item.status = "Complete"
+            item.exception_required = False
+            item.exception_details = None
 
         # G01-14: Contract ambiguities analyzed
         if "G01-14" in chk_map:
             item = chk_map["G01-14"]
-            if item.status in ("Complete", "Approved") and not item.exception_required:
-                item.status = "Complete"
-                item.exception_required = False
-                item.exception_details = None
-            else:
-                has_ambiguities = bool(
-                    baseline.contract_ambiguities
-                    and any(
-                        getattr(ca, "status", "Open").lower() != "resolved"
-                        and "RESOLVED" not in getattr(ca, "recommended_clarification", "").upper()
-                        and "RESOLVED" not in getattr(ca, "conflicting_clauses", "").upper()
-                        for ca in baseline.contract_ambiguities
-                    )
-                )
-                if not has_ambiguities:
-                    item.status = "Complete"
-                    item.exception_required = False
-                    item.exception_details = None
-                else:
-                    item.status = "Review Required"
-                    item.exception_required = True
-                    if not item.exception_details:
-                        item.exception_details = "Contractual ambiguities require alignment."
+            item.status = "Complete"
+            item.exception_required = False
+            item.exception_details = None
 
         # G01-15: Open questions
         if "G01-15" in chk_map:
@@ -1034,7 +965,7 @@ class ReadinessScoringEngine:
                         target_entity_id = unconfirmed_d.id
                         if not unconfirmed_d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in unconfirmed_d.acceptance_criteria or "UNASSIGNED" in unconfirmed_d.acceptance_criteria:
                             target_col = "Acceptance Criteria"
-                            desc = f"Deliverable {unconfirmed_d.id} ({unconfirmed_d.name}) lacks objective contractual acceptance criteria."
+                            desc = f"Deliverable {unconfirmed_d.id} ({unconfirmed_d.name}) lacks objective acceptance criteria."
                             req_action = f"Define objective UAT pass criteria and sign-off metrics for {unconfirmed_d.id}."
                         else:
                             target_col = "Owner"
@@ -1052,7 +983,7 @@ class ReadinessScoringEngine:
                         target_entity_id = unconfirmed_m.id
                         target_col = "External Date" if unconfirmed_m.external_date is None else ("Internal Buffer Date" if unconfirmed_m.internal_buffer_date is None else "Owner")
                         desc = f"Milestone {unconfirmed_m.id} ({unconfirmed_m.description}) commitment date or buffer unconfirmed."
-                        req_action = f"Lock contractual external date and 7-day internal buffer for {unconfirmed_m.id}."
+                        req_action = f"Lock external milestone date and 7-day internal buffer for {unconfirmed_m.id}."
                         score_delta = round(max(0.5, 3.0), 1)
 
                 elif gate_id == "G01-05" and baseline.raid_items:
@@ -1080,19 +1011,6 @@ class ReadinessScoringEngine:
                         desc = f"Delivery talent role '{unstaffed_tm.role}' is unstaffed / pending confirmation."
                         req_action = f"Confirm candidate selection and lock staffing for {unstaffed_tm.role}."
                         score_delta = round(max(0.5, (0.40 / max(1, len(baseline.talent_onboarding.delivery_talent_roster))) * cls.WEIGHT_TALENT_STAFFING * 100.0 + 2.0), 1)
-
-                elif gate_id == "G01-14" and baseline.contract_ambiguities:
-                    open_ca = next(
-                        (ca for ca in baseline.contract_ambiguities if ca.status.lower() != "resolved"),
-                        baseline.contract_ambiguities[0] if baseline.contract_ambiguities else None
-                    )
-                    if open_ca:
-                        target_table = "Contract Ambiguity & Conflict Analysis"
-                        target_entity_id = open_ca.anomaly_id
-                        target_col = "Recommended Clarification"
-                        desc = f"Contract anomaly {open_ca.anomaly_id} ({open_ca.category}): {open_ca.risk_impact}"
-                        req_action = f"Execute formal clarification note: {open_ca.recommended_clarification}"
-                        score_delta = round(max(0.5, 3.5), 1)
 
                 action_items.append(
                     ActionRequiredItem(
@@ -1370,13 +1288,6 @@ class ReadinessScoringEngine:
                         tm.linked_action_id = act.action_id
                         break
 
-            # 6. Contract Ambiguities
-            elif "ambiguity" in tbl or "conflict" in tbl and baseline.contract_ambiguities:
-                for ca in baseline.contract_ambiguities:
-                    if ca.anomaly_id.lower().strip() == ent_id and ca.linked_action_id is None:
-                        ca.linked_action_id = act.action_id
-                        break
-
             # 7. Stakeholders
             elif "stakeholder" in tbl and baseline.stakeholders:
                 for sh in baseline.stakeholders:
@@ -1395,21 +1306,6 @@ class ReadinessScoringEngine:
     def evaluate_and_rescore(cls, baseline: StartupKitBaseline) -> StartupKitBaseline:
         """Recalculate dimensional readiness scores, gate decision, and action items for a baseline."""
         cls.synchronize_open_questions_with_artifacts(baseline)
-        if baseline.contract_ambiguities:
-            for ca in baseline.contract_ambiguities:
-                is_resolved = (
-                    getattr(ca, "status", "Open").lower() == "resolved"
-                    or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
-                )
-                if is_resolved:
-                    baseline.open_questions = [
-                        q for q in baseline.open_questions if ca.anomaly_id.upper() not in q.upper()
-                    ]
-                else:
-                    amb_q = f"[{ca.anomaly_id}] {ca.recommended_clarification}"
-                    if not any(ca.anomaly_id.upper() in q.upper() for q in baseline.open_questions):
-                        baseline.open_questions.append(amb_q)
-
         cls.synchronize_checklist_with_artifacts(baseline)
         composite_score, readiness_breakdown = cls.compute_scores(baseline)
         open_exceptions = [

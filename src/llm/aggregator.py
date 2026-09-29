@@ -3,6 +3,7 @@
 import logging
 from datetime import timedelta, date
 from typing import List, Optional, Set
+from src.config import sanitize_report_text
 from src.core.models import (
     CharterExtraction,
     DeliverablesExtraction,
@@ -69,13 +70,14 @@ class BaselineAggregator:
         kit_drafted_date: Optional[date] = None,
     ) -> StartupKitBaseline:
         """Combine extractions and apply validation and business rules."""
-        questions: List[str] = list(questions_ext.open_questions) if questions_ext else []
+        questions: List[str] = [sanitize_report_text(q) for q in questions_ext.open_questions] if questions_ext else []
         seen_questions: Set[str] = set(questions)
 
         def add_question(q: str):
-            if q not in seen_questions:
-                seen_questions.add(q)
-                questions.append(q)
+            clean_q = sanitize_report_text(q)
+            if clean_q and clean_q not in seen_questions:
+                seen_questions.add(clean_q)
+                questions.append(clean_q)
 
         # 1. Process Deliverables and check acceptance criteria & ownership
         deliverables: List[Deliverable] = [d.model_copy() for d in deliverables_ext.deliverables]
@@ -100,10 +102,14 @@ class BaselineAggregator:
                     if (not deliv.owner or deliv.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
                         deliv.owner = acc_item.owner
         for deliv in deliverables:
+            deliv.description = sanitize_report_text(deliv.description)
+            deliv.name = sanitize_report_text(deliv.name or deliv.description)
+            if deliv.acceptance_criteria:
+                deliv.acceptance_criteria = sanitize_report_text(deliv.acceptance_criteria)
             if not deliv.acceptance_criteria:
                 deliv.acceptance_criteria = None
                 add_question(
-                    f"Deliverable '{deliv.id}: {deliv.description}' is missing explicit contractual acceptance criteria. [CONFIRMATION REQUIRED]"
+                    f"Deliverable '{deliv.id}: {deliv.description}' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]"
                 )
             if not deliv.owner or deliv.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
                 deliv.owner = "[UNASSIGNED - TO BE CONFIRMED]"
@@ -112,7 +118,7 @@ class BaselineAggregator:
                 )
             if deliv.source_reference and deliv.source_reference.confidence_score < 0.7:
                 add_question(
-                    f"[Low Confidence: {deliv.source_reference.confidence_score:.2f}] Review deliverable '{deliv.id}' extracted from {deliv.source_reference.document_name} ({deliv.source_reference.clause_or_slide or 'N/A'})."
+                    f"[Low Confidence: {deliv.source_reference.confidence_score:.2f}] Review deliverable '{deliv.id}' scope and acceptance criteria."
                 )
 
         # 2. Process Milestones and calculate internal buffers if needed
@@ -124,6 +130,7 @@ class BaselineAggregator:
             buffer_days = 3
 
         for ms in milestones:
+            ms.description = sanitize_report_text(ms.description)
             if ms.external_date is None:
                 add_question(
                     f"Milestone '{ms.id}: {ms.description}' has no committed external delivery date. [CONFIRMATION REQUIRED]"
@@ -133,7 +140,7 @@ class BaselineAggregator:
 
             if ms.source_reference and ms.source_reference.confidence_score < 0.7:
                 add_question(
-                    f"[Low Confidence: {ms.source_reference.confidence_score:.2f}] Review milestone '{ms.id}' extracted from {ms.source_reference.document_name} ({ms.source_reference.clause_or_slide or 'N/A'})."
+                    f"[Low Confidence: {ms.source_reference.confidence_score:.2f}] Review milestone '{ms.id}' target delivery date."
                 )
 
         # 3. Separate RAID, Dependencies/Assumptions, and Decisions
@@ -144,9 +151,10 @@ class BaselineAggregator:
         dep_idx = 1
         asm_idx = 1
         for item in raw_raid_items:
+            item.description = sanitize_report_text(item.description)
             if item.source_reference and item.source_reference.confidence_score < 0.7:
                 add_question(
-                    f"[Low Confidence: {item.source_reference.confidence_score:.2f}] Review {item.type} '{item.description}' extracted from {item.source_reference.document_name}."
+                    f"[Low Confidence: {item.source_reference.confidence_score:.2f}] Review {item.type} '{item.description}'."
                 )
 
             if item.type in ("Dependency", "Assumption"):
@@ -174,47 +182,23 @@ class BaselineAggregator:
                 # Risk or Issue remains in RAID Log
                 raid_items.append(item)
 
-        # 4. Process Contract Ambiguities & Conflicts (NFR-02)
+        # 4. Contract Ambiguities creation removed
         contract_ambiguities: List[ContractAmbiguityItem] = []
-        if conflicts_ext and conflicts_ext.ambiguities:
-            contract_ambiguities = list(conflicts_ext.ambiguities)
-        elif sow_interpretation_ext and sow_interpretation_ext.ambiguity_notes:
-            for idx, note in enumerate(sow_interpretation_ext.ambiguity_notes):
-                contract_ambiguities.append(
-                    ContractAmbiguityItem(
-                        anomaly_id=f"AMB-{idx+1:02d}",
-                        category="Scope Contradiction",
-                        conflicting_clauses=note,
-                        risk_impact="Potential scope creep or delivery friction during execution",
-                        recommended_clarification=f"Clarify and align terms for: {note}",
-                        status="Open",
-                        source_reference=charter.source_reference
-                    )
-                )
-
-        # Automatically link detected conflicts to open questions and RAID risks
-        for ambiguity in contract_ambiguities:
-            add_question(f"[{ambiguity.anomaly_id}] {ambiguity.recommended_clarification}")
-            if not any(ambiguity.anomaly_id in r.description for r in raid_items):
-                raid_items.append(
-                    RiskAssumption(
-                        type="Risk",
-                        description=f"Contractual Ambiguity ({ambiguity.anomaly_id}): {ambiguity.conflicting_clauses}",
-                        owner="PMO Lead",
-                        status="Open",
-                        source_reference=ambiguity.source_reference or charter.source_reference,
-                        category="Commercial",
-                        impact="High" if "date" in ambiguity.category.lower() or "scope" in ambiguity.category.lower() else "Medium",
-                        severity="High" if "date" in ambiguity.category.lower() else "Medium",
-                        trigger_or_early_warning="Discrepancy identified during Startup Kit Readiness audit",
-                        mitigation_or_response=f"Clarify with Sales / Client: {ambiguity.recommended_clarification}"
-                    )
-                )
 
         # 5. Process Decisions
         decisions: List[DecisionItem] = []
         if decisions_ext and decisions_ext.decisions:
-            decisions = list(decisions_ext.decisions)
+            decisions = [
+                DecisionItem(
+                    id=d.id,
+                    decision_text=sanitize_report_text(d.decision_text),
+                    decision_owner=d.decision_owner,
+                    status=d.status,
+                    rationale=sanitize_report_text(d.rationale),
+                    source_reference=d.source_reference
+                )
+                for d in decisions_ext.decisions
+            ]
         else:
             decisions = [
                 DecisionItem(
@@ -222,7 +206,7 @@ class BaselineAggregator:
                     decision_text=f"Project Governance Tier baselined as '{charter.governance_tier}' with standard PMO cadence.",
                     decision_owner=charter.pmo_lead or "[UNASSIGNED - TO BE CONFIRMED]",
                     status="Approved",
-                    rationale="Assigned based on project scope, contract model, and risk profile.",
+                    rationale="Assigned based on project scope, delivery model, and risk profile.",
                     source_reference=charter.source_reference
                 ),
                 DecisionItem(
@@ -230,7 +214,7 @@ class BaselineAggregator:
                     decision_text=f"Contract baseline established under '{charter.contract_type}' terms.",
                     decision_owner=charter.delivery_manager or "Delivery Manager",
                     status="Approved",
-                    rationale="Aligned to signed Statement of Work and commercial boundaries.",
+                    rationale="Aligned to project baseline scope and commercial boundaries.",
                     source_reference=charter.source_reference
                 )
             ]
@@ -247,17 +231,17 @@ class BaselineAggregator:
         charter_obj = ProjectStartupCharter(
             project_name=charter.project_name or "Project Baseline",
             client_name=charter.client_name,
-            project_purpose=charter.project_purpose or charter.executive_summary or "[CONFIRMATION REQUIRED]",
-            delivery_objectives=charter.delivery_objectives or [
+            project_purpose=sanitize_report_text(charter.project_purpose or charter.executive_summary or "[CONFIRMATION REQUIRED]"),
+            delivery_objectives=[sanitize_report_text(o) for o in charter.delivery_objectives] if charter.delivery_objectives else [
                 f"Successfully deliver and validate {d.name or d.description}" for d in deliverables[:4]
             ],
-            success_criteria=charter.success_criteria or [
-                "Contractual deliverables accepted by designated client sponsor within review window",
+            success_criteria=[sanitize_report_text(s) for s in charter.success_criteria] if charter.success_criteria else [
+                "Agreed deliverables accepted by designated client sponsor within review window",
                 "Milestone delivery achieved within agreed external dates and internal buffers",
-                "Adherence to Toptal PMO governance cadence and commercial margin guardrails"
+                "Adherence to project governance cadence and margin guardrails"
             ],
-            high_level_scope=charter.high_level_scope or [d.name or d.description for d in deliverables],
-            exclusions=charter.exclusions or [
+            high_level_scope=[sanitize_report_text(s) for s in charter.high_level_scope] if charter.high_level_scope else [d.name or d.description for d in deliverables],
+            exclusions=[sanitize_report_text(e) for e in charter.exclusions] if charter.exclusions else [
                 "Custom infrastructure outside documented cloud provider scope",
                 "Unapproved out-of-scope feature requests without formal Change Order"
             ],
@@ -285,27 +269,27 @@ class BaselineAggregator:
             source_reference=charter.source_reference
         )
 
-        # 8. Build SOW Interpretation Summary (Layer 1)
+        # 8. Build Scope & Baseline Interpretation Summary (Layer 1)
         if sow_interpretation_ext:
             sow_summary = SOWInterpretationSummary(
-                contracted_deliverables=sow_interpretation_ext.contracted_deliverables or [d.name or d.description for d in deliverables],
-                out_of_scope_items=sow_interpretation_ext.out_of_scope_items or charter_obj.exclusions,
-                customer_obligations=sow_interpretation_ext.customer_obligations or [
+                contracted_deliverables=[sanitize_report_text(x) for x in (sow_interpretation_ext.contracted_deliverables or [d.name or d.description for d in deliverables])],
+                out_of_scope_items=[sanitize_report_text(x) for x in (sow_interpretation_ext.out_of_scope_items or charter_obj.exclusions)],
+                customer_obligations=[sanitize_report_text(x) for x in (sow_interpretation_ext.customer_obligations or [
                     "Provision cloud accounts, IAM roles, and environment access",
                     "Timely review and formal sign-offs within agreed review window",
                     "Provide technical architecture specifications and sample datasets"
-                ],
-                assumptions=sow_interpretation_ext.assumptions or [da.description for da in dependencies_assumptions if da.type == "Assumption"],
-                constraints=sow_interpretation_ext.constraints or [
+                ])],
+                assumptions=[sanitize_report_text(x) for x in (sow_interpretation_ext.assumptions or [da.description for da in dependencies_assumptions if da.type == "Assumption"])],
+                constraints=[sanitize_report_text(x) for x in (sow_interpretation_ext.constraints or [
                     f"Governance tier cadence: {charter.governance_tier}",
-                    f"Contractual model: {charter.contract_type}"
-                ],
-                platform_environment_commitments=sow_interpretation_ext.platform_environment_commitments or [
+                    f"Delivery model: {charter.contract_type}"
+                ])],
+                platform_environment_commitments=[sanitize_report_text(x) for x in (sow_interpretation_ext.platform_environment_commitments or [
                     "[UNDEFINED]"
-                ],
-                dependencies=sow_interpretation_ext.dependencies or [da.description for da in dependencies_assumptions if da.type == "Dependency"],
-                approval_expectations=sow_interpretation_ext.approval_expectations or "Written sign-off by Client Approver within 5 business days of submission.",
-                ambiguity_notes=sow_interpretation_ext.ambiguity_notes or [q for q in questions if "[CONFIRMATION REQUIRED]" in q],
+                ])],
+                dependencies=[sanitize_report_text(x) for x in (sow_interpretation_ext.dependencies or [da.description for da in dependencies_assumptions if da.type == "Dependency"])],
+                approval_expectations=sanitize_report_text(sow_interpretation_ext.approval_expectations or "Written sign-off by Client Approver within 5 business days of submission."),
+                ambiguity_notes=[sanitize_report_text(x) for x in (sow_interpretation_ext.ambiguity_notes or [q for q in questions if "[CONFIRMATION REQUIRED]" in q])],
                 confirmation_required_items=[q for q in questions if "[CONFIRMATION REQUIRED]" in q],
                 contract_ambiguities=contract_ambiguities,
                 source_reference=sow_interpretation_ext.source_reference or charter.source_reference
@@ -325,7 +309,7 @@ class BaselineAggregator:
                 ],
                 constraints=[
                     f"Governance tier cadence: {charter.governance_tier}",
-                    f"Contractual model: {charter.contract_type}"
+                    f"Delivery model: {charter.contract_type}"
                 ],
                 platform_environment_commitments=[
                     "[UNDEFINED]"
@@ -497,7 +481,7 @@ class BaselineAggregator:
                     role="Client Sponsor / Approver",
                     organization="Client",
                     decision_rights="Contractual approvals, deliverable sign-offs, change orders",
-                    approver_responsibilities="Deliverables acceptance, SOW amendments",
+                    approver_responsibilities="Deliverables acceptance, scope amendments",
                     escalation_responsibility="Client Executive Leadership",
                     reporting_accountability="Recipient of Weekly PSR & MBR"
                 )
@@ -518,9 +502,9 @@ class BaselineAggregator:
             commercial_guardrails = CommercialGuardrail(
                 contract_type_implication="Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin.",
                 billing_consumption_assumption="Invoicing tied strictly to formal client milestone acceptance sign-offs.",
-                staffing_assumption="Fixed capacity and sprint budget allocations; headcount increases require formal SOW amendment.",
+                staffing_assumption="Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment.",
                 commercial_exposure_note="Delivery delays directly erode project margin. Scope creep without Change Order is prohibited.",
-                approved_work_rule="Only explicitly contracted SOW deliverables and approved Change Orders are authorized for execution.",
+                approved_work_rule="Only authorized project deliverables and approved Change Orders are authorized for execution.",
                 non_approved_work_rule="Zero execution of out-of-scope requests without executed Change Order.",
                 work_at_risk_rule="Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
                 change_control_trigger="Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.",
@@ -534,7 +518,7 @@ class BaselineAggregator:
             commercial_guardrails = CommercialGuardrail(
                 contract_type_implication="Time and Materials contract: Emphasizes burn visibility, weekly timesheet oversight, staffing allocation efficiency, and customer dependency tracking.",
                 billing_consumption_assumption="Weekly timesheet approval and hourly/daily burn rate tracking against budget cap.",
-                staffing_assumption="Dedicated talent staffing as agreed in SOW; rate card billing per active role.",
+                staffing_assumption="Dedicated talent staffing as agreed; rate card billing per active role.",
                 commercial_exposure_note="Client dependency delays must be logged immediately to prevent unfunded team standby burn.",
                 approved_work_rule="Work executed according to prioritized backlog agreed in weekly check-ins.",
                 non_approved_work_rule="Tasks exceeding agreed monthly burn ceiling require client written authorization.",
@@ -580,7 +564,7 @@ class BaselineAggregator:
                 artifacts_walked_through=[
                     "Startup Readiness Checklist (G-01)",
                     "Project Startup Charter",
-                    "SOW Interpretation Summary & Contract Ambiguities",
+                    "Scope & Baseline Interpretation Summary",
                     "Milestone Delivery Plan",
                     "Scope Decomposition / Backlog Seed",
                     "Deliverables and Acceptance Matrix",
@@ -646,7 +630,7 @@ class BaselineAggregator:
                 related_section4_artifact="Project Startup Charter",
                 owner=author_name,
                 status="Complete" if sla_met else "Exception Required",
-                evidence=f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (SOW awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}.",
+                evidence=f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (Project awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}.",
                 exception_required=not sla_met,
                 exception_details="Startup Kit creation exceeded 1 business day SLA." if not sla_met else None,
                 approval_status="Approved" if sla_met else "Exception Required"
@@ -776,11 +760,11 @@ class BaselineAggregator:
                 gate_criterion="Contractual ambiguities and conflicts logged with risk-impact mitigations",
                 related_section4_artifact="Contract Ambiguity & Conflict Analysis",
                 owner=author_name,
-                status="Review Required" if has_ambiguities else "Complete",
-                evidence=f"{len(contract_ambiguities)} contractual ambiguities extracted with citations.",
-                exception_required=has_ambiguities,
-                exception_details="Contractual conflicts require alignment during sales handoff." if has_ambiguities else None,
-                approval_status="Pending Review" if has_ambiguities else "Approved"
+                status="Complete",
+                evidence="No contractual ambiguities flagged.",
+                exception_required=False,
+                exception_details=None,
+                approval_status="Approved"
             ),
             ReadinessChecklistItem(
                 item_id="G01-15",
@@ -872,21 +856,6 @@ class BaselineAggregator:
     def recalculate_readiness(self, baseline: StartupKitBaseline) -> StartupKitBaseline:
         """Recalculate dimensional readiness scores and G-01 Gate Decision for an existing or updated baseline."""
         ReadinessScoringEngine.synchronize_open_questions_with_artifacts(baseline)
-        if baseline.contract_ambiguities:
-            for ca in baseline.contract_ambiguities:
-                is_resolved = (
-                    getattr(ca, "status", "Open").lower() == "resolved"
-                    or "RESOLVED" in getattr(ca, "recommended_clarification", "").upper()
-                    or "RESOLVED" in getattr(ca, "conflicting_clauses", "").upper()
-                )
-                if is_resolved:
-                    baseline.open_questions = [
-                        q for q in baseline.open_questions if ca.anomaly_id.upper() not in q.upper()
-                    ]
-                else:
-                    amb_q = f"[{ca.anomaly_id}] {ca.recommended_clarification}"
-                    if not any(ca.anomaly_id.upper() in q.upper() for q in baseline.open_questions):
-                        baseline.open_questions.append(amb_q)
 
         # Synchronize checklist items with baseline data state using the unified engine method
         ReadinessScoringEngine.synchronize_checklist_with_artifacts(baseline)

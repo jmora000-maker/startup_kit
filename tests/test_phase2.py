@@ -177,7 +177,7 @@ def test_startup_readiness_scoring_engine(phase2_source_ref):
 
 
 def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
-    """Verify Contract Ambiguity & Conflict Detection extraction, links, and table rendering (NFR-02)."""
+    """Verify Contract Ambiguity & Conflict Detection creation and reporting are removed."""
     aggregator = BaselineAggregator()
     charter = CharterExtraction(
         project_name="Ambiguity Test Project",
@@ -214,37 +214,35 @@ def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
         conflicts_ext=conflicts
     )
 
-    # 1. Ambiguities populated
-    assert len(baseline.contract_ambiguities) == 2
-    assert baseline.contract_ambiguities[0].anomaly_id == "AMB-01"
-    assert baseline.contract_ambiguities[1].anomaly_id == "CONF-01"
+    # 1. Ambiguities creation removed from baseline
+    assert len(baseline.contract_ambiguities) == 0
 
-    # 2. Ambiguities feed into open questions and RAID risks
+    # 2. Ambiguities do not feed into open questions or RAID risks or action items
     q_text = "\n".join(baseline.open_questions)
-    assert "[AMB-01]" in q_text
-    assert "[CONF-01]" in q_text
+    assert "[AMB-01]" not in q_text
+    assert "[CONF-01]" not in q_text
 
     raid_text = "\n".join(r.description for r in baseline.raid_items)
-    assert "AMB-01" in raid_text
-    assert "CONF-01" in raid_text
+    assert "AMB-01" not in raid_text
+    assert "CONF-01" not in raid_text
 
-    # 3. Render in Word document and check table
+    assert not any("Contract Ambiguity" in a.related_artifact for a in baseline.action_required_items)
+
+    # 3. Render in Word document and check that ambiguities table is not present
     generator = DocxGenerator()
     out_file = generator.write_docx(baseline, tmp_path / "out")
     doc = docx.Document(str(out_file))
 
     full_text = "\n".join(p.text for p in doc.paragraphs)
-    assert "Contractual Ambiguities & Conflict Analysis (NFR-02)" in full_text
+    assert "Contractual Ambiguities & Conflict Analysis" not in full_text
 
     all_table_cells = []
     for t in doc.tables:
         for r in t.rows:
             all_table_cells.extend(c.text.strip() for c in r.cells)
 
-    assert "AMB-01" in all_table_cells
-    assert "CONF-01" in all_table_cells
-    assert "Ambiguous Acceptance" in all_table_cells
-    assert "Date Conflict" in all_table_cells
+    assert "AMB-01" not in all_table_cells
+    assert "CONF-01" not in all_table_cells
 
 
 def test_readiness_workflow_states_and_sla_and_segregation(phase2_source_ref):

@@ -261,16 +261,7 @@ def test_in_table_annotations_and_shading_rendering(baseline_with_all_action_typ
     row_raid = raid_table.rows[1]
     assert "[ACT-" in row_raid.cells[3].text
 
-    # 5. Contract ambiguities table verification
-    amb_table = next(
-        t for t in tables
-        if any("anomaly id" in c.text.lower() for c in t.rows[0].cells)
-    )
-    row_amb = amb_table.rows[1]
-    assert "ANOM-01" in row_amb.cells[0].text
-    assert "[ACT-" in row_amb.cells[4].text
-
-    # 6. SOW interpretation summary table verification
+    # 5. SOW interpretation summary table verification
     sow_table = next(
         t for t in tables
         if any("sow interpretation dimension" in c.text.lower() for c in t.rows[0].cells)
@@ -294,13 +285,11 @@ def test_in_table_annotations_and_shading_rendering(baseline_with_all_action_typ
     row_da = da_table.rows[1]
     assert "[ACT-" in row_da.cells[4].text or "[ACT-" in row_da.cells[5].text
 
-    # 9. Commercial guardrails table verification
-    cg_table = next(
-        t for t in tables
-        if any("commercial guardrail area" in c.text.lower() for c in t.rows[0].cells)
+    # 9. Commercial guardrails table verification (removed from report)
+    assert not any(
+        any("commercial guardrail area" in c.text.lower() for c in t.rows[0].cells)
+        for t in tables
     )
-    cg_text = " ".join(c.text for r in cg_table.rows for c in r.cells)
-    assert "[ACT-" in cg_text
 
 
 def test_artifact_banners_rendered_for_active_actions(baseline_with_all_action_types: StartupKitBaseline, tmp_path: Path):

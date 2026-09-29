@@ -1,23 +1,24 @@
 # Toptal PMO Startup Kit Generator
 
-Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests Statements of Work (SOWs), client contracts, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized Word (`.docx`) Startup Kit reports and PMO Operating System seed data.
+Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests project documentation, client agreements, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized, self-contained Word (`.docx`) Startup Kit reports and PMO Operating System seed data.
 
 ---
 
 ## Key Features
 
 - **Multi-Format Ingestion & Pydantic v2 Validation**: Ingests project inputs across multiple file formats including PDF (`.pdf`), Word (`.docx`), PowerPoint (`.pptx`), and plain text (`.txt`). Enforces strict runtime validation at extraction boundaries, including PDF coordinate geometry and sequential page invariants.
-- **Concurrent Multi-Pass Structured LLM Extraction**: Executes 14 independent domain extraction passes concurrently via thread pooling, reducing full baseline extraction runtime from ~9 minutes to under 1 minute.
+- **Concurrent Multi-Pass Structured LLM Extraction**: Executes independent domain extraction passes concurrently via thread pooling, reducing full baseline extraction runtime from ~9 minutes to under 1 minute.
 - **Anthropic Claude Primary Engine with OpenAI Fallback**: Leverages Anthropic Claude (`claude-sonnet-5-5` by default) with automatic model aliasing, thinking-block content filtering, and schema complexity caching. Seamlessly fails over to OpenAI (`gpt-4o`) if network or authentication issues arise.
+- **Self-Contained & Concise Report Generation**: Produces clean, concise, and document-agnostic report text. Descriptions and action items are direct and self-contained so that stakeholders can immediately understand the project baseline without requiring access to source contracts or external documents.
 - **Comprehensive Project Baseline Domains**:
   - Project Charter & Executive Summary
   - Scope Decomposition & Exclusions (Work Packages)
   - Deliverables & Acceptance Criteria (1-to-1 Traceability)
   - Milestones & Delivery Roadmap (with Internal Buffers)
   - RAID Logs (Risks, Assumptions, Issues, Dependencies)
+  - Key Baseline Decisions Log & Scope Rules
   - Stakeholder Matrix & Decision Rights
   - Governance Tiers (Guided, Partnered, Elevated) & Communications Plans
-  - Commercial Guardrails & Contractual Ambiguity Analysis (NFR-02)
   - Talent Onboarding Checklist & Resourcing Records
 - **Authoritative Startup Readiness Scoring Engine**: Centralized, deterministic 4-dimension mathematical engine (`ReadinessScoringEngine`) calculating composite readiness scores, dimensional breakdowns, gate review statuses, and quantified score recovery potential.
 - **Structured Action Required Mapping & 1-to-1 In-Artifact Integration**: Generates discrete, 1-to-1 mapped action items (`ACT-01`, `ACT-02`, etc.) for open exceptions and clarifications, embedding yellow-highlighted remediation badges directly inside Section 4 Layer 1, Layer 2, and Layer 3 artifact table cells without cell background shading alteration.
@@ -326,7 +327,7 @@ $$\text{Readiness Score} = (0.40 \times D_1 + 0.25 \times D_2 + 0.20 \times D_3 
 
 ### Action Required Mapping & 1-to-1 In-Artifact Integration
 
-The engine automatically synthesizes open exceptions and clarifications into discrete `ActionRequiredItem` objects mapped with strict **1-to-1 cell traceability** to specific artifact table cells (Deliverables, Milestones, RAID items, Roles, Guardrails). Remediation tags (e.g., `[ACT-XX: ... (+X.X% Recovery)]` or fallback `[ACT-REQ-XX: ...]`) are highlighted directly with yellow text runs (`WD_COLOR_INDEX.YELLOW`) while preserving standard table cell zebra shading.
+The engine automatically synthesizes open exceptions and clarifications into discrete `ActionRequiredItem` objects mapped with strict **1-to-1 cell traceability** to specific artifact table cells (Deliverables, Milestones, RAID items, Roles, Governance controls). Remediation tags (e.g., `[ACT-XX: ... (+X.X% Recovery)]` or fallback `[ACT-REQ-XX: ...]`) are highlighted directly with yellow text runs (`WD_COLOR_INDEX.YELLOW`) while preserving standard table cell formatting.
 
 | Gate ID | Section 4 Artifact Name | Layer | Primary Action Type | In-Cell Visual Integration | Target Scope |
 | :--- | :--- | :---: | :--- | :--- | :---: |
@@ -336,14 +337,14 @@ The engine automatically synthesizes open exceptions and clarifications into dis
 | `G01-04` | **Milestone Delivery Plan** | Layer 1 | Open Exception | In-Cell Text Highlight on Target Date `[ACT-XX]` | Schedule / Buffer |
 | `G01-05` | **RAID & Dependency Log** | Layer 2 | Open Clarification | In-Cell Mitigation / Status Column Marker `[ACT-XX]` | Risks & Dependencies |
 | `G01-06` | **Talent Onboarding Record** | Layer 3 | Open Clarification | Leadership Briefing Status `[ACT-XX]` | KO Alignment |
-| `G01-07` | **SOW Interpretation Summary** | Layer 1 | Open Clarification | Customer Obligations Cell Highlight `[ACT-XX]` | Access / Obligations |
+| `G01-07` | **Scope & Baseline Interpretation** | Layer 1 | Open Clarification | Customer Obligations Cell Highlight `[ACT-XX]` | Access / Prerequisites |
 | `G01-08` | **Talent Roster** | Layer 3 | Open Exception | Roster Row Highlight on `[UNASSIGNED]` `[ACT-XX]` | Delivery Roles |
 | `G01-09` | **Stakeholder Model** | Layer 3 | Open Clarification | Decision Rights Column Marker `[ACT-XX]` | Sign-off Authority |
 | `G01-10` | **RACI Matrix** | Layer 3 | Open Clarification | RACI Role Definition Callout `[ACT-XX]` | Governance RACI |
 | `G01-11` | **Communications Plan** | Layer 2 | Open Clarification | Distribution Cadence Marker `[ACT-XX]` | Status Reporting |
-| `G01-12` | **Commercial Guardrails** | Layer 3 | Open Exception | SOW Budget Baseline / Cap Marker `[ACT-XX]` | Commercial Exposure |
-| `G01-13` | **Change Control Procedure** | Layer 3 | Open Clarification | Change Control Route Marker `[ACT-XX]` | Scope Baseline |
-| `G01-14` | **Contract Ambiguity Analysis**| Layer 1 | Open Exception | Ambiguity Resolution Marker `[ACT-XX]` | SOW Clauses |
+| `G01-12` | **Scope & Baseline Rules** | Layer 3 | Open Clarification | Scope Boundaries & Authorization Marker | Scope Baseline |
+| `G01-13` | **Change Control Procedure** | Layer 3 | Open Clarification | Change Control Route Marker `[ACT-XX]` | Scope Management |
+| `G01-14` | **Scope Clarity & Alignment** | Layer 1 | Open Clarification | Baseline Alignment Marker | Scope Assurance |
 | `G01-15` | **Startup Readiness Checklist** | Gateway | Open Clarification | Executive Gate Decision Evidence Tag | Gate Governance |
 
 ### Action Item Resolution & Score Recovery Guide (From -> To Remediation Table)
@@ -365,14 +366,14 @@ The following **To and From Table** outlines how each action item is resolved in
 | `G01-04` | **Milestone Delivery Plan** (Target External Date & Internal Buffer) | External Date: `None` / `TBD` / `[CONFIRMATION REQUIRED]`, Buffer: empty `[ACT-XX]` | Valid external commitment date (e.g., `2026-11-15`) and 7-day internal buffer date (e.g., `2026-11-08`) | $D_1$ (Mandatory Controls) | **+3.0%** | Input agreed external milestone deadlines in `YYYY-MM-DD` format with proactive internal contingency buffer dates. |
 | `G01-05` | **RAID & Dependency Log** (Owner & Mitigation Strategy) | Owner: `Unassigned` / `[UNASSIGNED]`, generic mitigation text `[ACT-XX]` | Assigned named risk/issue owner (e.g., `"Taylor Brown"`), documented mitigation steps and escalation trigger | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+2.0%** | Assign named individuals to all RAID entries and articulate concrete mitigation actions and target resolution dates. |
 | `G01-06` | **Talent Onboarding Record** (PMO Briefing & Kickoff Deck) | Briefing Status: `Pending` / `Unassigned` / `[CONFIRMATION REQUIRED]` `[ACT-XX]` | Briefing Status: `"Completed"`, kickoff deck confirmed and approved by PMO | $D_1$ (Mandatory Controls) + $D_3$ (Talent) | **+1.5%** | Mark PMO leadership briefings as completed and attach confirmation of project kickoff presentation readiness. |
-| `G01-07` | **SOW Interpretation Summary** (Customer Obligations & Access) | `[CONFIRMATION REQUIRED]` / Undefined VPN, environment, or data prerequisites `[ACT-XX]` | Explicit customer obligations defined (e.g., `"Client to provision AWS tenant and VPN credentials by Day 3"`) | $D_1$ (Mandatory Controls) + $D_4$ (Clarifications) | **+2.5%** | Enumerate all mandatory client prerequisites, security access requirements, and dependency timelines. |
+| `G01-07` | **Scope & Baseline Interpretation** (Customer Obligations & Access) | `[CONFIRMATION REQUIRED]` / Undefined environment, or data prerequisites `[ACT-XX]` | Explicit customer obligations defined (e.g., `"Client to provision cloud tenant and access credentials by Day 3"`) | $D_1$ (Mandatory Controls) + $D_4$ (Clarifications) | **+2.5%** | Enumerate all mandatory client prerequisites, security access requirements, and dependency timelines. |
 | `G01-08` | **Talent Roster** (Named Talent & Staffing Status) | Named Talent: `[UNASSIGNED - TO BE CONFIRMED]`, Status: `Pending` / `Open` `[ACT-XX]` | Named talent entered (e.g., `"Marcus Vance"`), Staffing Status: `"Confirmed"` / `"Ready"` / `"Active"` | $D_3$ (Talent & Staffing) + $D_1$ (Gate Control) | **+2.5% to +5.0%** | Replace placeholder text with vetted, contracted team members and update staffing status to Confirmed. |
 | `G01-09` | **Stakeholder Model** (Decision Rights & Sign-off Authority) | Decision Rights: `[CONFIRMATION REQUIRED]` / Unconfirmed escalation authority `[ACT-XX]` | Specific authority defined (e.g., `"VP of Engineering - Sign-off on architecture blueprints and budget changes > $25k"`) | $D_1$ (Mandatory Controls) | **+2.0%** | Designate explicit decision rights, financial approval thresholds, and escalation pathways for each client stakeholder. |
 | `G01-10` | **RACI / Decision Rights Matrix** (Activity Ownership) | Ambiguous role definitions or unassigned Accountable/Responsible designations `[ACT-XX]` | Complete RACI mapping with designated Accountable (`A`), Responsible (`R`), Consulted (`C`), and Informed (`I`) roles | $D_1$ (Mandatory Controls) | **+1.5%** | Verify each lifecycle governance activity has exactly one Accountable role and clearly identified Responsible delivery leads. |
-| `G01-11` | **Communications Plan** (Distribution Cadence & Audience) | Distribution cadence undefined / missing stakeholder distribution list `[ACT-XX]` | Defined weekly status report recipient list, monthly steerco cadence, and sprint demo schedule | $D_1$ (Mandatory Controls) | **+1.5%** | Document report recipients, communication channels (Slack/Email), meeting frequencies, and executive briefing schedules. |
-| `G01-12` | **Commercial & Margin Guardrails** (Budget Baseline & Cap Hours) | SOW Budget: `[CONFIRMATION REQUIRED]`, Cap Hours: unconfirmed, margin unstated `[ACT-XX]` | Confirmed Total Contract Value (e.g., `"$450,000"`), Cap Hours (`"2,400 hrs"`), and target margin floor (`"38%"`) | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.0%** | Fill in verified commercial financial figures, billing caps, overtime/expense policies, and margin boundaries. |
-| `G01-13` | **Commercial Guardrails** (Change Control Procedure) | Change route: `[CONFIRMATION REQUIRED]` / Undefined out-of-scope procedure `[ACT-XX]` | Documented formal Change Order request process, impact assessment workflow, and client sign-off route | $D_1$ (Mandatory Controls) | **+2.0%** | Outline the formal change request process, threshold for scope amendments, and commercial impact sign-off rules. |
-| `G01-14` | **Contract Ambiguity Analysis** (Anomalies & Conflicts) | Anomaly Status: `Open` / `Exception Required`, unresolved clause discrepancies `[ACT-XX]` | Anomaly Resolution: `"[RESOLVED] Locked milestone date and scope boundary aligned with client sponsor"` | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.5%** | Prefix resolution notes with `[RESOLVED]` to clear contractual ambiguity deductions ($Q \times 0.05$) and gate exceptions. |
+| `G01-11` | **Communications Plan** (Distribution Cadence & Audience) | Distribution cadence undefined / missing stakeholder distribution list `[ACT-XX]` | Defined weekly status report recipient list, monthly steerco cadence, and sprint demo schedule | $D_1$ (Mandatory Controls) | **+1.5%** | Document report recipients, communication channels, meeting frequencies, and executive briefing schedules. |
+| `G01-12` | **Scope & Baseline Rules** (Scope Boundaries & Rules) | Scope boundaries: `[CONFIRMATION REQUIRED]` / unconfirmed work rules `[ACT-XX]` | Confirmed scope boundaries, approved work authorization rules, and non-approved work handling | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.0%** | Document approved scope boundaries, work-at-risk authorization policies, and baseline assumptions. |
+| `G01-13` | **Scope Management** (Change Control Procedure) | Change route: `[CONFIRMATION REQUIRED]` / Undefined out-of-scope procedure `[ACT-XX]` | Documented formal Change Order request process, impact assessment workflow, and client sign-off route | $D_1$ (Mandatory Controls) | **+2.0%** | Outline the formal change request process, threshold for scope amendments, and commercial impact sign-off rules. |
+| `G01-14` | **Scope Clarity & Alignment** (Baseline Ambiguity Resolution) | Ambiguity Status: `Open` / `Exception Required`, unresolved requirement gaps `[ACT-XX]` | Resolution notes or confirmed criteria clarifying project scope and deliverables | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.5%** | Clarify scope requirements and resolve open clarification questions to clear gate exceptions. |
 | `G01-15` | **Executive Startup Readiness Checklist** (G-01 Gateway) | Gate Criteria: `Exception Required` / `Review Required`, unresolved questions `[ACT-XX]` | Gate Criteria: `"Complete"` / `"Approved"`, with clear audit evidence documented in Evidence column | $D_1$ (Mandatory Controls) + $D_4$ (Commercial) | **+2.5%** | Update G-01 checklist row statuses to Complete/Approved with supporting evidence summaries and clear all open questions. |
 
 #### Step-by-Step Re-evaluation Workflow
@@ -380,11 +381,10 @@ The following **To and From Table** outlines how each action item is resolved in
 To execute a re-evaluation cycle and observe score recovery:
 
 1. **Open the Generated Word Document**: Open `output/<Project_Name>_Startup_Kit.docx` in Microsoft Word or any compatible DOCX editor.
-2. **Locate Highlighted Action Badges**: Look for yellow-highlighted `[ACT-XX: ... (+X.X% Recovery)]` tags in the artifact tables (Deliverables, Milestones, Talent Roster, RAID, Guardrails, Ambiguities).
+2. **Locate Highlighted Action Badges**: Look for yellow-highlighted `[ACT-XX: ... (+X.X% Recovery)]` tags in the artifact tables (Deliverables, Milestones, Talent Roster, RAID).
 3. **Apply Remediation Updates**:
    - Replace placeholder text (e.g., `[CONFIRMATION REQUIRED]`, `[UNASSIGNED]`, `TBD`) with confirmed project details as shown in the table above.
    - For leadership, enter names directly in Table 1 (Metadata Header) or pass them via CLI flags (`--pmo-lead`, `--delivery-lead`, `--talent-pm`).
-   - For contract ambiguities, prefix your resolution note with `[RESOLVED]`.
 4. **Save the Modified Document**: Save the document (e.g., as `output/Project_Startup_Kit_Updated.docx` or overwrite the original).
 5. **Run Re-evaluation**:
    ```bash
@@ -434,13 +434,13 @@ This project uses [bump-my-version](https://github.com/callowayproject/bump-my-v
 To bump the version (updating `src/version.py`, creating a Git commit and tag):
 
 ```bash
-# Patch bump (0.0.1 -> 0.0.2)
+# Patch bump (0.4.0 -> 0.4.1)
 bump-my-version bump patch
 
-# Minor bump (0.0.2 -> 0.1.0)
+# Minor bump (0.4.0 -> 0.5.0)
 bump-my-version bump minor
 
-# Major bump (0.1.0 -> 1.0.0)
+# Major bump (0.4.0 -> 1.0.0)
 bump-my-version bump major
 ```
 
