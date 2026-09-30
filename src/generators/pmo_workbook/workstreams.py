@@ -6,17 +6,8 @@ from typing import List, Tuple, Optional, Sequence, Union
 from src.config import sanitize_report_text
 from src.core.models import Milestone, Deliverable
 
-# Fixed 8-workstream taxonomy in exact order (used for keyword fallback and deliverable template selection)
+# Fixed 7-workstream taxonomy (used for keyword fallback and deliverable template selection)
 TAXONOMY: List[Tuple[str, str, List[str]]] = [
-    (
-        "PMG",
-        "Project Management & Governance",
-        [
-            "kickoff", "kick-off", "mobiliz", "onboard", "governance",
-            "charter", "gate", "steering", "baseline", "closure",
-            "close-out", "closeout"
-        ]
-    ),
     (
         "DIS",
         "Discovery & Requirements",

@@ -1,17 +1,17 @@
-"""Openpyxl Excel workbook renderer for the Project Delivery Workbook (v2 spec)."""
+"""Openpyxl Excel workbook renderer for the Project Delivery Workbook (v3 spec)."""
 
 import re
 from datetime import date
 from pathlib import Path
-from typing import List, Optional, Any, Sequence
+from typing import List, Optional, Any, Sequence, Dict, Tuple
 import openpyxl
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
-from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils import get_column_letter
+from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
 from src.version import __version__
@@ -27,11 +27,10 @@ from src.generators.pmo_workbook.styles import (
     COLOR_ACCENT_BLUE_HEX,
     COLOR_LIGHT_BG_HEX,
     COLOR_WARNING_BG_HEX,
-    COLOR_BORDER_HEX,
+    COLOR_WHITE_HEX,
     COLOR_LIGHT_RED_HEX,
     COLOR_LIGHT_GREEN_HEX,
     COLOR_TIMELINE_SPAN_HEX,
-    COLOR_TEXT_GREY_HEX,
     FONT_TITLE,
     FONT_SUBTITLE,
     FONT_MUTED,
@@ -39,7 +38,6 @@ from src.generators.pmo_workbook.styles import (
     FONT_BODY,
     FONT_BODY_BOLD,
     FONT_BODY_MUTED,
-    FONT_BODY_GREY,
     FONT_WBS_L1,
     FONT_TIMELINE_HEADER,
     FILL_NAVY,
@@ -112,26 +110,27 @@ RAID_COL_WIDTHS = [
     10,  # A: RAID ID
     12,  # B: Type
     45,  # C: Description
-    22,  # D: Category
-    26,  # E: Workstream
-    16,  # F: Linked Milestone
-    16,  # G: Linked WBS Code
-    22,  # H: Owner
-    12,  # I: Probability
-    12,  # J: Impact
-    12,  # K: Severity
-    12,  # L: Score (P x I)
-    35,  # M: Trigger / Early Warning
-    35,  # N: Mitigation / Response
-    13,  # O: Due Date
-    13,  # P: Status
-    13,  # Q: Date Raised
-    13,  # R: Last Updated
-    20,  # S: Linked Decision
-    26,  # T: Linked Dependency / Assumption
-    26,  # U: Source
-    12,  # V: Source ID
-    40,  # W: Notes
+    35,  # D: Contract Reference (v3 A7)
+    22,  # E: Category
+    26,  # F: Workstream
+    16,  # G: Linked Milestone
+    16,  # H: Linked WBS Code
+    22,  # I: Owner
+    12,  # J: Probability
+    12,  # K: Impact
+    12,  # L: Rating (v3 A11)
+    12,  # M: Score (P x I)
+    35,  # N: Trigger / Early Warning
+    35,  # O: Mitigation / Response
+    13,  # P: Due Date
+    13,  # Q: Status
+    13,  # R: Date Raised
+    13,  # S: Last Updated
+    20,  # T: Linked Decision
+    26,  # U: Linked Dependency / Assumption
+    26,  # V: Source
+    12,  # W: Source ID
+    40,  # X: Notes
 ]
 
 
@@ -142,7 +141,7 @@ def _clean_cell_str(val: Any) -> Any:
     return val
 
 
-def _apply_row_styling(ws: Worksheet, row_idx: int, font: Font, fill: Optional[PatternFill] = None, align: Optional[Alignment] = None, max_col: int = 23):
+def _apply_row_styling(ws: Worksheet, row_idx: int, font: Font, fill: Optional[PatternFill] = None, align: Optional[Alignment] = None, max_col: int = 24):
     """Apply styling across row columns."""
     for col in range(1, max_col + 1):
         cell = ws.cell(row=row_idx, column=col)
@@ -184,11 +183,11 @@ def _add_title_block(ws: Worksheet, model: WorkbookModel, tab_name: str, has_sch
 
 
 def _write_lists_sheet(wb: Workbook, model: WorkbookModel):
-    """Create hidden _Lists sheet with validation lists and named ranges."""
+    """Create hidden _Lists sheet with validation lists and named ranges (v3 A12)."""
     ws = wb.create_sheet(title="_Lists")
     ws.sheet_state = "hidden"
 
-    # 1. Distinct phase workstreams
+    # 1. Distinct phase workstreams (v3 A1: phase workstreams plus Multiple phases and Cross-phase)
     phase_workstreams: List[str] = []
     for s in model.schedule_rows:
         if s.row_type == "Workstream" and s.workstream:
@@ -199,11 +198,18 @@ def _write_lists_sheet(wb: Workbook, model: WorkbookModel):
         if opt not in phase_workstreams:
             phase_workstreams.append(opt)
 
-    # 2. Other validation domains
+    # 2. Distinct Milestone IDs (v3 A12)
+    milestone_ids: List[str] = []
+    for s in model.schedule_rows:
+        if s.row_type == "Milestone" and s.milestone_id:
+            if s.milestone_id not in milestone_ids:
+                milestone_ids.append(s.milestone_id)
+
+    # 3. Other validation domains
     types = ["Risk", "Assumption", "Issue", "Dependency"]
     categories = [
         "Delivery Risk", "Technical Dependency", "Commercial Assumption",
-        "Contract Clarification", "Client Prerequisite", "Scope Gap", "Governance"
+        "Contract Clarification", "Client Prerequisite", "Scope Gap", "Governance", "Open Question"
     ]
     probabilities = ["High", "Medium", "Low"]
     impacts = ["High", "Medium", "Low"]
@@ -213,6 +219,7 @@ def _write_lists_sheet(wb: Workbook, model: WorkbookModel):
 
     cols_data = [
         ("List_Workstreams", phase_workstreams),
+        ("List_Milestone_IDs", milestone_ids),
         ("List_RAID_Types", types),
         ("List_RAID_Categories", categories),
         ("List_Probabilities", probabilities),
@@ -226,7 +233,7 @@ def _write_lists_sheet(wb: Workbook, model: WorkbookModel):
         col_letter = get_column_letter(col_idx)
         for row_idx, val in enumerate(items, start=1):
             ws.cell(row=row_idx, column=col_idx, value=val)
-        num_rows = len(items)
+        num_rows = len(items) if items else 1
         formula = f"'_Lists'!${col_letter}$1:${col_letter}${num_rows}"
         wb.defined_names.add(DefinedName(name=name, attr_text=formula))
 
@@ -288,32 +295,44 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
     row_idx = 6
     for s in model.schedule_rows:
         r = row_idx
+
+        # Col A: WBS Code
         ws.cell(row=r, column=1, value=_clean_cell_str(s.wbs_code))
+
+        # Col B: Row Type
         ws.cell(row=r, column=2, value=_clean_cell_str(s.row_type))
+
+        # Col C: Workstream
         ws.cell(row=r, column=3, value=_clean_cell_str(s.workstream))
+
+        # Col D: Milestone ID
         ws.cell(row=r, column=4, value=_clean_cell_str(s.milestone_id))
+
+        # Col E: Milestone
         ws.cell(row=r, column=5, value=_clean_cell_str(s.name))
+
+        # Col F: Milestone Scope
         ws.cell(row=r, column=6, value=_clean_cell_str(s.scope))
+
+        # Col G: Owner
         ws.cell(row=r, column=7, value=_clean_cell_str(s.owner))
 
-        # Planned Start (H) & Planned Finish (I)
+        # Col H: Planned Start
         cell_h = ws.cell(row=r, column=8)
-        cell_i = ws.cell(row=r, column=9)
-
-        if s.row_type == "Workstream":
-            child_range = ws_child_ranges.get(s.wbs_code)
-            if child_range and child_range[0] <= child_range[1]:
-                c_start, c_end = child_range
-                cell_h.value = f'=IF(COUNT(H{c_start}:H{c_end})>0,MIN(H{c_start}:H{c_end}),"")'
-                cell_i.value = f'=IF(COUNT(I{c_start}:I{c_end})>0,MAX(I{c_start}:I{c_end}),"")'
-            else:
-                cell_h.value = s.planned_start
-                cell_i.value = s.planned_finish
+        if s.row_type == "Workstream" and s.wbs_code in ws_child_ranges:
+            sr, er = ws_child_ranges[s.wbs_code]
+            cell_h.value = f"=MIN(H{sr}:H{er})"
         else:
             cell_h.value = s.planned_start
-            cell_i.value = s.planned_finish
-
         cell_h.number_format = "YYYY-MM-DD"
+
+        # Col I: Planned Finish
+        cell_i = ws.cell(row=r, column=9)
+        if s.row_type == "Workstream" and s.wbs_code in ws_child_ranges:
+            sr, er = ws_child_ranges[s.wbs_code]
+            cell_i.value = f"=MAX(I{sr}:I{er})"
+        else:
+            cell_i.value = s.planned_finish
         cell_i.number_format = "YYYY-MM-DD"
 
         # Col J: Internal Buffer Date
@@ -331,12 +350,12 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         cell_m = ws.cell(row=r, column=13, value=f'=IF(OR(H{r}="",I{r}=""),"",NETWORKDAYS(H{r},I{r}))')
 
         # Col N: Days to Finish
-        cell_n = ws.cell(row=r, column=14, value=f'=IF(OR(AND(K{r}="",I{r}=""),O{r}="Complete"),"",IF(K{r}<>"",K{r},I{r})-TODAY())')
+        cell_n = ws.cell(row=r, column=14, value=f'=IF(I{r}="","",I{r}-TODAY())')
 
         # Col O: Status
         ws.cell(row=r, column=15, value=_clean_cell_str(s.status))
 
-        # Col P: Health
+        # Col P: Health Formula
         cell_p = ws.cell(row=r, column=16, value=f'=IF(O{r}="Complete","Complete",IF(AND(K{r}="",I{r}=""),"Date TBC",IF(TODAY()>IF(K{r}<>"",K{r},I{r}),"Overdue",IF(AND(J{r}<>"",TODAY()>J{r}),"In Buffer","On Track"))))')
 
         # Col Q: Predecessor
@@ -370,10 +389,6 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         for col_c in (1, 2, 4, 8, 9, 10, 11, 13, 14, 15, 16, 17):
             ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
 
-        # Owner warning fill
-        if s.owner == "[UNASSIGNED - TO BE CONFIRMED]":
-            ws.cell(row=r, column=7).fill = FILL_WARNING
-
         # Outline level
         if s.outline_level > 0:
             ws.row_dimensions[r].outline_level = s.outline_level
@@ -405,35 +420,36 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         ws.auto_filter.ref = f"A5:W{last_row}"
 
     # Data Validation
-    dv_status = DataValidation(type="list", formula1="=List_Schedule_Statuses", allow_blank=True)
-    ws.add_data_validation(dv_status)
-    dv_status.add(f"O6:O{last_row}")
+    if last_row >= 6:
+        dv_status = DataValidation(type="list", formula1="=List_Schedule_Statuses", allow_blank=True)
+        ws.add_data_validation(dv_status)
+        dv_status.add(f"O6:O{last_row}")
 
-    dv_ws = DataValidation(type="list", formula1="=List_Workstreams", allow_blank=True)
-    ws.add_data_validation(dv_ws)
-    dv_ws.add(f"C6:C{last_row}")
+        dv_ws = DataValidation(type="list", formula1="=List_Workstreams", allow_blank=True)
+        ws.add_data_validation(dv_ws)
+        dv_ws.add(f"C6:C{last_row}")
 
-    # Health Conditional Formatting
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"On Track"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
-    )
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"Complete"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
-    )
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"In Buffer"'], fill=FILL_WARNING, font=Font(color="7D4A00"))
-    )
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"Overdue"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006"))
-    )
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"Date TBC"'], fill=FILL_LIGHT_BG, font=FONT_MUTED)
-    )
+        # Health Conditional Formatting
+        ws.conditional_formatting.add(
+            f"P6:P{last_row}",
+            CellIsRule(operator="equal", formula=['"On Track"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
+        )
+        ws.conditional_formatting.add(
+            f"P6:P{last_row}",
+            CellIsRule(operator="equal", formula=['"Complete"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
+        )
+        ws.conditional_formatting.add(
+            f"P6:P{last_row}",
+            CellIsRule(operator="equal", formula=['"In Buffer"'], fill=FILL_WARNING, font=Font(color="7D4A00"))
+        )
+        ws.conditional_formatting.add(
+            f"P6:P{last_row}",
+            CellIsRule(operator="equal", formula=['"Overdue"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006"))
+        )
+        ws.conditional_formatting.add(
+            f"P6:P{last_row}",
+            CellIsRule(operator="equal", formula=['"Date TBC"'], fill=FILL_LIGHT_BG, font=FONT_MUTED)
+        )
 
     # Timeline Conditional Formatting
     if model.timeline_weeks and last_row >= 6:
@@ -531,9 +547,9 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
         for col_c in (1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16):
             ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
 
-        # Owner warning fill
-        if w.owner == "[UNASSIGNED - TO BE CONFIRMED]":
-            ws.cell(row=r, column=9).fill = FILL_WARNING
+        # Evidence consistency warning fill on Criteria cell (v3 A9)
+        if w.level == 3 and w.deliverable_id and w.deliverable_id in model.flagged_evidence_deliverables:
+            ws.cell(row=r, column=17).fill = FILL_WARNING
 
         # Outline level
         if w.outline_level > 0:
@@ -554,26 +570,27 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
         ws.auto_filter.ref = f"A5:U{last_row}"
 
     # Data validation
-    dv_status = DataValidation(type="list", formula1="=List_Schedule_Statuses", allow_blank=True)
-    ws.add_data_validation(dv_status)
-    dv_status.add(f"M6:M{last_row}")
+    if last_row >= 6:
+        dv_status = DataValidation(type="list", formula1="=List_Schedule_Statuses", allow_blank=True)
+        ws.add_data_validation(dv_status)
+        dv_status.add(f"M6:M{last_row}")
 
-    dv_cad = DataValidation(type="list", formula1="=List_Cadences", allow_blank=True)
-    ws.add_data_validation(dv_cad)
-    dv_cad.add(f"O6:O{last_row}")
+        dv_cad = DataValidation(type="list", formula1="=List_Cadences", allow_blank=True)
+        ws.add_data_validation(dv_cad)
+        dv_cad.add(f"O6:O{last_row}")
 
 
 def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
-    """Render RAID Log worksheet."""
+    """Render RAID Log worksheet (v3 A7, A8, A11, A12)."""
     ws = wb.create_sheet(title="RAID Log")
     ws.views.sheetView[0].showGridLines = True
 
     _add_title_block(ws, model, "RAID LOG", has_schedule_note=False)
 
     headers = [
-        "RAID ID", "Type", "Description", "Category", "Workstream",
+        "RAID ID", "Type", "Description", "Contract Reference", "Category", "Workstream",
         "Linked Milestone", "Linked WBS Code", "Owner", "Probability", "Impact",
-        "Severity", "Score (P x I)", "Trigger / Early Warning", "Mitigation / Response",
+        "Rating", "Score (P x I)", "Trigger / Early Warning", "Mitigation / Response",
         "Due Date", "Status", "Date Raised", "Last Updated", "Linked Decision",
         "Linked Dependency / Assumption", "Source", "Source ID", "Notes"
     ]
@@ -593,28 +610,28 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
         ws.cell(row=r, column=1, value="RAID-01")
         ws.cell(row=r, column=2, value="Risk")
         ws.cell(row=r, column=3, value="No baseline risks identified; populate during Startup Gateway.")
-        ws.cell(row=r, column=4, value="Delivery Risk")
-        ws.cell(row=r, column=5, value="Cross-phase")
-        ws.cell(row=r, column=6, value="")
+        ws.cell(row=r, column=4, value="")
+        ws.cell(row=r, column=5, value="Delivery Risk")
+        ws.cell(row=r, column=6, value="Cross-phase")
         ws.cell(row=r, column=7, value="")
-        ws.cell(row=r, column=8, value="[UNASSIGNED - TO BE CONFIRMED]")
-        ws.cell(row=r, column=9, value="Low")
+        ws.cell(row=r, column=8, value="")
+        ws.cell(row=r, column=9, value="Talent PM")
         ws.cell(row=r, column=10, value="Low")
-        ws.cell(row=r, column=11, value=f'=IF(OR(I{r}="",J{r}=""),"",IF(OR(AND(I{r}="High",J{r}="High"),AND(I{r}="High",J{r}="Medium"),AND(I{r}="Medium",J{r}="High")),"High",IF(AND(I{r}="Low",J{r}="Low"),"Low","Medium")))')
-        ws.cell(row=r, column=12, value=f'=IF(OR(I{r}="",J{r}=""),"",(IF(I{r}="High",3,IF(I{r}="Medium",2,1)))*(IF(J{r}="High",3,IF(J{r}="Medium",2,1))))')
-        ws.cell(row=r, column=13, value="")
+        ws.cell(row=r, column=11, value="Low")
+        ws.cell(row=r, column=12, value=f'=IF(OR(J{r}="",K{r}=""),"",IF(OR(AND(J{r}="High",K{r}="High"),AND(J{r}="High",K{r}="Medium"),AND(J{r}="Medium",K{r}="High")),"High",IF(AND(J{r}="Low",K{r}="Low"),"Low","Medium")))')
+        ws.cell(row=r, column=13, value=f'=IF(OR(J{r}="",K{r}=""),"",(IF(J{r}="High",3,IF(J{r}="Medium",2,1)))*(IF(K{r}="High",3,IF(K{r}="Medium",2,1))))')
         ws.cell(row=r, column=14, value="")
-        ws.cell(row=r, column=15, value=None)
-        ws.cell(row=r, column=16, value="Open")
-        ws.cell(row=r, column=17, value=model.generation_date)
+        ws.cell(row=r, column=15, value="")
+        ws.cell(row=r, column=16, value=None)
+        ws.cell(row=r, column=17, value="Open")
         ws.cell(row=r, column=18, value=model.generation_date)
-        ws.cell(row=r, column=19, value="")
+        ws.cell(row=r, column=19, value=model.generation_date)
         ws.cell(row=r, column=20, value="")
-        ws.cell(row=r, column=21, value="PM Best Practice")
-        ws.cell(row=r, column=22, value="")
-        ws.cell(row=r, column=23, value="Placeholder RAID item")
-        _apply_row_styling(ws, r, FONT_BODY, max_col=23)
-        ws.cell(row=r, column=8).fill = FILL_WARNING
+        ws.cell(row=r, column=21, value="")
+        ws.cell(row=r, column=22, value="PM Best Practice")
+        ws.cell(row=r, column=23, value="")
+        ws.cell(row=r, column=24, value="Placeholder RAID item")
+        _apply_row_styling(ws, r, FONT_BODY, max_col=24)
         row_idx = 7
     else:
         for r_row in model.raid_rows:
@@ -622,48 +639,48 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
             ws.cell(row=r, column=1, value=_clean_cell_str(r_row.raid_id))
             ws.cell(row=r, column=2, value=_clean_cell_str(r_row.type))
             ws.cell(row=r, column=3, value=_clean_cell_str(r_row.description))
-            ws.cell(row=r, column=4, value=_clean_cell_str(r_row.category))
-            ws.cell(row=r, column=5, value=_clean_cell_str(r_row.workstream))
-            ws.cell(row=r, column=6, value=_clean_cell_str(r_row.linked_milestone))
-            ws.cell(row=r, column=7, value=_clean_cell_str(r_row.linked_wbs_code))
-            ws.cell(row=r, column=8, value=_clean_cell_str(r_row.owner))
-            ws.cell(row=r, column=9, value=_clean_cell_str(r_row.probability))
-            ws.cell(row=r, column=10, value=_clean_cell_str(r_row.impact))
+            ws.cell(row=r, column=4, value=_clean_cell_str(r_row.contract_reference))
+            ws.cell(row=r, column=5, value=_clean_cell_str(r_row.category))
+            ws.cell(row=r, column=6, value=_clean_cell_str(r_row.workstream))
+            ws.cell(row=r, column=7, value=_clean_cell_str(r_row.linked_milestone))
+            ws.cell(row=r, column=8, value=_clean_cell_str(r_row.linked_wbs_code))
+            ws.cell(row=r, column=9, value=_clean_cell_str(r_row.owner))
+            ws.cell(row=r, column=10, value=_clean_cell_str(r_row.probability))
+            ws.cell(row=r, column=11, value=_clean_cell_str(r_row.impact))
 
-            # Col K: Severity Formula
-            ws.cell(row=r, column=11, value=f'=IF(OR(I{r}="",J{r}=""),"",IF(OR(AND(I{r}="High",J{r}="High"),AND(I{r}="High",J{r}="Medium"),AND(I{r}="Medium",J{r}="High")),"High",IF(AND(I{r}="Low",J{r}="Low"),"Low","Medium")))')
+            # Col L (12): Rating (v3 A11)
+            if r_row.severity:
+                ws.cell(row=r, column=12, value=_clean_cell_str(r_row.severity))
+            else:
+                ws.cell(row=r, column=12, value=f'=IF(OR(J{r}="",K{r}=""),"",IF(OR(AND(J{r}="High",K{r}="High"),AND(J{r}="High",K{r}="Medium"),AND(J{r}="Medium",K{r}="High")),"High",IF(AND(J{r}="Low",K{r}="Low"),"Low","Medium")))')
 
-            # Col L: Score (P x I) Formula
-            ws.cell(row=r, column=12, value=f'=IF(OR(I{r}="",J{r}=""),"",(IF(I{r}="High",3,IF(I{r}="Medium",2,1)))*(IF(J{r}="High",3,IF(J{r}="Medium",2,1))))')
+            # Col M (13): Score (P x I) Formula
+            ws.cell(row=r, column=13, value=f'=IF(OR(J{r}="",K{r}=""),"",(IF(J{r}="High",3,IF(J{r}="Medium",2,1)))*(IF(K{r}="High",3,IF(K{r}="Medium",2,1))))')
 
-            ws.cell(row=r, column=13, value=_clean_cell_str(r_row.trigger_or_early_warning))
-            ws.cell(row=r, column=14, value=_clean_cell_str(r_row.mitigation_or_response))
+            ws.cell(row=r, column=14, value=_clean_cell_str(r_row.trigger_or_early_warning))
+            ws.cell(row=r, column=15, value=_clean_cell_str(r_row.mitigation_or_response))
 
-            cell_o = ws.cell(row=r, column=15, value=r_row.due_date)
-            cell_o.number_format = "YYYY-MM-DD"
+            cell_p = ws.cell(row=r, column=16, value=r_row.due_date)
+            cell_p.number_format = "YYYY-MM-DD"
 
-            ws.cell(row=r, column=16, value=_clean_cell_str(r_row.status))
+            ws.cell(row=r, column=17, value=_clean_cell_str(r_row.status))
 
-            cell_q = ws.cell(row=r, column=17, value=r_row.date_raised)
-            cell_r = ws.cell(row=r, column=18, value=r_row.last_updated)
-            cell_q.number_format = "YYYY-MM-DD"
+            cell_r = ws.cell(row=r, column=18, value=r_row.date_raised)
+            cell_s = ws.cell(row=r, column=19, value=r_row.last_updated)
             cell_r.number_format = "YYYY-MM-DD"
+            cell_s.number_format = "YYYY-MM-DD"
 
-            ws.cell(row=r, column=19, value=_clean_cell_str(r_row.linked_decision))
-            ws.cell(row=r, column=20, value=_clean_cell_str(r_row.linked_dependency_or_assumption))
-            ws.cell(row=r, column=21, value=_clean_cell_str(r_row.source))
-            ws.cell(row=r, column=22, value=_clean_cell_str(r_row.source_id))
-            ws.cell(row=r, column=23, value=_clean_cell_str(r_row.notes))
+            ws.cell(row=r, column=20, value=_clean_cell_str(r_row.linked_decision))
+            ws.cell(row=r, column=21, value=_clean_cell_str(r_row.linked_dependency_or_assumption))
+            ws.cell(row=r, column=22, value=_clean_cell_str(r_row.source))
+            ws.cell(row=r, column=23, value=_clean_cell_str(r_row.source_id))
+            ws.cell(row=r, column=24, value=_clean_cell_str(r_row.notes))
 
-            _apply_row_styling(ws, r, FONT_BODY, max_col=23)
+            _apply_row_styling(ws, r, FONT_BODY, max_col=24)
 
             # Center alignment
-            for col_c in (1, 2, 4, 6, 7, 9, 10, 11, 12, 15, 16, 17, 18, 22):
+            for col_c in (1, 2, 5, 7, 8, 10, 11, 12, 13, 16, 17, 18, 19, 23):
                 ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
-
-            # Owner warning fill
-            if r_row.owner == "[UNASSIGNED - TO BE CONFIRMED]":
-                ws.cell(row=r, column=8).fill = FILL_WARNING
 
             row_idx += 1
 
@@ -673,55 +690,64 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
         col_letter = get_column_letter(col_idx)
         ws.column_dimensions[col_letter].width = w
 
-    # Freeze panes at D6
-    ws.freeze_panes = "D6"
+    # Freeze panes at E6
+    ws.freeze_panes = "E6"
 
     if last_row >= 5:
-        ws.auto_filter.ref = f"A5:W{last_row}"
+        ws.auto_filter.ref = f"A5:X{last_row}"
 
-    # Data Validations
-    dv_type = DataValidation(type="list", formula1="=List_RAID_Types", allow_blank=True)
-    ws.add_data_validation(dv_type)
-    dv_type.add(f"B6:B{last_row}")
+    # Data Validations (v3 A7 shifted columns, v3 A12 List_Milestone_IDs)
+    if last_row >= 6:
+        dv_type = DataValidation(type="list", formula1="=List_RAID_Types", allow_blank=True)
+        ws.add_data_validation(dv_type)
+        dv_type.add(f"B6:B{last_row}")
 
-    dv_cat = DataValidation(type="list", formula1="=List_RAID_Categories", allow_blank=True)
-    ws.add_data_validation(dv_cat)
-    dv_cat.add(f"D6:D{last_row}")
+        dv_cat = DataValidation(type="list", formula1="=List_RAID_Categories", allow_blank=True)
+        ws.add_data_validation(dv_cat)
+        dv_cat.add(f"E6:E{last_row}")
 
-    dv_prob = DataValidation(type="list", formula1="=List_Probabilities", allow_blank=True)
-    ws.add_data_validation(dv_prob)
-    dv_prob.add(f"I6:I{last_row}")
+        dv_ws = DataValidation(type="list", formula1="=List_Workstreams", allow_blank=True)
+        ws.add_data_validation(dv_ws)
+        dv_ws.add(f"F6:F{last_row}")
 
-    dv_imp = DataValidation(type="list", formula1="=List_Impacts", allow_blank=True)
-    ws.add_data_validation(dv_imp)
-    dv_imp.add(f"J6:J{last_row}")
+        dv_ms = DataValidation(type="list", formula1="=List_Milestone_IDs", allow_blank=True)
+        ws.add_data_validation(dv_ms)
+        dv_ms.add(f"G6:G{last_row}")
 
-    dv_status = DataValidation(type="list", formula1="=List_RAID_Statuses", allow_blank=True)
-    ws.add_data_validation(dv_status)
-    dv_status.add(f"P6:P{last_row}")
+        dv_prob = DataValidation(type="list", formula1="=List_Probabilities", allow_blank=True)
+        ws.add_data_validation(dv_prob)
+        dv_prob.add(f"J6:J{last_row}")
 
-    # Severity & Status Conditional Formatting
-    ws.conditional_formatting.add(
-        f"K6:K{last_row}",
-        CellIsRule(operator="equal", formula=['"High"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
-    )
-    ws.conditional_formatting.add(
-        f"K6:K{last_row}",
-        CellIsRule(operator="equal", formula=['"Medium"'], fill=FILL_WARNING, font=Font(color="7D4A00"))
-    )
-    ws.conditional_formatting.add(
-        f"K6:K{last_row}",
-        CellIsRule(operator="equal", formula=['"Low"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
-    )
+        dv_imp = DataValidation(type="list", formula1="=List_Impacts", allow_blank=True)
+        ws.add_data_validation(dv_imp)
+        dv_imp.add(f"K6:K{last_row}")
 
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"Closed"'], fill=FILL_LIGHT_BG, font=FONT_MUTED)
-    )
-    ws.conditional_formatting.add(
-        f"P6:P{last_row}",
-        CellIsRule(operator="equal", formula=['"Escalated"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
-    )
+        dv_status = DataValidation(type="list", formula1="=List_RAID_Statuses", allow_blank=True)
+        ws.add_data_validation(dv_status)
+        dv_status.add(f"Q6:Q{last_row}")
+
+        # Rating & Status Conditional Formatting
+        ws.conditional_formatting.add(
+            f"L6:L{last_row}",
+            CellIsRule(operator="equal", formula=['"High"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
+        )
+        ws.conditional_formatting.add(
+            f"L6:L{last_row}",
+            CellIsRule(operator="equal", formula=['"Medium"'], fill=FILL_WARNING, font=Font(color="7D4A00"))
+        )
+        ws.conditional_formatting.add(
+            f"L6:L{last_row}",
+            CellIsRule(operator="equal", formula=['"Low"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
+        )
+
+        ws.conditional_formatting.add(
+            f"Q6:Q{last_row}",
+            CellIsRule(operator="equal", formula=['"Closed"'], fill=FILL_LIGHT_BG, font=FONT_MUTED)
+        )
+        ws.conditional_formatting.add(
+            f"Q6:Q{last_row}",
+            CellIsRule(operator="equal", formula=['"Escalated"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
+        )
 
 
 def write_workbook(model: WorkbookModel, target_path: Path) -> Path:

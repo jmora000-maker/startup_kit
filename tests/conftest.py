@@ -21,6 +21,7 @@ from src.core.models import (
     TalentOnboardingRecord,
     GovernanceContext,
     StartupKitBaseline,
+    SOWInterpretationSummary,
 )
 
 
@@ -48,27 +49,26 @@ def minimal_baseline():
 
 @pytest.fixture
 def arc_baseline():
-    """ARC Genomics Platform fixture built strictly from Appendix A."""
+    """ARC Genomics Platform fixture built strictly from Appendix A of PMO_Workbook_Quality_and_Traceability_Spec_v3.md."""
     ref = SourceReference(document_name="ARC_Genomics_SOW.pdf", clause_or_slide="Section 3", confidence_score=0.95)
     
     milestones = [
         Milestone(
             id="M1",
-            description="P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and Client-built pipeline, data model and governance validation completed (est. weeks 1–6).",
+            description="P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, pipeline quality gates, and security/data validation delivered (estimated weeks 1-6).",
             external_date=None,
             internal_buffer_date=None,
             critical_path_assumptions=["Schedule is estimated from the Start Date, with P1 running weeks 1–6"],
             key_dependencies=[
-                "Client design system access (code library, tokens, design files, guidelines, named contact) by the start date",
-                "Client IdP team availability for Azure AD / MSAL authentication",
-                "Client-owned stories and code dependencies completed before dependent Toptal work begins",
-                "Coding and delivery documentation standards provided on or before the start date",
+                "Client provides design system access (code library, tokens, design files, guidelines, named contact) by the start date",
+                "Client IdP team available for Azure AD / MSAL authentication",
+                "Client-built pipelines, Snowflake data model, and governance controls completed before related testing begins",
             ],
             source_reference=ref,
         ),
         Milestone(
             id="M2",
-            description="P2a Services and Data accepted: FastAPI search and async services, OneGWAS integration, performance spike, and Client-built data ingestion validation completed (est. weeks 7–16).",
+            description="P2a Services and Data accepted: FastAPI search/detail endpoints, async processing, OneGWAS direct-write integration, performance spike, and data ingestion validations delivered (estimated weeks 7-16).",
             external_date=None,
             internal_buffer_date=None,
             critical_path_assumptions=[
@@ -76,16 +76,17 @@ def arc_baseline():
                 "P2a runs weeks 7–16 from the Start Date",
             ],
             key_dependencies=[
-                "Client completion of HS-4781 (Snowflake schema) before P2a begins",
-                "Client-built data ingestion and migration completed before related validation",
-                "Domain users and domain experts for trait taxonomy available",
-                "Cogen API available and stable at about 95%",
+                "Client completes HS-4781 (Snowflake schema) before P2a begins",
+                "P1 Foundation accepted",
+                "Client-built ingestion and migration pipelines completed before validation work",
+                "Domain users and trait taxonomy domain experts available",
+                "Cogen API stable at approximately 95%",
             ],
             source_reference=ref,
         ),
         Milestone(
             id="M3",
-            description="P2b Application Surface accepted: ARC micro-frontend search and detail views, haplotype features, nomenclature service, and related test suites completed (est. weeks 17–21).",
+            description="P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (estimated weeks 17-21).",
             external_date=None,
             internal_buffer_date=None,
             critical_path_assumptions=[
@@ -93,15 +94,15 @@ def arc_baseline():
                 "P2b runs weeks 17–21 from the Start Date",
             ],
             key_dependencies=[
-                "Acceptance of P2a before P2b begins",
-                "Client UI/UX designs for Milestone 3 screens provided by the start date",
-                "Client design system access and advance notice of design-system changes",
+                "P2a Services and Data accepted",
+                "Client provides UI/UX designs for the Milestone 3 screens by the start date",
+                "Client design system available and any design-system changes communicated in advance",
             ],
             source_reference=ref,
         ),
         Milestone(
             id="M4",
-            description="P3 Launch accepted: integration, performance, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials completed (est. weeks 22–26).",
+            description="P3 Launch accepted: integration, performance, security, and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, MTA Store parity confirmation, and training materials delivered (estimated weeks 22-26).",
             external_date=None,
             internal_buffer_date=None,
             critical_path_assumptions=[
@@ -109,54 +110,214 @@ def arc_baseline():
                 "P3 runs weeks 22–26 from the Start Date",
             ],
             key_dependencies=[
-                "Acceptance of P2b before P3 begins",
+                "P2b Application Surface accepted",
+                "Client maintains development, staging, and production environments",
                 "Client scientist UAT groups available",
-                "Client maintains development, staging and production environments",
-                "Client remediation of defects in Client-built components",
+                "Client remediates defects in Client-built components before cutover",
             ],
             source_reference=ref,
         ),
     ]
 
     deliverables = [
-        Deliverable(id="DEL-01", name="Micro-frontend shell", description="Micro-frontend shell", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-02", name="Azure AD / MSAL authentication integration", description="Azure AD / MSAL authentication integration", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-03", name="Shell and authentication E2E test harness", description="Shell and authentication E2E test harness", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-04", name="Pipeline quality gates and deployment smoke checks", description="Pipeline quality gates and deployment smoke checks", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-05", name="Authentication negative-test suite and security scan results", description="Authentication negative-test suite and security scan results", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-06", name="FastAPI search, detail and async query services with backend tests", description="FastAPI search, detail and async query services with backend tests", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-07", name="Performance engineering spike output", description="Performance engineering spike output", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-08", name="OneGWAS direct-write integration and E2E/retry tests", description="OneGWAS direct-write integration and E2E/retry tests", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-09", name="Client-built data tier validation scripts, results and defect reports", description="Client-built data tier validation scripts, results and defect reports", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-10", name="ARC micro-frontend faceted search, results table and detail view", description="ARC micro-frontend faceted search, results table and detail view", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-11", name="Haplotype filter, comparison, and API endpoints", description="Haplotype filter, comparison, and API endpoints", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-12", name="Nomenclature service and test suite", description="Nomenclature service and test suite", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-13", name="P2b frontend and haplotype test suites", description="P2b frontend and haplotype test suites", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-14", name="Integration, performance, security and cross-browser test suites with test data", description="Integration, performance, security and cross-browser test suites with test data", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-15", name="UAT execution records and defect log", description="UAT execution records and defect log", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-16", name="Pre-launch hardening iteration results", description="Pre-launch hardening iteration results", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-17", name="Production smoke test results and 48-hour defect watch report", description="Production smoke test results and 48-hour defect watch report", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-18", name="MTA Store parity and usage-zero confirmation report", description="MTA Store parity and usage-zero confirmation report", owner="Talent PM", source_reference=ref),
-        Deliverable(id="DEL-19", name="Training materials and user documentation", description="Training materials and user documentation", owner="Talent PM", source_reference=ref),
+        Deliverable(
+            id="DEL-01",
+            name="Micro-frontend shell",
+            description="Micro-frontend shell architecture and deployment",
+            acceptance_criteria="Shell loads and hosts micro-frontends",
+            evidence_required="Micro-frontend shell architecture and deployment verification",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-02",
+            name="Azure AD / MSAL authentication integration",
+            description="Azure AD / MSAL authentication integration",
+            acceptance_criteria="Authentication token exchange and RBAC enforced",
+            evidence_required="Pipeline quality gates and deployment smoke check execution logs",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-03",
+            name="Shell and authentication E2E test harness",
+            description="Shell and authentication E2E test harness",
+            acceptance_criteria="Automated E2E test harness passing in pipeline",
+            evidence_required="FastAPI search, detail and async query services backend test logs",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-04",
+            name="P1 pipeline quality gates and deployment smoke checks",
+            description="Pipeline quality gates and deployment smoke checks",
+            acceptance_criteria="Automated pipeline gates stop failing builds",
+            evidence_required="FastAPI search, detail and async query services backend test logs",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-05",
+            name="FastAPI search, detail and async query services",
+            description="FastAPI search, detail and async query services with backend tests",
+            acceptance_criteria="FastAPI endpoints return within 200ms and async jobs complete",
+            evidence_required="Performance engineering spike output and bottleneck mitigation architecture",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-06",
+            name="Backend integration and load tests",
+            description="FastAPI backend integration and load tests",
+            acceptance_criteria="Backend integration and load tests pass latency targets",
+            evidence_required="Backend integration and load tests execution logs and benchmarks",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-07",
+            name="Performance engineering spike output",
+            description="Performance engineering spike output",
+            acceptance_criteria="Performance bottlenecks documented with mitigation architecture",
+            evidence_required="OneGWAS direct-write integration and retry test results",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-08",
+            name="OneGWAS direct-write integration and tests",
+            description="OneGWAS direct-write integration and E2E/retry tests",
+            acceptance_criteria="Direct-write to Snowflake succeeds with retry on failure",
+            evidence_required="P2a data tier validation scripts and defect reports",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-09",
+            name="P2a data tier validation scripts and defect reports",
+            description="Client-built data tier validation scripts, results and defect reports",
+            acceptance_criteria="Data tier validation scripts executed and defects logged",
+            evidence_required="P2a data tier validation scripts, results and defect reports",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-10",
+            name="ARC micro-frontend faceted search, results table and detail view",
+            description="ARC micro-frontend faceted search, results table and detail view",
+            acceptance_criteria="Faceted search filters and renders results table within SLA",
+            evidence_required="Haplotype visualization and endpoints test output",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-11",
+            name="Haplotype visualization and endpoints",
+            description="Haplotype filter, comparison, and API endpoints",
+            acceptance_criteria="Haplotype comparison algorithm returns accurate genomic data",
+            evidence_required="Nomenclature service and taxonomy mapping verification report",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-12",
+            name="Nomenclature service and test suite",
+            description="Nomenclature service and test suite",
+            acceptance_criteria="Nomenclature resolution conforms to standard taxonomy",
+            evidence_required="ARC micro-frontend faceted search results table demo sign-off",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-13",
+            name="Frontend and haplotype test suites",
+            description="P2b frontend and haplotype test suites",
+            acceptance_criteria="100% test coverage for P2b frontend and haplotype features",
+            evidence_required="Production smoke test results and 48-hour defect watch report",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-14",
+            name="P2b nomenclature integration and test results",
+            description="P2b nomenclature integration and test results",
+            acceptance_criteria="Nomenclature integration verified across search and detail views",
+            evidence_required="MTA Store parity confirmation report",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-15",
+            name="Integration, performance, security and cross-browser test suites with test data",
+            description="Integration, performance, security and cross-browser test suites with test data",
+            acceptance_criteria="Full test matrix passing across Chrome, Firefox, Safari",
+            evidence_required="Training materials and user documentation walkthrough sign-off",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-16",
+            name="UAT execution records and defect log",
+            description="UAT execution records and defect log",
+            acceptance_criteria="UAT test cases executed by client scientists with zero blocker defects",
+            evidence_required="[CONFIRMATION REQUIRED]",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-17",
+            name="Pre-launch hardening iteration results",
+            description="Pre-launch hardening iteration results",
+            acceptance_criteria="Hardening fixes verified and performance baselines met",
+            evidence_required="[TBD]",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-18",
+            name="Production smoke test results and 48-hour defect watch report",
+            description="Production smoke test results and 48-hour defect watch report",
+            acceptance_criteria="Production smoke tests pass with 48 hours zero defect severity 1/2",
+            evidence_required="[UNASSIGNED - TO BE CONFIRMED]",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-19",
+            name="MTA Store parity confirmation report",
+            description="MTA Store parity and usage-zero confirmation report",
+            acceptance_criteria="Parity with legacy MTA Store confirmed and usage zero verified",
+            evidence_required="[CONFIRMATION REQUIRED]",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
+        Deliverable(
+            id="DEL-20",
+            name="Training materials and user documentation",
+            description="Training materials and user documentation",
+            acceptance_criteria="Comprehensive user guides, admin guides and training decks delivered",
+            evidence_required="[TBD]",
+            owner="Talent PM",
+            source_reference=ref,
+        ),
     ]
 
-    # Work packages with Kit's incorrect parent
     backlog_seed = [
-        WorkPackageSeed(id="WP-01", title="Micro-frontend shell and Azure AD/MSAL authentication", parent_deliverable_id="DEL-01", preliminary_sequence=1, owner="Talent PM"),
-        WorkPackageSeed(id="WP-02", title="Shell E2E harness and authentication security testing", parent_deliverable_id="DEL-01", preliminary_sequence=2, owner="Talent PM"),
-        WorkPackageSeed(id="WP-03", title="P1 certification testing of Client-built pipeline, data model and governance", parent_deliverable_id="DEL-01", preliminary_sequence=3, owner="Talent PM"),
-        WorkPackageSeed(id="WP-04", title="FastAPI search/detail endpoints and async query processing", parent_deliverable_id="DEL-02", preliminary_sequence=4, owner="Talent PM"),
-        WorkPackageSeed(id="WP-05", title="Performance spike and backend integration/load testing", parent_deliverable_id="DEL-02", preliminary_sequence=5, owner="Talent PM"),
-        WorkPackageSeed(id="WP-06", title="OneGWAS direct-write integration and tests", parent_deliverable_id="DEL-02", preliminary_sequence=6, owner="Talent PM"),
-        WorkPackageSeed(id="WP-07", title="P2a certification testing of Client-built data ingestion and migration", parent_deliverable_id="DEL-02", preliminary_sequence=7, owner="Talent PM"),
-        WorkPackageSeed(id="WP-08", title="ARC faceted search, results table and result detail view", parent_deliverable_id="DEL-03", preliminary_sequence=8, owner="Talent PM"),
-        WorkPackageSeed(id="WP-09", title="Haplotype filter, comparison, search endpoints and API", parent_deliverable_id="DEL-03", preliminary_sequence=9, owner="Talent PM"),
-        WorkPackageSeed(id="WP-10", title="Nomenclature service", parent_deliverable_id="DEL-03", preliminary_sequence=10, owner="Talent PM"),
-        WorkPackageSeed(id="WP-11", title="P2b frontend, haplotype and nomenclature test suites", parent_deliverable_id="DEL-03", preliminary_sequence=11, owner="Talent PM"),
-        WorkPackageSeed(id="WP-12", title="Test data, fixtures and full integration/performance/security/cross-browser suites", parent_deliverable_id="DEL-04", preliminary_sequence=12, owner="Talent PM"),
-        WorkPackageSeed(id="WP-13", title="UAT execution and pre-launch hardening", parent_deliverable_id="DEL-04", preliminary_sequence=13, owner="Talent PM"),
-        WorkPackageSeed(id="WP-14", title="Production smoke tests, 48-hour defect watch and MTA Store parity check", parent_deliverable_id="DEL-04", preliminary_sequence=14, owner="Talent PM"),
-        WorkPackageSeed(id="WP-15", title="Training materials and user documentation", parent_deliverable_id="DEL-04", preliminary_sequence=15, owner="Talent PM"),
+        WorkPackageSeed(id="WP-01", title="Micro-frontend shell and architecture setup", parent_deliverable_id="DEL-01", preliminary_sequence=1, owner="Talent PM"),
+        WorkPackageSeed(id="WP-02", title="Azure AD / MSAL authentication integration", parent_deliverable_id="DEL-01", preliminary_sequence=2, owner="Talent PM"),
+        WorkPackageSeed(id="WP-03", title="Shell and authentication E2E test harness", parent_deliverable_id="DEL-01", preliminary_sequence=3, owner="Talent PM"),
+        WorkPackageSeed(id="WP-04", title="P1 pipeline quality gates and deployment smoke checks", parent_deliverable_id="DEL-01", preliminary_sequence=4, owner="Talent PM"),
+        WorkPackageSeed(id="WP-05", title="FastAPI search, detail and async query services", parent_deliverable_id="DEL-02", preliminary_sequence=5, owner="Talent PM"),
+        WorkPackageSeed(id="WP-06", title="Backend integration and load tests", parent_deliverable_id="DEL-02", preliminary_sequence=6, owner="Talent PM"),
+        WorkPackageSeed(id="WP-07", title="OneGWAS direct-write integration and retry tests", parent_deliverable_id="DEL-02", preliminary_sequence=7, owner="Talent PM"),
+        WorkPackageSeed(id="WP-08", title="P2a data tier validation scripts and defect reports", parent_deliverable_id="DEL-02", preliminary_sequence=8, owner="Talent PM"),
+        WorkPackageSeed(id="WP-09", title="ARC micro-frontend faceted search and results view", parent_deliverable_id="DEL-03", preliminary_sequence=9, owner="Talent PM"),
+        WorkPackageSeed(id="WP-10", title="Nomenclature service and taxonomy mapping", parent_deliverable_id="DEL-03", preliminary_sequence=10, owner="Talent PM"),
+        WorkPackageSeed(id="WP-11", title="P2b frontend and haplotype test suites", parent_deliverable_id="DEL-03", preliminary_sequence=11, owner="Talent PM"),
+        WorkPackageSeed(id="WP-12", title="P2b nomenclature integration and test results", parent_deliverable_id="DEL-03", preliminary_sequence=12, owner="Talent PM"),
+        WorkPackageSeed(id="WP-13", title="Integration, performance, security and cross-browser test suites", parent_deliverable_id="DEL-04", preliminary_sequence=13, owner="Talent PM"),
+        WorkPackageSeed(id="WP-14", title="UAT execution records and defect log", parent_deliverable_id="DEL-04", preliminary_sequence=14, owner="Talent PM"),
+        WorkPackageSeed(id="WP-15", title="MTA Store parity confirmation report", parent_deliverable_id="DEL-04", preliminary_sequence=15, owner="Talent PM"),
     ]
 
     comms = [
@@ -169,24 +330,179 @@ def arc_baseline():
         CommunicationsPlanItem(id="COM-07", name="Ad-Hoc Working Sessions", audience="Technical Leads", content_owner="Talent PM", cadence="As needed"),
     ]
 
-    # RAID items & Dependency Log (with M1 default fill)
     raid_items = [
-        RiskAssumption(id="RAID-01", type="Dependency", description="Cogen API availability and stability at 95%", category="Technical Dependency", owner="Delivery Manager", status="Open"),
-        RiskAssumption(id="RAID-09", type="Dependency", description="Client completion of HS-4781 (Snowflake schema) before P2a begins", category="Technical Dependency", owner="Talent PM", status="Open"),
-        RiskAssumption(id="RAID-10", type="Risk", description="Cross-phase delivery sequencing across P1, P2a, P2b, and P3", category="Delivery Risk", owner="Delivery Manager", status="Open"),
-        RiskAssumption(id="RAID-16", type="Risk", description="Sequencing dependencies across all phases P1, P2a, P2b, and P3", category="Delivery Risk", owner="Delivery Manager", status="Open"),
+        RiskAssumption(id="RAID-01", type="Risk", description="Design system token changes during P1 execution", category="Delivery Risk", owner="Talent PM", probability="Medium", impact="High", status="Open"),
+        RiskAssumption(id="RAID-02", type="Risk", description="Azure AD tenant permissions delay for test environments", category="Technical Dependency", owner="Talent PM", probability="High", impact="High", status="Open"),
+        RiskAssumption(id="RAID-03", type="Risk", description="Snowflake query latency under high concurrent load", category="Delivery Risk", owner="Talent PM", probability="Medium", impact="Medium", status="Open"),
+        RiskAssumption(id="RAID-04", type="Risk", description="OneGWAS write throughput bottleneck", category="Delivery Risk", owner="Talent PM", probability="Low", impact="High", status="Open"),
+        RiskAssumption(id="RAID-05", type="Risk", description="Genomic trait taxonomy mapping ambiguity across systems", category="Delivery Risk", owner="Talent PM", probability="Medium", impact="Medium", status="Open"),
+        RiskAssumption(id="RAID-06", type="Risk", description="Scientist UAT participant availability during peak research cycle", category="Delivery Risk", owner="Delivery Manager", probability="High", impact="Medium", status="Open"),
+        RiskAssumption(id="RAID-07", type="Risk", description="Legacy MTA Store data extraction access constraints", category="Technical Dependency", owner="Talent PM", probability="Medium", impact="High", status="Open"),
+        RiskAssumption(id="RAID-08", type="Risk", description="Cross-browser rendering differences on Safari for haplotype graphs", category="Delivery Risk", owner="Talent PM", probability="Low", impact="Medium", status="Open"),
     ]
 
-    # 12 dependency log entries all with default fill M1
     deps = [
-        DependencyAssumptionItem(id=f"DEP-{i:02d}", type="Dependency", description=f"Technical dependency {i}", category="Technical Dependency", owner="Talent PM", status="Open", linked_milestone="M1")
-        for i in range(1, 13)
+        DependencyAssumptionItem(id="DEP-01", type="Dependency", description="Client provides design system access (code library, tokens, design files, guidelines, named contact) by the start date", category="Client Prerequisite", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-02", type="Dependency", description="Client completes HS-4781 (Snowflake schema) before P2a begins", category="Technical Dependency", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-03", type="Dependency", description="Sequential gate approvals across P1, P2a, P2b, P3", category="Governance", owner="Delivery Manager", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-04", type="Dependency", description="Client IdP team available for Azure AD / MSAL authentication", category="Technical Dependency", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-05", type="Dependency", description="Client provides UI/UX designs for the Milestone 3 screens by the start date", category="Client Prerequisite", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-06", type="Dependency", description="Client-built ingestion and migration pipelines completed before validation work", category="Technical Dependency", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-07", type="Dependency", description="Client maintains development, staging, and production environments", category="Technical Dependency", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="DEP-08", type="Dependency", description="Client remediates defects in Client-built components before cutover", category="Technical Dependency", owner="Delivery Manager", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="ASM-01", type="Assumption", description="SOW schedule estimated from start date with week ranges for all phases", category="Commercial Assumption", owner="Delivery Manager", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="ASM-02", type="Assumption", description="Fixed Bid commercial model billed on milestone acceptance sign-off", category="Commercial Assumption", owner="Delivery Manager", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
+        DependencyAssumptionItem(id="ASM-03", type="Assumption", description="Toptal delivery team staffed according to talent onboarding plan", category="Commercial Assumption", owner="Talent PM", status="Open", linked_milestone="M1", linked_deliverable="DEL-01"),
     ]
 
-    # Ambiguities
     ambiguities = [
-        ContractAmbiguityItem(anomaly_id="AMB-01", conflicting_clauses="Section 2 vs Section 4 SLA wording", risk_impact="Schedule delay risk", recommended_clarification="Clarify SLA turnaround window")
+        ContractAmbiguityItem(
+            anomaly_id="AMB-01",
+            category="Ambiguous Acceptance",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 4 (Latency Acceptance Criteria): test-suite acceptance criteria latency must be under 200ms",
+            risk_impact="Schedule and rework risk if latency cannot be met with Snowflake data volumes",
+            recommended_clarification="Clarify target SLA for complex queries"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-02",
+            category="Date Conflict",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 2 (Milestone Timeline): P1 delivery timeline estimated as 6 weeks vs Exhibit B stating 5 weeks",
+            risk_impact="Timeline ambiguity impacting resource scheduling",
+            recommended_clarification="Confirm contractual week duration for P1"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-03",
+            category="Scope Contradiction",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 3 (Search Features): search filters specify 12 facet types vs Section 5 mentioning 8 core facets",
+            risk_impact="Scope creep and extra frontend development effort",
+            recommended_clarification="Confirm final facet list for P2b search"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-04",
+            category="Unclear SLA",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 6 (Client Review Period): client sign-off window stated as 5 business days vs 10 days in MSA",
+            risk_impact="Review turnaround delay impacting milestone gating",
+            recommended_clarification="Confirm binding acceptance turnaround window"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-05",
+            category="Ownership Gap",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 1 (Snowflake Governance): data security policy ownership split between Client and Toptal",
+            risk_impact="Compliance and accountability ambiguity",
+            recommended_clarification="Confirm data governance authority matrix"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-06",
+            category="Ambiguous Acceptance",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (UAT Criteria): UAT passed upon scientist satisfaction without numeric criteria",
+            risk_impact="Subjective acceptance criteria causing sign-off delays",
+            recommended_clarification="Define quantitative pass/fail thresholds for UAT"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-07",
+            category="Scope Contradiction",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 4 (OneGWAS Integration): async retry logic maximum retries set to 3 vs 5 in architecture deck",
+            risk_impact="Error handling behavior mismatch",
+            recommended_clarification="Align retry thresholds across technical specs"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-08",
+            category="Date Conflict",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 5 (Launch Window): P3 launch scheduled for Q1 vs Q2 cutover in deployment deck",
+            risk_impact="Target go-live alignment",
+            recommended_clarification="Confirm binding launch calendar target"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-09",
+            category="Unclear SLA",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 8 (Hypercare Support): 48-hour defect watch resolution SLA not defined for Sev-3/4",
+            risk_impact="Post-launch support expectation mismatch",
+            recommended_clarification="Establish response and fix SLAs by defect severity"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-10",
+            category="Ambiguous Acceptance",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 3 (MTA Parity): 100% parity with legacy system without feature comparison matrix",
+            risk_impact="Disputes over legacy edge-case feature parity",
+            recommended_clarification="Baseline exact legacy feature inventory to match"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-11",
+            category="Ownership Gap",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 2 (Deployment Infrastructure): Kubernetes cluster provisioning owner unspecified",
+            risk_impact="Deployment environment readiness block",
+            recommended_clarification="Confirm responsible party for cluster provisioning"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-12",
+            category="Scope Contradiction",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 4 (Authentication): SSO integration includes external collaborators vs internal Azure AD only",
+            risk_impact="IdP integration complexity expansion",
+            recommended_clarification="Confirm user identity boundary for initial launch"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-13",
+            category="Ambiguous Acceptance",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 5 (Test Automation): automated test coverage target stated as comprehensive without % figure",
+            risk_impact="Disagreement on gate exit criteria",
+            recommended_clarification="Agree contractual test code coverage percentage"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-14",
+            category="Unclear SLA",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 6 (Defect Remediation): Client component fix turnaround SLA during P3 undefined",
+            risk_impact="Cutover delay caused by unblocked client defects",
+            recommended_clarification="Establish defect turnaround commitment for client components"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-15",
+            category="Ownership Gap",
+            conflicting_clauses="[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (Training Delivery): responsibility for end-user scientist training delivery vs materials authoring",
+            risk_impact="Talent staffing allocation gap",
+            recommended_clarification="Confirm delivery scope: material authoring only vs live facilitation"
+        ),
     ]
+
+    open_questions = [
+        "What is the confirmed project Start Date for P1?",
+        "Who is the primary client approver for Milestone 1?",
+        "When will design system code tokens and repositories be shared?",
+        "Who is the technical contact for Azure AD IdP integration?",
+        "What is the completion timeline for Snowflake schema HS-4781?",
+        "What are the target SLA latency benchmarks for P2a search endpoints?",
+        "Who are the designated trait taxonomy domain experts for P2a?",
+        "What is the availability schedule for the Cogen API environment?",
+        "When will the UI/UX design deliverables for P2b be ready for review?",
+        "Which client scientist research groups will participate in P3 UAT?",
+        "What is the target deployment date for staging and production cutover?",
+        "What are the acceptance criteria for MTA Store legacy parity confirmation?",
+        "Who will approve final gate acceptance for P3 Launch?",
+        "What is the required format and platform for training materials?",
+        "Are external research collaborators included in P1 SSO scope?",
+        "What automated test coverage threshold is required for pipeline gates?",
+        "Who manages the production release rollback approval decision?",
+        "What are the environment maintenance windows for P3?",
+        "PMO Lead role is unassigned in the charter - confirm assignee",
+        "Delivery Manager role is unassigned in the charter - confirm assignee",
+        "Talent PM role is unassigned in the charter - confirm assignee",
+    ]
+
+    sow_interp = SOWInterpretationSummary(
+        contracted_deliverables=[
+            "P1 Foundation (weeks 1–6): Micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and Client pipeline validation.",
+            "P1 quality: Pipeline quality gates and security scan results.",
+            "P2a Services and Data (weeks 7–16): FastAPI search and async services, OneGWAS integration, performance spike, and Client data validation.",
+            "P2a testing: Backend integration and load tests, performance spike results, and data ingestion defect reports.",
+            "P2b Application Surface (weeks 17–21): ARC micro-frontend search and detail views, haplotype visualization and endpoints, nomenclature service, and frontend test suites.",
+            "P3 Launch (weeks 22–26): Integration, performance, security, and cross-browser testing, UAT execution, hardening, and production smoke tests with 48-hour defect watch.",
+            "P3 parity: MTA Store parity confirmation report.",
+            "Training materials and user documentation.",
+        ],
+        out_of_scope_items=["Legacy infrastructure decommission"],
+        customer_obligations=["Snowflake schema HS-4781", "Azure AD access"],
+        assumptions=["Client environments available 24/7"],
+        constraints=["Zero critical security defects at launch"],
+    )
 
     return StartupKitBaseline(
         project_name="ARC Genomics Platform",
@@ -212,6 +528,8 @@ def arc_baseline():
         raid_items=raid_items,
         dependencies_assumptions=deps,
         contract_ambiguities=ambiguities,
+        open_questions=open_questions,
+        sow_interpretation=sow_interp,
         # Readiness fields populated with marker text (should NOT appear in workbook)
         readiness_score=75.0,
         readiness_checklist=[

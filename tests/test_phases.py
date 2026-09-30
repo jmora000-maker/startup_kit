@@ -78,7 +78,7 @@ def test_arc_baseline_phases_and_predecessors(arc_baseline):
     assert m2.planned_start == date(2026, 11, 16)
     assert m2.planned_finish == date(2027, 1, 22)
     assert m2.date_basis == "SOW estimate, weeks 7–16"
-    assert m2.predecessor == ""  # HS-4781 is a client story, not a phase
+    assert m2.predecessor == "M1"
 
     m3 = ms_rows[2]
     assert m3.workstream == "P2b Application Surface"

@@ -22,12 +22,12 @@ def test_arc_baseline_acceptance_mode(arc_baseline):
             and not w.name.startswith("Confirm:") and "Kickoff" not in w.name
             and not w.name.startswith("Other")
         ]
-        # Check acceptance tasks
+        # Check acceptance tasks (v3 A1)
         task_names = [w.name for w in pkg_tasks]
         assert "Prepare milestone acceptance package and evidence" in task_names
-        assert f"Support client UAT for {m_id}" in task_names
-        assert "Address client feedback and rework" in task_names
-        assert "Obtain milestone sign-off from the client's designated approvers" in task_names
+        assert "Support client user acceptance testing" in task_names
+        assert "Triage and address client review feedback" in task_names
+        assert "Obtain formal milestone acceptance and sign-off" in task_names
         assert "Update schedule and RAID Log after acceptance" in task_names
 
 

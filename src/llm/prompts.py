@@ -283,7 +283,7 @@ CRITICAL CONSTRAINTS:
 2. Keep descriptions, quotes, and recommendations concise and direct (1-2 sentences per field).
 3. Do not duplicate similar items.
 
-For each detected ambiguity or conflict:
+For each detecgit add .ted ambiguity or conflict:
 - anomaly_id: Sequential identifier (e.g., AMB-01, AMB-02...)
 - category: One of 'Date Conflict', 'Scope Contradiction', 'Ambiguous Acceptance', 'Unclear SLA', 'Ownership Gap'
 - conflicting_clauses: Concise quotes or citations from source documents with document name and section/page reference

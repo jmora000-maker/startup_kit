@@ -25,7 +25,8 @@ STOP_WORDS = {
     "the", "and", "for", "with", "of", "to", "a", "an", "in", "on", "at", "by", "from", "or", "as", "is",
     "are", "be", "phase", "phases", "milestone", "milestones", "deliverable", "deliverables",
     "delivery", "project", "client", "built", "toptal", "accepted", "completed", "complete",
-    "est", "week", "weeks", "related", "output", "outputs", "result", "results", "report", "reports", "work"
+    "est", "week", "weeks", "related", "output", "outputs", "result", "results", "report", "reports", "work",
+    "delivered", "estimated", "plus"
 }
 
 
@@ -35,16 +36,19 @@ def natural_sort_key(s: str) -> List:
 
 
 def stem_token(token: str) -> str:
-    """Strip a trailing plural s (and ies to y)."""
-    if token.endswith("ies") and len(token) > 3:
-        return token[:-3] + "y"
-    elif token.endswith("s") and not token.endswith("ss") and len(token) > 3:
-        return token[:-1]
-    return token
+    """Strip trailing 'ing' if len > 5, then strip trailing plural s (and ies to y)."""
+    t = token
+    if t.endswith("ing") and len(t) > 5:
+        t = t[:-3]
+    if t.endswith("ies") and len(t) > 3:
+        return t[:-3] + "y"
+    elif t.endswith("s") and not t.endswith("ss") and len(t) > 3:
+        return t[:-1]
+    return t
 
 
 def tokenize_v2(text: str) -> List[str]:
-    """Tokenize text into lowercase stemmed terms according to spec section 6."""
+    """Tokenize text into lowercase stemmed terms according to spec v3 section A2."""
     if not text:
         return []
     # Lowercase and replace / with space
@@ -69,7 +73,7 @@ def tokenize_v2(text: str) -> List[str]:
         if not tok:
             continue
         if "-" in tok:
-            process_and_add(tok)
+            # v3 A2: Split hyphenated words into their parts only; do not also keep the whole compound
             for part in tok.split("-"):
                 process_and_add(part)
         else:
@@ -107,6 +111,48 @@ def compute_score(item_tokens: Sequence[str], target_tokens: Sequence[str], idf_
     return num / denom
 
 
+def build_milestone_scope_text_for_scoring(
+    milestones: Sequence[Milestone],
+    parsed_phases: Dict[str, ParsedMilestonePhase],
+    contracted_deliverables: Optional[Sequence[str]] = None,
+) -> Dict[str, str]:
+    """Build milestone scope text for scoring according to v3 A2.
+    
+    Milestone scope text for scoring = the milestone name (e.g. 'P2a Services and Data accepted'),
+    plus its scope, plus every sow_interpretation.contracted_deliverables entry for that phase.
+    An entry belongs to a phase when it starts with that phase code (e.g. 'P2a testing: ...').
+    Entries with no phase code inherit the code of the entry before them.
+    """
+    contracted_by_phase: Dict[str, List[str]] = {}
+    current_phase_code: Optional[str] = None
+
+    if contracted_deliverables:
+        phase_prefix_regex = re.compile(r"^\s*(?P<code>P\d+[a-z]?)\b", re.IGNORECASE)
+        for entry in contracted_deliverables:
+            if not entry:
+                continue
+            m = phase_prefix_regex.match(entry)
+            if m:
+                current_phase_code = m.group("code").upper()
+            if current_phase_code:
+                contracted_by_phase.setdefault(current_phase_code, []).append(entry)
+
+    scope_texts: Dict[str, str] = {}
+    for m in milestones:
+        phase = parsed_phases.get(m.id)
+        if phase:
+            name = phase.milestone_name or ""
+            scope = phase.milestone_scope or ""
+            phase_code = phase.phase_code.upper() if phase.phase_code else ""
+            extra_entries = contracted_by_phase.get(phase_code, []) if phase_code else []
+            full_scope = f"{name} {scope} " + " ".join(extra_entries)
+        else:
+            full_scope = m.description or ""
+        scope_texts[m.id] = full_scope.strip()
+
+    return scope_texts
+
+
 def _extract_phase_codes_from_text(text: str) -> List[str]:
     """Extract phase codes like P1, P2a, P2b, P3 from text."""
     if not text:
@@ -127,6 +173,7 @@ def map_work_packages_to_milestones(
     work_packages: Sequence[WorkPackageSeed],
     milestones: Sequence[Milestone],
     parsed_phases: Dict[str, ParsedMilestonePhase],
+    contracted_deliverables: Optional[Sequence[str]] = None,
 ) -> Dict[str, Milestone]:
     """Map each work package to a milestone using rules 1, 2, and 3."""
     wp_to_ms: Dict[str, Milestone] = {}
@@ -141,8 +188,9 @@ def map_work_packages_to_milestones(
         if phase and phase.phase_code:
             ms_by_phase[phase.phase_code.upper()] = m
 
-    # Pre-tokenize milestone scopes
-    ms_scopes = [parsed_phases[m.id].milestone_scope if m.id in parsed_phases else m.description for m in milestones]
+    # Pre-tokenize milestone scopes using v3 enhanced scope text
+    ms_scope_dict = build_milestone_scope_text_for_scoring(milestones, parsed_phases, contracted_deliverables)
+    ms_scopes = [ms_scope_dict[m.id] for m in milestones]
     ms_tokens_list = [tokenize_v2(s) for s in ms_scopes]
     idf_dict = compute_idf(ms_tokens_list)
     N = len(milestones)
@@ -190,8 +238,9 @@ def map_deliverables_to_milestones_v2(
     milestones: Sequence[Milestone],
     work_packages: Sequence[WorkPackageSeed],
     parsed_phases: Dict[str, ParsedMilestonePhase],
+    contracted_deliverables: Optional[Sequence[str]] = None,
 ) -> Tuple[Dict[str, Tuple[Milestone, str, bool]], Dict[str, Milestone], Dict[str, str]]:
-    """Map deliverables to milestones according to Section 6 of v2 spec.
+    """Map deliverables to milestones according to Section 6 of v2 spec as amended by v3 A2.
     
     Returns:
       - deliv_mapping: Dict[deliv_id, (milestone, basis, is_unmapped)]
@@ -226,10 +275,11 @@ def map_deliverables_to_milestones_v2(
             ms_by_num[int(num_match.group(0))] = m
 
     # 1. Map work packages to milestones first
-    wp_to_ms = map_work_packages_to_milestones(work_packages, milestones, parsed_phases)
+    wp_to_ms = map_work_packages_to_milestones(work_packages, milestones, parsed_phases, contracted_deliverables)
 
-    # 2. Pre-compute IDF for milestone scopes
-    ms_scopes = [parsed_phases[m.id].milestone_scope if m.id in parsed_phases else m.description for m in milestones]
+    # 2. Pre-compute IDF for milestone scopes using v3 enhanced scope text
+    ms_scope_dict = build_milestone_scope_text_for_scoring(milestones, parsed_phases, contracted_deliverables)
+    ms_scopes = [ms_scope_dict[m.id] for m in milestones]
     ms_tokens_list = [tokenize_v2(s) for s in ms_scopes]
     ms_idf_dict = compute_idf(ms_tokens_list)
     N_ms = len(milestones)
@@ -403,16 +453,45 @@ def detect_default_filled_milestone(
     return None
 
 
+def detect_default_filled_deliverable(
+    raid_items: Sequence[Union[RiskAssumption, DependencyAssumptionItem, ContractAmbiguityItem]]
+) -> Optional[str]:
+    """Detect if at least 4 items have linked_deliverable and >= 75% share one value (v3 A4)."""
+    deliv_values = []
+    for item in raid_items:
+        ld = getattr(item, "linked_deliverable", None)
+        if ld and ld.strip():
+            deliv_values.append(ld.strip())
+
+    if len(deliv_values) >= 4:
+        counts: Dict[str, int] = {}
+        for v in deliv_values:
+            counts[v] = counts.get(v, 0) + 1
+        for val, count in counts.items():
+            if (count / len(deliv_values)) >= 0.75:
+                logger.info("Detected default-filled RAID linked_deliverable '%s' (%d/%d items). Ignoring default fill.", val, count, len(deliv_values))
+                return val
+    return None
+
+
 def link_raid_item_v2(
     item: Union[RiskAssumption, DependencyAssumptionItem, ContractAmbiguityItem],
     milestones: Sequence[Milestone],
     deliv_mapping: Dict[str, Tuple[Milestone, str, bool]],
     parsed_phases: Dict[str, ParsedMilestonePhase],
     wbs_code_map: Dict[str, str],
-    default_fill_value: Optional[str] = None
+    default_fill_milestone: Optional[str] = None,
+    default_fill_deliverable: Optional[str] = None,
 ) -> Tuple[str, str, str, Optional[str]]:
-    """Link a RAID item to milestone(s) and WBS code(s) according to Section 8.
+    """Link a RAID item to milestone(s) and WBS code(s) according to Section 8 as amended by v3 A4.
     
+    New linking order (A4):
+      1. Phase codes, phase names, and Milestone N mentions in item text
+      2. Milestone or deliverable IDs mentioned in the text
+      3. Non-default linked_milestone
+      4. Non-default linked_deliverable (adds 'Linked via deliverable ...' note)
+      5. Otherwise none (Cross-phase)
+      
     Returns: (workstream, linked_milestones_str, linked_wbs_codes_str, note)
     """
     desc = getattr(item, "description", "") or getattr(item, "risk_description", "") or getattr(item, "conflicting_clauses", "") or ""
@@ -433,29 +512,14 @@ def link_raid_item_v2(
 
     linked_milestone_objs: List[Milestone] = []
     note: Optional[str] = None
+    text_to_search = f"{desc} {getattr(item, 'category', '')} {getattr(item, 'linked_decision', '')} {getattr(item, 'linked_dependency_or_assumption', '')}"
 
-    # Step 1: Non-default linked_milestone
-    if linked_ms_raw and linked_ms_raw.strip():
-        val = linked_ms_raw.strip()
-        if val != default_fill_value:
-            # Could be comma-separated or single
-            parts = [p.strip() for p in val.split(",")]
-            for p in parts:
-                if p in ms_by_id and ms_by_id[p] not in linked_milestone_objs:
-                    linked_milestone_objs.append(ms_by_id[p])
-
-    # Step 2: linked_deliverable
-    if not linked_milestone_objs and linked_deliv_raw and linked_deliv_raw.strip():
-        d_val = linked_deliv_raw.strip()
-        if d_val in deliv_mapping:
-            m_obj, _, _ = deliv_mapping[d_val]
-            if m_obj in ms_by_id.values() and m_obj not in linked_milestone_objs:
-                linked_milestone_objs.append(m_obj)
-                note = f"Linked via deliverable {d_val}"
-
-    # Step 3: Phase codes and Milestone N in description and linked fields
-    if not linked_milestone_objs:
-        text_to_search = f"{desc} {getattr(item, 'category', '')} {getattr(item, 'linked_decision', '')} {getattr(item, 'linked_dependency_or_assumption', '')}"
+    # Rule 1: Phase codes, phase names, and Milestone N mentions in the item text
+    if re.search(r"\b(all\s+phases|across\s+all\s+phases)\b", text_to_search, re.IGNORECASE):
+        for m in milestones:
+            if m not in linked_milestone_objs:
+                linked_milestone_objs.append(m)
+    else:
         phase_codes = _extract_phase_codes_from_text(text_to_search)
         for pc in phase_codes:
             if pc in ms_by_phase:
@@ -470,9 +534,16 @@ def link_raid_item_v2(
                 if m_obj not in linked_milestone_objs:
                     linked_milestone_objs.append(m_obj)
 
-    # Step 4: Milestone or Deliverable ID mentioned as whole word
+        for m in milestones:
+            phase = parsed_phases.get(m.id)
+            if phase and phase.milestone_name:
+                name_clean = phase.milestone_name.strip()
+                if len(name_clean) >= 4 and re.search(r"\b" + re.escape(name_clean) + r"\b", text_to_search, re.IGNORECASE):
+                    if m not in linked_milestone_objs:
+                        linked_milestone_objs.append(m)
+
+    # Rule 2: Milestone or deliverable IDs mentioned in the text
     if not linked_milestone_objs:
-        text_to_search = f"{desc} {getattr(item, 'category', '')}"
         for m in milestones:
             if re.search(r"\b" + re.escape(m.id) + r"\b", text_to_search, re.IGNORECASE):
                 if m not in linked_milestone_objs:
@@ -482,8 +553,25 @@ def link_raid_item_v2(
             if re.search(r"\b" + re.escape(d_id) + r"\b", text_to_search, re.IGNORECASE):
                 if m_obj in ms_by_id.values() and m_obj not in linked_milestone_objs:
                     linked_milestone_objs.append(m_obj)
-                    if not note:
-                        note = f"Linked via deliverable {d_id}"
+
+    # Rule 3: Non-default linked_milestone
+    if not linked_milestone_objs and linked_ms_raw and linked_ms_raw.strip():
+        val = linked_ms_raw.strip()
+        if val != default_fill_milestone:
+            parts = [p.strip() for p in val.split(",")]
+            for p in parts:
+                if p in ms_by_id and ms_by_id[p] not in linked_milestone_objs:
+                    linked_milestone_objs.append(ms_by_id[p])
+
+    # Rule 4: Non-default linked_deliverable
+    if not linked_milestone_objs and linked_deliv_raw and linked_deliv_raw.strip():
+        d_val = linked_deliv_raw.strip()
+        if d_val != default_fill_deliverable:
+            if d_val in deliv_mapping:
+                m_obj, _, _ = deliv_mapping[d_val]
+                if m_obj in ms_by_id.values() and m_obj not in linked_milestone_objs:
+                    linked_milestone_objs.append(m_obj)
+                    note = f"Linked via deliverable {d_val}"
 
     # Sort linked milestones by natural sort of ID
     linked_milestone_objs.sort(key=lambda m: natural_sort_key(m.id))
@@ -504,3 +592,53 @@ def link_raid_item_v2(
         linked_wbs_str = ""
 
     return workstream, linked_ms_str, linked_wbs_str, note
+
+
+def score_evidence_consistency(
+    deliverables: Sequence[Deliverable]
+) -> Dict[str, Tuple[str, str]]:
+    """Score evidence text against every deliverable's name + acceptance_criteria according to v3 A9.
+    
+    If own_score < 0.10, best_score >= 0.35, and best_d != d:
+      returns dict of deliv_id -> (best_deliv_id, note)
+    """
+    flagged: Dict[str, Tuple[str, str]] = {}
+    if not deliverables:
+        return flagged
+
+    target_texts = [
+        f"{d.name or ''} {d.acceptance_criteria or ''}".strip()
+        for d in deliverables
+    ]
+    target_tokens_list = [tokenize_v2(t) for t in target_texts]
+    idf_dict = compute_idf(target_tokens_list)
+    N = len(deliverables)
+
+    for idx, d in enumerate(deliverables):
+        ev = d.evidence_required
+        if not ev or not ev.strip():
+            continue
+        # Check for placeholders
+        if any(ph in ev for ph in ("[CONFIRMATION REQUIRED]", "[TBD]", "TBD", "[UNASSIGNED - TO BE CONFIRMED]")) or "UNASSIGNED" in ev.upper():
+            continue
+
+        ev_tokens = tokenize_v2(ev)
+        if not ev_tokens:
+            continue
+
+        own_score = compute_score(ev_tokens, target_tokens_list[idx], idf_dict, N)
+
+        best_score = 0.0
+        best_idx = idx
+        for i in range(N):
+            s = compute_score(ev_tokens, target_tokens_list[i], idf_dict, N)
+            if s > best_score:
+                best_score = s
+                best_idx = i
+
+        if own_score < 0.10 and best_score >= 0.35 and best_idx != idx:
+            best_d = deliverables[best_idx]
+            note = f"Evidence may belong to {best_d.id} - verify against the SOW"
+            flagged[d.id] = (best_d.id, note)
+
+    return flagged

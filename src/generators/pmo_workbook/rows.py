@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any, Set
 
 
 @dataclass(frozen=True)
@@ -62,6 +62,7 @@ class RAIDRow:
     raid_id: str
     type: str  # "Risk", "Assumption", "Issue", "Dependency"
     description: str
+    contract_reference: str
     category: str
     workstream: str
     linked_milestone: str
@@ -69,7 +70,7 @@ class RAIDRow:
     owner: str
     probability: str  # "Low", "Medium", "High", or ""
     impact: str  # "Low", "Medium", "High", or ""
-    severity: str
+    severity: str  # Column header is "Rating"
     trigger_or_early_warning: str
     mitigation_or_response: str
     due_date: Optional[date]
@@ -100,3 +101,7 @@ class WorkbookModel:
     timeline_weeks: List[date] = field(default_factory=list)
     timeline_truncated: bool = False
     excluded_items_count: int = 0
+    evidence_flags_count: int = 0
+    evidence_flags: List[str] = field(default_factory=list)
+    flagged_evidence_deliverables: Set[str] = field(default_factory=set)
+    traceability: Dict[str, Dict[str, Any]] = field(default_factory=dict)

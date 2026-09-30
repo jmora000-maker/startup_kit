@@ -1,9 +1,9 @@
 """Project Delivery Workbook export package (v2 spec)."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from src.core.models import StartupKitBaseline
 from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook.builder import build_workbook_model
@@ -21,6 +21,8 @@ class PMOWorkbookResult:
     workstreams_count: int = 0
     milestones_count: int = 0
     excluded_items: int = 0
+    evidence_flags: int = 0
+    traceability: Dict[str, Any] = field(default_factory=dict)
 
 
 def export_pmo_workbook(
@@ -50,6 +52,8 @@ def export_pmo_workbook(
         workstreams_count=num_ws,
         milestones_count=num_ms,
         excluded_items=model.excluded_items_count,
+        evidence_flags=model.evidence_flags_count,
+        traceability=model.traceability,
     )
 
 

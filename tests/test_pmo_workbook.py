@@ -161,7 +161,7 @@ def test_controller_run_output_matrix(populated_inputs_dir, tmp_path):
 # =========================================================================
 
 def test_minimal_baseline_generates_valid_workbook(minimal_baseline, tmp_path):
-    """Verify minimal_baseline produces valid workbook with MS-TBC, Project Management (ongoing), and empty RAID."""
+    """Verify minimal_baseline produces valid workbook with empty RAID and no PM ongoing workstream (v3 A1)."""
     result = export_pmo_workbook(minimal_baseline, tmp_path)
     assert result.file_path.exists()
     assert result.file_path.name == "Minimal_Test_Project_Project_Delivery_Workbook.xlsx"
@@ -172,10 +172,10 @@ def test_minimal_baseline_generates_valid_workbook(minimal_baseline, tmp_path):
     assert "RAID Log" in wb.sheetnames
     assert "_Lists" in wb.sheetnames
 
-    # Schedule checks
+    # Schedule checks: No Project Management (ongoing) (v3 A1)
     ws_sched = wb["Project Schedule"]
     sched_rows = [row for row in ws_sched.iter_rows(min_row=6, values_only=True) if any(row)]
-    assert any("Project Management (ongoing)" in str(r[2]) for r in sched_rows)
+    assert not any("Project Management (ongoing)" in str(r[2]) for r in sched_rows)
 
     # RAID checks
     ws_raid = wb["RAID Log"]
