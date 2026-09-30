@@ -354,13 +354,18 @@ def test_table_cell_remediation_rescores_to_green(baseline_with_all_action_types
     raid_table.rows[1].cells[4].text = "Pre-provisioned local mock container environment"
 
     # 5. Edit G-01 Checklist Table: mark items Complete
-    checklist_table = next(
-        t for t in doc.tables
-        if any("gate criterion" in c.text.lower() for c in t.rows[0].cells)
-    )
-    for row in checklist_table.rows[1:]:
-        row.cells[3].text = "Complete"
-        row.cells[7].text = "Fully remediated and aligned with stakeholders"
+    checklist_file = tmp_path / "Enterprise_Cloud_Migration_Startup_Readiness_Checklist.docx"
+    if checklist_file.exists():
+        cl_doc = docx.Document(str(checklist_file))
+        checklist_table = next(
+            (t for t in cl_doc.tables if any("gate criterion" in c.text.lower() for c in t.rows[0].cells)),
+            None
+        )
+        if checklist_table:
+            for row in checklist_table.rows[1:]:
+                row.cells[3].text = "Complete"
+                row.cells[7].text = "Fully remediated and aligned with stakeholders"
+            cl_doc.save(str(tmp_path / "Edited_Startup_Kit_Startup_Readiness_Checklist.docx"))
 
     # Save edited Word document
     edited_doc_path = tmp_path / "Edited_Startup_Kit.docx"

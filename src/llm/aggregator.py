@@ -182,8 +182,12 @@ class BaselineAggregator:
                 # Risk or Issue remains in RAID Log
                 raid_items.append(item)
 
-        # 4. Contract Ambiguities creation removed
+        # 4. Process Contract Ambiguities
         contract_ambiguities: List[ContractAmbiguityItem] = []
+        if conflicts_ext and conflicts_ext.ambiguities:
+            contract_ambiguities = [a.model_copy() for a in conflicts_ext.ambiguities]
+        elif sow_interpretation_ext and hasattr(sow_interpretation_ext, "contract_ambiguities") and sow_interpretation_ext.contract_ambiguities:
+            contract_ambiguities = [a.model_copy() for a in sow_interpretation_ext.contract_ambiguities]
 
         # 5. Process Decisions
         decisions: List[DecisionItem] = []

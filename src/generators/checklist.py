@@ -3,7 +3,7 @@
 from typing import List
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from src.core.models import StartupKitBaseline, ReadinessChecklistItem, ActionRequiredItem
+from src.core.models import StartupKitBaseline, ReadinessChecklistItem, ActionRequiredItem, CommercialGuardrail, ContractAmbiguityItem
 from src.scoring.readiness_engine import ReadinessScoringEngine
 from src.generators.formatting import (
     add_section_heading,
@@ -223,6 +223,232 @@ class G01ChecklistRenderer:
             format_cell_text_and_highlight(row.cells[7], ev_text)
 
         style_table(table, col_widths=[0.7, 2.0, 1.4, 1.1, 0.9, 0.9, 1.0, 1.6])
+        doc.add_paragraph().paragraph_format.space_after = Pt(8)
+
+        # 3. Commercial and Margin Guardrails Table
+        self.render_commercial_guardrails_table(doc, baseline)
+
+        # 4. Actionable Questions Table (formed from QUESTIONS_PROMPT)
+        self.render_actionable_questions_table(doc, baseline)
+
+        # 5. Contract Ambiguities Table (formed from CONTRACT_CONFLICTS_PROMPT)
+        self.render_contract_ambiguities_table(doc, baseline)
+
+    def render_commercial_guardrails_table(
+        self, doc: docx.Document, baseline: StartupKitBaseline
+    ):
+        """Render the Commercial and Margin Guardrails table into the checklist document."""
+        add_section_heading(doc, "Commercial and Margin Guardrails", level=2)
+
+        cg = baseline.commercial_guardrails
+        contract_type = baseline.contract_type or "Time and Materials"
+        if not cg:
+            if contract_type == "Fixed Bid":
+                cg = CommercialGuardrail(
+                    contract_type_implication="Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin.",
+                    billing_consumption_assumption="Invoicing tied strictly to formal client milestone acceptance sign-offs.",
+                    staffing_assumption="Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment.",
+                    commercial_exposure_note="Delivery delays directly erode project margin. Scope creep without Change Order is prohibited.",
+                    approved_work_rule="Only authorized project deliverables and approved Change Orders are authorized for execution.",
+                    non_approved_work_rule="Zero execution of out-of-scope requests without executed Change Order.",
+                    work_at_risk_rule="Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
+                    change_control_trigger="Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.",
+                    change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
+                    budget_baseline="[CONFIRMATION REQUIRED - CONTRACT FIXED PRICE]",
+                    variance_indicator="Green (<5% variance)",
+                    margin_risk_indicator="Medium" if baseline.governance_tier == "Elevated" else "Low",
+                    escalation_threshold="Milestone slip > 3 days or rework effort > 10% of deliverable budget."
+                )
+            else:
+                cg = CommercialGuardrail(
+                    contract_type_implication="Time and Materials contract: Emphasizes burn visibility, weekly timesheet oversight, staffing allocation efficiency, and customer dependency tracking.",
+                    billing_consumption_assumption="Weekly timesheet approval and hourly/daily burn rate tracking against budget cap.",
+                    staffing_assumption="Dedicated talent staffing as agreed; rate card billing per active role.",
+                    commercial_exposure_note="Client dependency delays must be logged immediately to prevent unfunded team standby burn.",
+                    approved_work_rule="Work executed according to prioritized backlog agreed in weekly check-ins.",
+                    non_approved_work_rule="Tasks exceeding agreed monthly burn ceiling require client written authorization.",
+                    work_at_risk_rule="Work-at-risk requires PMO Lead confirmation if PO or budget ceiling is exhausted.",
+                    change_control_trigger="Budget burndown exceeding forecast by >10% or scope change requiring talent roster adjustments.",
+                    change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
+                    budget_baseline="[CONFIRMATION REQUIRED - T&M BUDGET CAP]",
+                    variance_indicator="Green (<5% variance)",
+                    margin_risk_indicator="Low",
+                    escalation_threshold="Burn rate variance > 10% or client dependency blocker > 2 days."
+                )
+
+        table = doc.add_table(rows=1, cols=4)
+        headers = [
+            "Commercial Guardrail Area",
+            "Contract Policy & Governance Rules",
+            "Governance Ownership & Route",
+            "Baseline Target / Threshold"
+        ]
+        for idx, name in enumerate(headers):
+            table.cell(0, idx).text = name
+
+        rows_data = [
+            (
+                "Contract Type Implications",
+                cg.contract_type_implication or f"Managed delivery under {contract_type} governance rules.",
+                "PMO Lead",
+                f"Contract Model: {contract_type}"
+            ),
+            (
+                "Billing or Consumption Assumptions",
+                cg.billing_consumption_assumption or ("Invoicing tied strictly to formal client milestone acceptance sign-offs." if contract_type == "Fixed Bid" else "Weekly timesheet approval and hourly/daily burn rate tracking against budget cap."),
+                "Delivery Manager / Talent PM",
+                "Periodic Invoicing / Burn Tracking"
+            ),
+            (
+                "Staffing Assumptions & Commercial Exposure",
+                f"{cg.staffing_assumption or 'Dedicated talent staffing mapped to contracted roles.'}\n• Commercial Exposure: {cg.commercial_exposure_note or 'Client dependency delays must be logged immediately to prevent unfunded team standby burn.'}",
+                "Talent PM / Delivery Manager",
+                "Roster Locked & Rate Realization"
+            ),
+            (
+                "Approved & Non-Approved Work Rules",
+                f"• Approved Work: {cg.approved_work_rule}\n• Non-Approved Work: {cg.non_approved_work_rule}",
+                "Delivery Manager / PMO Lead",
+                "Zero Out-of-Scope Execution"
+            ),
+            (
+                "Work-at-Risk Rules (PMO Lead owned)",
+                cg.work_at_risk_rule or "Work-at-risk strictly prohibited without written PMO Lead approval and executive exception sign-off.",
+                "PMO Lead (Exclusive Sign-off Authority)",
+                "Pre-Approval / Exception Required"
+            ),
+            (
+                "Change Control Triggers & Change Order Route",
+                f"• Triggers: {cg.change_control_trigger}\n• Route: {cg.change_order_route}",
+                "PMO Lead leads → DM aligns client → Client approves → Contracting issues change order",
+                "Variance > 5% or Schedule Slip > 3 Days"
+            ),
+            (
+                "Budget vs. Actuals & Variance Baseline",
+                f"• Budget Baseline: {cg.budget_baseline}\n• Variance Baseline: {cg.variance_indicator}",
+                "PMO Lead / Delivery Manager",
+                "Monthly Budget & Burn Audit"
+            ),
+            (
+                "Margin Risk Indicators",
+                f"Margin Risk Level: {cg.margin_risk_indicator} — Labor rate realization, unbilled delivery effort, and milestone buffers tracked continuously.",
+                "PMO Lead / Commercial Lead",
+                "Active Margin Protection"
+            ),
+            (
+                "Internal Escalation Thresholds",
+                cg.escalation_threshold or "Budget burn rate exceeding weekly cap by >10% or milestone delay > 3 days.",
+                "Delivery Manager → PMO Lead → Director, PMO → VP, Delivery",
+                "Immediate Escalation (<24h SLA)"
+            ),
+        ]
+
+        for area, policy, owner_route, threshold in rows_data:
+            row = table.add_row()
+            row.cells[0].text = area
+            format_cell_text_and_highlight(row.cells[1], policy)
+            row.cells[2].text = owner_route
+            row.cells[3].text = threshold
+
+        style_table(table, col_widths=[1.8, 3.4, 2.2, 1.6])
+        doc.add_paragraph().paragraph_format.space_after = Pt(8)
+
+    def render_actionable_questions_table(
+        self, doc: docx.Document, baseline: StartupKitBaseline
+    ):
+        """Render the Actionable Questions table formed from QUESTIONS_PROMPT into the checklist document."""
+        add_section_heading(doc, "Actionable Questions & Open Clarifications", level=2)
+
+        questions = baseline.open_questions or []
+        table = doc.add_table(rows=1, cols=4)
+        headers = [
+            "Question ID",
+            "Actionable Clarification Question",
+            "Target Stakeholder / Focus Area",
+            "Status"
+        ]
+        for idx, name in enumerate(headers):
+            table.cell(0, idx).text = name
+
+        if not questions:
+            row = table.add_row()
+            row.cells[0].text = "Q-01"
+            row.cells[1].text = "No open clarification questions or unconfirmed scope items flagged for mobilization."
+            row.cells[2].text = "Delivery Leadership"
+            row.cells[3].text = "Closed / Verified"
+        else:
+            for idx, q in enumerate(questions, 1):
+                row = table.add_row()
+                row.cells[0].text = f"Q-{idx:02d}"
+                format_cell_text_and_highlight(row.cells[1], q)
+
+                q_lower = q.lower()
+                if any(w in q_lower for w in ("approver", "acceptance", "criteria", "sign-off", "uat")):
+                    stakeholder = "Client Approver / Talent PM"
+                elif any(w in q_lower for w in ("date", "milestone", "timeline", "schedule", "buffer")):
+                    stakeholder = "Delivery Manager / Client Sponsor"
+                elif any(w in q_lower for w in ("iam", "aws", "access", "prerequisite", "environment", "vpc", "cloud")):
+                    stakeholder = "Client Sponsor / Tech Lead"
+                elif any(w in q_lower for w in ("roster", "staffing", "talent", "role", "replacement")):
+                    stakeholder = "Talent PM / Delivery Manager"
+                elif any(w in q_lower for w in ("budget", "rate", "commercial", "fixed", "variance")):
+                    stakeholder = "PMO Lead / Commercial Lead"
+                else:
+                    stakeholder = "Client Sponsor / Delivery Team"
+                row.cells[2].text = stakeholder
+
+                if "[RESOLVED]" in q.upper():
+                    status_text = "Resolved"
+                elif "[CONFIRMATION REQUIRED]" in q or "[UNASSIGNED" in q or "[UNDEFINED]" in q:
+                    status_text = "Open - Confirmation Required"
+                else:
+                    status_text = "Open"
+                row.cells[3].text = status_text
+
+        style_table(table, col_widths=[1.2, 4.4, 2.0, 1.4])
+        doc.add_paragraph().paragraph_format.space_after = Pt(8)
+
+    def render_contract_ambiguities_table(
+        self, doc: docx.Document, baseline: StartupKitBaseline
+    ):
+        """Render the Contract Ambiguities table formed from CONTRACT_CONFLICTS_PROMPT into the checklist document."""
+        add_section_heading(doc, "Contract Ambiguities & Conflicts", level=2)
+
+        ambiguities = baseline.contract_ambiguities or []
+        if not ambiguities and baseline.sow_interpretation and baseline.sow_interpretation.contract_ambiguities:
+            ambiguities = baseline.sow_interpretation.contract_ambiguities
+
+        table = doc.add_table(rows=1, cols=6)
+        headers = [
+            "Anomaly ID",
+            "Category",
+            "Conflicting Clauses / Citations",
+            "Risk & Margin Impact",
+            "Recommended Clarification",
+            "Status"
+        ]
+        for idx, name in enumerate(headers):
+            table.cell(0, idx).text = name
+
+        if not ambiguities:
+            row = table.add_row()
+            row.cells[0].text = "AMB-01"
+            row.cells[1].text = "Scope Clarity"
+            row.cells[2].text = "All baseline scope terms, milestones, and deliverable commitments verified against Section 4 governance standards."
+            row.cells[3].text = "Low — No contractual ambiguity or clause contradiction identified."
+            row.cells[4].text = "Proceed with standard Mobilize kickoff and milestone cadence."
+            row.cells[5].text = "Resolved"
+        else:
+            for item in ambiguities:
+                row = table.add_row()
+                row.cells[0].text = item.anomaly_id
+                row.cells[1].text = item.category
+                format_cell_text_and_highlight(row.cells[2], item.conflicting_clauses or "Identified contractual ambiguity.")
+                row.cells[3].text = item.risk_impact or "Potential delivery or margin risk."
+                format_cell_text_and_highlight(row.cells[4], item.recommended_clarification or "Align terms with client during mobilization.")
+                row.cells[5].text = item.status or "Open"
+
+        style_table(table, col_widths=[1.0, 1.3, 2.3, 2.0, 1.7, 0.7])
         doc.add_paragraph().paragraph_format.space_after = Pt(8)
 
     def render_action_required_table(

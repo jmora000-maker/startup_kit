@@ -1,6 +1,6 @@
 # Toptal PMO Startup Kit Generator
 
-Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests project documentation, client agreements, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized, self-contained Word (`.docx`) Startup Kit reports and PMO Operating System seed data.
+Automated project onboarding and readiness toolkit. The PMO Startup Kit Generator ingests project documentation, client agreements, and kickoff presentations to extract structured project management artifacts via LLMs and automatically generate standardized, self-contained Word (`.docx`) Startup Kit reports, companion Startup Readiness Checklist documents, and PMO Operating System seed data.
 
 ---
 
@@ -22,8 +22,14 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
   - Talent Onboarding Checklist & Resourcing Records
 - **Authoritative Startup Readiness Scoring Engine**: Centralized, deterministic 4-dimension mathematical engine (`ReadinessScoringEngine`) calculating composite readiness scores, dimensional breakdowns, gate review statuses, and quantified score recovery potential.
 - **Structured Action Required Mapping & 1-to-1 In-Artifact Integration**: Generates discrete, 1-to-1 mapped action items (`ACT-01`, `ACT-02`, etc.) for open exceptions and clarifications, embedding yellow-highlighted remediation badges directly inside Section 4 Layer 1, Layer 2, and Layer 3 artifact table cells without cell background shading alteration.
-- **Standardized Word Report Generation**: Produces professionally styled Microsoft Word documents adhering to the executive review hierarchy: Header Metadata $\rightarrow$ `Startup Kit Readiness Score: [score]%` Heading $\rightarrow$ Section 4 Artifacts (Layer 1 $\rightarrow$ Layer 2 $\rightarrow$ Layer 3) $\rightarrow$ Executive Readiness Gateway (Gate Decision Dashboard $\rightarrow$ 15-Row G-01 Checklist Table).
-- **Word Re-ingestion & Rescoring Engine**: Re-evaluates edited Word documents (`--reingest-docx`), dynamically recalculating scores across all 4 dimensions and clearing resolved action items without re-running LLM extraction.
+- **Dual Standardized Word Document Generation**: Produces two professionally styled, companion Microsoft Word documents:
+  1. `<Project_Name>_Startup_Kit.docx`: Contains the Executive Header Metadata, `Startup Kit Readiness Score: [score]%` banner, and Section 4 Artifacts organized into Layer 1 (Foundational), Layer 2 (Execution), and Layer 3 (Governance & Operational) tables.
+  2. `<Project_Name>_Startup_Readiness_Checklist.docx`: Standalone executive governance document housing:
+     - **Executive Readiness Gateway**: Gate Decision Dashboard & 15-Row G-01 Checklist Table with remediation guidance.
+     - **Commercial and Margin Guardrails Table**: Contract type implications, billing/consumption assumptions, staffing exposure rules, approved/non-approved & work-at-risk rules (PMO Lead owned), change control routing (`PMO Lead leads → DM aligns client → client approves → Contracting issues change order`), budget vs. actuals variance baselines, margin risk indicators, and escalation thresholds.
+     - **Actionable Questions Table**: Prioritized actionable clarification questions and target focus areas formed directly from `QUESTIONS_PROMPT`.
+     - **Contract Ambiguities Table**: Anomaly tracking, clause citations, risk & margin impact, and recommended client clarifications formed directly from `CONTRACT_CONFLICTS_PROMPT`.
+- **Word Re-ingestion & Rescoring Engine**: Re-evaluates edited Word documents (`--reingest-docx`), automatically detecting and synchronizing companion checklist documents, dynamically recalculating scores across all 4 dimensions, and clearing resolved action items without re-running LLM extraction.
 - **Executive CLI Readiness Telemetry**: Outputs a formatted, color-coded summary dashboard in the terminal immediately following document generation and re-ingestion passes.
 - **PMO Operating System Export**: Optional export of downstream CSV and JSON seed payloads for PMO workbooks and tracking toolkits.
 - **Offline / Mock Mode**: Fully functional offline mock client for local testing and deterministic validation without requiring LLM API credentials.
@@ -271,8 +277,9 @@ Immediately after document creation or re-ingestion, the CLI displays an executi
    • Open Clarifications  : 3 item(s) (G01-04, G01-07, G01-14)
    • Total Score Recovery : +18.5% -> Achievable Target: 92.7% (GREEN)
 --------------------------------------------------------------------------------
- REPORT ARTIFACT:
-   • Output File Path     : C:\Users\...\output\ACME_Startup_Kit.docx
+ REPORT ARTIFACTS:
+   • Startup Kit Doc      : C:\Users\...\output\ACME_Startup_Kit.docx
+   • Readiness Checklist  : C:\Users\...\output\ACME_Startup_Readiness_Checklist.docx
 ================================================================================
 ```
 
@@ -345,13 +352,13 @@ The engine automatically synthesizes open exceptions and clarifications into dis
 | `G01-12` | **Scope & Baseline Rules** | Layer 3 | Open Clarification | Scope Boundaries & Authorization Marker | Scope Baseline |
 | `G01-13` | **Change Control Procedure** | Layer 3 | Open Clarification | Change Control Route Marker `[ACT-XX]` | Scope Management |
 | `G01-14` | **Scope Clarity & Alignment** | Layer 1 | Open Clarification | Baseline Alignment Marker | Scope Assurance |
-| `G01-15` | **Startup Readiness Checklist** | Gateway | Open Clarification | Executive Gate Decision Evidence Tag | Gate Governance |
+| `G01-15` | **Startup Readiness Checklist** | Standalone Checklist Doc | Open Clarification | Executive Gate Decision Evidence Tag | Gate Governance |
 
 ### Action Item Resolution & Score Recovery Guide (From -> To Remediation Table)
 
 When a Startup Kit report is initially generated, missing information, unassigned roles, and unconfirmed criteria trigger embedded action badges (e.g., `[ACT-01: ... (+X.X% Recovery)]` or fallback `[ACT-REQ-XX: ...]`) and reduce the Startup Readiness Score across the four scoring dimensions.
 
-During **Re-evaluation (`main.py --reingest-docx <path>`)**, the user edits the generated Word (`.docx`) file to resolve these open action items. The re-ingestion parser reads the modified document, detects that placeholders and action badges have been replaced with valid project data, clears the action badges, and dynamically recomputes the Readiness Score.
+During **Re-evaluation (`main.py --reingest-docx <path>`)**, the user edits the generated Word (`.docx`) file (and optionally the companion `*_Startup_Readiness_Checklist.docx` file) to resolve these open action items. The re-ingestion parser reads the modified document, detects that placeholders and action badges have been replaced with valid project data, clears the action badges, and dynamically recomputes the Readiness Score.
 
 The following **To and From Table** outlines how each action item is resolved in the Word document tables, the exact text transitions required, the affected scoring dimensions, and the mathematical score recovery impact:
 
@@ -374,25 +381,26 @@ The following **To and From Table** outlines how each action item is resolved in
 | `G01-12` | **Scope & Baseline Rules** (Scope Boundaries & Rules) | Scope boundaries: `[CONFIRMATION REQUIRED]` / unconfirmed work rules `[ACT-XX]` | Confirmed scope boundaries, approved work authorization rules, and non-approved work handling | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.0%** | Document approved scope boundaries, work-at-risk authorization policies, and baseline assumptions. |
 | `G01-13` | **Scope Management** (Change Control Procedure) | Change route: `[CONFIRMATION REQUIRED]` / Undefined out-of-scope procedure `[ACT-XX]` | Documented formal Change Order request process, impact assessment workflow, and client sign-off route | $D_1$ (Mandatory Controls) | **+2.0%** | Outline the formal change request process, threshold for scope amendments, and commercial impact sign-off rules. |
 | `G01-14` | **Scope Clarity & Alignment** (Baseline Ambiguity Resolution) | Ambiguity Status: `Open` / `Exception Required`, unresolved requirement gaps `[ACT-XX]` | Resolution notes or confirmed criteria clarifying project scope and deliverables | $D_4$ (Commercial & Risk) + $D_1$ (Gate Control) | **+3.5%** | Clarify scope requirements and resolve open clarification questions to clear gate exceptions. |
-| `G01-15` | **Executive Startup Readiness Checklist** (G-01 Gateway) | Gate Criteria: `Exception Required` / `Review Required`, unresolved questions `[ACT-XX]` | Gate Criteria: `"Complete"` / `"Approved"`, with clear audit evidence documented in Evidence column | $D_1$ (Mandatory Controls) + $D_4$ (Commercial) | **+2.5%** | Update G-01 checklist row statuses to Complete/Approved with supporting evidence summaries and clear all open questions. |
+| `G01-15` | **Executive Startup Readiness Checklist** (G-01 Gateway & Governance Document) | Gate Criteria: `Exception Required` / `Review Required`, unresolved questions `[ACT-XX]` | Gate Criteria: `"Complete"` / `"Approved"`, with clear audit evidence documented in Evidence column and resolved ambiguities | $D_1$ (Mandatory Controls) + $D_4$ (Commercial) | **+2.5%** | Update G-01 checklist row statuses to Complete/Approved with supporting evidence summaries in the companion checklist document, and clear all open questions/ambiguities. |
 
 #### Step-by-Step Re-evaluation Workflow
 
 To execute a re-evaluation cycle and observe score recovery:
 
-1. **Open the Generated Word Document**: Open `output/<Project_Name>_Startup_Kit.docx` in Microsoft Word or any compatible DOCX editor.
-2. **Locate Highlighted Action Badges**: Look for yellow-highlighted `[ACT-XX: ... (+X.X% Recovery)]` tags in the artifact tables (Deliverables, Milestones, Talent Roster, RAID).
+1. **Open the Generated Word Documents**: Open `output/<Project_Name>_Startup_Kit.docx` and its companion `output/<Project_Name>_Startup_Readiness_Checklist.docx` in Microsoft Word or any compatible DOCX editor.
+2. **Locate Highlighted Action Badges**: Look for yellow-highlighted `[ACT-XX: ... (+X.X% Recovery)]` tags in the artifact tables (Deliverables, Milestones, Talent Roster, RAID) and open clarification questions in the checklist document.
 3. **Apply Remediation Updates**:
    - Replace placeholder text (e.g., `[CONFIRMATION REQUIRED]`, `[UNASSIGNED]`, `TBD`) with confirmed project details as shown in the table above.
+   - In the companion checklist document, update G-01 row statuses and evidence, resolve Actionable Questions, or add clarification notes to Contract Ambiguities.
    - For leadership, enter names directly in Table 1 (Metadata Header) or pass them via CLI flags (`--pmo-lead`, `--delivery-lead`, `--talent-pm`).
-4. **Save the Modified Document**: Save the document (e.g., as `output/Project_Startup_Kit_Updated.docx` or overwrite the original).
+4. **Save the Modified Document(s)**: Save the documents in place or specify a new target path.
 5. **Run Re-evaluation**:
    ```bash
    python main.py --reingest-docx output/Project_Startup_Kit_Updated.docx --non-interactive
    ```
 6. **Verify Score Improvement**:
    - The CLI displays the updated composite score, showing recovery across $D_1$, $D_2$, $D_3$, and $D_4$.
-   - The output Word document is regenerated with resolved action badges automatically stripped and the updated G-01 Gate Decision status reflected in the executive gateway dashboard.
+   - The output Word documents are regenerated with resolved action badges automatically stripped and the updated G-01 Gate Decision status reflected in the executive gateway dashboard.
 
 ### Tri-directional Alignment Guarantees
 

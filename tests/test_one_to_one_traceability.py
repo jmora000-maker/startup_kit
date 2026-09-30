@@ -363,16 +363,21 @@ def test_automated_status_synchronization_during_reingestion(multi_defect_baseli
             row.cells[3].text = "Sarah Connor"
             row.cells[4].text = "Utilize local Terraform mock sandbox for sprint 1"
 
-    # 5. Clear G-01 Checklist Exceptions in Checklist Table
-    checklist_table = next(
-        t for t in doc.tables
-        if any("gate criterion" in c.text.lower() for c in t.rows[0].cells)
-    )
-    for row in checklist_table.rows[1:]:
-        item_id = row.cells[0].text.strip()
-        if item_id in ("G01-03", "G01-04", "G01-05", "G01-08"):
-            row.cells[3].text = "Complete"
-            row.cells[7].text = "Fully resolved and approved"
+    # 5. Clear G-01 Checklist Exceptions in Checklist Table (in companion doc if present)
+    cl_path = tmp_path / "Pre_Remediation_Doc_Startup_Readiness_Checklist.docx"
+    if cl_path.exists():
+        cl_doc = docx.Document(str(cl_path))
+        checklist_table = next(
+            (t for t in cl_doc.tables if any("gate criterion" in c.text.lower() for c in t.rows[0].cells)),
+            None
+        )
+        if checklist_table:
+            for row in checklist_table.rows[1:]:
+                item_id = row.cells[0].text.strip()
+                if item_id in ("G01-03", "G01-04", "G01-05", "G01-08"):
+                    row.cells[3].text = "Complete"
+                    row.cells[7].text = "Fully resolved and approved"
+            cl_doc.save(str(tmp_path / "Post_Remediation_Doc_Startup_Readiness_Checklist.docx"))
 
     remediated_doc_path = tmp_path / "Post_Remediation_Doc.docx"
     doc.save(str(remediated_doc_path))

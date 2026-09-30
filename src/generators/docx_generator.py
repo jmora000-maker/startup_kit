@@ -219,18 +219,73 @@ def sanitize_filename(name: str) -> str:
 
 
 class DocxGenerator(IDocumentWriter):
-    """Generates the standardized Toptal PMO Startup Kit Word document following Section 4 structure."""
+    """Generates the standardized Toptal PMO Startup Kit Word documents following Section 4 structure."""
 
     def __init__(self, checklist_renderer: G01ChecklistRenderer = None):
         self.checklist_renderer = checklist_renderer or G01ChecklistRenderer()
 
-    def write_docx(self, baseline: StartupKitBaseline, output_path: Path) -> Path:
-        """Render the complete Section 4 Startup Kit Word document and write to disk."""
-        if output_path.suffix.lower() == ".docx":
+    def write_checklist_docx(self, baseline: StartupKitBaseline, output_path: Path) -> Path:
+        """Render the Executive Readiness Gateway and G-01 Checklist into a standalone Word document."""
+        if output_path.suffix.lower() in (".docx", ".doc"):
             target_file = output_path
         else:
             clean_name = sanitize_filename(baseline.project_name)
+            target_file = output_path / f"{clean_name}_Startup_Readiness_Checklist.docx"
+
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        doc = docx.Document()
+
+        # Page setup
+        for section in doc.sections:
+            section.top_margin = Inches(1.0)
+            section.bottom_margin = Inches(1.0)
+            section.left_margin = Inches(1.0)
+            section.right_margin = Inches(1.0)
+
+        self.checklist_renderer.render(doc, baseline)
+        doc.save(str(target_file))
+        logger.info("Successfully generated Startup Readiness Checklist Word document at: %s", target_file)
+        return target_file
+
+    def write_documents(self, baseline: StartupKitBaseline, output_path: Path) -> tuple[Path, Path]:
+        """Render both the Section 4 Startup Kit Word document and the second Startup Readiness Checklist document."""
+        if output_path.suffix.lower() in (".docx", ".doc"):
+            kit_file = output_path
+            stem = output_path.stem
+            suffix = output_path.suffix
+            if stem.endswith("_Startup_Kit"):
+                cl_stem = stem[:-12] + "_Startup_Readiness_Checklist"
+            elif stem == "Startup_Kit":
+                cl_stem = "Startup_Readiness_Checklist"
+            else:
+                cl_stem = f"{stem}_Startup_Readiness_Checklist"
+            checklist_file = output_path.with_name(f"{cl_stem}{suffix}")
+        else:
+            clean_name = sanitize_filename(baseline.project_name)
+            kit_file = output_path / f"{clean_name}_Startup_Kit.docx"
+            checklist_file = output_path / f"{clean_name}_Startup_Readiness_Checklist.docx"
+
+        self.write_docx(baseline, kit_file)
+        self.write_checklist_docx(baseline, checklist_file)
+        return kit_file, checklist_file
+
+    def write_docx(self, baseline: StartupKitBaseline, output_path: Path) -> Path:
+        """Render the complete Section 4 Startup Kit Word document and second Startup Readiness Checklist document, writing both to disk."""
+        if output_path.suffix.lower() in (".docx", ".doc"):
+            target_file = output_path
+            stem = output_path.stem
+            suffix = output_path.suffix
+            if stem.endswith("_Startup_Kit"):
+                cl_stem = stem[:-12] + "_Startup_Readiness_Checklist"
+            elif stem == "Startup_Kit":
+                cl_stem = "Startup_Readiness_Checklist"
+            else:
+                cl_stem = f"{stem}_Startup_Readiness_Checklist"
+            checklist_file = output_path.with_name(f"{cl_stem}{suffix}")
+        else:
+            clean_name = sanitize_filename(baseline.project_name)
             target_file = output_path / f"{clean_name}_Startup_Kit.docx"
+            checklist_file = output_path / f"{clean_name}_Startup_Readiness_Checklist.docx"
 
         target_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -672,14 +727,13 @@ class DocxGenerator(IDocumentWriter):
                 style_table(roster_table, col_widths=[1.8, 2.0, 2.8, 1.2])
                 doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-        # =========================================================================
-        # EXECUTIVE READINESS GATEWAY: STARTUP READINESS CHECKLIST (G-01) & GATE DECISION
-        # =========================================================================
-        self.checklist_renderer.render(doc, baseline)
-
-        # Save document
+        # Save Startup Kit document (without the checklist table)
         doc.save(str(target_file))
         logger.info("Successfully generated Startup Kit Word document at: %s", target_file)
+
+        # Generate second document: Startup Readiness Checklist document
+        self.write_checklist_docx(baseline, checklist_file)
+
         return target_file
 
     def _render_artifact_action_banner(

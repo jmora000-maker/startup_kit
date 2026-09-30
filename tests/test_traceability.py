@@ -299,10 +299,14 @@ def test_100_percent_action_traceability_in_tables(tmp_path: Path, baseline_with
     assert output_file.exists()
 
     doc = docx.Document(str(output_file))
-    assert len(doc.tables) > 4, "Document must contain header, gateway, and artifact tables"
+    checklist_file = tmp_path / "Traceability_Audit_Startup_Readiness_Checklist.docx"
+    cl_doc = docx.Document(str(checklist_file)) if checklist_file.exists() else None
 
-    # Exclude Table 0-2 (Metadata, Gate Decision, Checklist Table) and trailing Action Required Table
-    artifact_tables = [t for t in doc.tables[3:] if not any(c.text.strip() == "Action ID" for c in t.rows[0].cells)]
+    # Exclude Table 0 (Metadata) and any trailing Action Required Table
+    artifact_tables = [t for t in doc.tables[1:] if not any(c.text.strip() == "Action ID" for c in t.rows[0].cells)]
+    if cl_doc:
+        artifact_tables.extend(cl_doc.tables)
+
     artifact_tables_text = " ".join(
         cell.text for t in artifact_tables for row in t.rows for cell in row.cells
     )

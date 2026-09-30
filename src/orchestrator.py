@@ -158,6 +158,10 @@ class StartupKitController:
                 executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
                 if self.decisions_extractor else None
             )
+            future_conflicts = (
+                executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
+                if self.conflicts_extractor else None
+            )
 
             charter = future_charter.result()
             deliverables = future_deliverables.result()
@@ -172,7 +176,7 @@ class StartupKitController:
             commercial = None
             talent = future_talent.result() if future_talent else None
             decisions = future_decisions.result() if future_decisions else None
-            conflicts = None
+            conflicts = future_conflicts.result() if future_conflicts else None
 
         # Apply leadership and governance overrides
         if tier_override and tier_override in ("Guided", "Partnered", "Elevated"):

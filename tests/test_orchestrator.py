@@ -74,8 +74,9 @@ def test_cli_main_execution_with_export_tools(populated_inputs_dir, tmp_path, mo
     exit_code = main()
     assert exit_code == 0
 
-    created_docx = list(output_dir.glob("*.docx"))
+    created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
+    assert len(list(output_dir.glob("*.docx"))) == 2
 
     created_csv = list(output_dir.glob("*.csv"))
     assert len(created_csv) == 2  # RAID and Decision Log

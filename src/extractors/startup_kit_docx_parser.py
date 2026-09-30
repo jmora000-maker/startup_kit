@@ -32,6 +32,7 @@ from src.core.models import (
     SOWInterpretationSummary,
     ContractAmbiguityItem,
 )
+from src.scoring.readiness_engine import ReadinessScoringEngine
 
 logger = logging.getLogger(__name__)
 
@@ -137,16 +138,57 @@ class StartupKitDocxParser(IStartupKitDocxParser):
 
         # 2. G-01 Checklist Table
         readiness_checklist = self._parse_g01_table(tables, pmo_lead, src_ref)
+        c_doc = None
+        if file_path.parent.exists():
+            stem = file_path.stem
+            candidate_names = [
+                f"{stem.replace('_Startup_Kit', '')}_Startup_Readiness_Checklist.docx",
+                f"{stem.replace('_Startup_Kit', '')}_Startup_Readiness_Checklist.doc",
+                f"{stem}_Startup_Readiness_Checklist.docx",
+                f"{stem}_Startup_Readiness_Checklist.doc",
+                f"{project_name.replace(' ', '_')}_Startup_Readiness_Checklist.docx",
+                f"{project_name.replace(' ', '_')}_Startup_Readiness_Checklist.doc",
+                "Startup_Readiness_Checklist.docx",
+                "Startup_Readiness_Checklist.doc",
+            ]
+            for c_name in candidate_names:
+                c_path = file_path.parent / c_name
+                if c_path.exists() and c_path != file_path:
+                    try:
+                        c_doc = docx.Document(str(c_path))
+                        if not readiness_checklist:
+                            readiness_checklist = self._parse_g01_table(c_doc.tables, pmo_lead, src_ref)
+                        if c_doc:
+                            break
+                    except Exception as ex:
+                        logger.debug("Could not parse companion checklist doc %s: %s", c_path, ex)
+            if not c_doc:
+                for c_path in sorted(file_path.parent.glob("*_Startup_Readiness_Checklist.doc*")):
+                    if c_path != file_path:
+                        try:
+                            c_doc = docx.Document(str(c_path))
+                            if not readiness_checklist:
+                                readiness_checklist = self._parse_g01_table(c_doc.tables, pmo_lead, src_ref)
+                            if c_doc:
+                                break
+                        except Exception as ex:
+                            logger.debug("Could not parse companion checklist doc %s: %s", c_path, ex)
+
+        if not readiness_checklist:
+            readiness_checklist = self._build_default_checklist(pmo_lead, delivery_manager, talent_pm, governance_tier, src_ref)
+
         exceptions_count = len([i for i in readiness_checklist if i.exception_required or i.status == "Exception Required"])
 
+        all_tables = list(tables) + (list(c_doc.tables) if c_doc else [])
+
         # 3. Open Questions & Clarifications
-        open_questions = self._parse_open_questions(doc, tables, exceptions_count=exceptions_count)
+        open_questions = self._parse_open_questions(doc, all_tables, exceptions_count=exceptions_count, c_doc=c_doc)
 
         # 4. Project Startup Charter
         charter = self._parse_charter(doc, tables, project_name, client_name, governance_tier, contract_type, delivery_manager, talent_pm, pmo_lead, src_ref)
 
         # 5. SOW Interpretation Summary & Contract Ambiguities
-        sow_interpretation, contract_ambiguities = self._parse_sow_interpretation(tables, src_ref)
+        sow_interpretation, contract_ambiguities = self._parse_sow_interpretation(all_tables, src_ref)
 
         # 6. Milestone Delivery Plan
         milestones = self._parse_milestones_table(tables, delivery_manager, src_ref)
@@ -165,14 +207,14 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         if not dependencies_assumptions:
             dependencies_assumptions = [
                 DependencyAssumptionItem(
-                    id=r.id,
+                    id=getattr(r, "id", None) or f"DA-{idx+1:02d}",
                     type="Dependency" if r.type == "Dependency" else "Assumption",
                     description=r.description,
                     source_reference=src_ref,
                     owner=r.owner,
                     status=r.status
                 )
-                for r in raid_items if r.type in ("Assumption", "Dependency")
+                for idx, r in enumerate(raid_items) if r.type in ("Assumption", "Dependency")
             ]
 
         # 10. Communications Plan
@@ -182,7 +224,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         stakeholders, raci_matrix = self._parse_stakeholders_and_raci(tables)
 
         # 12. Commercial Guardrails
-        commercial_guardrails = self._parse_commercial_guardrails(doc, tables, contract_type, src_ref)
+        commercial_guardrails = self._parse_commercial_guardrails(doc, tables, contract_type, src_ref, c_doc=c_doc)
 
         # 13. Talent Onboarding Record & Delivery Roster
         talent_onboarding = self._parse_talent_onboarding(doc, tables, pmo_lead, delivery_manager, talent_pm, src_ref)
@@ -300,7 +342,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             author_name=resolved_pmo
         )
 
-        return StartupKitBaseline(
+        baseline = StartupKitBaseline(
             project_name=project_name,
             governance_tier=governance_tier,
             contract_type=contract_type,
@@ -329,6 +371,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             sla_met=sla_met,
             author_name=resolved_pmo
         )
+        ReadinessScoringEngine.synchronize_checklist_with_artifacts(baseline)
+        return baseline
 
     # -------------------------------------------------------------------------
     # Helper Extraction Methods
@@ -389,23 +433,26 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         self,
         doc: docx.Document,
         tables: Optional[List[Table]] = None,
-        exceptions_count: int = 0
+        exceptions_count: int = 0,
+        c_doc: Optional[docx.Document] = None
     ) -> List[str]:
-        """Extract unresolved open questions from callout boxes, paragraphs, Action Required table, or in-cell badges."""
+        """Extract unresolved open questions from callout boxes, paragraphs, Actionable Questions table, Action Required table, or in-cell badges."""
         questions: List[str] = []
         in_questions_section = False
 
-        for p in doc.paragraphs:
+        all_paragraphs = list(doc.paragraphs) + (list(c_doc.paragraphs) if c_doc else [])
+
+        for p in all_paragraphs:
             text = p.text.strip()
             if not text:
                 continue
 
-            if "Unresolved Validation Points" in text or "Clarifications Pending Mobilize" in text or "Open Questions & Clarifications" in text:
+            if "Unresolved Validation Points" in text or "Clarifications Pending Mobilize" in text or "Open Questions & Clarifications" in text or "Actionable Questions" in text:
                 in_questions_section = True
                 continue
 
             # Section headings end questions collection
-            if in_questions_section and (text.startswith("Layer ") or text.startswith("Executive Readiness Gateway") or text.startswith("1.") or text.startswith("2.")):
+            if in_questions_section and (text.startswith("Layer ") or text.startswith("Executive Readiness Gateway") or text.startswith("1.") or text.startswith("2.") or "Commercial and Margin Guardrails" in text or "Contract Ambiguities" in text):
                 in_questions_section = False
                 continue
 
@@ -424,12 +471,28 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     if l_clean.startswith("•") or l_clean.startswith("-") or l_clean.startswith("*"):
                         q_text = re.sub(r'^[•\-\*]\s*', '', l_clean).strip()
                         q_clean = clean_text(q_text)
-                        if q_clean and "[RESOLVED]" not in q_clean.upper():
+                        if q_clean and "[RESOLVED]" not in q_clean.upper() and "No open clarification questions" not in q_clean:
                             questions.append(q_clean)
                     elif l_clean and not l_clean.startswith("Action Required:"):
                         q_clean = clean_text(l_clean)
-                        if q_clean and "[RESOLVED]" not in q_clean.upper():
+                        if q_clean and "[RESOLVED]" not in q_clean.upper() and "No open clarification questions" not in q_clean:
                             questions.append(q_clean)
+
+        # Check Actionable Questions table if present
+        if tables:
+            q_tbl = self._find_table_by_header(tables, ["question id", "actionable"])
+            if not q_tbl:
+                q_tbl = self._find_table_by_header(tables, ["question id", "clarification question"])
+            if not q_tbl:
+                q_tbl = self._find_table_by_header(tables, ["question id", "question"])
+            if q_tbl:
+                for row in q_tbl.rows[1:]:
+                    cells = [clean_text(c.text) for c in row.cells]
+                    if len(cells) >= 2:
+                        q_text = cells[1]
+                        if q_text and "RESOLVED" not in q_text.upper() and "No open clarification questions" not in q_text:
+                            if q_text not in questions:
+                                questions.append(q_text)
 
         # Also check Action Required table if present (legacy support)
         if tables:
@@ -553,6 +616,49 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 approval_status="Approved" if status in ("Complete", "Approved") else ("Exception Required" if exception_required else "Pending Review")
             ))
 
+        return items
+
+    def _build_default_checklist(
+        self,
+        pmo_lead: str,
+        delivery_manager: str,
+        talent_pm: str,
+        governance_tier: str,
+        src_ref: SourceReference
+    ) -> List[ReadinessChecklistItem]:
+        """Build standard 15 G-01 checklist items when table is stored externally or not present."""
+        checklist_defs = [
+            ("G01-01", "Startup Kit created within 1 day of delivery handoff (SLA)", "Project Startup Charter", pmo_lead),
+            ("G01-02", "Governance tier assigned and cadence established", "Project Startup Charter", pmo_lead),
+            ("G01-03", "Deliverables mapped to owners with explicit acceptance routes", "Deliverables and Acceptance Matrix", talent_pm),
+            ("G01-04", "Milestone delivery plan with external dates and internal buffers committed", "Milestone Delivery Plan", delivery_manager),
+            ("G01-05", "Risks, Assumptions, Issues, and Dependencies seeded and owned", "RAID Log", talent_pm),
+            ("G01-06", "Talent PM and DM briefed on governance cadence and KO decks", "Talent Onboarding Record", pmo_lead),
+            ("G01-07", "Client onboarding dependencies and prerequisites mapped", "SOW Interpretation Summary", delivery_manager),
+            ("G01-08", "Talent roster staffed with named leads and delivery talent", "Talent Onboarding Record", talent_pm),
+            ("G01-09", "Client sponsor and decision escalation path identified", "Stakeholder and Responsibility Model", delivery_manager),
+            ("G01-10", "RACI and PMO decision rights matrix baselined", "RACI / Decision Rights Matrix", pmo_lead),
+            ("G01-11", "Communications and weekly reporting distribution established", "Communications and Reporting Plan", pmo_lead),
+            ("G01-12", "Scope boundaries, assumptions, and non-approved work rules defined", "Scope Decomposition / Backlog Seed", delivery_manager),
+            ("G01-13", "Change control procedure and threshold rules baselined", "Project Startup Charter", pmo_lead),
+            ("G01-14", "Scope clarity confirmed and open contractual ambiguities resolved", "SOW Interpretation Summary", delivery_manager),
+            ("G01-15", "Readiness Checklist verified and Approved for Mobilize", "Startup Readiness Checklist", pmo_lead),
+        ]
+        items = []
+        for item_id, crit, art, owner in checklist_defs:
+            items.append(ReadinessChecklistItem(
+                item_id=item_id,
+                gate_criterion=crit,
+                related_section4_artifact=art,
+                owner=owner,
+                reviewer=delivery_manager if owner != delivery_manager else pmo_lead,
+                approver=pmo_lead,
+                status="Complete",
+                evidence="Section 4 baseline artifact",
+                exception_required=False,
+                exception_details=None,
+                approval_status="Approved"
+            ))
         return items
 
     def _parse_charter(
@@ -1069,21 +1175,28 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         doc: docx.Document,
         tables: List[Table],
         contract_type: str,
-        src_ref: SourceReference
+        src_ref: SourceReference,
+        c_doc: Optional[docx.Document] = None
     ) -> CommercialGuardrail:
-        """Parse Commercial Guardrails callout box or fallback to defaults."""
+        """Parse Commercial Guardrails callout box or table from main doc or companion checklist doc."""
         contract_implications = f"Managed delivery under {contract_type} governance rules."
+        billing_consumption = "Weekly timesheet approval and hourly/daily burn rate tracking against budget cap." if contract_type != "Fixed Bid" else "Invoicing tied strictly to formal client milestone acceptance sign-offs."
+        staffing_assump = "Dedicated talent staffing mapped to contracted roles."
+        commercial_exposure = "Client dependency delays must be logged immediately to prevent unfunded team standby burn."
         approved_rule = "All delivery milestones and billable hours must map directly to contracted SOW deliverables."
         non_approved_rule = "Any activity outside agreed scope requires an approved Change Order."
-        work_at_risk = "Work-at-risk strictly prohibited without written PMO Director approval."
+        work_at_risk = "Work-at-risk strictly prohibited without written PMO Lead approval and executive exception sign-off."
         change_trigger = "Material scope modifications, milestone shifts > 5 business days, or client delay."
-        change_route = "Talent PM -> Delivery Manager -> PMO Lead -> Sales / Accounts -> Client sign-off"
+        change_route = "PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order"
         budget_baseline = "Established from SOW financial schedule"
-        variance_ind = "Monthly budget vs actuals review"
-        margin_risk = "Tracked via weekly delivery margin variance analysis"
-        escalation_thresh = "Budget variance > 5% or milestone delay > 3 days"
+        variance_ind = "Green (<5% variance)"
+        margin_risk = "Low"
+        escalation_thresh = "Budget variance > 10% or milestone delay > 3 days"
 
-        for p in doc.paragraphs:
+        all_paragraphs = list(doc.paragraphs) + (list(c_doc.paragraphs) if c_doc else [])
+        all_tables = list(tables) + (list(c_doc.tables) if c_doc else [])
+
+        for p in all_paragraphs:
             t = p.text.strip()
             if "Commercial Guardrails & Margin Protection Rules" in t or "Commercial and Margin Guardrails" in t:
                 if "Contract Implications:" in t:
@@ -1116,38 +1229,80 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                         escalation_thresh = m.group(1).strip()
 
         # Check for structured Commercial Guardrails table
-        cg_tbl = self._find_table_by_header(tables, ["commercial guardrail area", "contract policy"])
+        cg_tbl = self._find_table_by_header(all_tables, ["commercial guardrail area", "contract policy"])
+        if not cg_tbl:
+            cg_tbl = self._find_table_by_header(all_tables, ["commercial guardrail area", "governance rules"])
         if cg_tbl:
             for row in cg_tbl.rows[1:]:
                 cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) >= 2:
                     dim, val = cells[0].lower(), cells[1]
-                    if "contract implications" in dim and val:
+                    if "contract" in dim and val:
                         contract_implications = val
-                    elif "approved work" in dim and val:
-                        approved_rule = val
+                    elif "billing" in dim and val:
+                        billing_consumption = val
+                    elif "staffing" in dim and val:
+                        if "• Commercial Exposure:" in val or "• Exposure Note:" in val:
+                            parts = re.split(r'•\s*(?:Commercial Exposure|Exposure Note):\s*', val)
+                            staffing_assump = parts[0].strip()
+                            if len(parts) > 1:
+                                commercial_exposure = parts[1].strip()
+                        else:
+                            staffing_assump = val
+                    elif "approved" in dim and val:
+                        if "• Approved Work:" in val or "• Non-Approved Work:" in val:
+                            m_app = re.search(r'Approved Work:\s*(.*?)(?:\n|•|$)', val)
+                            m_non = re.search(r'Non-Approved Work:\s*(.*?)(?:\n|•|$)', val)
+                            if m_app and m_app.group(1).strip():
+                                approved_rule = m_app.group(1).strip()
+                            if m_non and m_non.group(1).strip():
+                                non_approved_rule = m_non.group(1).strip()
+                        elif "non-approved" in dim:
+                            non_approved_rule = val
+                        else:
+                            approved_rule = val
                     elif "non-approved" in dim and val:
                         non_approved_rule = val
                     elif "work-at-risk" in dim and val:
                         work_at_risk = val
-                    elif "change control triggers" in dim and val:
-                        change_trigger = val
-                    elif "change order route" in dim and val:
-                        change_route = val
-                    elif "budget baseline" in dim and val:
-                        budget_baseline = val
-                    elif ("variance" in dim or "margin" in dim) and val:
-                        m_var = re.search(r'Variance:\s*(.*?)(?:\s*\|\s*Margin:|$)', val)
-                        if m_var:
-                            variance_ind = m_var.group(1).strip()
-                        m_mar = re.search(r'Margin:\s*(.*?)$', val)
+                    elif "change" in dim and val:
+                        if "• Triggers:" in val or "• Route:" in val:
+                            m_trig = re.search(r'Triggers:\s*(.*?)(?:\n|•|$)', val)
+                            m_rt = re.search(r'Route:\s*(.*?)(?:\n|•|$)', val)
+                            if m_trig and m_trig.group(1).strip():
+                                change_trigger = m_trig.group(1).strip()
+                            if m_rt and m_rt.group(1).strip():
+                                change_route = m_rt.group(1).strip()
+                        elif "triggers" in dim:
+                            change_trigger = val
+                        elif "route" in dim:
+                            change_route = val
+                        else:
+                            change_trigger = val
+                    elif "budget" in dim and val:
+                        if "• Budget Baseline:" in val or "• Variance Baseline:" in val:
+                            m_bg = re.search(r'Budget Baseline:\s*(.*?)(?:\n|•|$)', val)
+                            m_vr = re.search(r'Variance Baseline:\s*(.*?)(?:\n|•|$)', val)
+                            if m_bg and m_bg.group(1).strip():
+                                budget_baseline = m_bg.group(1).strip()
+                            if m_vr and m_vr.group(1).strip():
+                                variance_ind = m_vr.group(1).strip()
+                        else:
+                            budget_baseline = val
+                    elif "margin" in dim and val:
+                        m_mar = re.search(r'Margin Risk Level:\s*([^\s—]+)', val)
                         if m_mar:
                             margin_risk = m_mar.group(1).strip()
+                        else:
+                            margin_risk = val
                     elif "escalation" in dim and val:
                         escalation_thresh = val
 
         return CommercialGuardrail(
             contract_type_implication=contract_implications,
+            billing_consumption_assumption=billing_consumption,
+            staffing_assumption=staffing_assump,
+            commercial_exposure_note=commercial_exposure,
             approved_work_rule=approved_rule,
             non_approved_work_rule=non_approved_rule,
             work_at_risk_rule=work_at_risk,

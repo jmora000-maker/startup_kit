@@ -751,7 +751,7 @@ def test_parser_strips_action_tags(tmp_path: Path):
         assert "[ACT-" not in (d.acceptance_criteria or "")
 
 
-def test_docx_reingestion_with_ambiguities_and_questions_idempotence(tmp_path: Path):
+def test_docx_reingestion_with_ambiguities_and_questions_idempotence(populated_inputs_dir, tmp_path: Path):
     """Verify that re-evaluating an unedited startup kit docx with contract ambiguities and questions yields identical scores."""
     from main import create_mock_llm_client
     from src.extractors.service import IngestionService
@@ -764,7 +764,7 @@ def test_docx_reingestion_with_ambiguities_and_questions_idempotence(tmp_path: P
     )
 
     out_file = ctrl.run(
-        inputs_dir=Path("inputs"),
+        inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Jane Doe",
@@ -791,7 +791,7 @@ def test_docx_reingestion_with_ambiguities_and_questions_idempotence(tmp_path: P
     assert len(p1_recalc.action_required_items) == len(p2_recalc.action_required_items)
 
 
-def test_docx_reingestion_unassigned_roles_and_incomplete_staffing_idempotence(tmp_path: Path):
+def test_docx_reingestion_unassigned_roles_and_incomplete_staffing_idempotence(populated_inputs_dir, tmp_path: Path):
     """Verify that generating and re-ingesting a startup kit with unassigned roles and incomplete staffing yields identical scores."""
     from main import create_mock_llm_client
     from src.extractors.service import IngestionService
@@ -805,7 +805,7 @@ def test_docx_reingestion_unassigned_roles_and_incomplete_staffing_idempotence(t
     )
 
     out_file = ctrl.run(
-        inputs_dir=Path("inputs"),
+        inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="[UNASSIGNED - TO BE CONFIRMED]",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
@@ -909,7 +909,7 @@ def test_docx_reingestion_recalculates_score_upon_edits(tmp_path: Path):
     assert res_ms.readiness_score > initial_score
 
 
-def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(tmp_path: Path):
+def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(populated_inputs_dir, tmp_path: Path):
     """Verify that updating table cells in an ingested docx eliminates open actions and does not rewrite action badges on top."""
     import docx as docx_module
     from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction, QuestionsExtraction
@@ -937,7 +937,7 @@ def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(tmp_path: P
     )
 
     initial_docx = ctrl.run(
-        inputs_dir=Path("inputs"),
+        inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
@@ -1023,7 +1023,7 @@ def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(tmp_path: P
             assert "[ACT-" not in r.cells[3].text
 
 
-def test_docx_reingestion_monotonic_multi_cycle_updates(tmp_path: Path):
+def test_docx_reingestion_monotonic_multi_cycle_updates(populated_inputs_dir, tmp_path: Path):
     """Verify that multiple iterative cycles of user edits monotonically improve the readiness score and do not regress."""
     import docx as docx_module
     from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction, QuestionsExtraction
@@ -1052,7 +1052,7 @@ def test_docx_reingestion_monotonic_multi_cycle_updates(tmp_path: Path):
 
     # Initial generation (Cycle 0)
     p0 = ctrl.run(
-        inputs_dir=Path("inputs"),
+        inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
@@ -1116,7 +1116,7 @@ def test_docx_reingestion_monotonic_multi_cycle_updates(tmp_path: Path):
     assert "[ACT-" not in ms_tbl_final.rows[1].cells[2].text
 
 
-def test_docx_reingestion_evaluates_roster_ambiguity_and_table_edits_dynamically(tmp_path: Path):
+def test_docx_reingestion_evaluates_roster_ambiguity_and_table_edits_dynamically(populated_inputs_dir, tmp_path: Path):
     """Verify that editing roster tables, ambiguity tables, and deliverable tables updates scores dynamically."""
     import docx as docx_module
     from main import create_mock_llm_client, CharterExtraction, DeliverablesExtraction, MilestonesExtraction
@@ -1142,7 +1142,7 @@ def test_docx_reingestion_evaluates_roster_ambiguity_and_table_edits_dynamically
         doc_writer=DocxGenerator()
     )
     p0 = ctrl.run(
-        inputs_dir=Path("inputs"),
+        inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",

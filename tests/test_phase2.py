@@ -177,7 +177,7 @@ def test_startup_readiness_scoring_engine(phase2_source_ref):
 
 
 def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
-    """Verify Contract Ambiguity & Conflict Detection creation and reporting are removed."""
+    """Verify Contract Ambiguity & Conflict Detection creation and reporting."""
     aggregator = BaselineAggregator()
     charter = CharterExtraction(
         project_name="Ambiguity Test Project",
@@ -214,10 +214,10 @@ def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
         conflicts_ext=conflicts
     )
 
-    # 1. Ambiguities creation removed from baseline
-    assert len(baseline.contract_ambiguities) == 0
+    # 1. Ambiguities present in baseline
+    assert len(baseline.contract_ambiguities) == 2
 
-    # 2. Ambiguities do not feed into open questions or RAID risks or action items
+    # 2. Ambiguities do not pollute open questions or RAID risks
     q_text = "\n".join(baseline.open_questions)
     assert "[AMB-01]" not in q_text
     assert "[CONF-01]" not in q_text
@@ -226,23 +226,17 @@ def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
     assert "AMB-01" not in raid_text
     assert "CONF-01" not in raid_text
 
-    assert not any("Contract Ambiguity" in a.related_artifact for a in baseline.action_required_items)
-
-    # 3. Render in Word document and check that ambiguities table is not present
+    # 3. Render in Word document and check that ambiguities table is present in checklist document
     generator = DocxGenerator()
-    out_file = generator.write_docx(baseline, tmp_path / "out")
-    doc = docx.Document(str(out_file))
+    kit_file, cl_file = generator.write_documents(baseline, tmp_path / "Ambiguity_Test_Startup_Kit.docx")
+    cl_doc = docx.Document(str(cl_file))
 
-    full_text = "\n".join(p.text for p in doc.paragraphs)
-    assert "Contractual Ambiguities & Conflict Analysis" not in full_text
+    cl_full_text = "\n".join(p.text for p in cl_doc.paragraphs)
+    assert "Contract Ambiguities & Conflicts" in cl_full_text
 
-    all_table_cells = []
-    for t in doc.tables:
-        for r in t.rows:
-            all_table_cells.extend(c.text.strip() for c in r.cells)
-
-    assert "AMB-01" not in all_table_cells
-    assert "CONF-01" not in all_table_cells
+    cl_table_cells = [c.text.strip() for t in cl_doc.tables for r in t.rows for c in r.cells]
+    assert "AMB-01" in cl_table_cells
+    assert "CONF-01" in cl_table_cells
 
 
 def test_readiness_workflow_states_and_sla_and_segregation(phase2_source_ref):

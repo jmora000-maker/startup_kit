@@ -23,16 +23,21 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert generated_file.name == "Pfizer_Cloud_Migration_Startup_Kit.docx"
     assert generated_file.suffix == ".docx"
 
-    # Open and inspect the generated Word document
+    # Verify second document (Startup_Readiness_Checklist) is created
+    checklist_file = output_dir / "Pfizer_Cloud_Migration_Startup_Readiness_Checklist.docx"
+    assert checklist_file.exists()
+    assert checklist_file.suffix == ".docx"
+
+    # Open and inspect the generated Word document (Startup Kit)
     doc = docx.Document(str(generated_file))
 
-    # Verify headings and text
+    # Verify headings and text in Startup Kit
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "TOPTAL PMO STARTUP KIT" in full_text
     assert "Pfizer Cloud Migration" in full_text
     assert "Startup Kit Readiness Score:" in full_text
 
-    # Verify Layer 1 is the first section and G-01 Executive Readiness Gateway comes AFTER Layer 3
+    # Verify Layer 1 is the first section and G-01 Executive Readiness Gateway is moved to second document
     score_idx = full_text.find("Startup Kit Readiness Score:")
     layer1_idx = full_text.find("Layer 1: Executive Startup Pack")
     layer2_idx = full_text.find("Layer 2: Delivery Control Pack")
@@ -43,10 +48,24 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert layer1_idx != -1, "Layer 1 must be present"
     assert layer2_idx != -1, "Layer 2 must be present"
     assert layer3_idx != -1, "Layer 3 must be present"
-    assert g01_idx != -1, "G-01 Executive Readiness Gateway must be present"
-    assert score_idx < layer1_idx < layer2_idx < layer3_idx < g01_idx, "Document sections must follow: Readiness Score -> Layer 1 -> Layer 2 -> Layer 3 -> G-01 Gateway"
+    assert g01_idx == -1, "G-01 Executive Readiness Gateway must be moved to the second document"
+    assert score_idx < layer1_idx < layer2_idx < layer3_idx, "Document sections must follow: Readiness Score -> Layer 1 -> Layer 2 -> Layer 3"
 
-    # Verify all Section 4 layer headings
+    # Open and inspect the second Word document (Startup Readiness Checklist)
+    cl_doc = docx.Document(str(checklist_file))
+    cl_text = "\n".join(p.text for p in cl_doc.paragraphs)
+    assert "Executive Readiness Gateway: Startup Readiness Checklist (G-01) & Gate Decision" in cl_text
+    assert "Startup Readiness Checklist Table (G-01)" in cl_text
+    assert "Commercial and Margin Guardrails" in cl_text
+
+    cl_table_content = "\n".join(" | ".join(c.text.strip() for c in r.cells) for tbl in cl_doc.tables for r in tbl.rows)
+    assert "G01-01" in cl_table_content
+    assert "G01-07" in cl_table_content
+    assert "Contract Type Implications" in cl_table_content
+    assert "Work-at-Risk Rules (PMO Lead owned)" in cl_table_content
+    assert "Change Control Triggers & Change Order Route" in cl_table_content
+
+    # Verify all Section 4 layer headings in Startup Kit
     assert "Layer 1: Executive Startup Pack" in full_text
     assert "Project Startup Charter" in full_text
     assert "SOW Interpretation Summary" in full_text
@@ -64,7 +83,8 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert "Talent Onboarding Record" in full_text
 
     # Verify tables
-    assert len(doc.tables) >= 5
+    assert len(doc.tables) >= 4
+    assert len(cl_doc.tables) >= 1
 
     table_texts = []
     for tbl in doc.tables:
@@ -78,8 +98,6 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert "ACT-" in all_table_content  # DEL-02 in-table action item annotation
     assert "M1" in all_table_content
     assert "2026-10-15" in all_table_content
-    assert "G01-01" in all_table_content  # Checklist item
-    assert "G01-07" in all_table_content  # Checklist item
 
 
 def test_checklist_renderer(sample_baseline, tmp_path):
@@ -232,7 +250,7 @@ def test_sow_interpretation_platform_environment_commitments_fallback(sample_sou
 
 
 def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
-    """Verify that after Layer 3 Artifacts, the Executive Readiness Gateway callout box and G-01 Checklist table are rendered as the final section."""
+    """Verify that the Executive Readiness Gateway callout box and G-01 Checklist table are rendered in the Startup Readiness Checklist document."""
     # Ensure baseline has action required items
     sample_baseline.open_questions = [
         "Confirm deliverable DEL-01 named owner and acceptance test criteria.",
@@ -242,15 +260,23 @@ def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
     out_file = generator.write_docx(sample_baseline, tmp_path / "Action_Order_Test.docx")
     doc = docx.Document(str(out_file))
 
-    # Verify order of body elements (paragraphs and tables in document flow)
+    # Verify main Startup Kit document does not contain the Checklist gateway heading (moved to second document)
+    main_text = "\n".join(p.text for p in doc.paragraphs)
+    assert "Executive Readiness Gateway: Startup Readiness Checklist (G-01)" not in main_text
+
+    # Verify second document contains the Gateway and Checklist
+    cl_file = tmp_path / "Action_Order_Test_Startup_Readiness_Checklist.docx"
+    assert cl_file.exists()
+    cl_doc = docx.Document(str(cl_file))
+
     body_elements = []
-    for child in doc.element.body:
+    for child in cl_doc.element.body:
         if child.tag.endswith("p"):
-            p = docx.text.paragraph.Paragraph(child, doc)
+            p = docx.text.paragraph.Paragraph(child, cl_doc)
             if p.text.strip():
                 body_elements.append(p.text.strip())
         elif child.tag.endswith("tbl"):
-            tbl = docx.table.Table(child, doc)
+            tbl = docx.table.Table(child, cl_doc)
             tbl_text = " ".join(c.text.strip() for row in tbl.rows for c in row.cells)
             if tbl_text:
                 body_elements.append(tbl_text)
@@ -260,32 +286,39 @@ def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
     gateway_heading_idx = full_body_text.find("Executive Readiness Gateway: Startup Readiness Checklist (G-01) & Gate Decision")
     checklist_heading_idx = full_body_text.find("Startup Readiness Checklist Table (G-01)")
 
-    assert action_heading_idx == -1, "Action Required heading must not be present in report"
-    assert gateway_heading_idx != -1, "Executive Readiness Gateway heading must be present"
-    assert checklist_heading_idx != -1, "Startup Readiness Checklist Table heading must be present"
+    assert action_heading_idx == -1, "Action Required heading must not be present in checklist document"
+    assert gateway_heading_idx != -1, "Executive Readiness Gateway heading must be present in checklist document"
+    assert checklist_heading_idx != -1, "Startup Readiness Checklist Table heading must be present in checklist document"
     assert gateway_heading_idx < checklist_heading_idx, (
         "Document flow order must strictly be: Executive Readiness Gateway -> Startup Readiness Checklist"
     )
 
-    # Find the tables
+    # Find the tables in checklist doc
     table_headers = []
-    for tbl in doc.tables:
+    for tbl in cl_doc.tables:
         header_row = [c.text.strip() for c in tbl.rows[0].cells]
         table_headers.append(header_row)
 
-    # Check for Action Required Table header (should be absent) and Checklist Table header (should be last)
-    action_tbl_idx = -1
     checklist_tbl_idx = -1
+    cg_tbl_idx = -1
+    questions_tbl_idx = -1
+    ambiguities_tbl_idx = -1
     for idx, headers in enumerate(table_headers):
-        if "Action ID" in headers and "Score Impact" in headers:
-            action_tbl_idx = idx
-        elif "Gate ID" in headers and "Gate Criterion" in headers:
+        if "Gate ID" in headers and "Gate Criterion" in headers:
             checklist_tbl_idx = idx
+        if "Commercial Guardrail Area" in headers:
+            cg_tbl_idx = idx
+        if "Question ID" in headers:
+            questions_tbl_idx = idx
+        if "Anomaly ID" in headers:
+            ambiguities_tbl_idx = idx
 
-    assert action_tbl_idx == -1, "Action Required Table must not be present in generated document"
-    assert checklist_tbl_idx != -1, "G-01 Checklist Table must be present in document"
-    assert checklist_tbl_idx == len(table_headers) - 1, (
-        f"G-01 Checklist Table (idx={checklist_tbl_idx}) must be the last table in document (total={len(table_headers)})"
+    assert checklist_tbl_idx != -1, "G-01 Checklist Table must be present in checklist document"
+    assert cg_tbl_idx != -1, "Commercial and Margin Guardrails Table must be present in checklist document"
+    assert questions_tbl_idx != -1, "Actionable Questions Table must be present in checklist document"
+    assert ambiguities_tbl_idx != -1, "Contract Ambiguities Table must be present in checklist document"
+    assert checklist_tbl_idx < cg_tbl_idx < questions_tbl_idx < ambiguities_tbl_idx, (
+        f"Document table order must strictly be G-01 Checklist (idx={checklist_tbl_idx}) -> Commercial Guardrails (idx={cg_tbl_idx}) -> Actionable Questions (idx={questions_tbl_idx}) -> Contract Ambiguities (idx={ambiguities_tbl_idx})"
     )
 
 
@@ -366,3 +399,177 @@ def test_report_text_sanitization(sample_baseline, tmp_path):
     cell_text = deliv_tbl.rows[1].cells[1].text
     assert "per the SOW" not in cell_text
     assert "Section 4" not in cell_text
+
+
+def test_write_documents_and_write_checklist_docx(sample_baseline, tmp_path):
+    """Verify write_documents and write_checklist_docx API methods."""
+    generator = DocxGenerator()
+
+    # Test write_checklist_docx directly with directory target
+    cl_dir_path = generator.write_checklist_docx(sample_baseline, tmp_path / "cl_dir")
+    assert cl_dir_path.exists()
+    assert cl_dir_path.name == "Pfizer_Cloud_Migration_Startup_Readiness_Checklist.docx"
+
+    # Test write_checklist_docx with explicit filename
+    cl_custom_file = tmp_path / "custom_checklist.docx"
+    cl_res = generator.write_checklist_docx(sample_baseline, cl_custom_file)
+    assert cl_res == cl_custom_file
+    assert cl_custom_file.exists()
+
+    # Test write_documents with directory
+    kit_p, cl_p = generator.write_documents(sample_baseline, tmp_path / "docs_dir")
+    assert kit_p.exists() and kit_p.name == "Pfizer_Cloud_Migration_Startup_Kit.docx"
+    assert cl_p.exists() and cl_p.name == "Pfizer_Cloud_Migration_Startup_Readiness_Checklist.docx"
+
+    # Test write_documents with explicit file path
+    target_kit = tmp_path / "custom_dir" / "ProjectX_Startup_Kit.docx"
+    kit_p2, cl_p2 = generator.write_documents(sample_baseline, target_kit)
+    assert kit_p2 == target_kit
+    assert kit_p2.exists()
+    assert cl_p2.exists()
+    assert cl_p2.name == "ProjectX_Startup_Readiness_Checklist.docx"
+
+
+def test_commercial_and_margin_guardrails_table_rendering_and_reingest(sample_baseline, tmp_path):
+    """Verify Commercial and Margin Guardrails table contents in checklist document and reingestion."""
+    from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
+    from src.core.models import CommercialGuardrail
+
+    sample_baseline.commercial_guardrails = CommercialGuardrail(
+        contract_type_implication="Managed delivery under Time and Materials governance rules.",
+        billing_consumption_assumption="Weekly timesheet approval and hourly/daily burn rate tracking against budget cap.",
+        staffing_assumption="Dedicated 3-person engineering team.",
+        commercial_exposure_note="Client dependency delays must be logged immediately.",
+        approved_work_rule="All milestones must map directly to contracted deliverables.",
+        non_approved_work_rule="No out-of-scope work without approved Change Order.",
+        work_at_risk_rule="Work-at-risk requires PMO Lead written sign-off.",
+        change_control_trigger="Material scope modifications or milestone shifts > 5 days.",
+        change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
+        budget_baseline="$250,000 USD Budget Cap",
+        variance_indicator="Green (<5% variance)",
+        margin_risk_indicator="Low",
+        escalation_threshold="Budget variance > 10% or milestone delay > 3 days"
+    )
+
+    generator = DocxGenerator()
+    kit_file, cl_file = generator.write_documents(sample_baseline, tmp_path / "CG_Test_Startup_Kit.docx")
+
+    assert cl_file.exists()
+    cl_doc = docx.Document(str(cl_file))
+
+    # Verify table headers and rows
+    cg_tbl = None
+    for tbl in cl_doc.tables:
+        headers = [c.text.strip() for c in tbl.rows[0].cells]
+        if "Commercial Guardrail Area" in headers:
+            cg_tbl = tbl
+            break
+
+    assert cg_tbl is not None, "Commercial and Margin Guardrails table must be present in checklist doc"
+    assert len(cg_tbl.rows) >= 9, f"Expected at least 9 rows in commercial guardrails table, got {len(cg_tbl.rows)}"
+
+    rows_text = [" | ".join(c.text.strip() for c in row.cells) for row in cg_tbl.rows]
+    all_cg_text = "\n".join(rows_text)
+
+    # Verify all 8 core requirements are present in the table
+    assert "Contract Type Implications" in all_cg_text
+    assert "Billing or Consumption Assumptions" in all_cg_text
+    assert "Staffing Assumptions & Commercial Exposure" in all_cg_text
+    assert "Approved & Non-Approved Work Rules" in all_cg_text
+    assert "Work-at-Risk Rules (PMO Lead owned)" in all_cg_text
+    assert "PMO Lead (Exclusive Sign-off Authority)" in all_cg_text
+    assert "Change Control Triggers & Change Order Route" in all_cg_text
+    assert "PMO Lead leads → DM aligns client → Client approves → Contracting issues change order" in all_cg_text
+    assert "Budget vs. Actuals & Variance Baseline" in all_cg_text
+    assert "$250,000 USD Budget Cap" in all_cg_text
+    assert "Margin Risk Indicators" in all_cg_text
+    assert "Internal Escalation Thresholds" in all_cg_text
+
+    # Verify reingestion round-trip parses commercial guardrails from companion document
+    parser = StartupKitDocxParser()
+    reparsed = parser.parse_startup_kit_docx(kit_file)
+    assert reparsed.commercial_guardrails is not None
+    assert "Time and Materials" in reparsed.commercial_guardrails.contract_type_implication
+    assert "Weekly timesheet" in reparsed.commercial_guardrails.billing_consumption_assumption
+    assert "PMO Lead" in reparsed.commercial_guardrails.work_at_risk_rule
+    assert "PMO Lead leads" in reparsed.commercial_guardrails.change_order_route
+
+
+def test_actionable_questions_and_contract_ambiguities_tables_rendering_and_reingest(sample_baseline, tmp_path):
+    """Verify Actionable Questions and Contract Ambiguities tables in checklist document and round-trip reingestion."""
+    from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
+    from src.core.models import ContractAmbiguityItem
+
+    sample_baseline.open_questions = [
+        "What is the target sign-off approver for DEL-01? [CONFIRMATION REQUIRED]",
+        "Who is the primary client escalation authority for security incidents? [CONFIRMATION REQUIRED]",
+    ]
+    sample_baseline.contract_ambiguities = [
+        ContractAmbiguityItem(
+            anomaly_id="AMB-01",
+            category="Date Conflict",
+            conflicting_clauses="Proposal schedule specifies 2026-10-15 while SOW states 2026-10-31.",
+            risk_impact="2-week delivery schedule variance.",
+            recommended_clarification="Confirm 2026-10-31 as binding delivery milestone date.",
+            status="Open"
+        ),
+        ContractAmbiguityItem(
+            anomaly_id="AMB-02",
+            category="Ambiguous Acceptance",
+            conflicting_clauses="Section 5 states subjective acceptance without quantifiable metrics.",
+            risk_impact="Client sign-off disputes during UAT.",
+            recommended_clarification="Agree on automated test pass threshold as acceptance gate.",
+            status="Open"
+        )
+    ]
+
+    generator = DocxGenerator()
+    kit_file, cl_file = generator.write_documents(sample_baseline, tmp_path / "Tables_Test_Startup_Kit.docx")
+
+    assert cl_file.exists()
+    cl_doc = docx.Document(str(cl_file))
+
+    # Verify Actionable Questions table
+    q_tbl = None
+    amb_tbl = None
+    for tbl in cl_doc.tables:
+        headers = [c.text.strip() for c in tbl.rows[0].cells]
+        if "Question ID" in headers:
+            q_tbl = tbl
+        if "Anomaly ID" in headers:
+            amb_tbl = tbl
+
+    assert q_tbl is not None, "Actionable Questions table must be present in checklist document"
+    assert amb_tbl is not None, "Contract Ambiguities table must be present in checklist document"
+
+    # Verify Actionable Questions table rows & contents
+    assert len(q_tbl.rows) == 3  # Header + 2 questions
+    q_rows_text = [" | ".join(c.text.strip() for c in r.cells) for r in q_tbl.rows]
+    all_q_text = "\n".join(q_rows_text)
+    assert "Q-01" in all_q_text
+    assert "target sign-off approver" in all_q_text
+    assert "Q-02" in all_q_text
+    assert "security incidents" in all_q_text
+
+    # Verify Contract Ambiguities table rows & contents
+    assert len(amb_tbl.rows) == 3  # Header + 2 ambiguities
+    amb_rows_text = [" | ".join(c.text.strip() for c in r.cells) for r in amb_tbl.rows]
+    all_amb_text = "\n".join(amb_rows_text)
+    assert "AMB-01" in all_amb_text
+    assert "Date Conflict" in all_amb_text
+    assert "2026-10-15" in all_amb_text
+    assert "AMB-02" in all_amb_text
+    assert "Ambiguous Acceptance" in all_amb_text
+
+    # Verify reingestion round-trip parses open questions and contract ambiguities
+    parser = StartupKitDocxParser()
+    reparsed = parser.parse_startup_kit_docx(kit_file)
+
+    assert len(reparsed.open_questions) >= 2
+    assert any("target sign-off approver" in q for q in reparsed.open_questions)
+
+    assert len(reparsed.contract_ambiguities) == 2
+    assert reparsed.contract_ambiguities[0].anomaly_id == "AMB-01"
+    assert reparsed.contract_ambiguities[0].category == "Date Conflict"
+    assert reparsed.contract_ambiguities[1].anomaly_id == "AMB-02"
+    assert reparsed.contract_ambiguities[1].category == "Ambiguous Acceptance"
