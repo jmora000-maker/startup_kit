@@ -110,27 +110,28 @@ RAID_COL_WIDTHS = [
     10,  # A: RAID ID
     12,  # B: Type
     45,  # C: Description
-    35,  # D: Contract Reference (v3 A7)
+    35,  # D: Contract Reference (v3 A7, v4 A16)
     22,  # E: Category
     26,  # F: Workstream
     16,  # G: Linked Milestone
     16,  # H: Linked WBS Code
-    22,  # I: Owner
-    12,  # J: Probability
-    12,  # K: Impact
-    12,  # L: Rating (v3 A11)
-    12,  # M: Score (P x I)
-    35,  # N: Trigger / Early Warning
-    35,  # O: Mitigation / Response
-    13,  # P: Due Date
-    13,  # Q: Status
-    13,  # R: Date Raised
-    13,  # S: Last Updated
-    20,  # T: Linked Decision
-    26,  # U: Linked Dependency / Assumption
-    26,  # V: Source
-    12,  # W: Source ID
-    40,  # X: Notes
+    18,  # I: Linked Deliverables (v4 A17)
+    22,  # J: Owner
+    12,  # K: Probability
+    12,  # L: Impact
+    12,  # M: Rating (v3 A11)
+    12,  # N: Score (P x I)
+    35,  # O: Trigger / Early Warning
+    35,  # P: Mitigation / Response
+    13,  # Q: Due Date
+    13,  # R: Status
+    13,  # S: Date Raised
+    13,  # T: Last Updated
+    20,  # U: Linked Decision
+    26,  # V: Linked Dependency / Assumption
+    26,  # W: Source
+    12,  # X: Source ID
+    40,  # Y: Notes
 ]
 
 
@@ -581,7 +582,7 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
 
 
 def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
-    """Render RAID Log worksheet (v3 A7, A8, A11, A12)."""
+    """Render RAID Log worksheet (v3 A7, A8, A11, A12, v4 A16, A17, A18, A19)."""
     ws = wb.create_sheet(title="RAID Log")
     ws.views.sheetView[0].showGridLines = True
 
@@ -589,7 +590,7 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
 
     headers = [
         "RAID ID", "Type", "Description", "Contract Reference", "Category", "Workstream",
-        "Linked Milestone", "Linked WBS Code", "Owner", "Probability", "Impact",
+        "Linked Milestone", "Linked WBS Code", "Linked Deliverables", "Owner", "Probability", "Impact",
         "Rating", "Score (P x I)", "Trigger / Early Warning", "Mitigation / Response",
         "Due Date", "Status", "Date Raised", "Last Updated", "Linked Decision",
         "Linked Dependency / Assumption", "Source", "Source ID", "Notes"
@@ -615,23 +616,24 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
         ws.cell(row=r, column=6, value="Cross-phase")
         ws.cell(row=r, column=7, value="")
         ws.cell(row=r, column=8, value="")
-        ws.cell(row=r, column=9, value="Talent PM")
-        ws.cell(row=r, column=10, value="Low")
+        ws.cell(row=r, column=9, value="")
+        ws.cell(row=r, column=10, value="Talent PM")
         ws.cell(row=r, column=11, value="Low")
-        ws.cell(row=r, column=12, value=f'=IF(OR(J{r}="",K{r}=""),"",IF(OR(AND(J{r}="High",K{r}="High"),AND(J{r}="High",K{r}="Medium"),AND(J{r}="Medium",K{r}="High")),"High",IF(AND(J{r}="Low",K{r}="Low"),"Low","Medium")))')
-        ws.cell(row=r, column=13, value=f'=IF(OR(J{r}="",K{r}=""),"",(IF(J{r}="High",3,IF(J{r}="Medium",2,1)))*(IF(K{r}="High",3,IF(K{r}="Medium",2,1))))')
-        ws.cell(row=r, column=14, value="")
+        ws.cell(row=r, column=12, value="Low")
+        ws.cell(row=r, column=13, value=f'=IF(OR(K{r}="",L{r}=""),"",IF(OR(AND(K{r}="High",L{r}="High"),AND(K{r}="High",L{r}="Medium"),AND(K{r}="Medium",L{r}="High")),"High",IF(AND(K{r}="Low",L{r}="Low"),"Low","Medium")))')
+        ws.cell(row=r, column=14, value=f'=IF(OR(K{r}="",L{r}=""),"",(IF(K{r}="High",3,IF(K{r}="Medium",2,1)))*(IF(L{r}="High",3,IF(L{r}="Medium",2,1))))')
         ws.cell(row=r, column=15, value="")
-        ws.cell(row=r, column=16, value=None)
-        ws.cell(row=r, column=17, value="Open")
-        ws.cell(row=r, column=18, value=model.generation_date)
+        ws.cell(row=r, column=16, value="")
+        ws.cell(row=r, column=17, value=None)
+        ws.cell(row=r, column=18, value="Open")
         ws.cell(row=r, column=19, value=model.generation_date)
-        ws.cell(row=r, column=20, value="")
+        ws.cell(row=r, column=20, value=model.generation_date)
         ws.cell(row=r, column=21, value="")
-        ws.cell(row=r, column=22, value="PM Best Practice")
-        ws.cell(row=r, column=23, value="")
-        ws.cell(row=r, column=24, value="Placeholder RAID item")
-        _apply_row_styling(ws, r, FONT_BODY, max_col=24)
+        ws.cell(row=r, column=22, value="")
+        ws.cell(row=r, column=23, value="PM Best Practice")
+        ws.cell(row=r, column=24, value="")
+        ws.cell(row=r, column=25, value="Placeholder RAID item")
+        _apply_row_styling(ws, r, FONT_BODY, max_col=25)
         row_idx = 7
     else:
         for r_row in model.raid_rows:
@@ -644,42 +646,47 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
             ws.cell(row=r, column=6, value=_clean_cell_str(r_row.workstream))
             ws.cell(row=r, column=7, value=_clean_cell_str(r_row.linked_milestone))
             ws.cell(row=r, column=8, value=_clean_cell_str(r_row.linked_wbs_code))
-            ws.cell(row=r, column=9, value=_clean_cell_str(r_row.owner))
-            ws.cell(row=r, column=10, value=_clean_cell_str(r_row.probability))
-            ws.cell(row=r, column=11, value=_clean_cell_str(r_row.impact))
+            ws.cell(row=r, column=9, value=_clean_cell_str(r_row.linked_deliverables))
+            ws.cell(row=r, column=10, value=_clean_cell_str(r_row.owner))
+            ws.cell(row=r, column=11, value=_clean_cell_str(r_row.probability))
+            ws.cell(row=r, column=12, value=_clean_cell_str(r_row.impact))
 
-            # Col L (12): Rating (v3 A11)
+            # Col M (13): Rating (v3 A11)
             if r_row.severity:
-                ws.cell(row=r, column=12, value=_clean_cell_str(r_row.severity))
+                ws.cell(row=r, column=13, value=_clean_cell_str(r_row.severity))
             else:
-                ws.cell(row=r, column=12, value=f'=IF(OR(J{r}="",K{r}=""),"",IF(OR(AND(J{r}="High",K{r}="High"),AND(J{r}="High",K{r}="Medium"),AND(J{r}="Medium",K{r}="High")),"High",IF(AND(J{r}="Low",K{r}="Low"),"Low","Medium")))')
+                ws.cell(row=r, column=13, value=f'=IF(OR(K{r}="",L{r}=""),"",IF(OR(AND(K{r}="High",L{r}="High"),AND(K{r}="High",L{r}="Medium"),AND(K{r}="Medium",L{r}="High")),"High",IF(AND(K{r}="Low",L{r}="Low"),"Low","Medium")))')
 
-            # Col M (13): Score (P x I) Formula
-            ws.cell(row=r, column=13, value=f'=IF(OR(J{r}="",K{r}=""),"",(IF(J{r}="High",3,IF(J{r}="Medium",2,1)))*(IF(K{r}="High",3,IF(K{r}="Medium",2,1))))')
+            # Col N (14): Score (P x I) Formula
+            ws.cell(row=r, column=14, value=f'=IF(OR(K{r}="",L{r}=""),"",(IF(K{r}="High",3,IF(K{r}="Medium",2,1)))*(IF(L{r}="High",3,IF(L{r}="Medium",2,1))))')
 
-            ws.cell(row=r, column=14, value=_clean_cell_str(r_row.trigger_or_early_warning))
-            ws.cell(row=r, column=15, value=_clean_cell_str(r_row.mitigation_or_response))
+            ws.cell(row=r, column=15, value=_clean_cell_str(r_row.trigger_or_early_warning))
+            ws.cell(row=r, column=16, value=_clean_cell_str(r_row.mitigation_or_response))
 
-            cell_p = ws.cell(row=r, column=16, value=r_row.due_date)
+            cell_p = ws.cell(row=r, column=17, value=r_row.due_date)
             cell_p.number_format = "YYYY-MM-DD"
 
-            ws.cell(row=r, column=17, value=_clean_cell_str(r_row.status))
+            ws.cell(row=r, column=18, value=_clean_cell_str(r_row.status))
 
-            cell_r = ws.cell(row=r, column=18, value=r_row.date_raised)
-            cell_s = ws.cell(row=r, column=19, value=r_row.last_updated)
+            cell_r = ws.cell(row=r, column=19, value=r_row.date_raised)
+            cell_s = ws.cell(row=r, column=20, value=r_row.last_updated)
             cell_r.number_format = "YYYY-MM-DD"
             cell_s.number_format = "YYYY-MM-DD"
 
-            ws.cell(row=r, column=20, value=_clean_cell_str(r_row.linked_decision))
-            ws.cell(row=r, column=21, value=_clean_cell_str(r_row.linked_dependency_or_assumption))
-            ws.cell(row=r, column=22, value=_clean_cell_str(r_row.source))
-            ws.cell(row=r, column=23, value=_clean_cell_str(r_row.source_id))
-            ws.cell(row=r, column=24, value=_clean_cell_str(r_row.notes))
+            ws.cell(row=r, column=21, value=_clean_cell_str(r_row.linked_decision))
+            ws.cell(row=r, column=22, value=_clean_cell_str(r_row.linked_dependency_or_assumption))
+            ws.cell(row=r, column=23, value=_clean_cell_str(r_row.source))
+            ws.cell(row=r, column=24, value=_clean_cell_str(r_row.source_id))
+            ws.cell(row=r, column=25, value=_clean_cell_str(r_row.notes))
 
-            _apply_row_styling(ws, r, FONT_BODY, max_col=24)
+            _apply_row_styling(ws, r, FONT_BODY, max_col=25)
+
+            # Owner warning fill (v4 A18)
+            if r_row.owner == "[UNASSIGNED - TO BE CONFIRMED]" or "[UNASSIGNED" in r_row.owner.upper():
+                ws.cell(row=r, column=10).fill = FILL_WARNING
 
             # Center alignment
-            for col_c in (1, 2, 5, 7, 8, 10, 11, 12, 13, 16, 17, 18, 19, 23):
+            for col_c in (1, 2, 5, 7, 8, 9, 11, 12, 13, 14, 17, 18, 19, 20, 24):
                 ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
 
             row_idx += 1
@@ -694,9 +701,9 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
     ws.freeze_panes = "E6"
 
     if last_row >= 5:
-        ws.auto_filter.ref = f"A5:X{last_row}"
+        ws.auto_filter.ref = f"A5:Y{last_row}"
 
-    # Data Validations (v3 A7 shifted columns, v3 A12 List_Milestone_IDs)
+    # Data Validations (v3 A7 shifted columns, v3 A12 List_Milestone_IDs, v4 A17 25 cols)
     if last_row >= 6:
         dv_type = DataValidation(type="list", formula1="=List_RAID_Types", allow_blank=True)
         ws.add_data_validation(dv_type)
@@ -716,36 +723,36 @@ def _write_raid_sheet(wb: Workbook, model: WorkbookModel):
 
         dv_prob = DataValidation(type="list", formula1="=List_Probabilities", allow_blank=True)
         ws.add_data_validation(dv_prob)
-        dv_prob.add(f"J6:J{last_row}")
+        dv_prob.add(f"K6:K{last_row}")
 
         dv_imp = DataValidation(type="list", formula1="=List_Impacts", allow_blank=True)
         ws.add_data_validation(dv_imp)
-        dv_imp.add(f"K6:K{last_row}")
+        dv_imp.add(f"L6:L{last_row}")
 
         dv_status = DataValidation(type="list", formula1="=List_RAID_Statuses", allow_blank=True)
         ws.add_data_validation(dv_status)
-        dv_status.add(f"Q6:Q{last_row}")
+        dv_status.add(f"R6:R{last_row}")
 
         # Rating & Status Conditional Formatting
         ws.conditional_formatting.add(
-            f"L6:L{last_row}",
+            f"M6:M{last_row}",
             CellIsRule(operator="equal", formula=['"High"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
         )
         ws.conditional_formatting.add(
-            f"L6:L{last_row}",
+            f"M6:M{last_row}",
             CellIsRule(operator="equal", formula=['"Medium"'], fill=FILL_WARNING, font=Font(color="7D4A00"))
         )
         ws.conditional_formatting.add(
-            f"L6:L{last_row}",
+            f"M6:M{last_row}",
             CellIsRule(operator="equal", formula=['"Low"'], fill=FILL_LIGHT_GREEN, font=Font(color="1E4620"))
         )
 
         ws.conditional_formatting.add(
-            f"Q6:Q{last_row}",
+            f"R6:R{last_row}",
             CellIsRule(operator="equal", formula=['"Closed"'], fill=FILL_LIGHT_BG, font=FONT_MUTED)
         )
         ws.conditional_formatting.add(
-            f"Q6:Q{last_row}",
+            f"R6:R{last_row}",
             CellIsRule(operator="equal", formula=['"Escalated"'], fill=FILL_LIGHT_RED, font=Font(color="9C0006", bold=True))
         )
 

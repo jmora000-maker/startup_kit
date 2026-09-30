@@ -133,9 +133,18 @@ class SOWInterpretationDomainExtractor(IDomainExtractor):
 class ScopeDecompositionDomainExtractor(IDomainExtractor):
     """Extracts scope decomposition and backlog seed work packages."""
 
-    def extract(self, documents: List[ExtractedDocument], llm_client: ILLMClient) -> ScopeDecompositionExtraction:
+    def extract(
+        self,
+        documents: List[ExtractedDocument],
+        llm_client: ILLMClient,
+        deliverables: Optional[List[Any]] = None,
+    ) -> ScopeDecompositionExtraction:
         docs_text = format_documents_for_prompt(documents)
-        prompt = SCOPE_DECOMPOSITION_PROMPT.format(documents_text=docs_text)
+        deliv_text = (
+            "\n".join(f"- {getattr(d, 'id', '')}: {getattr(d, 'name', '') or getattr(d, 'description', '')}" for d in deliverables)
+            if deliverables else "No extracted deliverables available."
+        )
+        prompt = SCOPE_DECOMPOSITION_PROMPT.format(documents_text=docs_text, deliverables_text=deliv_text)
         return llm_client.generate_structured(
             prompt=prompt,
             schema=ScopeDecompositionExtraction,

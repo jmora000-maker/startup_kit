@@ -104,10 +104,11 @@ def compute_score(item_tokens: Sequence[str], target_tokens: Sequence[str], idf_
     if not item_unique:
         return 0.0
 
-    denom = sum(idf_dict.get(t, 0.0) for t in item_unique)
+    default_idf = math.log(N + 1) if N > 0 else 1.0
+    denom = sum(idf_dict.get(t, default_idf) for t in item_unique)
     if denom == 0.0:
         return 0.0
-    num = sum(idf_dict.get(t, 0.0) for t in item_unique if t in target_unique)
+    num = sum(idf_dict.get(t, default_idf) for t in item_unique if t in target_unique)
     return num / denom
 
 
@@ -169,16 +170,95 @@ def _extract_milestone_n_from_text(text: str) -> List[int]:
     return [int(m) for m in matches]
 
 
+def detect_backlog_phase_order(
+    work_packages: Sequence[WorkPackageSeed],
+    milestones: Sequence[Milestone],
+    deliverables: Optional[Sequence[Deliverable]] = None,
+) -> Tuple[bool, List[str]]:
+    """Detect if backlog parent IDs encode phases according to spec v4 A14.
+    
+    Conditions:
+      1. Number of distinct parent IDs equals the number of milestones.
+      2. Ordered by preliminary_sequence, parent IDs never decrease.
+      3. Parent IDs are exactly the first N deliverable IDs in natural order.
+      
+    Returns: (is_detected, distinct_parents)
+    """
+    if not work_packages or not milestones:
+        return False, []
+
+    num_ms = len(milestones)
+    # Sort work packages by preliminary_sequence (treating None as 999999)
+    sorted_wps = sorted(
+        work_packages,
+        key=lambda wp: (getattr(wp, "preliminary_sequence", None) if getattr(wp, "preliminary_sequence", None) is not None else 999999, natural_sort_key(wp.id))
+    )
+
+    parents = [wp.parent_deliverable_id.strip() for wp in sorted_wps if wp.parent_deliverable_id and wp.parent_deliverable_id.strip()]
+    if not parents:
+        return False, []
+
+    distinct_parents: List[str] = []
+    for p in parents:
+        if p not in distinct_parents:
+            distinct_parents.append(p)
+
+    # Condition 1: distinct parents count == number of milestones
+    if len(distinct_parents) != num_ms:
+        return False, []
+
+    # Condition 2: non-decreasing order
+    parent_indices = [distinct_parents.index(p) for p in parents]
+    for i in range(len(parent_indices) - 1):
+        if parent_indices[i] > parent_indices[i + 1]:
+            return False, []
+
+    # Condition 3: the parent IDs are exactly the first N deliverable IDs in natural order
+    if deliverables:
+        sorted_delivs = sorted(deliverables, key=lambda d: natural_sort_key(d.id))
+        expected_parents = [d.id for d in sorted_delivs[:num_ms]]
+    else:
+        expected_parents = [f"DEL-{i:02d}" for i in range(1, num_ms + 1)]
+
+    if distinct_parents != expected_parents:
+        # Also check 1-digit format if applicable e.g. DEL-1, DEL-2...
+        expected_1digit = [f"DEL-{i}" for i in range(1, num_ms + 1)]
+        if distinct_parents != expected_1digit:
+            return False, []
+
+    return True, distinct_parents
+
+
 def map_work_packages_to_milestones(
     work_packages: Sequence[WorkPackageSeed],
     milestones: Sequence[Milestone],
     parsed_phases: Dict[str, ParsedMilestonePhase],
     contracted_deliverables: Optional[Sequence[str]] = None,
-) -> Dict[str, Milestone]:
-    """Map each work package to a milestone using rules 1, 2, and 3."""
+    deliverables: Optional[Sequence[Deliverable]] = None,
+) -> Tuple[Dict[str, Milestone], Dict[str, str], bool]:
+    """Map each work package to a milestone using rules 1, 2, and 3, or backlog phase order (A14).
+    
+    Returns: (wp_to_ms, wp_to_basis, is_phase_order_detected)
+    """
     wp_to_ms: Dict[str, Milestone] = {}
+    wp_to_basis: Dict[str, str] = {}
     if not milestones:
-        return wp_to_ms
+        return wp_to_ms, wp_to_basis, False
+
+    is_phase_order, distinct_parents = detect_backlog_phase_order(work_packages, milestones, deliverables)
+    if is_phase_order:
+        logger.info("Backlog parents encode phases, not deliverables; using them as phase order.")
+        for wp in work_packages:
+            p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
+            if p_id in distinct_parents:
+                idx = distinct_parents.index(p_id)
+                ms = milestones[idx]
+                wp_to_ms[wp.id] = ms
+                wp_to_basis[wp.id] = "Backlog phase order"
+            else:
+                wp_to_ms[wp.id] = milestones[-1]
+                wp_to_basis[wp.id] = "Fallback"
+        return wp_to_ms, wp_to_basis, True
 
     fallback_ms = milestones[-1]
     ms_by_id = {m.id: m for m in milestones}
@@ -197,6 +277,7 @@ def map_work_packages_to_milestones(
 
     for wp in work_packages:
         mapped: Optional[Milestone] = None
+        basis: Optional[str] = None
         wp_title = wp.title or ""
 
         # Rule 1: Phase code in title
@@ -204,6 +285,7 @@ def map_work_packages_to_milestones(
         for pc in phase_codes:
             if pc in ms_by_phase:
                 mapped = ms_by_phase[pc]
+                basis = "Phase code"
                 break
 
         # Rule 2: ID mention in milestone description / deps / assumptions
@@ -213,6 +295,7 @@ def map_work_packages_to_milestones(
                 text_block = f"{m.description or ''} {' '.join(m.key_dependencies or [])} {' '.join(m.critical_path_assumptions or [])}"
                 if wp_id_pat.search(text_block):
                     mapped = m
+                    basis = "Referenced by milestone"
                     break
 
         # Rule 3: Scope match (score >= 0.20)
@@ -227,10 +310,12 @@ def map_work_packages_to_milestones(
                     best_ms = m
             if best_ms is not None:
                 mapped = best_ms
+                basis = "Scope match"
 
         wp_to_ms[wp.id] = mapped if mapped is not None else fallback_ms
+        wp_to_basis[wp.id] = basis if basis is not None else "Fallback"
 
-    return wp_to_ms
+    return wp_to_ms, wp_to_basis, False
 
 
 def map_deliverables_to_milestones_v2(
@@ -275,7 +360,9 @@ def map_deliverables_to_milestones_v2(
             ms_by_num[int(num_match.group(0))] = m
 
     # 1. Map work packages to milestones first
-    wp_to_ms = map_work_packages_to_milestones(work_packages, milestones, parsed_phases, contracted_deliverables)
+    wp_to_ms, wp_to_basis, is_phase_order = map_work_packages_to_milestones(
+        work_packages, milestones, parsed_phases, contracted_deliverables, deliverables
+    )
 
     # 2. Pre-compute IDF for milestone scopes using v3 enhanced scope text
     ms_scope_dict = build_milestone_scope_text_for_scoring(milestones, parsed_phases, contracted_deliverables)
@@ -321,6 +408,22 @@ def map_deliverables_to_milestones_v2(
                     mapped = m
                     basis = "Referenced by milestone"
                     break
+
+        # Rule 2.5: Strong backlog match for deliverables (v4 A14)
+        if mapped is None and work_packages:
+            d_tokens = tokenize_v2(d_name)
+            best_strong_score = 0.0
+            best_strong_wp: Optional[WorkPackageSeed] = None
+            for idx, wp in enumerate(work_packages):
+                score = compute_score(d_tokens, wp_tokens_list[idx], wp_idf_dict, N_wp)
+                if score > best_strong_score:
+                    best_strong_score = score
+                    best_strong_wp = wp
+            if best_strong_score >= 0.75 and best_strong_wp is not None:
+                if best_strong_wp.id in wp_to_ms:
+                    mapped = wp_to_ms[best_strong_wp.id]
+                    basis = f"Backlog match ({best_strong_wp.id})"
+                    deliv_to_matched_wp[d.id] = best_strong_wp.id
 
         # Rule 3: Scope match (score >= 0.20, ties to earlier milestone)
         if mapped is None:
@@ -410,7 +513,7 @@ def map_work_packages_to_deliverables(
         for idx, d in enumerate(deliverables_in_milestone):
             d_tokens = corpus[idx]
             score = compute_score(wp_tokens, d_tokens, idf_dict, N)
-            if score >= 0.249:
+            if score >= 0.199:
                 if score > best_score:
                     best_score = score
                     best_deliv = d

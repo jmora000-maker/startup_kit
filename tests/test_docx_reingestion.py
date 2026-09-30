@@ -616,6 +616,7 @@ def test_docx_reingestion_rescores_with_engine(tmp_path: Path):
     for tbl in doc.tables:
         if len(tbl.rows) > 1 and any("acceptance criteria" in c.text.lower() for c in tbl.rows[0].cells):
             tbl.rows[1].cells[2].text = "Formally approved by Client Architect"
+            tbl.rows[1].cells[4].text = "Client Lead Approver"
             tbl.rows[1].cells[5].text = "Lead Architect Jane"
         if len(tbl.rows) > 1 and any("gate criterion" in c.text.lower() for c in tbl.rows[0].cells):
             tbl.rows[1].cells[3].text = "Complete"
@@ -676,6 +677,7 @@ def test_reingest_clears_resolved_action_items(tmp_path: Path):
     for tbl in doc.tables:
         if len(tbl.rows) > 1 and any("acceptance criteria" in c.text.lower() for c in tbl.rows[0].cells):
             tbl.rows[1].cells[2].text = "Explicit sign-off criteria verified"
+            tbl.rows[1].cells[4].text = "Client Lead Approver"
             tbl.rows[1].cells[5].text = "Jane Architect"
         if len(tbl.rows) > 1 and any("gate criterion" in c.text.lower() for c in tbl.rows[0].cells):
             tbl.rows[1].cells[3].text = "Complete"

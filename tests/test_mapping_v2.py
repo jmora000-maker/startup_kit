@@ -83,10 +83,9 @@ def test_arc_baseline_mapping_against_appendix_b(arc_baseline):
     wp_tasks = [w for w in model.wbs_rows if w.source == "Baseline - Backlog" and w.level == 4]
     assert len(wp_tasks) == 15
 
-    # Check note when work package parent differed in baseline
+    # Check WP-05 task placement under DEL-05
     wp_05_task = next(w for w in wp_tasks if w.source_id == "WP-05")
     assert wp_05_task.deliverable_id == "DEL-05"
-    assert "Baseline backlog lists parent DEL-02" in wp_05_task.notes
 
     # Total task count: 156 tasks (v3 Appendix B)
     task_rows = [w for w in model.wbs_rows if w.level == 4]

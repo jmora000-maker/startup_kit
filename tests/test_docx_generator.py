@@ -14,6 +14,27 @@ def test_sanitize_filename():
     assert sanitize_filename("") == "Project"
 
 
+def test_b6_cell_text_formatting_preserves_parentheses_and_text():
+    """Verify B6 fix preserves balanced parentheses, brackets, and bare words like undefined (spec v4 B6)."""
+    from src.generators.docx_generator import format_cell_with_action
+    
+    test_cases = [
+        "SLA Met (Yes)",
+        "Delivery Manager (Toptal)",
+        "Client's designated approvers [NAMES TO BE CONFIRMED]",
+        "The number of re-test cycles is undefined.",
+        "Not specified (TBD); reviewed at the Milestone Acceptance Review",
+    ]
+
+    doc = docx.Document()
+    table = doc.add_table(rows=len(test_cases), cols=1)
+
+    for idx, text in enumerate(test_cases):
+        cell = table.cell(idx, 0)
+        format_cell_with_action(cell, text, action=None, is_warning=False)
+        assert cell.text.strip() == text
+
+
 def test_docx_generator_output(sample_baseline, tmp_path):
     output_dir = tmp_path / "output"
     generator = DocxGenerator()

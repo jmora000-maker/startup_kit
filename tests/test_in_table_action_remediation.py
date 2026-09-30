@@ -259,7 +259,7 @@ def test_in_table_annotations_and_shading_rendering(baseline_with_all_action_typ
         if any("mitigation / response" in c.text.lower() for c in t.rows[0].cells)
     )
     row_raid = raid_table.rows[1]
-    assert "[ACT-" in row_raid.cells[3].text
+    assert any("[ACT-" in c.text for c in row_raid.cells)
 
     # 5. SOW interpretation summary table verification
     sow_table = next(
@@ -350,8 +350,11 @@ def test_table_cell_remediation_rescores_to_green(baseline_with_all_action_types
         t for t in doc.tables
         if any("mitigation / response" in c.text.lower() for c in t.rows[0].cells)
     )
-    raid_table.rows[1].cells[3].text = "Marcus Vance"
-    raid_table.rows[1].cells[4].text = "Pre-provisioned local mock container environment"
+    r_headers = [c.text.strip().lower() for c in raid_table.rows[0].cells]
+    r_owner_idx = next(i for i, h in enumerate(r_headers) if "owner" in h)
+    r_mit_idx = next(i for i, h in enumerate(r_headers) if "mitigation" in h or "response" in h)
+    raid_table.rows[1].cells[r_owner_idx].text = "Marcus Vance"
+    raid_table.rows[1].cells[r_mit_idx].text = "Pre-provisioned local mock container environment"
 
     # 5. Edit G-01 Checklist Table: mark items Complete
     checklist_file = tmp_path / "Enterprise_Cloud_Migration_Startup_Readiness_Checklist.docx"

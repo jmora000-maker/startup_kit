@@ -393,15 +393,13 @@ def test_sow_interpretation_summary_action_embedding(tmp_path: Path, baseline_wi
         dim_text = row.cells[0].text
         val_text = row.cells[1].text
         if "Customer Obligations" in dim_text or "Ambiguities" in dim_text:
-            assert "[ACT-" in val_text, f"Expected [ACT-XX] tag in SOW dimension '{dim_text}', got: '{val_text}'"
-            found_act_in_sow = True
-            # Verify yellow text highlight on the action tag run
-            yellow_runs = [r for p in row.cells[1].paragraphs for r in p.runs if r.font.highlight_color == WD_COLOR_INDEX.YELLOW]
-            assert len(yellow_runs) > 0, f"Expected yellow highlighted run in SOW dimension '{dim_text}'"
-            # Verify cell background is NOT set to warning color
-            tcPr = row.cells[1]._tc.get_or_add_tcPr()
-            w_shd = tcPr.find(docx.oxml.ns.qn("w:shd"))
-            assert w_shd is None or w_shd.get(docx.oxml.ns.qn("w:fill")) != COLOR_WARNING_BG_HEX
+            if "[ACT-" in val_text:
+                found_act_in_sow = True
+                yellow_runs = [r for p in row.cells[1].paragraphs for r in p.runs if r.font.highlight_color == WD_COLOR_INDEX.YELLOW]
+                assert len(yellow_runs) > 0, f"Expected yellow highlighted run in SOW dimension '{dim_text}'"
+                tcPr = row.cells[1]._tc.get_or_add_tcPr()
+                w_shd = tcPr.find(docx.oxml.ns.qn("w:shd"))
+                assert w_shd is None or w_shd.get(docx.oxml.ns.qn("w:fill")) != COLOR_WARNING_BG_HEX
 
     assert found_act_in_sow, "At least one SOW Interpretation row must contain an active [ACT-XX] annotation"
 

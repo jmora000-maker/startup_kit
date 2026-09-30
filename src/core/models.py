@@ -261,6 +261,7 @@ class Milestone(BaseModel):
 
 class RiskAssumption(BaseModel):
     """Risk, Assumption, Issue, or Dependency (RAID) item."""
+    id: Optional[str] = None
     type: RAIDType = "Risk"
     description: str = ""
     owner: str = "Unassigned"
@@ -326,7 +327,7 @@ class DecisionItem(BaseModel):
 class WorkPackageSeed(BaseModel):
     """Scope decomposition / backlog seed item."""
     id: str = "WP-01"
-    parent_deliverable_id: str = "DEL-01"
+    parent_deliverable_id: Optional[str] = "DEL-01"
     title: str = ""
     description: str = ""
     preliminary_sequence: int = 1
@@ -335,6 +336,7 @@ class WorkPackageSeed(BaseModel):
     linked_milestones: List[str] = Field(default_factory=list)
     linked_acceptance_items: List[str] = Field(default_factory=list)
     uncertain_scope: bool = False
+    sow_reference: Optional[str] = None
     status: str = "Draft"
     linked_action_id: Optional[str] = Field(
         default=None,

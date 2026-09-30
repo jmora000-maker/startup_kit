@@ -655,6 +655,13 @@ class ReadinessScoringEngine:
         # G01-02: Governance Tier & Cadence
         if "G01-02" in chk_map:
             item = chk_map["G01-02"]
+            tier = (baseline.charter.governance_tier if baseline.charter else None) or baseline.governance_tier or "Partnered"
+            has_buffers = any(bool(m.internal_buffer_date) for m in baseline.milestones) if baseline.milestones else False
+            if has_buffers:
+                item.evidence = f"Governance Tier confirmed as '{tier}' with tailored buffers and reporting."
+            else:
+                item.evidence = f"Governance Tier confirmed as '{tier}' with reporting cadence."
+
             if (baseline.charter and baseline.charter.governance_tier) or baseline.governance_tier:
                 item.status = "Complete"
                 item.exception_required = False
@@ -665,7 +672,7 @@ class ReadinessScoringEngine:
                 if not item.exception_details:
                     item.exception_details = "Governance tier and reporting cadence pending alignment."
 
-        # G01-03: Deliverables & Acceptance Criteria
+        # G01-03: Deliverables & Acceptance Criteria (v4 B8: check client_approver too)
         if "G01-03" in chk_map:
             item = chk_map["G01-03"]
             has_deliv_defects = False
@@ -680,6 +687,9 @@ class ReadinessScoringEngine:
                         or not d.owner
                         or "UNASSIGNED" in d.owner.upper()
                         or d.owner == "Unassigned"
+                        or not d.client_approver
+                        or "UNASSIGNED" in d.client_approver.upper()
+                        or "[CONFIRMATION REQUIRED]" in d.client_approver
                     ):
                         has_deliv_defects = True
                         break
@@ -691,7 +701,7 @@ class ReadinessScoringEngine:
                 item.status = "Review Required"
                 item.exception_required = True
                 if not item.exception_details:
-                    item.exception_details = "Deliverables pending acceptance criteria confirmation or owner assignment."
+                    item.exception_details = "Deliverables pending acceptance criteria confirmation, owner assignment, or client approver."
 
         # G01-04: Milestones with external dates and internal buffers
         if "G01-04" in chk_map:
@@ -854,13 +864,17 @@ class ReadinessScoringEngine:
             item.exception_required = False
             item.exception_details = None
 
-        # G01-11: Communications cadence
+        # G01-11: Communications cadence (v4 B8: list actual comms plan names)
         if "G01-11" in chk_map:
             item = chk_map["G01-11"]
             has_comm_defect = False
+            comm_names = []
             if baseline.communications_plan:
+                comm_names = [c.name for c in baseline.communications_plan if c.name]
                 if any("CONFIRMATION REQUIRED" in (c.audience or "").upper() for c in baseline.communications_plan):
                     has_comm_defect = True
+            if comm_names:
+                item.evidence = ", ".join(comm_names)
             if not has_comm_defect:
                 item.status = "Complete"
                 item.exception_required = False
@@ -884,12 +898,26 @@ class ReadinessScoringEngine:
             item.exception_required = False
             item.exception_details = None
 
-        # G01-14: Contract ambiguities analyzed
+        # G01-14: Contract ambiguities analyzed (v4 B8)
         if "G01-14" in chk_map:
             item = chk_map["G01-14"]
-            item.status = "Complete"
-            item.exception_required = False
-            item.exception_details = None
+            num_amb = len(baseline.contract_ambiguities) if baseline.contract_ambiguities else 0
+            if num_amb > 0:
+                item.evidence = f"{num_amb} contractual ambiguities logged with recommended clarifications."
+                any_open = any(getattr(a, "status", "Open").lower() in ("open", "pending") for a in baseline.contract_ambiguities)
+                if any_open:
+                    item.status = "Review Required"
+                    item.exception_required = False
+                    item.exception_details = None
+                else:
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+            else:
+                item.evidence = "No contractual ambiguities logged."
+                item.status = "Complete"
+                item.exception_required = False
+                item.exception_details = None
 
         # G01-15: Open questions
         if "G01-15" in chk_map:

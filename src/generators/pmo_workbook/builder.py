@@ -33,8 +33,12 @@ from src.generators.pmo_workbook.mapping import (
     map_work_packages_to_deliverables,
     detect_default_filled_milestone,
     detect_default_filled_deliverable,
+    detect_backlog_phase_order,
     link_raid_item_v2,
     score_evidence_consistency,
+    tokenize_v2,
+    compute_idf,
+    compute_score,
 )
 from src.generators.pmo_workbook.rows import (
     ScheduleRow,
@@ -63,11 +67,62 @@ SCHEDULE_TRIGGER_REGEX = re.compile(
     re.IGNORECASE
 )
 
+# Sequential-gate predecessor regex (v4 A15)
+SEQUENTIAL_GATE_REGEX = re.compile(
+    r"run[s]?\s+(?:sequentially|in\s+sequence)|sequential\s+(?:acceptance\s+)?gates?|each\s+milestone\s+(?:is\s+an\s+acceptance\s+gate|depends\s+on\s+(?:the\s+)?acceptance\s+of\s+the\s+previous)|after\s+the\s+prior\s+milestone\s+is\s+accepted",
+    re.IGNORECASE
+)
+
 # Contract clarification clause parser (v3 A7)
 CONTRACT_REF_REGEX = re.compile(
     r"^\s*\[V\d+\]\s*(?P<doc>[^,]+?\.(?:pdf|docx|pptx))\s*,?\s*(?P<ref>[^:]*?)\s*:\s*(?P<text>.+)$",
     re.IGNORECASE
 )
+
+
+def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]:
+    r"""Extract contract reference from text per v4 A16.
+    
+    Checks for:
+      - SOW story IDs: matching \bHS-\d{3,5}\b
+      - Section references: matching \bSection\s+(\d+(?:\.\d+)*)\b
+      
+    Returns: (contract_reference, note_if_none)
+    """
+    if not text:
+        return "Not cited", "No clause reference in baseline"
+
+    # First check v3 bracket citation
+    m = CONTRACT_REF_REGEX.match(text)
+    if m:
+        doc_str = m.group("doc").strip()
+        ref_str = m.group("ref").strip()
+        ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
+        return ref, None
+
+    # Story IDs
+    raw_stories = re.findall(r"\b(HS-\d{3,5})\b", text)
+    stories: List[str] = []
+    for s in raw_stories:
+        if s not in stories:
+            stories.append(s)
+
+    # Section numbers
+    raw_sections = re.findall(r"\bSection\s+(\d+(?:\.\d+)*)\b", text, re.IGNORECASE)
+    sections: List[str] = []
+    for s in raw_sections:
+        if s not in sections:
+            sections.append(s)
+
+    parts = []
+    if stories:
+        parts.append(f"Stories: {', '.join(stories)}")
+    if sections:
+        parts.append(f"Sections: {', '.join(sections)}")
+
+    if parts:
+        return " | ".join(parts), None
+    return "Not cited", "No clause reference in baseline"
 
 # Per-milestone communications cadence/name pattern (v3 A6)
 PER_MILESTONE_COMM_REGEX = re.compile(
@@ -143,9 +198,10 @@ def normalize_owner_v2(owner: Optional[str]) -> Tuple[str, Optional[str]]:
     """Normalize owner string. Placeholders return [UNASSIGNED - TO BE CONFIRMED] with an unassigned note."""
     if not owner or not owner.strip():
         return "[UNASSIGNED - TO BE CONFIRMED]", "Owner unassigned"
-    norm = normalize_person_name(owner.strip())
+    raw_str = owner.strip()
+    norm = normalize_person_name(raw_str)
     norm_clean = clean_text_v2(norm)
-    if not norm_clean or norm_clean in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
+    if not norm_clean or norm_clean.upper() in ("UNASSIGNED", "[UNASSIGNED]", "TBD", "[TBD]", "[UNASSIGNED - TO BE CONFIRMED]") or "UNASSIGNED" in norm_clean.upper() or "TBD" in norm_clean.upper():
         return "[UNASSIGNED - TO BE CONFIRMED]", "Owner unassigned"
     return norm_clean, None
 
@@ -438,6 +494,39 @@ def build_workbook_model(
 
     sorted_milestones = sorted(filtered_milestones, key=delivery_sort_key)
 
+    # Sequential-gate predecessors check (v4 A15)
+    sequential_gate_source_id: Optional[str] = None
+    for dep in filtered_deps:
+        if SEQUENTIAL_GATE_REGEX.search(dep.description or ""):
+            sequential_gate_source_id = dep.id
+            break
+    if not sequential_gate_source_id:
+        for m in filtered_milestones:
+            for text in (m.critical_path_assumptions or []) + (m.key_dependencies or []):
+                if SEQUENTIAL_GATE_REGEX.search(text):
+                    sequential_gate_source_id = m.id
+                    break
+            if sequential_gate_source_id:
+                break
+    if not sequential_gate_source_id and sow_interp:
+        for text in (sow_interp.assumptions or []) + (sow_interp.dependencies or []):
+            if SEQUENTIAL_GATE_REGEX.search(text):
+                sequential_gate_source_id = "SOW"
+                break
+    if not sequential_gate_source_id:
+        for r in filtered_raid_items:
+            if SEQUENTIAL_GATE_REGEX.search(r.description or ""):
+                sequential_gate_source_id = getattr(r, "id", "") or "RAID"
+                break
+
+    if sequential_gate_source_id:
+        for s_idx in range(1, len(sorted_milestones)):
+            curr_m = sorted_milestones[s_idx]
+            if not ms_predecessors[curr_m.id]:
+                prev_m = sorted_milestones[s_idx - 1]
+                ms_predecessors[curr_m.id].append(prev_m.id)
+                ms_notes[curr_m.id].append(f"Predecessor from sequential-gate assumption ({sequential_gate_source_id})")
+
     # Group milestones into phase workstreams preserving delivery order (v3 A1: exactly one per SOW phase)
     workstream_groups: List[Tuple[str, List[Milestone]]] = []
     seen_workstreams: Dict[str, List[Milestone]] = {}
@@ -450,11 +539,12 @@ def build_workbook_model(
             workstream_groups.append((ws_name, seen_workstreams[ws_name]))
         seen_workstreams[ws_name].append(m)
 
-    # 4. Map deliverables to milestones & work packages to deliverables (v3 A2)
+    # 4. Map deliverables to milestones & work packages to deliverables (v3 A2, v4 A14)
     deliv_mapping, wp_to_ms, deliv_to_matched_wp = map_deliverables_to_milestones_v2(
         filtered_deliverables, sorted_milestones, filtered_backlog, parsed_phases, contracted_deliverables
     )
     unmapped_count = sum(1 for _, (_, _, is_unmapped) in deliv_mapping.items() if is_unmapped)
+    is_backlog_phase_order_detected, _ = detect_backlog_phase_order(filtered_backlog, sorted_milestones, filtered_deliverables)
 
     # Deliverables per milestone
     delivs_by_ms: Dict[str, List[Deliverable]] = {m.id: [] for m in sorted_milestones}
@@ -483,6 +573,28 @@ def build_workbook_model(
         deliv_wps, other_wps = map_work_packages_to_deliverables(m_wps, m_delivs)
         matched_wps_by_deliv.update(deliv_wps)
         other_wps_by_ms[m.id] = other_wps
+
+    # Build Story Index (v4 A17)
+    story_to_deliv_ids: Dict[str, Set[str]] = {}
+    for d in filtered_deliverables:
+        text = f"{d.name or ''} {d.description or ''} {d.acceptance_criteria or ''} {d.sow_reference or ''} {d.source_reference.clause_or_slide if d.source_reference else ''}"
+        for s in re.findall(r"\bHS-\d{3,5}\b", text):
+            story_to_deliv_ids.setdefault(s, set()).add(d.id)
+
+    for wp in filtered_backlog:
+        text = f"{wp.title or ''} {wp.description or ''}"
+        for s in re.findall(r"\bHS-\d{3,5}\b", text):
+            wp_deliv_id = None
+            for d_id, wps in matched_wps_by_deliv.items():
+                if any(w.id == wp.id for w in wps):
+                    wp_deliv_id = d_id
+                    break
+            if not wp_deliv_id and wp.parent_deliverable_id:
+                wp_deliv_id = wp.parent_deliverable_id
+            if wp_deliv_id:
+                story_to_deliv_ids.setdefault(s, set()).add(wp_deliv_id)
+
+    deliv_to_linked_raid_ids: Dict[str, List[str]] = {d.id: [] for d in filtered_deliverables}
 
     # Evidence consistency flags (v3 A9)
     evidence_flags_map = score_evidence_consistency(filtered_deliverables)
@@ -812,8 +924,9 @@ def build_workbook_model(
                                 wp_owner = "Toptal Delivery Team"
                             wp_title = clean_text_v2(wp.title)
                             wp_note = None
-                            if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
-                                wp_note = f"Baseline backlog lists parent {wp.parent_deliverable_id}"
+                            if not is_backlog_phase_order_detected:
+                                if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
+                                    wp_note = f"Baseline backlog lists parent {wp.parent_deliverable_id}"
                             task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note))
                     else:
                         tmpl_owner = tmpl.owner_role  # v3 A5: role string directly
@@ -1030,7 +1143,7 @@ def build_workbook_model(
                 ))
                 prev_task_wbs = a_wbs
 
-    # 6. Build RAID Log (v3 A4, A7, A8, A11)
+    # 6. Build RAID Log (v3 A4, A7, A8, A11, v4 A16, A17, A18, A19)
     raid_rows: List[RAIDRow] = []
     all_raw_raid: List[Union[RiskAssumption, DependencyAssumptionItem, ContractAmbiguityItem]] = (
         list(filtered_raid_items) + list(filtered_deps) + list(filtered_ambiguities)
@@ -1042,6 +1155,75 @@ def build_workbook_model(
     raid_counter = 0
     raid_links_by_ms: Dict[str, List[str]] = {m.id: [] for m in sorted_milestones}
 
+    # Decision linking helper (v4 A19)
+    decisions = baseline.decisions or []
+    dec_tokens_list = [tokenize_v2(f"{d.decision_text or ''} {d.rationale or ''}") for d in decisions]
+    dec_idf_dict = compute_idf(dec_tokens_list) if decisions else {}
+    N_dec = len(decisions)
+
+    def link_decisions_for_row(row_desc: str, row_ref: str, raw_decision: str) -> str:
+        if raw_decision and raw_decision.strip():
+            return raw_decision.strip()
+        if not decisions:
+            return ""
+        row_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{row_desc} {row_ref}"))
+        candidates: List[Tuple[float, str]] = []
+        row_tokens = tokenize_v2(row_desc)
+        for d_idx, dec in enumerate(decisions):
+            dec_text = f"{dec.decision_text or ''} {dec.rationale or ''}"
+            dec_stories = set(re.findall(r"\bHS-\d{3,5}\b", dec_text))
+            if row_stories and (row_stories & dec_stories):
+                candidates.append((2.0, dec.id))
+            else:
+                score = compute_score(row_tokens, dec_tokens_list[d_idx], dec_idf_dict, N_dec)
+                if score >= 0.50:
+                    candidates.append((score, dec.id))
+        if not candidates:
+            return ""
+        candidates.sort(key=lambda c: (-c[0], natural_sort_key(c[1])))
+        top_ids = [c[1] for c in candidates[:3]]
+        return ", ".join(top_ids)
+
+    def link_deliverables_and_stories(
+        item_text_for_stories: str,
+        current_linked_ms: str,
+        current_linked_wbs: str,
+        current_ws: str,
+        raid_id: str,
+    ) -> Tuple[str, str, str, str]:
+        """Find matching deliverables via story index (v4 A17) and link milestone if unlinked."""
+        item_stories = set(re.findall(r"\bHS-\d{3,5}\b", item_text_for_stories))
+        matched_deliv_ids: Set[str] = set()
+        for s in item_stories:
+            if s in story_to_deliv_ids:
+                matched_deliv_ids.update(story_to_deliv_ids[s])
+
+        sorted_deliv_ids = sorted(list(matched_deliv_ids), key=natural_sort_key)
+        linked_deliv_str = ", ".join(sorted_deliv_ids)
+
+        new_linked_ms = current_linked_ms
+        new_linked_wbs = current_linked_wbs
+        new_ws = current_ws
+
+        if linked_deliv_str and not new_linked_ms:
+            ms_for_matched: Set[str] = set()
+            for d_id in sorted_deliv_ids:
+                if d_id in deliv_mapping:
+                    m_obj, _, _ = deliv_mapping[d_id]
+                    ms_for_matched.add(m_obj.id)
+            if len(ms_for_matched) == 1:
+                single_m_id = list(ms_for_matched)[0]
+                new_linked_ms = single_m_id
+                p_m = parsed_phases.get(single_m_id)
+                new_ws = p_m.workstream_name if p_m else "Build & Configuration"
+                new_linked_wbs = ms_wbs_code_map.get(single_m_id, "")
+
+        for d_id in sorted_deliv_ids:
+            if d_id in deliv_to_linked_raid_ids:
+                deliv_to_linked_raid_ids[d_id].append(raid_id)
+
+        return linked_deliv_str, new_linked_ms, new_linked_wbs, new_ws
+
     # Group 1: Risks and Issues (Baseline RAID Log)
     for r_item in filtered_raid_items:
         raid_counter += 1
@@ -1051,7 +1233,7 @@ def build_workbook_model(
         desc = clean_text_v2(getattr(r_item, "description", "") or getattr(r_item, "risk_description", "") or "")
         src_val = "Baseline - RAID Log"
         src_id = getattr(r_item, "id", "") or getattr(r_item, "item_id", "") or ""
-        owner_val = r_item.owner or "Talent PM"
+        owner_val, owner_n = normalize_owner_v2(getattr(r_item, "owner", "") or "Talent PM")
         prob, p_n = _normalize_rating_v2(getattr(r_item, "probability", None))
         imp, i_n = _normalize_rating_v2(getattr(r_item, "impact", None))
         
@@ -1066,13 +1248,19 @@ def build_workbook_model(
         mitig = clean_text_v2(getattr(r_item, "mitigation", "") or "")
         due_d = getattr(r_item, "due_date", None)
         status_val, status_n = _normalize_status_v2(r_item.status)
-        decision_val = clean_text_v2(getattr(r_item, "linked_decision", "") or "")
+        raw_decision_val = clean_text_v2(getattr(r_item, "linked_decision", "") or "")
+        decision_val = link_decisions_for_row(desc, "", raw_decision_val)
         dep_val = clean_text_v2(getattr(r_item, "linked_dependency", "") or getattr(r_item, "linked_dependency_or_assumption", "") or "")
-        r_notes = deduplicate_notes([p_n, i_n, status_n, sev_note])
+        r_notes = deduplicate_notes([p_n, i_n, status_n, sev_note, owner_n])
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             r_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
             default_fill_ms, default_fill_deliv
+        )
+
+        linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
+            f"{desc} {getattr(r_item, 'category', '')}",
+            linked_ms_str, linked_wbs_str, ws_label, raid_id
         )
 
         all_r_notes = deduplicate_notes([r_notes, link_note])
@@ -1091,6 +1279,7 @@ def build_workbook_model(
             workstream=ws_label,
             linked_milestone=linked_ms_str,
             linked_wbs_code=linked_wbs_str,
+            linked_deliverables=linked_deliv_str,
             owner=owner_val,
             probability=prob,
             impact=imp,
@@ -1117,19 +1306,25 @@ def build_workbook_model(
         desc = clean_text_v2(dep_item.description or "")
         src_val = "Baseline - Dependency Log"
         src_id = dep_item.id or ""
-        owner_val = dep_item.owner or "Talent PM"
+        owner_val, owner_n = normalize_owner_v2(getattr(dep_item, "owner", "") or "Talent PM")
         prob, imp, sev_val = "", "", ""
         trig = ""
         mitig = ""
         due_d = getattr(dep_item, "target_date", None)
         status_val, status_n = _normalize_status_v2(dep_item.status)
-        decision_val = ""
+        raw_decision_val = ""
+        decision_val = link_decisions_for_row(desc, "", raw_decision_val)
         dep_val = ""
-        r_notes = deduplicate_notes([status_n])
+        r_notes = deduplicate_notes([status_n, owner_n])
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             dep_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
             default_fill_ms, default_fill_deliv
+        )
+
+        linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
+            f"{desc} {getattr(dep_item, 'category', '')}",
+            linked_ms_str, linked_wbs_str, ws_label, raid_id
         )
 
         all_r_notes = deduplicate_notes([r_notes, link_note])
@@ -1148,6 +1343,7 @@ def build_workbook_model(
             workstream=ws_label,
             linked_milestone=linked_ms_str,
             linked_wbs_code=linked_wbs_str,
+            linked_deliverables=linked_deliv_str,
             owner=owner_val,
             probability=prob,
             impact=imp,
@@ -1165,14 +1361,14 @@ def build_workbook_model(
             notes=all_r_notes,
         ))
 
-    # Group 3: Contract Clarifications (v3 A7)
+    # Group 3: Contract Clarifications (v3 A7, v4 A16)
     for amb_item in filtered_ambiguities:
         raid_counter += 1
         raid_id = f"RAID-{raid_counter:02d}"
         item_type = "Issue"
         category = "Contract Clarification"
         
-        # Parse conflicting_clauses with CONTRACT_REF_REGEX
+        # Parse conflicting_clauses with extract_contract_reference
         conf_clauses = amb_item.conflicting_clauses or ""
         match = CONTRACT_REF_REGEX.match(conf_clauses)
         if match:
@@ -1181,20 +1377,22 @@ def build_workbook_model(
             text_str = match.group("text").strip()
             contract_ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
             desc_text = f"{amb_item.category}: {text_str}" if amb_item.category else text_str
+            ref_note = None
         else:
-            contract_ref = ""
+            contract_ref, ref_note = extract_contract_reference(conf_clauses)
             desc_text = f"{amb_item.category}: {conf_clauses}" if amb_item.category else conf_clauses
 
         desc = clean_contract_text(desc_text)
         src_val = "Baseline - Contract Clarifications"
         src_id = amb_item.anomaly_id or ""
-        owner_val = "Talent PM"
+        owner_val, owner_n = normalize_owner_v2(getattr(amb_item, "owner", "") or "Talent PM")
         prob, imp, sev_val = "", "", ""
         trig = ""
         mitig = clean_contract_text(amb_item.recommended_clarification or "")
         due_d = None
         status_val = "Open"
-        decision_val = ""
+        raw_decision_val = ""
+        decision_val = link_decisions_for_row(desc, contract_ref, raw_decision_val)
         dep_val = ""
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
@@ -1202,7 +1400,12 @@ def build_workbook_model(
             default_fill_ms, default_fill_deliv
         )
 
-        all_r_notes = deduplicate_notes([link_note])
+        linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
+            f"{desc} {contract_ref} {conf_clauses} {getattr(amb_item, 'recommended_clarification', '') or ''}",
+            linked_ms_str, linked_wbs_str, ws_label, raid_id
+        )
+
+        all_r_notes = deduplicate_notes([link_note, ref_note, owner_n])
 
         if linked_ms_str:
             for ms_id_part in [p.strip() for p in linked_ms_str.split(",")]:
@@ -1218,6 +1421,7 @@ def build_workbook_model(
             workstream=ws_label,
             linked_milestone=linked_ms_str,
             linked_wbs_code=linked_wbs_str,
+            linked_deliverables=linked_deliv_str,
             owner=owner_val,
             probability=prob,
             impact=imp,
@@ -1235,7 +1439,7 @@ def build_workbook_model(
             notes=all_r_notes,
         ))
 
-    # Group 4: Open Questions (v3 A8)
+    # Group 4: Open Questions (v3 A8, v4 A16)
     valid_open_questions: List[Tuple[int, str]] = []
     for q_idx, q_text in enumerate(baseline.open_questions or [], 1):
         if not q_text or not q_text.strip():
@@ -1253,13 +1457,19 @@ def build_workbook_model(
         desc = q_str
         src_val = "Baseline - Open Questions"
         src_id = f"Q-{orig_q_idx:02d}"
-        owner_val = "Talent PM"
+        owner_val, owner_n = normalize_owner_v2("Talent PM")
         prob, imp, sev_val = "", "", ""
         trig = ""
         mitig = ""
         due_d = None
         status_val = "Open"
-        decision_val = ""
+        
+        contract_ref, _ = extract_contract_reference(q_str)
+        if contract_ref == "Not cited":
+            contract_ref = ""
+
+        raw_decision_val = ""
+        decision_val = link_decisions_for_row(desc, contract_ref, raw_decision_val)
         dep_val = ""
 
         # Dummy item for linking
@@ -1277,7 +1487,12 @@ def build_workbook_model(
             default_fill_ms, default_fill_deliv
         )
 
-        all_r_notes = deduplicate_notes([link_note])
+        linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
+            f"{desc} {contract_ref}",
+            linked_ms_str, linked_wbs_str, ws_label, raid_id
+        )
+
+        all_r_notes = deduplicate_notes([link_note, owner_n])
 
         if linked_ms_str:
             for ms_id_part in [p.strip() for p in linked_ms_str.split(",")]:
@@ -1288,11 +1503,12 @@ def build_workbook_model(
             raid_id=raid_id,
             type=item_type,
             description=desc,
-            contract_reference="",
+            contract_reference=contract_ref,
             category=category,
             workstream=ws_label,
             linked_milestone=linked_ms_str,
             linked_wbs_code=linked_wbs_str,
+            linked_deliverables=linked_deliv_str,
             owner=owner_val,
             probability=prob,
             impact=imp,
@@ -1310,7 +1526,7 @@ def build_workbook_model(
             notes=all_r_notes,
         ))
 
-    # Update ScheduleRow and WBSRow linked_raid_ids
+    # Update ScheduleRow linked_raid_ids
     updated_schedule_rows: List[ScheduleRow] = []
     for s in schedule_rows:
         if s.milestone_id and s.milestone_id in raid_links_by_ms:
@@ -1341,6 +1557,38 @@ def build_workbook_model(
             ))
         else:
             updated_schedule_rows.append(s)
+
+    # Update WBSRow linked_raid_ids for Deliverables (v4 A17)
+    updated_wbs_rows: List[WBSRow] = []
+    for w in wbs_rows:
+        if w.element_type == "Deliverable" and w.deliverable_id in deliv_to_linked_raid_ids and deliv_to_linked_raid_ids[w.deliverable_id]:
+            r_ids = ", ".join(sorted(list(set(deliv_to_linked_raid_ids[w.deliverable_id])), key=natural_sort_key))
+            updated_wbs_rows.append(WBSRow(
+                wbs_code=w.wbs_code,
+                level=w.level,
+                element_type=w.element_type,
+                name=w.name,
+                workstream=w.workstream,
+                milestone_id=w.milestone_id,
+                deliverable_id=w.deliverable_id,
+                source_id=w.source_id,
+                owner=w.owner,
+                planned_start=w.planned_start,
+                planned_finish=w.planned_finish,
+                milestone_date=w.milestone_date,
+                status=w.status,
+                cadence=w.cadence,
+                predecessors=w.predecessors,
+                acceptance_criteria=w.acceptance_criteria,
+                linked_raid_ids=r_ids,
+                source=w.source,
+                mapping_basis=w.mapping_basis,
+                notes=w.notes,
+                outline_level=w.outline_level,
+                child_row_range=w.child_row_range,
+            ))
+        else:
+            updated_wbs_rows.append(w)
 
     # 7. Timeline columns
     all_valid_dates = [proj_start_date]
@@ -1377,11 +1625,11 @@ def build_workbook_model(
     base_ms_ids = {m.id for m in filtered_milestones}
     missing_ms = sorted(base_ms_ids - wb_ms_ids, key=natural_sort_key)
 
-    wb_deliv_ids = {w.deliverable_id for w in wbs_rows if w.level == 3 and w.element_type == "Deliverable" and w.deliverable_id}
+    wb_deliv_ids = {w.deliverable_id for w in updated_wbs_rows if w.level == 3 and w.element_type == "Deliverable" and w.deliverable_id}
     base_deliv_ids = {d.id for d in filtered_deliverables}
     missing_delivs = sorted(base_deliv_ids - wb_deliv_ids, key=natural_sort_key)
 
-    wb_wp_ids = {w.source_id for w in wbs_rows if w.level == 4 and w.source == "Baseline - Backlog" and w.source_id}
+    wb_wp_ids = {w.source_id for w in updated_wbs_rows if w.level == 4 and w.source == "Baseline - Backlog" and w.source_id}
     base_wp_ids = {wp.id for wp in filtered_backlog}
     missing_wps = sorted(base_wp_ids - wb_wp_ids, key=natural_sort_key)
 
@@ -1437,7 +1685,7 @@ def build_workbook_model(
         start_date_basis=start_date_basis,
         generation_date=today,
         schedule_rows=updated_schedule_rows,
-        wbs_rows=wbs_rows,
+        wbs_rows=updated_wbs_rows,
         raid_rows=raid_rows,
         unmapped_deliverables_count=unmapped_count,
         timeline_weeks=timeline_weeks,

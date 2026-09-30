@@ -938,7 +938,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 title = cells[2]
                 seq = int(cells[3]) if len(cells) > 3 and cells[3].isdigit() else 1
                 owner = cells[4] if len(cells) > 4 else "[UNASSIGNED - TO BE CONFIRMED]"
-                status = cells[5] if len(cells) > 5 else "Draft"
+                sow_ref = cells[5] if len(cells) >= 7 else None
+                status = cells[6] if len(cells) >= 7 else (cells[5] if len(cells) > 5 else "Draft")
 
                 backlog.append(WorkPackageSeed(
                     id=wp_id,
@@ -947,6 +948,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     description=title,
                     preliminary_sequence=seq,
                     owner=owner,
+                    sow_reference=sow_ref,
                     status=status
                 ))
 
@@ -967,13 +969,14 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             return deliverables
 
         header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
-        id_idx = next((i for i, h in enumerate(header_cells) if "id" in h), 0)
+        id_idx = next((i for i, h in enumerate(header_cells) if "id" in h and "parent" not in h), 0)
         desc_idx = next((i for i, h in enumerate(header_cells) if "name" in h or "desc" in h or "deliverable" in h), 1)
         crit_idx = next((i for i, h in enumerate(header_cells) if "criteria" in h or "acceptance" in h), 2)
         ev_idx = next((i for i, h in enumerate(header_cells) if "evidence" in h), 3)
         app_idx = next((i for i, h in enumerate(header_cells) if "approver" in h or "client" in h), 4)
         owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 5)
-        signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), 6)
+        sow_idx = next((i for i, h in enumerate(header_cells) if "sow" in h or "story" in h or "stories" in h), -1)
+        signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), -1)
 
         for row in tbl.rows[1:]:
             cells = [clean_text(c.text) for c in row.cells]
@@ -981,11 +984,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 continue
             d_id = cells[id_idx] if id_idx < len(cells) else f"DEL-{len(deliverables)+1:02d}"
             d_name = cells[desc_idx] if desc_idx < len(cells) else ""
-            owner = cells[owner_idx] if owner_idx < len(cells) else "Unassigned"
-            criteria_str = cells[crit_idx] if crit_idx < len(cells) else None
+            owner = cells[owner_idx] if (owner_idx != -1 and owner_idx < len(cells)) else "Unassigned"
+            criteria_str = cells[crit_idx] if (crit_idx != -1 and crit_idx < len(cells)) else None
             ev_str = cells[ev_idx] if (ev_idx != -1 and ev_idx < len(cells)) else "Test sign-off sheet / automated pipeline run output"
-            app_str = cells[app_idx] if app_idx < len(cells) else "[UNASSIGNED - TO BE CONFIRMED]"
-            signoff_str = cells[signoff_idx] if signoff_idx < len(cells) else "Formal written sign-off"
+            app_str = cells[app_idx] if (app_idx != -1 and app_idx < len(cells)) else "[UNASSIGNED - TO BE CONFIRMED]"
+            sow_ref = cells[sow_idx] if (sow_idx != -1 and sow_idx < len(cells)) else None
+            signoff_str = cells[signoff_idx] if (signoff_idx != -1 and signoff_idx < len(cells)) else (cells[-1] if len(cells) >= 7 else "Formal written sign-off")
 
             deliverables.append(Deliverable(
                 id=d_id,
@@ -996,6 +1000,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 acceptance_criteria=criteria_str,
                 evidence_required=ev_str,
                 client_approver=app_str,
+                sow_reference=sow_ref,
                 review_window=signoff_str,
                 rejection_rework_path="Talent PM / Team rework within 3 business days of notice"
             ))
@@ -1007,7 +1012,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         tables: List[Table],
         src_ref: SourceReference
     ) -> Tuple[List[RiskAssumption], List[DecisionItem]]:
-        """Parse RAID Log and Decision Log tables."""
+        """Parse RAID Log and Decision Log tables (v4 B5)."""
         raid_items: List[RiskAssumption] = []
         decisions: List[DecisionItem] = []
 
@@ -1018,36 +1023,43 @@ class StartupKitDocxParser(IStartupKitDocxParser):
 
         if tbl:
             header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
-            type_idx = next((i for i, h in enumerate(header_cells) if "type" in h), 0)
-            id_idx = next((i for i, h in enumerate(header_cells) if "id" in h and "raid" not in h), -1)
-            desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 1)
-            owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 3)
-            status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 5)
-            mit_idx = next((i for i, h in enumerate(header_cells) if "mitigation" in h or "strategy" in h or "response" in h), 4)
+            id_idx = next((i for i, h in enumerate(header_cells) if "item id" in h or ("id" in h and "raid" not in h)), -1)
+            type_idx = next((i for i, h in enumerate(header_cells) if "type" in h), 0 if id_idx != 0 else 1)
+            desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 1 if id_idx == -1 else 2)
+            cat_idx = next((i for i, h in enumerate(header_cells) if "cat" in h), -1)
+            prob_idx = next((i for i, h in enumerate(header_cells) if "prob" in h), -1)
             imp_idx = next((i for i, h in enumerate(header_cells) if "impact" in h or "severity" in h), -1)
+            owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), -1)
+            mit_idx = next((i for i, h in enumerate(header_cells) if "mitigation" in h or "strategy" in h or "response" in h), -1)
+            status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), -1)
 
             for row in tbl.rows[1:]:
                 cells = [clean_text(c.text) for c in row.cells]
                 if len(cells) < 3:
                     continue
-                r_type = cells[type_idx] if type_idx < len(cells) else "Risk"
+                r_type = cells[type_idx] if (type_idx != -1 and type_idx < len(cells)) else "Risk"
                 if r_type not in ("Risk", "Assumption", "Issue", "Dependency"):
                     r_type = "Risk"
-                r_id = cells[id_idx] if (id_idx != -1 and id_idx < len(cells)) else f"RAID-{len(raid_items)+1:02d}"
-                r_desc = cells[desc_idx] if desc_idx < len(cells) else ""
-                r_owner = cells[owner_idx] if owner_idx < len(cells) else "Delivery Manager"
-                r_status = cells[status_idx] if status_idx < len(cells) else "Open"
-                r_mit = cells[mit_idx] if mit_idx < len(cells) else "Active monitoring"
+                default_prefix = "RSK" if r_type == "Risk" else ("ISS" if r_type == "Issue" else "RAID")
+                r_id = cells[id_idx] if (id_idx != -1 and id_idx < len(cells)) else f"{default_prefix}-{len(raid_items)+1:02d}"
+                r_desc = cells[desc_idx] if (desc_idx != -1 and desc_idx < len(cells)) else ""
+                r_cat = cells[cat_idx] if (cat_idx != -1 and cat_idx < len(cells)) else "Delivery Risk"
+                r_prob = cells[prob_idx] if (prob_idx != -1 and prob_idx < len(cells)) else "Medium"
                 r_imp = cells[imp_idx] if (imp_idx != -1 and imp_idx < len(cells)) else "Medium"
+                r_owner = cells[owner_idx] if (owner_idx != -1 and owner_idx < len(cells)) else "Delivery Manager"
+                r_mit = cells[mit_idx] if (mit_idx != -1 and mit_idx < len(cells)) else "Active monitoring"
+                r_status = cells[status_idx] if (status_idx != -1 and status_idx < len(cells)) else "Open"
 
                 raid_items.append(RiskAssumption(
                     id=r_id,
                     type=r_type,
+                    category=r_cat,
                     description=r_desc,
                     owner=r_owner,
-                    status=r_status,
-                    mitigation_or_response=r_mit,
+                    probability=r_prob,
                     impact=r_imp,
+                    mitigation_or_response=r_mit,
+                    status=r_status,
                     source_reference=src_ref
                 ))
 
@@ -1073,9 +1085,17 @@ class StartupKitDocxParser(IStartupKitDocxParser):
     ) -> List[DependencyAssumptionItem]:
         """Parse Dependency and Assumption Log table."""
         items: List[DependencyAssumptionItem] = []
-        tbl = self._find_table_by_header(tables, ["item id", "type", "category"])
-        if not tbl:
-            tbl = self._find_table_by_header(tables, ["item id", "type", "owner"])
+        tbl = None
+        for t in tables:
+            if not t.rows:
+                continue
+            headers = [c.text.strip().lower() for c in t.rows[0].cells]
+            if any("mitigation" in h for h in headers) or any("probability" in h for h in headers):
+                continue
+            if any("type" in h for h in headers) and any("desc" in h for h in headers) and any("owner" in h for h in headers) and (any("item id" in h for h in headers) or any("id" in h for h in headers) or any("category" in h for h in headers)):
+                tbl = t
+                break
+
         if not tbl:
             tbl = self._find_table_by_header(tables, ["dependency and assumption", "owner"])
         if tbl:
@@ -1083,6 +1103,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             id_idx = next((i for i, h in enumerate(header_cells) if "id" in h), 0)
             type_idx = next((i for i, h in enumerate(header_cells) if "type" in h), 1)
             desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 2)
+            cat_idx = next((i for i, h in enumerate(header_cells) if "category" in h or "cat" in h), 3)
             owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 4)
             status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 5)
             for row in tbl.rows[1:]:
@@ -1090,13 +1111,16 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 if len(cells) < 3:
                     continue
                 d_id = cells[id_idx] if id_idx < len(cells) else f"DA-{len(items)+1:02d}"
-                d_type = cells[type_idx] if type_idx < len(cells) else "Dependency"
+                raw_type = cells[type_idx] if type_idx < len(cells) else "Dependency"
+                d_type = "Assumption" if "ASSUMPTION" in raw_type.upper() else "Dependency"
                 d_desc = cells[desc_idx] if desc_idx < len(cells) else ""
-                d_owner = cells[owner_idx] if owner_idx < len(cells) else "Unassigned"
-                d_status = cells[status_idx] if status_idx < len(cells) else "Open"
+                d_cat = cells[cat_idx] if (cat_idx != -1 and cat_idx < len(cells)) else "Technical"
+                d_owner = cells[owner_idx] if (owner_idx != -1 and owner_idx < len(cells)) else "Unassigned"
+                d_status = cells[status_idx] if (status_idx != -1 and status_idx < len(cells)) else "Open"
                 items.append(DependencyAssumptionItem(
                     id=d_id,
                     type=d_type,
+                    category=d_cat,
                     description=d_desc,
                     source_reference=src_ref,
                     owner=d_owner,
@@ -1105,26 +1129,45 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         return items
 
     def _parse_communications_table(self, tables: List[Table]) -> List[CommunicationsPlanItem]:
-        """Parse Communications and Reporting Plan table."""
+        """Parse Communications and Reporting Plan table (v4 B5)."""
         comms: List[CommunicationsPlanItem] = []
         tbl = self._find_table_by_header(tables, ["report / meeting", "audience", "cadence"])
         if not tbl:
             tbl = self._find_table_by_header(tables, ["communication", "audience", "cadence"])
 
         if tbl:
-            for row in tbl.rows[1:]:
+            header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
+            has_id = ("id" in header_cells[0])
+            for idx, row in enumerate(tbl.rows[1:], 1):
                 cells = [c.text.strip() for c in row.cells]
-                if len(cells) >= 6:
-                    c_id = f"COM-{len(comms)+1:02d}"
-                    comms.append(CommunicationsPlanItem(
-                        id=c_id,
-                        name=cells[0],
-                        audience=cells[1],
-                        content_owner=cells[2],
-                        cadence=cells[3],
-                        format=cells[4],
-                        delivery_day=cells[5]
-                    ))
+                if has_id and len(cells) >= 7:
+                    c_id = cells[0]
+                    c_name = cells[1]
+                    c_aud = cells[2]
+                    c_own = cells[3]
+                    c_cad = cells[4]
+                    c_fmt = cells[5]
+                    c_day = cells[6]
+                elif len(cells) >= 6:
+                    c_id = f"COM-{idx:02d}"
+                    c_name = cells[0]
+                    c_aud = cells[1]
+                    c_own = cells[2]
+                    c_cad = cells[3]
+                    c_fmt = cells[4]
+                    c_day = cells[5]
+                else:
+                    continue
+
+                comms.append(CommunicationsPlanItem(
+                    id=c_id,
+                    name=c_name,
+                    audience=c_aud,
+                    content_owner=c_own,
+                    cadence=c_cad,
+                    format=c_fmt,
+                    delivery_day=c_day
+                ))
 
         return comms
 

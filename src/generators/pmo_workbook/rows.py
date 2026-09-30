@@ -67,6 +67,7 @@ class RAIDRow:
     workstream: str
     linked_milestone: str
     linked_wbs_code: str
+    linked_deliverables: str
     owner: str
     probability: str  # "Low", "Medium", "High", or ""
     impact: str  # "Low", "Medium", "High", or ""

@@ -1,9 +1,11 @@
 """Baseline aggregator and business rules engine."""
 
 import logging
+import re
 from datetime import timedelta, date
 from typing import List, Optional, Set
 from src.config import sanitize_report_text
+from src.generators.pmo_workbook.mapping import tokenize_v2, natural_sort_key
 from src.core.models import (
     CharterExtraction,
     DeliverablesExtraction,
@@ -79,16 +81,34 @@ class BaselineAggregator:
                 seen_questions.add(clean_q)
                 questions.append(clean_q)
 
-        # 1. Process Deliverables and check acceptance criteria & ownership
+        # 1. Process Deliverables and check acceptance criteria & ownership (v4 B1, B10)
         deliverables: List[Deliverable] = [d.model_copy() for d in deliverables_ext.deliverables]
         acc_items = []
         if acceptance_ext:
             acc_items = getattr(acceptance_ext, "acceptance_matrix_items", None) or getattr(acceptance_ext, "acceptance_items", None) or []
         if acc_items:
-            acc_map = {item.id: item for item in acc_items}
-            for deliv in deliverables:
-                if deliv.id in acc_map:
-                    acc_item = acc_map[deliv.id]
+            for acc_item in acc_items:
+                acc_name = getattr(acc_item, "name", "") or getattr(acc_item, "deliverable_name", "") or getattr(acc_item, "description", "") or ""
+                acc_tokens = tokenize_v2(acc_name)
+
+                best_deliv: Optional[Deliverable] = None
+                best_score = 0.0
+                for d in deliverables:
+                    d_name = d.name or d.description or ""
+                    d_tokens = tokenize_v2(d_name)
+                    s1, s2 = set(acc_tokens), set(d_tokens)
+                    jaccard = (len(s1 & s2) / len(s1 | s2)) if (s1 or s2) else 0.0
+                    if jaccard > best_score:
+                        best_score = jaccard
+                        best_deliv = d
+                    elif jaccard == best_score and best_deliv is not None and jaccard >= 0.5:
+                        if acc_item.id == d.id:
+                            best_deliv = d
+                        elif acc_item.id != best_deliv.id and natural_sort_key(d.id) < natural_sort_key(best_deliv.id):
+                            best_deliv = d
+
+                if best_score >= 0.5 and best_deliv is not None:
+                    deliv = best_deliv
                     if acc_item.client_approver and "UNASSIGNED" not in acc_item.client_approver.upper() and "[CONFIRMATION REQUIRED]" not in acc_item.client_approver:
                         deliv.client_approver = acc_item.client_approver
                     if acc_item.evidence_required and "[CONFIRMATION REQUIRED]" not in acc_item.evidence_required:
@@ -101,6 +121,24 @@ class BaselineAggregator:
                         deliv.rejection_rework_path = acc_item.rejection_rework_path
                     if (not deliv.owner or deliv.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
                         deliv.owner = acc_item.owner
+                    if getattr(acc_item, "sow_reference", None) and not getattr(deliv, "sow_reference", None):
+                        deliv.sow_reference = acc_item.sow_reference
+                else:
+                    logger.warning("Acceptance item '%s' (%s) could not be matched to any deliverable (best Jaccard: %.2f)", getattr(acc_item, "id", ""), acc_name, best_score)
+
+        # Completeness check for SOW story IDs (v4 B10)
+        covered_stories: Set[str] = set()
+        for d in deliverables:
+            text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
+            for s in re.findall(r"\bHS-\d{3,5}\b", text_block):
+                covered_stories.add(s)
+
+        if conflicts_ext and conflicts_ext.ambiguities:
+            for ca in conflicts_ext.ambiguities:
+                for s in re.findall(r"\bHS-\d{3,5}\b", ca.conflicting_clauses or ""):
+                    if s not in covered_stories:
+                        add_question(f"SOW story '{s}' cited in contract ambiguity {ca.anomaly_id} is not mapped to any baseline deliverable. [CONFIRMATION REQUIRED]")
+
         for deliv in deliverables:
             deliv.description = sanitize_report_text(deliv.description)
             deliv.name = sanitize_report_text(deliv.name or deliv.description)
@@ -143,7 +181,7 @@ class BaselineAggregator:
                     f"[Low Confidence: {ms.source_reference.confidence_score:.2f}] Review milestone '{ms.id}' target delivery date."
                 )
 
-        # 3. Separate RAID, Dependencies/Assumptions, and Decisions
+        # 3. Separate RAID, Dependencies/Assumptions, and Decisions (v4 B2)
         raw_raid_items = [r.model_copy() for r in raid_ext.items]
         raid_items: List[RiskAssumption] = []
         dependencies_assumptions: List[DependencyAssumptionItem] = []
@@ -164,6 +202,18 @@ class BaselineAggregator:
                 else:
                     asm_idx += 1
 
+                # Link only if item text explicitly names milestone phase code or deliverable ID (v4 B2)
+                matched_ms_id = None
+                matched_deliv_id = None
+                for m in milestones:
+                    if re.search(r"\b" + re.escape(m.id) + r"\b", item.description, re.IGNORECASE):
+                        matched_ms_id = m.id
+                        break
+                for d in deliverables:
+                    if re.search(r"\b" + re.escape(d.id) + r"\b", item.description, re.IGNORECASE):
+                        matched_deliv_id = d.id
+                        break
+
                 da_item = DependencyAssumptionItem(
                     id=item_id,
                     type=item.type,
@@ -174,8 +224,8 @@ class BaselineAggregator:
                     status=item.status or "Open",
                     impact_if_unmet="Delivery delay / milestone impediment",
                     escalation_trigger="Milestone slip or unconfirmed prerequisite",
-                    linked_milestone=milestones[0].id if milestones else None,
-                    linked_deliverable=deliverables[0].id if deliverables else None,
+                    linked_milestone=matched_ms_id,
+                    linked_deliverable=matched_deliv_id,
                 )
                 dependencies_assumptions.append(da_item)
             else:
@@ -189,20 +239,40 @@ class BaselineAggregator:
         elif sow_interpretation_ext and hasattr(sow_interpretation_ext, "contract_ambiguities") and sow_interpretation_ext.contract_ambiguities:
             contract_ambiguities = [a.model_copy() for a in sow_interpretation_ext.contract_ambiguities]
 
-        # 5. Process Decisions
+        # 5. Process Decisions (v4 B3: renumber when repeated or default)
         decisions: List[DecisionItem] = []
         if decisions_ext and decisions_ext.decisions:
-            decisions = [
-                DecisionItem(
-                    id=d.id,
-                    decision_text=sanitize_report_text(d.decision_text),
-                    decision_owner=d.decision_owner,
-                    status=d.status,
-                    rationale=sanitize_report_text(d.rationale),
-                    source_reference=d.source_reference
+            raw_decs = decisions_ext.decisions
+            seen_ids: Set[str] = set()
+            needs_renumbering = False
+            for d in raw_decs:
+                if not d.id or d.id == "DEC-01" or d.id in seen_ids:
+                    if seen_ids:
+                        needs_renumbering = True
+                seen_ids.add(d.id)
+            if len(raw_decs) > 1 and len(seen_ids) < len(raw_decs):
+                needs_renumbering = True
+
+            dec_id_map = {}
+            for idx, d in enumerate(raw_decs, 1):
+                old_id = d.id
+                new_id = f"DEC-{idx:02d}" if needs_renumbering else (d.id or f"DEC-{idx:02d}")
+                dec_id_map[old_id] = new_id
+                decisions.append(
+                    DecisionItem(
+                        id=new_id,
+                        decision_text=sanitize_report_text(d.decision_text),
+                        decision_owner=d.decision_owner,
+                        status=d.status,
+                        rationale=sanitize_report_text(d.rationale),
+                        source_reference=d.source_reference
+                    )
                 )
-                for d in decisions_ext.decisions
-            ]
+
+            # Update any linked_decision references in RAID items
+            for r in raid_items:
+                if hasattr(r, "linked_decision") and r.linked_decision and r.linked_decision in dec_id_map:
+                    r.linked_decision = dec_id_map[r.linked_decision]
         else:
             decisions = [
                 DecisionItem(
@@ -329,10 +399,16 @@ class BaselineAggregator:
                 source_reference=charter.source_reference
             )
 
-        # 9. Build Scope Decomposition / Backlog Seed (Layer 2)
+        # 9. Build Scope Decomposition / Backlog Seed (Layer 2, v4 B4)
         backlog_seed: List[WorkPackageSeed] = []
+        deliv_id_set = {d.id for d in deliverables}
         if backlog_ext and backlog_ext.work_packages:
-            backlog_seed = list(backlog_ext.work_packages)
+            for wp in backlog_ext.work_packages:
+                wp_copy = wp.model_copy()
+                if wp_copy.parent_deliverable_id and wp_copy.parent_deliverable_id not in deliv_id_set:
+                    logger.warning("Work package %s parent deliverable '%s' does not exist in deliverables; clearing parent.", wp_copy.id, wp_copy.parent_deliverable_id)
+                    wp_copy.parent_deliverable_id = None
+                backlog_seed.append(wp_copy)
         else:
             for i, deliv in enumerate(deliverables):
                 wp = WorkPackageSeed(
@@ -343,7 +419,7 @@ class BaselineAggregator:
                     preliminary_sequence=i + 1,
                     owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
                     dependency_references=[da.id for da in dependencies_assumptions[:2]],
-                    linked_milestones=[m.id for m in milestones[:1]],
+                    linked_milestones=[],
                     linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
                     uncertain_scope=deliv.acceptance_criteria is None,
                     status="Draft"
