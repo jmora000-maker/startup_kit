@@ -26,6 +26,8 @@ from src.core.models import (
     SourceReference,
     SOWInterpretationSummary,
     ContractAmbiguityItem,
+    OutputSelection,
+    RunResult,
 )
 from src.generators.docx_generator import DocxGenerator
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser, parse_date_safely
@@ -452,31 +454,29 @@ def test_orchestrator_run_reingest(sample_baseline: StartupKitBaseline, tmp_path
     )
 
     # Execute re-ingestion with in-place overwrite and export_tools
-    updated_file = controller.run_reingest(
+    result = controller.run_reingest(
         docx_path=original_docx,
         pmo_lead="Alice PMO",
         delivery_lead="Bob Delivery",
         talent_pm="Charlie Talent",
-        export_tools=True,
+        outputs=OutputSelection(kit=True, checklist=True, workbook=True),
         create_backup=True
     )
 
-    assert updated_file.exists()
-    assert updated_file.resolve() == original_docx.resolve()
+    assert result.kit_path.exists()
+    assert result.kit_path.resolve() == original_docx.resolve()
 
     # Verify backup was created
     backups = list(tmp_path.glob("MyProject_Startup_Kit_backup_*.docx"))
     assert len(backups) == 1
 
-    # Verify CSV and JSON tools were exported
-    csv_files = list(tmp_path.glob("*.csv"))
-    json_files = list(tmp_path.glob("*.json"))
-    assert len(csv_files) > 0
-    assert len(json_files) > 0
+    # Verify workbook was exported
+    xlsx_files = list(tmp_path.glob("*.xlsx"))
+    assert len(xlsx_files) > 0
 
     # Verify parsed regenerated content has updated roles
     parser = StartupKitDocxParser()
-    reloaded = parser.parse_startup_kit_docx(updated_file)
+    reloaded = parser.parse_startup_kit_docx(result.kit_path)
     assert reloaded.charter.pmo_lead == "Alice PMO"
     assert reloaded.charter.delivery_manager == "Bob Delivery"
     assert reloaded.charter.talent_pm == "Charlie Talent"
@@ -763,24 +763,28 @@ def test_docx_reingestion_with_ambiguities_and_questions_idempotence(populated_i
         doc_writer=DocxGenerator()
     )
 
-    out_file = ctrl.run(
+    out_res = ctrl.run(
         inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Jane Doe",
-        talent_pm="John Smith"
+        talent_pm="John Smith",
+        outputs=OutputSelection(kit=True)
     )
+    out_file = out_res.kit_path
 
     p1 = ctrl.docx_parser.parse_startup_kit_docx(out_file)
     p1_recalc = ctrl.aggregator.recalculate_readiness(p1)
 
-    reingest_file = ctrl.run_reingest(
+    reingest_res = ctrl.run_reingest(
         docx_path=out_file,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Jane Doe",
-        talent_pm="John Smith"
+        talent_pm="John Smith",
+        outputs=OutputSelection(kit=True)
     )
+    reingest_file = reingest_res.kit_path
 
     p2 = ctrl.docx_parser.parse_startup_kit_docx(reingest_file)
     p2_recalc = ctrl.aggregator.recalculate_readiness(p2)
@@ -804,24 +808,28 @@ def test_docx_reingestion_unassigned_roles_and_incomplete_staffing_idempotence(p
         doc_writer=DocxGenerator()
     )
 
-    out_file = ctrl.run(
+    out_res = ctrl.run(
         inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="[UNASSIGNED - TO BE CONFIRMED]",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
-        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]",
+        outputs=OutputSelection(kit=True)
     )
+    out_file = out_res.kit_path
 
     p1 = ctrl.docx_parser.parse_startup_kit_docx(out_file)
     p1_recalc = ctrl.aggregator.recalculate_readiness(p1)
 
-    reingest_file = ctrl.run_reingest(
+    reingest_res = ctrl.run_reingest(
         docx_path=out_file,
         output_dir=tmp_path,
         pmo_lead=None,
         delivery_lead=None,
-        talent_pm=None
+        talent_pm=None,
+        outputs=OutputSelection(kit=True)
     )
+    reingest_file = reingest_res.kit_path
 
     p2 = ctrl.docx_parser.parse_startup_kit_docx(reingest_file)
     p2_recalc = ctrl.aggregator.recalculate_readiness(p2)
@@ -936,13 +944,15 @@ def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(populated_i
         doc_writer=DocxGenerator()
     )
 
-    initial_docx = ctrl.run(
+    initial_res = ctrl.run(
         inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
-        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]",
+        outputs=OutputSelection(kit=True)
     )
+    initial_docx = initial_res.kit_path
 
     # Verify initial document has action badges
     doc_init = docx_module.Document(str(initial_docx))
@@ -985,13 +995,15 @@ def test_docx_reingestion_clears_actions_and_does_not_rewrite_badges(populated_i
     doc_edit.save(str(edited_path))
 
     # Run Re-ingest (Option 2)
-    reingest_output = ctrl.run_reingest(
+    reingest_res = ctrl.run_reingest(
         docx_path=edited_path,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Alex Mercer",
-        talent_pm="Elena Rostova"
+        talent_pm="Elena Rostova",
+        outputs=OutputSelection(kit=True)
     )
+    reingest_output = reingest_res.kit_path
 
     parsed = ctrl.docx_parser.parse_startup_kit_docx(reingest_output)
     recalculated = ctrl.aggregator.recalculate_readiness(parsed)
@@ -1051,13 +1063,15 @@ def test_docx_reingestion_monotonic_multi_cycle_updates(populated_inputs_dir, tm
     )
 
     # Initial generation (Cycle 0)
-    p0 = ctrl.run(
+    p0_res = ctrl.run(
         inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
-        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]",
+        outputs=OutputSelection(kit=True)
     )
+    p0 = p0_res.kit_path
     b0 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p0))
     score_0 = b0.readiness_score
 
@@ -1072,13 +1086,15 @@ def test_docx_reingestion_monotonic_multi_cycle_updates(populated_inputs_dir, tm
 
     p1_in = tmp_path / "Cycle1_Edit.docx"
     doc1.save(str(p1_in))
-    p1 = ctrl.run_reingest(
+    p1_res = ctrl.run_reingest(
         docx_path=p1_in,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Jane Doe",
-        talent_pm="Alex Mercer"
+        talent_pm="Alex Mercer",
+        outputs=OutputSelection(kit=True)
     )
+    p1 = p1_res.kit_path
     b1 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p1))
     score_1 = b1.readiness_score
     assert score_1 > score_0, f"Expected score_1 ({score_1}) > score_0 ({score_0})"
@@ -1097,13 +1113,15 @@ def test_docx_reingestion_monotonic_multi_cycle_updates(populated_inputs_dir, tm
 
     p2_in = tmp_path / "Cycle2_Edit.docx"
     doc2.save(str(p2_in))
-    p2 = ctrl.run_reingest(
+    p2_res = ctrl.run_reingest(
         docx_path=p2_in,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="Jane Doe",
-        talent_pm="Alex Mercer"
+        talent_pm="Alex Mercer",
+        outputs=OutputSelection(kit=True)
     )
+    p2 = p2_res.kit_path
     b2 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p2))
     score_2 = b2.readiness_score
     assert score_2 >= score_1, f"Expected score_2 ({score_2}) >= score_1 ({score_1})"
@@ -1141,13 +1159,15 @@ def test_docx_reingestion_evaluates_roster_ambiguity_and_table_edits_dynamically
         aggregator=BaselineAggregator(),
         doc_writer=DocxGenerator()
     )
-    p0 = ctrl.run(
+    p0_res = ctrl.run(
         inputs_dir=populated_inputs_dir,
         output_dir=tmp_path,
         pmo_lead="Sarah Connor",
         delivery_lead="[UNASSIGNED - TO BE CONFIRMED]",
-        talent_pm="[UNASSIGNED - TO BE CONFIRMED]"
+        talent_pm="[UNASSIGNED - TO BE CONFIRMED]",
+        outputs=OutputSelection(kit=True)
     )
+    p0 = p0_res.kit_path
     b0 = ctrl.aggregator.recalculate_readiness(ctrl.docx_parser.parse_startup_kit_docx(p0))
     initial_score = b0.readiness_score
 

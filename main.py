@@ -39,6 +39,8 @@ from src.core.models import (
     CommercialGuardrail,
     TalentOnboardingRecord,
     TalentMember,
+    OutputSelection,
+    RunResult,
 )
 from datetime import date
 
@@ -408,7 +410,7 @@ def create_mock_llm_client() -> MockLLMClient:
     client.set_response(
         CommunicationsExtraction,
         CommunicationsExtraction(
-            communications_plan=[
+            communications=[
                 CommunicationsPlanItem(
                     id="COM-01",
                     name="Weekly Project Status Report (PSR)",
@@ -435,19 +437,20 @@ def create_mock_llm_client() -> MockLLMClient:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Toptal PMO Startup Kit Generator - Automated Document Ingestion and Word Report Generation."
+        description="Toptal PMO Startup Kit Generator - Automated Document Ingestion and Word Report Generation.",
+        epilog="Output: by default only the PMO Startup Toolkit workbook is written. Add --kit, --checklist, or --all to also write Word documents."
     )
     parser.add_argument(
         "--inputs-dir",
         type=Path,
         default=None,
-        help="Path to inputs directory containing SOWs and decks (default: inputs/)"
+        help="Path to inputs directory containing SOWs and decks (default: inputs/, or inputs/SOWs/Test when --mock is used)"
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
-        help="Path to output directory for generated Word reports (default: output/)"
+        help="Path to output directory for generated Word reports (default: output/, or output/Reports/Test when --mock is used)"
     )
     parser.add_argument(
         "--output-file",
@@ -548,9 +551,31 @@ def parse_args():
         help="Run using offline deterministic Mock LLM client (no API keys required)"
     )
     parser.add_argument(
+        "--start-date",
+        type=str,
+        default=None,
+        help="Project Start Date in ISO format (YYYY-MM-DD); planned dates are derived from this date"
+    )
+    parser.add_argument(
         "--export-tools",
         action="store_true",
-        help="Export downstream PMO Operating System workbook toolkits (CSV/JSON seeds) to output/"
+        help="Write the Project Delivery Workbook Excel workbook (default when no output flag is given)"
+    )
+    parser.add_argument(
+        "--kit",
+        action="store_true",
+        help="Write the Startup Kit Word document"
+    )
+    parser.add_argument(
+        "--checklist",
+        action="store_true",
+        help="Write the Startup Readiness Checklist Word document"
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="all_outputs",
+        help="Write the Startup Kit, the Readiness Checklist, and the Project Delivery Workbook"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -688,6 +713,14 @@ def main():
     try:
         is_interactive = not args.non_interactive
 
+        parsed_start_date: Optional[date] = None
+        if getattr(args, "start_date", None):
+            try:
+                parsed_start_date = date.fromisoformat(args.start_date.strip())
+            except ValueError:
+                logger.error("Invalid --start-date format '%s'. Must be YYYY-MM-DD.", args.start_date)
+                return 1
+
         # Determine execution mode: Flag takes priority, then interactive prompt
         if args.reingest_docx is not None:
             mode = "2"
@@ -695,6 +728,19 @@ def main():
             mode = prompt_execution_mode(interactive=True)
         else:
             mode = "1"
+
+        outputs = OutputSelection.from_flags(
+            all_=args.all_outputs,
+            kit=args.kit,
+            checklist=args.checklist,
+            export_tools=args.export_tools
+        )
+        logger.info(
+            "Outputs -> Kit: %s | Checklist: %s | Workbook: %s",
+            "yes" if outputs.kit else "no",
+            "yes" if outputs.checklist else "no",
+            "yes" if outputs.workbook else "no"
+        )
 
         if mode == "2":
             target_docx = prompt_reingest_file(
@@ -724,7 +770,7 @@ def main():
                 aggregator=BaselineAggregator()
             )
 
-            output_file = controller.run_reingest(
+            run_result = controller.run_reingest(
                 docx_path=target_docx,
                 output_dir=args.output_dir,
                 output_file=args.output_file,
@@ -733,21 +779,29 @@ def main():
                 talent_pm=talent_pm if (args.talent_pm is not None or (is_interactive and talent_pm != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
                 tier_override=args.tier,
                 contract_type_override=args.contract_type,
-                export_tools=args.export_tools,
+                outputs=outputs,
+                start_date=parsed_start_date,
             )
 
-            logger.info("SUCCESS: Project Startup Kit re-evaluated and updated successfully!")
-            logger.info("Updated Report File: %s", output_file.resolve())
+            logger.info("SUCCESS: Project Startup Kit re-evaluated successfully!")
+            if run_result.kit_path:
+                logger.info("Startup Kit Word Document: %s", run_result.kit_path.resolve())
+            if run_result.checklist_path:
+                logger.info("Readiness Checklist Word Document: %s", run_result.checklist_path.resolve())
+            if run_result.workbook:
+                logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
             return 0
 
         # Mode 1: Initial Generation
         logger.info("Mode: Initial Generation (From SOWs and input artifacts)")
+        default_inputs = config.mock_inputs_dir if args.mock else config.inputs_dir
+        default_outputs = config.mock_output_dir if args.mock else config.output_dir
         inputs_dir, output_dir = prompt_directories(
             inputs_dir=args.inputs_dir,
             output_dir=args.output_dir,
             interactive=is_interactive,
-            default_inputs_dir=config.inputs_dir,
-            default_output_dir=config.output_dir
+            default_inputs_dir=default_inputs,
+            default_output_dir=default_outputs
         )
         logger.info("Directories -> Inputs: %s | Output: %s", inputs_dir, output_dir)
 
@@ -823,7 +877,7 @@ def main():
             doc_writer=DocxGenerator()
         )
 
-        output_file = controller.run(
+        run_result = controller.run(
             inputs_dir=inputs_dir,
             output_dir=output_dir,
             tier_override=args.tier,
@@ -831,14 +885,20 @@ def main():
             pmo_lead=pmo_lead,
             delivery_lead=delivery_lead,
             talent_pm=talent_pm,
-            export_tools=args.export_tools,
+            outputs=outputs,
+            start_date=parsed_start_date,
         )
 
         if hasattr(llm_client, "fallback_domains") and llm_client.fallback_domains:
             logger.info("Notice: The following extraction domain(s) used secondary OpenAI fallback: %s", ", ".join(llm_client.fallback_domains))
 
         logger.info("SUCCESS: Project Startup Kit generated successfully!")
-        logger.info("Report File: %s", output_file.resolve())
+        if run_result.kit_path:
+            logger.info("Startup Kit Word Document: %s", run_result.kit_path.resolve())
+        if run_result.checklist_path:
+            logger.info("Readiness Checklist Word Document: %s", run_result.checklist_path.resolve())
+        if run_result.workbook:
+            logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
         return 0
 
     except Exception as exc:

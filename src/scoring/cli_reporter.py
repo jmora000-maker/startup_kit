@@ -3,12 +3,15 @@
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, Sequence
 from src.core.models import StartupKitBaseline
+from src.generators.pmo_workbook import PMOWorkbookResult
 
 
 def format_readiness_cli_summary(
-    baseline: StartupKitBaseline, output_path: Path, use_color: Optional[bool] = None
+    baseline: StartupKitBaseline,
+    output_path: Union[Path, Sequence[Path]],
+    use_color: Optional[bool] = None
 ) -> str:
     """Format an executive CLI summary dashboard for the Startup Readiness Gateway (G-01)."""
     if use_color is None:
@@ -96,6 +99,11 @@ def format_readiness_cli_summary(
     sep_double = "=" * 80
     sep_single = "-" * 80
 
+    if isinstance(output_path, (str, Path)):
+        paths = [output_path]
+    else:
+        paths = list(output_path)
+
     lines = [
         sep_double,
         f"{COLOR_BOLD}{COLOR_CYAN}           TOPTAL PMO STARTUP READINESS GATEWAY (G-01) SUMMARY{COLOR_RESET}",
@@ -118,17 +126,85 @@ def format_readiness_cli_summary(
         f"   • Open Clarifications  : {len(clarifications)} item(s){cla_ids_str}",
         f"   • Total Score Recovery : +{total_recovery:.1f}% -> Achievable Target: {target_score:.1f}% ({target_cat_color})",
         sep_single,
-        " REPORT ARTIFACT:",
-        f"   • Output File Path     : {output_path.resolve() if hasattr(output_path, 'resolve') else output_path}",
-        sep_double,
+        " REPORT ARTIFACTS:" if len(paths) > 1 else " REPORT ARTIFACT:",
     ]
+
+    for p in paths:
+        res_p = p.resolve() if hasattr(p, "resolve") else p
+        lines.append(f"   • Output File Path     : {res_p}")
+
+    lines.append(sep_double)
 
     return "\n".join(lines)
 
 
 def print_readiness_cli_summary(
-    baseline: StartupKitBaseline, output_path: Path, use_color: Optional[bool] = None
+    baseline: StartupKitBaseline,
+    output_path: Union[Path, Sequence[Path]],
+    use_color: Optional[bool] = None
 ) -> None:
     """Print the formatted readiness CLI summary to standard output."""
     summary_text = format_readiness_cli_summary(baseline, output_path, use_color=use_color)
+    print(summary_text)
+
+
+def format_workbook_export_summary(
+    result: PMOWorkbookResult,
+    use_color: Optional[bool] = None
+) -> str:
+    """Format an executive CLI summary of the Project Delivery Workbook export."""
+    if use_color is None:
+        if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+            use_color = False
+        else:
+            use_color = True
+
+    if use_color:
+        COLOR_AMBER = "\033[93m"
+        COLOR_CYAN = "\033[96m"
+        COLOR_BOLD = "\033[1m"
+        COLOR_RESET = "\033[0m"
+    else:
+        COLOR_AMBER = ""
+        COLOR_CYAN = ""
+        COLOR_BOLD = ""
+        COLOR_RESET = ""
+
+    sep_double = "=" * 80
+    sep_single = "-" * 80
+
+    ws_count = result.workstreams_count if result.workstreams_count else 0
+    ms_count = result.milestones_count if result.milestones_count else result.schedule_rows
+
+    lines = [
+        sep_double,
+        f"{COLOR_BOLD}{COLOR_CYAN}                     PROJECT DELIVERY WORKBOOK{COLOR_RESET}",
+        sep_single,
+        f"   • Project Schedule     : {ws_count} workstreams, {ms_count} milestones",
+        f"   • WBS                  : {result.wbs_rows} elements ({result.task_rows} tasks)",
+        f"   • RAID Log             : {result.raid_rows} items",
+    ]
+
+    if result.excluded_items > 0:
+        lines.append(f"   • Excluded readiness   : {result.excluded_items} item(s) dropped by defensive filter")
+
+    if result.unmapped_deliverables > 0:
+        unmapped_str = f"   • Unmapped deliverables: {result.unmapped_deliverables} (placed under final milestone - review)"
+        if use_color:
+            unmapped_str = f"{COLOR_AMBER}{unmapped_str}{COLOR_RESET}"
+        lines.append(unmapped_str)
+
+    res_path = result.file_path.resolve() if hasattr(result.file_path, "resolve") else result.file_path
+    lines.append(f"   • Output File Path     : {res_path}")
+    lines.append(sep_double)
+
+    return "\n".join(lines)
+
+
+def print_workbook_export_summary(
+    result: PMOWorkbookResult,
+    use_color: Optional[bool] = None
+) -> None:
+    """Print the formatted Project Delivery Workbook export summary to standard output."""
+    summary_text = format_workbook_export_summary(result, use_color=use_color)
     print(summary_text)

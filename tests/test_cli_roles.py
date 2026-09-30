@@ -4,7 +4,7 @@ import sys
 import docx
 import pytest
 from pathlib import Path
-from src.core.models import ProjectStartupCharter, TalentOnboardingRecord
+from src.core.models import ProjectStartupCharter, TalentOnboardingRecord, RunResult
 from src.config import config
 from main import prompt_role_names, prompt_directories, prompt_api_keys, main, parse_args
 
@@ -249,6 +249,7 @@ def test_cli_main_with_explicit_roles(populated_inputs_dir, tmp_path, monkeypatc
         "--pmo-lead", "Alex PMO",
         "--delivery-lead", "Dana Delivery",
         "--talent-pm", "Taylor Talent",
+        "--all",
         "--non-interactive"
     ]
     monkeypatch.setattr(sys, "argv", test_args)
@@ -281,6 +282,7 @@ def test_cli_main_with_delivery_manager_alias(populated_inputs_dir, tmp_path, mo
         "--inputs-dir", str(populated_inputs_dir),
         "--output-dir", str(output_dir),
         "--delivery-manager", "Morgan Manager",
+        "--all",
         "--non-interactive"
     ]
     monkeypatch.setattr(sys, "argv", test_args)
@@ -306,6 +308,7 @@ def test_cli_main_default_unassigned_roles(populated_inputs_dir, tmp_path, monke
         "--mock",
         "--inputs-dir", str(populated_inputs_dir),
         "--output-dir", str(output_dir),
+        "--all",
         "--non-interactive"
     ]
     monkeypatch.setattr(sys, "argv", test_args)
@@ -339,7 +342,8 @@ def test_cli_main_interactive_directories_and_roles(populated_inputs_dir, tmp_pa
 
     test_args = [
         "main.py",
-        "--mock"
+        "--mock",
+        "--all"
     ]
     monkeypatch.setattr(sys, "argv", test_args)
 
@@ -372,7 +376,7 @@ def test_cli_main_interactive_empty_directories_fallback(monkeypatch):
     def mock_run(self, inputs_dir=None, output_dir=None, **kwargs):
         captured_kwargs["inputs_dir"] = inputs_dir
         captured_kwargs["output_dir"] = output_dir
-        return Path("output/mock_result.docx")
+        return RunResult(kit_path=Path("output/mock_result.docx"))
 
     from src.orchestrator import StartupKitController
     monkeypatch.setattr(StartupKitController, "run", mock_run)
@@ -382,8 +386,53 @@ def test_cli_main_interactive_empty_directories_fallback(monkeypatch):
 
     exit_code = main()
     assert exit_code == 0
+    assert captured_kwargs["inputs_dir"] == config.mock_inputs_dir
+    assert captured_kwargs["output_dir"] == config.mock_output_dir
+
+
+def test_cli_main_interactive_empty_directories_fallback_non_mock(monkeypatch):
+    """Verify that interactive empty directory inputs fall back to config.inputs_dir when not in mock mode."""
+    inputs = iter(["1", "", "", "", "", ""])
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
+
+    captured_kwargs = {}
+
+    def mock_run(self, inputs_dir=None, output_dir=None, **kwargs):
+        captured_kwargs["inputs_dir"] = inputs_dir
+        captured_kwargs["output_dir"] = output_dir
+        return RunResult(kit_path=Path("output/mock_result.docx"))
+
+    from src.orchestrator import StartupKitController
+    monkeypatch.setattr(StartupKitController, "run", mock_run)
+
+    test_args = ["main.py", "--api-key", "sk-ant-test-key"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    exit_code = main()
+    assert exit_code == 0
     assert captured_kwargs["inputs_dir"] == config.inputs_dir
     assert captured_kwargs["output_dir"] == config.output_dir
+
+
+def test_cli_main_mock_default_inputs_dir_non_interactive(monkeypatch):
+    """Verify that --mock in non-interactive mode defaults inputs_dir to config.mock_inputs_dir and output_dir to config.mock_output_dir."""
+    captured_kwargs = {}
+
+    def mock_run(self, inputs_dir=None, output_dir=None, **kwargs):
+        captured_kwargs["inputs_dir"] = inputs_dir
+        captured_kwargs["output_dir"] = output_dir
+        return RunResult(kit_path=Path("output/mock_result.docx"))
+
+    from src.orchestrator import StartupKitController
+    monkeypatch.setattr(StartupKitController, "run", mock_run)
+
+    test_args = ["main.py", "--mock", "--non-interactive"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    exit_code = main()
+    assert exit_code == 0
+    assert captured_kwargs["inputs_dir"] == config.mock_inputs_dir
+    assert captured_kwargs["output_dir"] == config.mock_output_dir
 
 
 def test_cli_main_openai_provider_routing(monkeypatch):
@@ -394,7 +443,7 @@ def test_cli_main_openai_provider_routing(monkeypatch):
         def __init__(self, ingestion_service=None, llm_client=None, aggregator=None, doc_writer=None):
             captured["client"] = llm_client
         def run(self, **kwargs):
-            return Path("output/test.docx")
+            return RunResult(kit_path=Path("output/test.docx"))
 
     monkeypatch.setattr("main.StartupKitController", DummyController)
     monkeypatch.setattr(sys, "argv", [
@@ -422,7 +471,7 @@ def test_cli_main_anthropic_default_provider_routing(monkeypatch):
         def __init__(self, ingestion_service=None, llm_client=None, aggregator=None, doc_writer=None):
             captured["client"] = llm_client
         def run(self, **kwargs):
-            return Path("output/test.docx")
+            return RunResult(kit_path=Path("output/test.docx"))
 
     monkeypatch.setattr("main.StartupKitController", DummyController)
     monkeypatch.setattr(sys, "argv", [

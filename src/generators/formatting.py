@@ -136,12 +136,16 @@ def format_cell_text_and_highlight(cell, text: str, is_warning: bool = False):
             run.font.color.rgb = RGBColor(15, 23, 42)
 
 
+def sanitize_filename(name: str) -> str:
+    """Sanitize project name for safe filename creation."""
+    s = re.sub(r'[^a-zA-Z0-9_\- ]+', '', name or "").strip()
+    return re.sub(r'\s+', '_', s)
+
+
 def style_table(
     table: docx.table.Table,
     col_widths: Optional[Sequence[float]] = None
 ):
-    """Apply styling, headers, and cell formatting to tables."""
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
     # Format header row
     header_row = table.rows[0]

@@ -15,6 +15,9 @@ from main import create_mock_llm_client, main
 import sys
 
 
+from src.core.models import OutputSelection, RunResult
+
+
 def test_startup_kit_controller_e2e(populated_inputs_dir, tmp_path):
     output_dir = tmp_path / "output"
     mock_llm = create_mock_llm_client()
@@ -26,19 +29,23 @@ def test_startup_kit_controller_e2e(populated_inputs_dir, tmp_path):
         doc_writer=DocxGenerator()
     )
 
-    generated_file = controller.run(
+    result = controller.run(
         inputs_dir=populated_inputs_dir,
         output_dir=output_dir,
         tier_override="Elevated",
-        contract_type_override="Fixed Bid"
+        contract_type_override="Fixed Bid",
+        outputs=OutputSelection(kit=True, checklist=True, workbook=True)
     )
 
-    assert generated_file.exists()
-    assert generated_file.parent == output_dir
-    assert generated_file.suffix == ".docx"
+    assert isinstance(result, RunResult)
+    assert result.kit_path.exists()
+    assert result.kit_path.parent == output_dir
+    assert result.kit_path.suffix == ".docx"
+    assert result.workbook is not None
+    assert result.workbook.file_path.exists()
 
     # Verify content in generated document
-    doc = docx.Document(str(generated_file))
+    doc = docx.Document(str(result.kit_path))
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "TOPTAL PMO STARTUP KIT" in full_text
     assert "Pfizer Analytics & Cloud Modernization" in full_text
@@ -67,7 +74,7 @@ def test_cli_main_execution_with_export_tools(populated_inputs_dir, tmp_path, mo
         "--output-dir", str(output_dir),
         "--tier", "Elevated",
         "--contract-type", "Fixed Bid",
-        "--export-tools"
+        "--all"
     ]
     monkeypatch.setattr(sys, "argv", test_args)
 
@@ -78,11 +85,8 @@ def test_cli_main_execution_with_export_tools(populated_inputs_dir, tmp_path, mo
     assert len(created_docx) == 1
     assert len(list(output_dir.glob("*.docx"))) == 2
 
-    created_csv = list(output_dir.glob("*.csv"))
-    assert len(created_csv) == 2  # RAID and Decision Log
-
-    created_json = list(output_dir.glob("*.json"))
-    assert len(created_json) == 3  # Milestone Plan, PSA Seed, Budget Burndown Seed
+    created_xlsx = list(output_dir.glob("*.xlsx"))
+    assert len(created_xlsx) == 1
 
 
 def test_concurrent_extraction_all_domain_passes(populated_inputs_dir, tmp_path):
@@ -97,17 +101,81 @@ def test_concurrent_extraction_all_domain_passes(populated_inputs_dir, tmp_path)
         doc_writer=DocxGenerator()
     )
 
-    generated_file = controller.run(
+    result = controller.run(
         inputs_dir=populated_inputs_dir,
         output_dir=output_dir,
         pmo_lead="Sarah Connor",
         delivery_lead="John Connor",
         talent_pm="Kyle Reese",
+        outputs=OutputSelection(kit=True)
     )
 
-    assert generated_file.exists()
-    doc = docx.Document(str(generated_file))
+    assert result.kit_path.exists()
+    doc = docx.Document(str(result.kit_path))
     full_text = "\n".join(p.text for p in doc.paragraphs)
     assert "Sarah Connor" in full_text
     assert "John Connor" in full_text
     assert "Kyle Reese" in full_text
+
+
+def test_controller_default_mock_inputs_dir(tmp_path, monkeypatch):
+    """Verify that StartupKitController defaults to config.mock_inputs_dir when inputs_dir is None and MockLLMClient is used."""
+    output_dir = tmp_path / "mock_dir_output"
+    mock_llm = create_mock_llm_client()
+
+    captured_inputs = {}
+
+    class DummyIngestionService(IngestionService):
+        def ingest_directory(self, directory_path):
+            captured_inputs["dir"] = Path(directory_path)
+            return super().ingest_directory(directory_path)
+
+    controller = StartupKitController(
+        ingestion_service=DummyIngestionService(),
+        llm_client=mock_llm,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    from src.config import config
+    # Run using the real inputs/SOWs/Test or mock inputs dir
+    if config.mock_inputs_dir.exists():
+        result = controller.run(
+            inputs_dir=None,
+            output_dir=output_dir,
+            outputs=OutputSelection(kit=True)
+        )
+        assert captured_inputs["dir"] == config.mock_inputs_dir
+        assert result.kit_path.exists()
+
+
+def test_controller_default_mock_output_dir(tmp_path, monkeypatch):
+    """Verify that StartupKitController defaults to config.mock_output_dir when output_dir is None and MockLLMClient is used."""
+    mock_llm = create_mock_llm_client()
+
+    captured_paths = {}
+
+    class DummyDocWriter:
+        def write_kit_docx(self, baseline, output_path):
+            captured_paths["out"] = Path(output_path)
+            return Path(output_path) / "test.docx"
+
+        def write_docx(self, baseline, output_path):
+            captured_paths["out"] = Path(output_path)
+            return Path(output_path) / "test.docx"
+
+    controller = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=mock_llm,
+        aggregator=BaselineAggregator(),
+        doc_writer=DummyDocWriter()
+    )
+
+    from src.config import config
+    if config.mock_inputs_dir.exists():
+        controller.run(
+            inputs_dir=config.mock_inputs_dir,
+            output_dir=None,
+            outputs=OutputSelection(kit=True)
+        )
+        assert captured_paths["out"] == config.mock_output_dir

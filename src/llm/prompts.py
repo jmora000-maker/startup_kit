@@ -19,6 +19,10 @@ STRICT BUSINESS RULES & CONSTRAINTS:
 
 CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter and Governance metadata.
 
+CONSTRAINTS:
+- Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.
+- Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.
+
 Extract:
 - project_name: Title of the project or engagement.
 - client_name: Name of the client or sponsoring organization.
@@ -34,7 +38,12 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-DELIVERABLES_PROMPT = """Analyze the provided project documents and extract all project deliverables.
+DELIVERABLES_PROMPT = """Analyze the provided project documents and extract key contractual project deliverables.
+
+CONSTRAINTS:
+1. Focus strictly on top key contractual deliverables and major deliverables (maximum 15-20 deliverables).
+2. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.
+3. Keep acceptance criteria concise and direct (1-2 sentences). If not explicitly stated, you MUST set acceptance_criteria to null.
 
 For each deliverable:
 - id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)
@@ -47,7 +56,11 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-MILESTONES_PROMPT = """Analyze the provided project documents and extract all delivery milestones and target dates.
+MILESTONES_PROMPT = """Analyze the provided project documents and extract key delivery milestones, target dates, and phase gates.
+
+CONSTRAINTS:
+1. Extract key delivery milestones and phase gates (maximum 15 milestones).
+2. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.
 
 For each milestone:
 - id: Sequential identifier (e.g., M1, M2, M3...)
@@ -82,7 +95,7 @@ QUESTIONS_PROMPT = """Review the provided project documents and identify critica
 
 CONSTRAINTS:
 - Return a concise, prioritized list of the top 10-15 actionable questions (strings).
-- Keep each question direct, simple, and self-contained.
+- Keep each question direct, simple, and self-contained (1 sentence per question).
 - CRITICAL: Do NOT phrase questions by referencing the SOW or other documents (e.g. do NOT say 'The SOW does not specify X' or 'The document is unclear about Y'). Instead, ask direct questions about the project (e.g. 'What is the target completion date for Phase 1?', 'Who is the client sign-off approver for DEL-01?').
 
 DOCUMENTS CONTENT:
@@ -91,16 +104,21 @@ DOCUMENTS CONTENT:
 
 SOW_INTERPRETATION_PROMPT = """Analyze the provided project documents and extract the Scope & Baseline Interpretation Summary.
 
+CONSTRAINTS:
+1. Extract only the top essential items per category (maximum 5-8 items per list field).
+2. Keep each item/summary concise, direct, and self-contained (1-2 sentences maximum per item).
+3. Do NOT mention or reference the SOW, contracts, or source documents in any text or field.
+
 Extract:
-- contracted_deliverables: Key deliverables agreed for the project. Keep descriptions concise and self-contained.
-- out_of_scope_items: Explicit scope exclusions and out-of-scope tasks.
-- customer_obligations: Prerequisites, data, environments, or access customer must provide.
-- assumptions: Baseline delivery and project assumptions.
-- constraints: Known delivery, technical, regulatory, or schedule constraints.
-- platform_environment_commitments: Cloud platform (AWS/Azure/GCP) and infrastructure commitments.
-- dependencies: External dependencies.
-- approval_expectations: Client review windows and sign-off expectations.
-- ambiguity_notes: Unclear or unconfirmed scope terms (state the scope gap concisely without referencing the SOW or documents).
+- contracted_deliverables: Key deliverables agreed for the project (maximum 8 items). Keep descriptions concise and self-contained.
+- out_of_scope_items: Explicit scope exclusions and out-of-scope tasks (maximum 8 items).
+- customer_obligations: Prerequisites, data, environments, or access customer must provide (maximum 8 items).
+- assumptions: Baseline delivery and project assumptions (maximum 8 items).
+- constraints: Known delivery, technical, regulatory, or schedule constraints (maximum 8 items).
+- platform_environment_commitments: Cloud platform (AWS/Azure/GCP) and infrastructure commitments (maximum 8 items).
+- dependencies: External dependencies (maximum 8 items).
+- approval_expectations: Client review windows and sign-off expectations (maximum 5 items).
+- ambiguity_notes: Unclear or unconfirmed scope terms (maximum 8 items, stating scope gaps concisely without referencing documents).
 
 Keep all text concise, simplified, and self-contained without referencing the SOW or other documents.
 
@@ -109,6 +127,10 @@ DOCUMENTS CONTENT:
 """
 
 SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages (maximum 15 work packages). Keep titles and descriptions concise.
+
+CONSTRAINTS:
+1. Maximum 15 work packages total.
+2. Keep descriptions brief and actionable (1-2 sentences maximum).
 
 For each work package:
 - id: e.g. WP-01, WP-02
@@ -128,17 +150,22 @@ DOCUMENTS CONTENT:
 
 ACCEPTANCE_PROCESS_PROMPT = """Analyze the deliverables in the provided documents and extract explicit acceptance process details. Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.
 
+CONSTRAINTS:
+1. Focus only on primary deliverables and major acceptance gates (maximum 15 deliverables).
+2. Keep all text fields (description, acceptance criteria, evidence, rework path) brief and direct (1-2 sentences maximum).
+3. Do NOT cite or reference the SOW, contracts, or source documents in descriptions or criteria.
+
 For each deliverable:
 - id: Deliverable ID (DEL-01, etc.)
 - name: Deliverable title
-- description: Concise deliverable description
+- description: Concise deliverable description (1-2 sentences)
 - sow_reference: Section or clause reference
 - acceptance_criteria: Explicit criteria or null (do not cite documents)
-- evidence_required: Documents, artifacts, or sign-offs required as proof
+- evidence_required: Documents, artifacts, or sign-offs required as proof (1-2 sentences)
 - client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'
 - submission_target_date: Target submission date (YYYY-MM-DD) if stated
 - review_window: Client review window (e.g. '5 business days')
-- rejection_rework_path: Rework and resubmission mechanism
+- rejection_rework_path: Rework and resubmission mechanism (1-2 sentences)
 
 DOCUMENTS CONTENT:
 {documents_text}
@@ -146,6 +173,10 @@ DOCUMENTS CONTENT:
 
 STAKEHOLDERS_PROMPT = """Analyze the provided project documents and extract key delivery stakeholders and decision rights.
 Ensure you identify PMO leadership (PMO Lead, Director, PMO), delivery leadership (Delivery Manager, Talent PM, Technical Lead), and customer counterparts (Client Sponsor, Client Approver).
+
+CONSTRAINTS:
+1. Extract key delivery stakeholders and leadership roles (maximum 10-12 key stakeholders).
+2. Keep decision rights, responsibilities, and escalation summaries concise (1-2 sentences per field).
 
 For each stakeholder:
 - name: Named individual or role placeholder
@@ -161,6 +192,10 @@ DOCUMENTS CONTENT:
 """
 
 COMMUNICATIONS_PROMPT = """Analyze the provided project documents and extract required communications, reports, and governance meetings.
+
+CONSTRAINTS:
+1. Extract primary governance communications and meetings (maximum 8-10 key governance events/reports).
+2. Keep all descriptions, audiences, formats, and notes concise and direct (1 sentence per field).
 
 For each item:
 - id: COM-01, COM-02...
@@ -179,6 +214,10 @@ DOCUMENTS CONTENT:
 """
 
 COMMERCIAL_GUARDRAILS_PROMPT = """Analyze the project commercial model and extract guardrails to protect delivery margin and budget.
+
+CONSTRAINTS:
+1. Provide concise, direct 1-2 sentence summaries for each commercial guardrail field.
+2. Do NOT mention or reference the SOW, contracts, or source documents.
 
 Extract:
 - contract_type_implication: Commercial rules based on Time and Materials or Fixed Bid
@@ -201,12 +240,16 @@ DOCUMENTS CONTENT:
 
 TALENT_ONBOARDING_PROMPT = """Analyze the project talent staffing and onboarding requirements.
 
+CONSTRAINTS:
+1. Focus on core delivery roles and essential technical skills (maximum 10 key roles/skills).
+2. Keep descriptions and gap notes concise (1-2 sentences).
+
 Extract:
 - talent_pm: Named Talent PM or '[UNASSIGNED - TO BE CONFIRMED]'
 - delivery_manager: Named Delivery Manager or '[UNASSIGNED - TO BE CONFIRMED]'
 - pmo_lead: Named PMO Lead
-- required_roles: Roles required to staff delivery
-- required_skills: Key technical skills (e.g. AWS, Terraform, Python)
+- required_roles: Roles required to staff delivery (maximum 10 key roles)
+- required_skills: Key technical skills (e.g. AWS, Terraform, Python) (maximum 10 skills)
 - staffing_gaps: Any identified staffing gaps
 - replacement_plan: Protocol for talent replacement
 
@@ -215,6 +258,10 @@ DOCUMENTS CONTENT:
 """
 
 DECISIONS_PROMPT = """Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness (maximum 15 key decisions). Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.
+
+CONSTRAINTS:
+1. Extract maximum 15 key decisions.
+2. Keep decision statements and rationales concise and direct (1-2 sentences).
 
 For each decision:
 - id: DEC-01, DEC-02...

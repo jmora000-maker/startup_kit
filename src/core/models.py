@@ -6,6 +6,7 @@ from typing import List, Optional, Literal, Dict, Any, Union, Annotated
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, model_validator, BeforeValidator
 from src.core.pdf_models import PDFDocumentMetadata, PDFPageMetadata
+from src.core.outputs import OutputSelection, RunResult
 
 
 def parse_flexible_date(v: Any) -> Optional[date]:

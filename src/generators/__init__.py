@@ -11,6 +11,7 @@ from src.generators.formatting import (
 )
 from src.generators.checklist import G01ChecklistRenderer
 from src.generators.docx_generator import DocxGenerator, sanitize_filename
+from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
 
 __all__ = [
     "add_section_heading",
@@ -23,4 +24,6 @@ __all__ = [
     "G01ChecklistRenderer",
     "DocxGenerator",
     "sanitize_filename",
+    "export_pmo_workbook",
+    "PMOWorkbookResult",
 ]

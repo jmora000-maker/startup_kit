@@ -31,7 +31,7 @@ Automated project onboarding and readiness toolkit. The PMO Startup Kit Generato
      - **Contract Ambiguities Table**: Anomaly tracking, clause citations, risk & margin impact, and recommended client clarifications formed directly from `CONTRACT_CONFLICTS_PROMPT`.
 - **Word Re-ingestion & Rescoring Engine**: Re-evaluates edited Word documents (`--reingest-docx`), automatically detecting and synchronizing companion checklist documents, dynamically recalculating scores across all 4 dimensions, and clearing resolved action items without re-running LLM extraction.
 - **Executive CLI Readiness Telemetry**: Outputs a formatted, color-coded summary dashboard in the terminal immediately following document generation and re-ingestion passes.
-- **PMO Operating System Export**: Optional export of downstream CSV and JSON seed payloads for PMO workbooks and tracking toolkits.
+- **Project Delivery Workbook**: Default Excel output with a Project Schedule by phase workstream, a four-level WBS with deliverable work packages and milestone acceptance, and a consolidated delivery RAID Log, all built from the SOW delivery baseline. Word documents are written on request with `--kit`, `--checklist`, or `--all`.
 - **Offline / Mock Mode**: Fully functional offline mock client for local testing and deterministic validation without requiring LLM API credentials.
 - **Automated Versioning**: Configured with `bump-my-version` for semantic versioning.
 
@@ -62,7 +62,7 @@ Startup_Kit/
 │   ├── generators/         # Word document builder, formatting, G-01 checklist, and data exporters
 │   │   ├── checklist.py    # Authoritative 15-row G-01 checklist generator
 │   │   ├── docx_generator.py # Word document builder and table renderer
-│   │   ├── export_payloads.py # PMO Operating System JSON/CSV exporter
+│   │   ├── pmo_workbook/   # Excel Project Delivery Workbook generator
 │   │   └── formatting.py   # Style and visual formatting utilities
 │   ├── llm/                # LangChain LLM client, prompts, parsers, and aggregation logic
 │   │   ├── aggregator.py   # Baseline aggregator and readiness scoring bridge
@@ -132,7 +132,9 @@ MAX_TOKENS=16384
 
 # Directory Paths (Optional overrides)
 INPUTS_DIR=inputs
+MOCK_INPUTS_DIR=inputs/SOWs/Test
 OUTPUT_DIR=output
+MOCK_OUTPUT_DIR=output/Reports/Test
 
 # Governance & Contract Defaults (Optional)
 DEFAULT_GOVERNANCE_TIER=Partnered
@@ -217,8 +219,8 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 | `--model` | String | LLM model name (e.g., `claude-sonnet-5-5`, `gpt-4o`) | `claude-sonnet-5-5` (Anthropic) / `gpt-4o` (OpenAI) |
 | `--reingest-docx` / `--docx-file` | Path | Path to existing `*_Startup_Kit.docx` to re-ingest and recalculate readiness score (bypasses raw ingestion in `inputs/`) | `None` |
 | `--output-file` | Path | Explicit destination file path for regenerated Word report | In-place overwrite / parent dir |
-| `--inputs-dir` | Path | Path to directory containing input documents | `inputs/` (interactive prompt if omitted) |
-| `--output-dir` | Path | Directory where generated reports are saved | `output/` (interactive prompt if omitted) |
+| `--inputs-dir` | Path | Path to directory containing input documents | `inputs/` (`inputs/SOWs/Test` for `--mock`) |
+| `--output-dir` | Path | Directory where generated reports are saved | `output/` (`output/Reports/Test` for `--mock`) |
 | `--tier` | Choice | Override Governance Tier (`Guided`, `Partnered`, `Elevated`) | Extracted / `Partnered` |
 | `--contract-type` | String | Override Contract Type (e.g., `'Fixed Bid'`, `'Time and Materials'`) | Extracted |
 | `--pmo-lead` | String | Set PMO Lead name | `[UNASSIGNED - TO BE CONFIRMED]` |
@@ -226,29 +228,38 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 | `--talent-pm` | String | Set Talent PM name | `[UNASSIGNED - TO BE CONFIRMED]` |
 | `--non-interactive` | Flag | Disable interactive directory and role prompts (uses defaults) | `False` |
 | `--mock` | Flag | Run offline deterministic mock extraction (zero token cost) | `False` |
-| `--export-tools` | Flag | Export downstream PMO workbook toolkits (CSV/JSON) to output | `False` |
+| `--start-date` | String | Project Start Date in ISO format (`YYYY-MM-DD`); planned dates are derived from this date | First Monday on/after award date |
+| `--export-tools` | Flag | Write the Project Delivery Workbook Excel workbook (default when no output flag is given) | `False` |
+| `--kit` | Flag | Write the Startup Kit Word document | `False` |
+| `--checklist` | Flag | Write the Startup Readiness Checklist Word document | `False` |
+| `--all` | Flag | Write the Startup Kit, the Readiness Checklist, and the Project Delivery Workbook | `False` |
 | `-v`, `--verbose` | Flag | Enable verbose debug logging | `False` |
+
+With no output flag, only the workbook is written.
 
 ### Example Commands
 
 ```bash
-# Run interactively with default Claude extraction:
-python main.py
+# Run interactively with default Claude extraction and all outputs:
+python main.py --all
 
-# Run non-interactively with Anthropic API key and full leadership assignments:
-python main.py --anthropic-api-key "sk-ant-api03-..." --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --non-interactive
+# Run non-interactively with Anthropic API key, all outputs, and full leadership assignments:
+python main.py --all --anthropic-api-key "sk-ant-api03-..." --pmo-lead "Sarah Connor" --delivery-lead "Jane Doe" --talent-pm "John Smith" --non-interactive
 
-# Run using OpenAI with direct API key:
-python main.py --openai --openai-api-key "sk-proj-..." --non-interactive
+# Run using OpenAI with direct API key and all outputs:
+python main.py --all --openai --openai-api-key "sk-proj-..." --non-interactive
 
 # Re-evaluate an updated Word report and recalculate readiness score (non-interactive):
-python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
+python main.py --reingest-docx output/Project_Startup_Kit.docx --kit --non-interactive
 
-# Re-evaluate and re-export downstream PMO tools with leadership role overrides:
-python main.py --reingest-docx output/Project_Startup_Kit.docx --pmo-lead "Sarah Connor" --delivery-lead "Alex Smith" --talent-pm "Taylor Brown" --export-tools --non-interactive
+# Re-evaluate and write all three outputs:
+python main.py --reingest-docx output/Project_Startup_Kit.docx --pmo-lead "Sarah Connor" --delivery-lead "Alex Smith" --talent-pm "Taylor Brown" --all --non-interactive
 
-# Run offline deterministic mock extraction:
+# Offline mock run: workbook only:
 python main.py --mock --non-interactive
+
+# Offline mock run: readiness checklist only:
+python main.py --mock --non-interactive --checklist
 ```
 
 ### Executive CLI Telemetry Output

@@ -13,10 +13,10 @@ from src.core.interfaces import (
     IDocumentWriter,
     IStartupKitDocxParser,
 )
-from src.core.models import StartupKitBaseline
+from src.core.models import StartupKitBaseline, OutputSelection, RunResult
 from src.extractors.service import IngestionService
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
-from src.llm.client import LangChainLLMClient
+from src.llm.client import LangChainLLMClient, MockLLMClient
 from src.llm.parsers import (
     CharterDomainExtractor,
     DeliverablesDomainExtractor,
@@ -35,8 +35,11 @@ from src.llm.parsers import (
 )
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
-from src.generators.export_payloads import export_all_pmo_tools
-from src.scoring.cli_reporter import print_readiness_cli_summary
+from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
+from src.scoring.cli_reporter import (
+    print_readiness_cli_summary,
+    print_workbook_export_summary,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -104,11 +107,26 @@ class StartupKitController:
         delivery_lead: Optional[str] = None,
         delivery_manager: Optional[str] = None,
         talent_pm: Optional[str] = None,
-        export_tools: bool = False,
-    ) -> Path:
+        outputs: Optional[OutputSelection] = None,
+        start_date: Optional[date] = None,
+    ) -> RunResult:
         """Execute the end-to-end startup kit generation pipeline."""
-        in_path = inputs_dir or config.inputs_dir
-        out_path = output_dir or config.output_dir
+        if outputs is None:
+            outputs = OutputSelection()
+
+        if inputs_dir is not None:
+            in_path = inputs_dir
+        elif isinstance(self.llm_client, MockLLMClient):
+            in_path = config.mock_inputs_dir
+        else:
+            in_path = config.inputs_dir
+
+        if output_dir is not None:
+            out_path = output_dir
+        elif isinstance(self.llm_client, MockLLMClient):
+            out_path = config.mock_output_dir
+        else:
+            out_path = config.output_dir
 
         logger.info("Starting PMO Startup Kit generation from directory: %s", in_path)
 
@@ -222,20 +240,43 @@ class StartupKitController:
             conflicts_ext=conflicts,
         )
 
-        # 4. Word Document Generation
-        logger.info("Generating Word Startup Kit document in %s...", out_path)
-        generated_file = self.doc_writer.write_docx(baseline, out_path)
+        # 4. Document & Workbook Generation according to outputs selection
+        kit_path: Optional[Path] = None
+        checklist_path: Optional[Path] = None
+        wb_result: Optional[PMOWorkbookResult] = None
+        written_paths: List[Path] = []
 
-        # 5. Export downstream PMO workbook toolkits if requested
-        if export_tools:
-            logger.info("Exporting downstream PMO Operating System workbook toolkits to %s...", out_path)
-            export_all_pmo_tools(baseline, out_path)
+        if outputs.kit:
+            logger.info("Generating Word Startup Kit document in %s...", out_path)
+            if hasattr(self.doc_writer, "write_kit_docx"):
+                kit_path = self.doc_writer.write_kit_docx(baseline, out_path)
+            else:
+                kit_path = self.doc_writer.write_docx(baseline, out_path)
+            written_paths.append(kit_path)
 
-        # 6. Output CLI Telemetry Summary
-        print_readiness_cli_summary(baseline, generated_file)
+        if outputs.checklist:
+            logger.info("Generating Word Startup Readiness Checklist document in %s...", out_path)
+            if hasattr(self.doc_writer, "write_checklist_docx"):
+                checklist_path = self.doc_writer.write_checklist_docx(baseline, out_path)
+                written_paths.append(checklist_path)
 
-        logger.info("Startup Kit Generation complete! File created at: %s", generated_file)
-        return generated_file
+        if outputs.workbook:
+            logger.info("Exporting Project Delivery Workbook to %s", out_path)
+            wb_result = export_pmo_workbook(baseline, out_path, start_date=start_date)
+            written_paths.append(wb_result.file_path)
+
+        # 5. CLI Telemetry Summary
+        print_readiness_cli_summary(baseline, written_paths if written_paths else [out_path])
+        if wb_result is not None:
+            print_workbook_export_summary(wb_result)
+
+        logger.info("Startup Kit execution complete! Readiness score: %.1f%%", baseline.readiness_score)
+        return RunResult(
+            kit_path=kit_path,
+            checklist_path=checklist_path,
+            workbook=wb_result,
+            readiness_score=baseline.readiness_score
+        )
 
     def run_reingest(
         self,
@@ -248,10 +289,14 @@ class StartupKitController:
         talent_pm: Optional[str] = None,
         tier_override: Optional[str] = None,
         contract_type_override: Optional[str] = None,
-        export_tools: bool = False,
+        outputs: Optional[OutputSelection] = None,
+        start_date: Optional[date] = None,
         create_backup: bool = True,
-    ) -> Path:
+    ) -> RunResult:
         """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report."""
+        if outputs is None:
+            outputs = OutputSelection()
+
         docx_file = Path(docx_path)
         if not docx_file.exists():
             raise FileNotFoundError(f"Target Startup Kit Word document not found at: {docx_file}")
@@ -323,31 +368,59 @@ class StartupKitController:
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create backup if overwriting in place and backup is enabled
-        if create_backup and target_path.resolve() == docx_file.resolve() and docx_file.exists():
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = docx_file.with_name(f"{docx_file.stem}_backup_{timestamp}.docx")
-            try:
-                shutil.copy2(str(docx_file), str(backup_path))
-                logger.info("Created backup before overwrite at: %s", backup_path)
-            except Exception as e:
-                logger.warning("Could not create backup of %s: %s", docx_file, e)
+        kit_path: Optional[Path] = None
+        checklist_path: Optional[Path] = None
+        wb_result: Optional[PMOWorkbookResult] = None
+        written_paths: List[Path] = []
 
-        logger.info("Regenerating updated Word document at: %s", target_path)
-        generated_file = self.doc_writer.write_docx(baseline, target_path)
+        if outputs.kit:
+            # Create backup if overwriting in place and backup is enabled
+            if create_backup and target_path.resolve() == docx_file.resolve() and docx_file.exists():
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_path = docx_file.with_name(f"{docx_file.stem}_backup_{timestamp}.docx")
+                try:
+                    shutil.copy2(str(docx_file), str(backup_path))
+                    logger.info("Created backup before overwrite at: %s", backup_path)
+                except Exception as e:
+                    logger.warning("Could not create backup of %s: %s", docx_file, e)
 
-        if export_tools:
-            export_dir = target_path.parent
-            logger.info("Exporting downstream PMO Operating System workbook toolkits to: %s", export_dir)
-            export_all_pmo_tools(baseline, export_dir)
+            logger.info("Regenerating updated Word Startup Kit document at: %s", target_path)
+            if hasattr(self.doc_writer, "write_kit_docx"):
+                kit_path = self.doc_writer.write_kit_docx(baseline, target_path)
+            else:
+                kit_path = self.doc_writer.write_docx(baseline, target_path)
+            written_paths.append(kit_path)
+        else:
+            logger.info("Readiness recalculated; the Startup Kit .docx was not rewritten. Add --kit or --all to update it.")
+
+        if outputs.checklist:
+            logger.info("Regenerating updated Word Startup Readiness Checklist document at: %s", target_path)
+            if hasattr(self.doc_writer, "write_checklist_docx"):
+                checklist_path = self.doc_writer.write_checklist_docx(baseline, target_path)
+                written_paths.append(checklist_path)
+
+        export_dir = target_path.parent
+        if outputs.workbook:
+            logger.info("Exporting Project Delivery Workbook to %s", export_dir)
+            wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
+            written_paths.append(wb_result.file_path)
+
+        if output_file is not None and not (outputs.kit or outputs.checklist):
+            logger.warning("--output-file was provided but neither the Startup Kit nor the Readiness Checklist was selected; it only sets the destination folder for the workbook.")
 
         # Output CLI Telemetry Summary
-        print_readiness_cli_summary(baseline, generated_file)
+        print_readiness_cli_summary(baseline, written_paths if written_paths else [target_path])
+        if wb_result is not None:
+            print_workbook_export_summary(wb_result)
 
         logger.info(
-            "Startup Kit Re-evaluation complete! Updated file: %s (Readiness Score: %s%%, Status: %s)",
-            generated_file,
+            "Startup Kit Re-evaluation complete! Readiness Score: %s%%, Status: %s",
             baseline.readiness_score,
             baseline.gate_decision.gate_decision_status if baseline.gate_decision else "N/A"
         )
-        return generated_file
+        return RunResult(
+            kit_path=kit_path,
+            checklist_path=checklist_path,
+            workbook=wb_result,
+            readiness_score=baseline.readiness_score
+        )
