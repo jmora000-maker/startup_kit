@@ -8,348 +8,364 @@
     "acceptance_matrix_items": [
       {
         "id": "DEL-01",
-        "name": "P1 Micro-Frontend Shell and Azure AD / MSAL Authentication",
-        "description": "Micro-frontend shell with global navigation, routing and remote mounting, built on the Client design system, plus Azure AD / MSAL authentication propagated to remotes.",
+        "name": "Milestone 1 - P1 Foundation Acceptance Gate",
+        "description": "Foundation milestone covering the micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, pipeline quality gates, authentication security testing, and data model and governance validation. It is planned for weeks 1-6.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 1 (HS-4762, HS-4763)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 1 (Page 4); Section 5.1",
+          "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s. Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works. A latency miss traced to a Client-owned platform component counts as met and is logged in the defect report.",
-        "sow_reference": "Section 4, Milestone 1 (P1 Foundation)",
-        "evidence_required": "Working shell and authentication integration, latency measurements against targets, and Milestone Sign-Off from Client's designated approver.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Each P1 work output meets its stated criteria. Items labeled Certification (HS-4770, HS-4782, HS-4941) are accepted on delivery and execution of test scripts and a defect report, not on the Client-built target being achieved.",
+        "sow_reference": "P1 Foundation (HS-4762, 4763, 4765, 4770, 4938, 4782, 4941)",
+        "evidence_required": "Work outputs, test results and defect reports for all P1 stories, presented at the Milestone Acceptance Review. Client Milestone Sign-Off is also required.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 1-6)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Client remediates failed Certification targets, and Toptal re-executes the applicable test scripts once. Further re-runs need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver for Milestone Sign-Off not provided",
+          "Review window for milestone sign-off not stated",
+          "Rework and resubmission process for Toptal-built rejections not defined",
+          "Calendar date for milestone submission not stated (planned weeks 1-6 from Start Date)"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-02",
-        "name": "P1 Shell/Auth E2E Test Harness and Authentication Security Testing",
-        "description": "End-to-end test harness for shell composition, navigation and authentication, plus authentication negative-test suite and security scan results.",
+        "name": "Milestone 2 - P2a Services and Data Acceptance Gate",
+        "description": "Services and data milestone covering search and async backend services, performance spike, OneGWAS integration and tests, and validation of Client-built data ingestion. It is planned for weeks 7-16 and starts once Client story HS-4781 is complete.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 and Section 4 - Milestone 1 (HS-4765, HS-4938)",
+          "clause_or_slide": "Section 4 - Milestone 2 (Pages 4-5); Section 7",
           "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "E2E coverage of composition, navigation and authentication with 100% critical-path pass. Negative tests pass and scan is clean. Findings in Toptal-built components are remediated; findings in Client-built components are reported to Client.",
-        "sow_reference": "Section 4, Milestone 1 (P1 Foundation)",
-        "evidence_required": "Delivered test scripts, execution results in the target environment, security scan results and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Each P2a work output meets its stated criteria, for example search P95 < 1s and OneGWAS write P95 < 60s. Certification items (HS-4797, 4785, 4807, 4801, 4791) are accepted on delivery and execution of test scripts and defect reports, not on achieving Client-built targets.",
+        "sow_reference": "P2a Services and Data (HS-4777, 4778, 4779, 4942, 4803, 4804, 4797, 4785, 4807, 4801, 4791)",
+        "evidence_required": "Work outputs, test results and defect reports for all P2a stories, presented at the Milestone Acceptance Review. Client Milestone Sign-Off and UAT results are also required.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 1-6)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Client remediates failures in Client-built components, and Toptal re-executes the applicable tests. UAT is limited to two runs per milestone, and further runs need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver for Milestone Sign-Off not provided",
+          "Review window for milestone sign-off not stated",
+          "Rework and resubmission process for Toptal-built rejections not defined",
+          "Calendar date for milestone submission not stated (planned weeks 7-16 from Start Date)"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-03",
-        "name": "P1 Certification Tests: Pipeline Gates, Data Model and Data Governance",
-        "description": "Test scripts, execution and defect reports for Client-built pipeline quality gates and deployment smoke checks, the Snowflake data model, and data governance controls.",
+        "name": "Milestone 3 - P2b Application Surface Acceptance Gate",
+        "description": "Application surface milestone covering the ARC micro-frontend search and detail views, haplotype features, nomenclature service, and related test suites. It is planned for weeks 17-21 and starts only after P2a is accepted.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 1 (HS-4770, HS-4782, HS-4941)",
+          "clause_or_slide": "Section 4 - Milestone 3 (Pages 5-6); Section 7",
           "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Tests executed against the stated targets: quality gates block on fail, deploy smoke 100% pass before promote, referential integrity 100%, representative queries validated, controls audited, classification coverage validated and gaps logged. Acceptance requires delivery and execution of the tests and the defect report; meeting the targets is Client's responsibility.",
-        "sow_reference": "Section 4, Milestone 1 (P1 Foundation); Section 3 Certification criteria",
-        "evidence_required": "Test scripts, execution results, defect report and gap log, plus Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Each P2b work output meets its stated criteria, for example results render P95 < 1s and frontend unit coverage >= 80%. Test-suite items require delivered scripts, execution in the target environment and a results report.",
+        "sow_reference": "P2b Application Surface (HS-4772, 4773, 4775, 4809, 4810, 4813, 4815, 4793, 4794, 4811)",
+        "evidence_required": "Work outputs, test scripts, execution results and reports for all P2b stories, presented at the Milestone Acceptance Review. Client Milestone Sign-Off and UAT results are also required.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 1-6)",
-        "rejection_rework_path": "Client remediates failures in its own components. Toptal then re-executes the test scripts; further re-runs require a Change Order.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal-built defects are tracked and fixed, and UAT is limited to two runs per milestone. Further UAT runs or test rework from external changes need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration not specified."
+          "Named Client approver for Milestone Sign-Off not provided",
+          "Review window for milestone sign-off not stated",
+          "Rework and resubmission process for Toptal-built rejections not defined",
+          "Calendar date for milestone submission not stated (planned weeks 17-21 from Start Date)"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-04",
-        "name": "P2a FastAPI Services, Async Processing, Load Tests and Performance Spike",
-        "description": "Faceted search and detail endpoints, asynchronous long-running query processing with health checks, backend integration and load test suites, and a performance engineering spike.",
+        "name": "Milestone 4 - P3 Launch Acceptance Gate",
+        "description": "Launch milestone covering full integration, performance, security and cross-browser testing, UAT, hardening, production smoke tests with a 48-hour defect watch, MTA Store parity confirmation, and training materials. It is planned for weeks 22-26 and starts only after P2b is accepted.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 2 (HS-4777, HS-4778, HS-4779, HS-4942)",
+          "clause_or_slide": "Section 4 - Milestone 4 (Pages 6-7); Section 7",
           "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. Long queries offloaded, status poll P95 < 200ms, queue drains, health checks green. p95 targets defined, query instrumentation implemented and tuning backlog triaged. Test suites need scripts delivered, executed and a results report.",
-        "sow_reference": "Section 4, Milestone 2 (P2a Services and Data)",
-        "evidence_required": "Working endpoints and task queue, load test results and spike outputs (benchmarks, query observability, p95 definitions, tuning backlog), plus Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Each P3 work output meets its stated criteria, including no open critical defects in Toptal-built work at UAT exit and production smoke 100% pass. The MTA Store parity item (HS-4788) is a Certification item, accepted on delivery of the report rather than on parity being achieved.",
+        "sow_reference": "P3 Launch (HS-4825, 4826, 4828, 4943, 4832, 4788, 4829)",
+        "evidence_required": "Test results, UAT records, hardening results, smoke test and defect watch reports, parity report and training materials, presented at the Milestone Acceptance Review. Client Milestone Sign-Off is also required.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 7-16)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Latency misses traced to Client-owned platform components are treated as met and logged for Client remediation.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Critical and high defects in Toptal-built work are closed in the hardening iteration with a full regression run. Further UAT runs beyond two need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver for Milestone Sign-Off not provided",
+          "Review window for milestone sign-off not stated",
+          "Rework and resubmission process for Toptal-built rejections not defined",
+          "Calendar date for milestone submission not stated (planned weeks 22-26 from Start Date)"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-05",
-        "name": "P2a OneGWAS Direct-Write Integration and E2E/Retry Tests",
-        "description": "Integration writing completed OneGWAS results to Snowflake ARC with retryable error handling, plus its end-to-end and failure/retry test suite.",
+        "name": "Micro-Frontend Shell",
+        "description": "Micro-frontend shell with global navigation, routing and remote mounting, built using Client's design system and shared with remotes.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 2 (HS-4803, HS-4804)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 1, HS-4762 (Page 4); Section 2.1",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "100% of completed runs written; retryable errors recovered; write P95 < 60s. Completion to ARC searchable P95 < 5 min, with failure/retry validated.",
-        "sow_reference": "Section 4, Milestone 2 (P2a Services and Data)",
-        "evidence_required": "Working integration, E2E and failure/retry test scripts with execution results, and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s. A missed latency target is treated as met if telemetry shows the cause is a Client-owned platform component.",
+        "sow_reference": "P1 Foundation, HS-4762",
+        "evidence_required": "Working shell with performance measurements against the targets, reviewed at the Milestone 1 Acceptance Review. Telemetry findings are recorded in the defect report.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 7-16)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Latency misses traced to Client-owned upstream systems are treated as met and logged for Client remediation.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Shortfalls in Toptal-built code are reworked, while misses caused by Client platform components are logged in the defect report for Client remediation.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-06",
-        "name": "P2a Certification Tests: Data Ingestion, Migration, Extraction and Taxonomy",
-        "description": "Validation scripts, results, defect reports and sign-off support for Client-built GWAS Atlas ETL, MTA Store migration, PHG/GATSBY ingestion, PubMed extraction and trait taxonomy.",
+        "name": "Azure AD / MSAL Authentication Integration",
+        "description": "Azure AD / MSAL authentication integrated into the shell and propagated to remotes.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 2 (HS-4797, HS-4785, HS-4807, HS-4801, HS-4791)",
-          "confidence_score": 0.9
+          "clause_or_slide": "Section 4 - Milestone 1, HS-4763 (Page 4); Section 2.1",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Tests executed against targets: ≥90% import coverage with schema-change handling verified; domain-user comparison sign-off and issue log triaged/closed; 100% sampled keys match; ≥85% extraction precision with E2E run green; taxonomy coverage ≥80% with approvals captured. Acceptance requires test delivery, execution and defect report; meeting targets is Client's responsibility.",
-        "sow_reference": "Section 4, Milestone 2 (P2a Services and Data); Section 3 Certification criteria",
-        "evidence_required": "Test scripts, execution results, defect reports, data-quality issue log and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works. A missed latency target is treated as met if telemetry shows the cause is a Client-owned platform component such as Azure AD.",
+        "sow_reference": "P1 Foundation, HS-4763",
+        "evidence_required": "Working authentication flow with measured results against the targets. Support from Client's identity provider team is required.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 7-16)",
-        "rejection_rework_path": "Client remediates failures in its own components. Toptal then re-executes the test scripts; further re-runs require a Change Order.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal-built defects are reworked, while misses attributable to Client's identity provider are logged for Client remediation.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-07",
-        "name": "P2b ARC Micro-Frontend: Search, Results, Detail and Haplotype Views",
-        "description": "ARC micro-frontend faceted search with results table, result detail view with interval-based visualization, and haplotype filter, indicator and variant-versus-pangenome comparison.",
+        "name": "FastAPI Faceted Search and Detail Endpoints",
+        "description": "FastAPI faceted search, filter and detail endpoints over the Snowflake ARC tables.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 3 (HS-4772, HS-4773, HS-4809)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 2, HS-4777 (Page 4); Section 2.2",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excl. network). Detail view P90 < 1s; interval visualization render P95 < 1.5s. Haplotype filtered results P90 < 1s and comparison works.",
-        "sow_reference": "Section 4, Milestone 3 (P2b Application Surface)",
-        "evidence_required": "Working UI features, render-time measurements against targets, and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. A missed target is treated as met if telemetry shows the cause is a Client-owned component such as Snowflake configuration or data volume.",
+        "sow_reference": "P2a Services and Data, HS-4777",
+        "evidence_required": "Working endpoints with load and latency test results, plus query observability telemetry (HS-4942) where a miss is disputed.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 17-21)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Misses traced to Client-owned platform components are treated as met and logged for Client remediation.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal fixes defects in its own code or queries, while Client-attributable misses are recorded in the defect report for Client remediation.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified.",
-          "Client UI/UX designs for these screens are a dependency; delivery date to be confirmed."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-08",
-        "name": "P2b Haplotype Endpoints, Data Access and Nomenclature Service",
-        "description": "Haplotype search/filter endpoints, haplotype association API and data access, and the nomenclature service for trait resolution and synonym lookup.",
+        "name": "OneGWAS Direct-Write Integration",
+        "description": "Integration that writes completed OneGWAS results (variant and PHG/GATSBY) to Snowflake ARC with retryable error handling.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 3 (HS-4810, HS-4813, HS-4793)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 2, HS-4803 (Page 5); Section 2.2",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Filter endpoint P95 < 1s; haplotype endpoints P95 < 1s with correct results against fixtures. Nomenclature resolution correct for all mapped traits with lookup P95 < 200ms.",
-        "sow_reference": "Section 4, Milestone 3 (P2b Application Surface)",
-        "evidence_required": "Working endpoints and service, results against fixtures and latency measurements, plus Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "100% of completed runs written; retryable errors recovered; write P95 < 60s. A missed latency target is treated as met if telemetry shows the cause is a Client-owned component such as OneGWAS or Snowflake.",
+        "sow_reference": "P2a Services and Data, HS-4803 (tests in HS-4804)",
+        "evidence_required": "Working integration and the E2E and failure/retry test results (HS-4804), including completion-to-searchable P95 < 5 min.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 17-21)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Misses traced to Client-owned platform components are treated as met and logged for Client remediation.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal reworks defects in its own integration, and issues in Client upstream systems are logged for Client remediation.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-09",
-        "name": "P2b Test Suites: Frontend, Haplotype, and Nomenclature",
-        "description": "Frontend unit, integration, accessibility and performance suites, haplotype endpoint integration tests, nomenclature test suite, and haplotype search/visualization tests.",
+        "name": "ARC Faceted Search and Results Table",
+        "description": "ARC micro-frontend faceted search (crop, trait, marker, significance, source, haplotype type) with a paginated, sortable results table.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 and Section 4 - Milestone 3 (HS-4775, HS-4815, HS-4794, HS-4811)",
-          "confidence_score": 0.9
+          "clause_or_slide": "Section 4 - Milestone 3, HS-4772 (Page 5); Section 2.3",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Frontend unit coverage ≥80%, key-flow integration green, search < 1s. Haplotype integration tests green on 100% of critical paths. Mapped-trait resolution 100% correct with lookup P95 < 200ms. Filters, comparison and rendering validated across haplotype types. Acceptance requires scripts delivered, executed and a results report; targets are assessed under the build stories.",
-        "sow_reference": "Section 4, Milestone 3 (P2b Application Surface); Section 3 test-suite rule",
-        "evidence_required": "Delivered test scripts, execution in the target environment, results report against targets, and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Results render P50 < 400ms, P90 < 800ms, P95 < 1s, excluding network. A missed target is treated as met if telemetry shows the cause is a Client-owned platform component.",
+        "sow_reference": "P2b Application Surface, HS-4772",
+        "evidence_required": "Working search UI with performance results, plus frontend test suite results (HS-4775). Client-provided design system and UI/UX designs are prerequisites.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 17-21)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal reworks defects in its own UI code, and Client design-system changes causing rework are handled by Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-10",
-        "name": "P3 Integration, Performance, Security and Cross-Browser Test Suites with Test Data",
-        "description": "Test suites covering all data flows and UI/API critical paths in staging at production-like volume (Chrome and Edge), plus test data, fixtures and environment support.",
+        "name": "Nomenclature Service",
+        "description": "Nomenclature service with trait resolution, synonym lookup, unmapped-term handling and ARC backend integration.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4825, HS-4826)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 3, HS-4793 (Page 6); Section 2.3",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios and environments are supported.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch)",
-        "evidence_required": "Delivered scripts, execution results in staging, defect report, test data and fixtures, and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Resolution correct for all mapped traits; lookup P95 < 200ms.",
+        "sow_reference": "P2b Application Surface, HS-4793 (tests in HS-4794)",
+        "evidence_required": "Working service and the nomenclature test suite results (HS-4794) showing 100% mapped-trait resolution correct and lookup P95 < 200ms.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Failures in Client-built components are remediated by Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Toptal reworks defects in the service, and upstream taxonomy shifts requiring test rework are handled by Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-11",
-        "name": "P3 UAT Execution Records and Defect Log",
-        "description": "UAT cycles run with Client's scientist groups, with defects triaged and tracked.",
+        "name": "Integration, Performance, Security and Cross-Browser Test Suites",
+        "description": "Automated test suites covering all data flows and UI/API critical paths in staging at production-like volume, validated on Chrome and Edge.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4828); Section 7 Assumptions",
-          "confidence_score": 0.9
+          "clause_or_slide": "Section 4 - Milestone 4, HS-4825 (Page 6); Section 3",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built Work at exit.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch)",
-        "evidence_required": "UAT execution records, defect log and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated. Acceptance requires delivered scripts, execution in the target environment and a results report, and failures in Client-built components are recorded in the defect report.",
+        "sow_reference": "P3 Launch, HS-4825 (supported by test data in HS-4826)",
+        "evidence_required": "Test scripts, execution results report and defect report. Test data and fixtures (HS-4826) must cover all integration scenarios.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "UAT is limited to two runs per milestone covering all UAT, not only Toptal-built Work. Additional runs require a Change Order.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Client remediates failures in Client-built components, and Toptal re-executes the applicable tests once. Further re-runs need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration not specified.",
-          "Availability of Client scientist UAT groups must be confirmed."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-12",
-        "name": "P3 Pre-Launch Hardening Iteration Results",
-        "description": "Hardening and stabilization iteration after integration testing and UAT, including a full regression run, to close critical and high defects before cutover.",
+        "name": "UAT Execution Records and Defect Log",
+        "description": "UAT cycles run with Client's scientist groups, with defects triaged and tracked.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4943)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 4, HS-4828 (Page 6); Sections 1, 7",
+          "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "All critical and high defects in Toptal-built Work closed; full regression green before cutover.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch)",
-        "evidence_required": "Hardening iteration results, full regression run report and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built work at exit.",
+        "sow_reference": "P3 Launch, HS-4828",
+        "evidence_required": "UAT execution records and a defect log showing triage status. Client scientist UAT groups must be available.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Critical defects in Toptal-built work are fixed before exit. UAT is limited to two runs per milestone, and further runs need a Change Order.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-13",
-        "name": "P3 Production Smoke Test Results and 48-Hour Defect Watch Report",
-        "description": "Production smoke tests and post-deployment validation, including a 48-hour defect watch.",
+        "name": "Pre-Launch Hardening Iteration Results",
+        "description": "Hardening and stabilization iteration after integration testing and UAT, closing critical and high defects before cutover, including a full regression run.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4832)",
-          "confidence_score": 0.92
+          "clause_or_slide": "Section 4 - Milestone 4, HS-4943 (Page 6); Section 2.4",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Production smoke 100% pass; 48-hour defect watch clean.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch)",
-        "evidence_required": "Production smoke test results, 48-hour defect watch report and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "All critical and high defects in Toptal-built work closed; full regression green before cutover.",
+        "sow_reference": "P3 Launch, HS-4943",
+        "evidence_required": "Hardening iteration results with defect closure status and full regression run results.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client. Support beyond the 48-hour watch is out of scope.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Open critical or high defects in Toptal-built work are fixed and the regression run is repeated.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-14",
-        "name": "P3 Certification Test: MTA Store Parity and Usage-Zero Confirmation Report",
-        "description": "Report confirming MTA Store feature parity and zero legacy traffic before decommission.",
+        "name": "Production Smoke Test Results and 48-Hour Defect Watch Report",
+        "description": "Production smoke tests and post-deployment validation, including a 48-hour defect watch.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4788)",
-          "confidence_score": 0.9
+          "clause_or_slide": "Section 4 - Milestone 4, HS-4832 (Page 6); Section 2.4",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Tests executed against target: parity confirmed and legacy traffic = 0 over the watch window before decommission. Acceptance requires report delivery; meeting the target is Client's responsibility.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch); Section 3 Certification criteria",
-        "evidence_required": "Parity and usage-zero confirmation report and Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "acceptance_criteria": "Production smoke 100% pass; 48-hour defect watch clean.",
+        "sow_reference": "P3 Launch, HS-4832",
+        "evidence_required": "Production smoke test results and the 48-hour defect watch report.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "Client remediates failures in its own components. Toptal then re-executes the test scripts; further re-runs require a Change Order.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Hypercare or support beyond the 48-hour watch is out of scope.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Length of the legacy-traffic watch window not specified."
+          "Named Client approver not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-15",
-        "name": "P3 Training Materials and User Documentation",
+        "name": "Training Materials and User Documentation",
         "description": "Training materials and user documentation for ARC.",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 - Milestone 4 (HS-4829)",
+          "clause_or_slide": "Section 4 - Milestone 4, HS-4829 (Page 7); Section 2.4",
           "confidence_score": 0.9
         },
         "owner": "Toptal",
         "acceptance_criteria": "Training materials and user documentation delivered and reviewed.",
-        "sow_reference": "Section 4, Milestone 4 (P3 Launch)",
-        "evidence_required": "Delivered training materials and user documentation, plus Milestone Sign-Off.",
-        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "sow_reference": "P3 Launch, HS-4829",
+        "evidence_required": "Delivered training materials and user documentation, with evidence of Client review.",
+        "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
         "submission_target_date": null,
-        "review_window": "Not specified; reviewed at the Milestone Acceptance Review at the end of the milestone (est. weeks 22-26)",
-        "rejection_rework_path": "Not specified; confirm rework and resubmission process with Client.",
+        "review_window": "Not specified - to be confirmed",
+        "rejection_rework_path": "Not explicitly defined. Client review feedback would be incorporated and the documents resubmitted.",
         "unresolved_acceptance_clarifications": [
-          "Named Client Milestone Sign-Off approver not identified.",
-          "Review window duration and rejection/rework timeline not specified."
+          "Named Client reviewer not provided",
+          "Review window not stated",
+          "Rework resubmission timeline not defined"
         ],
         "linked_action_id": null
       }

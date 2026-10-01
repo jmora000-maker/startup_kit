@@ -1,0 +1,330 @@
+{
+  "key": "d9d43604e042ad9aada51f721f8aa386fdd438f80c32960cac6f527106b4c7e2",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "ScopeDecompositionExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages (maximum 15 work packages). Keep titles and descriptions concise.\n\nCONSTRAINTS:\n1. Maximum 15 work packages total.\n2. Keep descriptions brief and actionable (1-2 sentences maximum), appending SOW references if applicable (e.g. 'Stories: HS-4781', 'Deliverable 1.2').\n3. Every work package MUST reference an existing parent deliverable ID from the deliverables list below, and its associated linked milestone IDs.\n\nDELIVERABLES LIST:\n- DEL-01: Core Cloud Infrastructure and Container Orchestration Platform\n- DEL-02: Identity, SSO and Role-Based Access Control Integration\n- DEL-03: Product Catalogue Search API and Indexing Pipeline\n- DEL-04: Basket and Checkout Orchestration Service\n- DEL-05: Payment Gateway Integration and Secure Transaction Logging\n- DEL-06: Responsive Web Customer Store Application\n- DEL-07: Automated End-to-End Regression Test Suite\n- DEL-08: Platform Deployment Runbook and Operational Documentation\n- DEL-09: User Acceptance Testing and Production Rollout\n- DEL-10: Training Materials\n\nFor each work package:\n- id: e.g. WP-01, WP-02\n- parent_deliverable_id: e.g. DEL-01 (MUST match one of the deliverable IDs listed above)\n- title: Concise work package title\n- description: Brief description of tasks (1-2 sentences, with 'Stories: <ID>' or 'Ref: <Section>' suffix if SOW references apply)\n- preliminary_sequence: Integer sequence order (1, 2, 3...)\n- owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'\n- dependency_references: List of IDs or descriptions of prerequisites\n- linked_milestones: Associated milestone IDs (e.g. M1)\n- linked_acceptance_items: Associated acceptance criteria references\n- uncertain_scope: Boolean flag indicating if scope is unconfirmed\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "work_packages": [
+      {
+        "id": "WP-01",
+        "parent_deliverable_id": "DEL-01",
+        "title": "Provision AWS Infrastructure with Terraform",
+        "description": "Provision the core AWS cloud environment as code using Terraform. Ref: DEL-01",
+        "preliminary_sequence": 1,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Phase P1: infrastructure provisioning accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-02",
+        "parent_deliverable_id": "DEL-01",
+        "title": "Set Up Container Orchestration and CI/CD Pipeline",
+        "description": "Deploy the container orchestration platform and build the CI/CD pipeline. Ref: DEL-01",
+        "preliminary_sequence": 2,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-01"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Phase P1: CI/CD pipeline accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-03",
+        "parent_deliverable_id": "DEL-01",
+        "title": "Establish Microservices Framework Baseline",
+        "description": "Set up the microservices framework using Python FastAPI and PostgreSQL as the standard for all services. Ref: DEL-01",
+        "preliminary_sequence": 3,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-01"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Phase P1: microservices framework setup accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-04",
+        "parent_deliverable_id": "DEL-02",
+        "title": "Integrate Identity, SSO and RBAC",
+        "description": "Integrate identity management, single sign-on and role-based access control with the platform. Identity provider and role model are not yet defined. Ref: DEL-02",
+        "preliminary_sequence": 4,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-01",
+          "WP-03"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Phase P1: IAM integration accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-05",
+        "parent_deliverable_id": "DEL-03",
+        "title": "Build Catalogue Indexing Pipeline",
+        "description": "Ingest legacy ERP product catalogue feeds and build the indexing pipeline. Requires client access to the ERP feeds before week 5. Ref: DEL-03",
+        "preliminary_sequence": 5,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-03",
+          "Client access to legacy ERP product catalogue feeds before week 5"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: product catalogue search service accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-06",
+        "parent_deliverable_id": "DEL-03",
+        "title": "Develop Catalogue Search API",
+        "description": "Develop the product catalogue search API on top of the indexing pipeline. Ref: DEL-03",
+        "preliminary_sequence": 6,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-05"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: product catalogue search service accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-07",
+        "parent_deliverable_id": "DEL-04",
+        "title": "Develop Basket Management Service",
+        "description": "Build the basket management microservice. Ref: DEL-04",
+        "preliminary_sequence": 7,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-03",
+          "WP-04"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: basket management accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-08",
+        "parent_deliverable_id": "DEL-04",
+        "title": "Build Pricing Engine and Checkout Orchestration",
+        "description": "Build the pricing engine and the checkout orchestration flow. Pricing engine scope and rules are not yet detailed. Ref: DEL-04",
+        "preliminary_sequence": 8,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-07"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: pricing engine accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-09",
+        "parent_deliverable_id": "DEL-05",
+        "title": "Integrate Payment Gateway",
+        "description": "Integrate the third-party payment gateway with checkout. Provider sandbox latency may affect performance testing, and the client security compliance review (5 business days) is needed. Ref: DEL-05",
+        "preliminary_sequence": 9,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-08",
+          "Client security compliance review (5 business days from submission)"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: payment gateway integration accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-10",
+        "parent_deliverable_id": "DEL-05",
+        "title": "Implement Secure Transaction Logging",
+        "description": "Implement secure logging of payment transactions. Ref: DEL-05",
+        "preliminary_sequence": 10,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-09"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Phase P2: payment gateway integration accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-11",
+        "parent_deliverable_id": "DEL-06",
+        "title": "Build Responsive Web Store Front-End",
+        "description": "Build the responsive web customer store application integrated with the catalogue, basket and checkout services. Ref: DEL-06",
+        "preliminary_sequence": 11,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-06",
+          "WP-08",
+          "WP-09"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Phase P3: web store front-end accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-12",
+        "parent_deliverable_id": "DEL-07",
+        "title": "Create Automated E2E Regression Suite",
+        "description": "Build the automated end-to-end regression test suite and run integration testing across all services. Ref: DEL-07",
+        "preliminary_sequence": 12,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-11"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Phase P3: end-to-end integration testing accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-13",
+        "parent_deliverable_id": "DEL-08",
+        "title": "Produce Deployment Runbook and Ops Documentation",
+        "description": "Document platform deployment procedures and operational guidance. The delivery phase for this item is not stated. Ref: DEL-08",
+        "preliminary_sequence": 13,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-02",
+          "WP-12"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [],
+        "uncertain_scope": true,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-14",
+        "parent_deliverable_id": "DEL-09",
+        "title": "Conduct UAT and Production Rollout",
+        "description": "Support user acceptance testing and execute the production rollout. Acceptance criteria and rollout approach are not yet defined. Ref: DEL-09",
+        "preliminary_sequence": 14,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-12",
+          "WP-13"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Phase P3: user acceptance testing and production rollout accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-15",
+        "parent_deliverable_id": "DEL-10",
+        "title": "Deliver Training Materials",
+        "description": "Prepare and hand over training materials for the platform. Format and audience are not yet defined. Ref: DEL-10",
+        "preliminary_sequence": 15,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-13"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Phase P3: training material delivery accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": null,
+        "status": "Draft",
+        "linked_action_id": null
+      }
+    ]
+  }
+}

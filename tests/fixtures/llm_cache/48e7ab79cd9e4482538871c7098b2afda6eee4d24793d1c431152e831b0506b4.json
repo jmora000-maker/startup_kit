@@ -14,63 +14,56 @@
       "artifacts_walked_through": [],
       "delivery_talent_roster": [
         {
-          "role": "Delivery Manager",
+          "role": "Frontend Engineer",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "SAFe, weekly status reporting, milestone tracking",
-          "status": "Unassigned",
+          "required_skills": "React/Next.js, micro-frontends, Azure AD/MSAL, design system integration",
+          "status": "Unstaffed",
           "linked_action_id": null
         },
         {
-          "role": "Frontend Engineer (micro-frontend)",
+          "role": "Backend Engineer",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "React/Next.js, micro-frontends, Azure AD/MSAL",
-          "status": "Unassigned",
+          "required_skills": "Python/FastAPI, Snowflake, Celery/RQ",
+          "status": "Unstaffed",
           "linked_action_id": null
         },
         {
-          "role": "Backend Engineer (FastAPI services)",
-          "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "Python/FastAPI, Celery/RQ, Snowflake",
-          "status": "Unassigned",
-          "linked_action_id": null
-        },
-        {
-          "role": "QA Test Automation Engineer",
+          "role": "QA Automation Engineer",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
           "required_skills": "Playwright, Jest, React Testing Library, Pytest",
-          "status": "Unassigned",
+          "status": "Unstaffed",
           "linked_action_id": null
         },
         {
           "role": "Performance Engineer",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
           "required_skills": "Load testing, benchmarking, query observability, Snowflake",
-          "status": "Unassigned",
+          "status": "Unstaffed",
           "linked_action_id": null
         }
       ],
       "required_roles": [
-        "Delivery Manager",
+        "Delivery Manager (sends the weekly status report)",
         "Frontend Engineer (micro-frontend shell and ARC micro-frontend)",
-        "Backend Engineer (FastAPI and nomenclature services)",
-        "QA Test Automation Engineer",
-        "Performance Engineer"
+        "Backend Engineer (FastAPI services, nomenclature service, OneGWAS integration)",
+        "QA Automation Engineer (automated test scripts, execution and defect reports)",
+        "Performance Engineer (load testing and performance spike)"
       ],
       "required_skills": [
-        "React/Next.js",
+        "React/Next.js (micro-frontends)",
         "Python/FastAPI",
-        "Celery/RQ",
         "Snowflake",
-        "Azure AD/MSAL",
+        "Azure AD/MSAL authentication",
+        "Celery/RQ task queues",
         "Playwright",
         "Jest and React Testing Library",
         "Pytest",
-        "Load and performance testing",
-        "SAFe methodology"
+        "Performance and load testing",
+        "SAFe agile methodology"
       ],
       "staffing_gaps": [
-        "No named Talent PM, Delivery Manager or PMO Lead is identified.",
-        "No named engineers are identified for any delivery role, so all roles need to be staffed or confirmed."
+        "No named individuals are identified for the Talent PM, Delivery Manager, PMO Lead or any delivery role.",
+        "The delivery team size, allocation and start dates are not specified."
       ],
       "replacement_plan": "PMO Lead coordinates talent matching within 5 business days if replacement needed",
       "team_baseline_review_confirmation": false

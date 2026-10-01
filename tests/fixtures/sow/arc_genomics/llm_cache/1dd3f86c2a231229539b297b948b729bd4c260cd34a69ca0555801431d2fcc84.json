@@ -8,240 +8,240 @@
     "decisions": [
       {
         "id": "DEC-01",
-        "decision_text": "Work is delivered through four sequential milestones that act as acceptance gates: P1 Foundation, P2a Services and Data, P2b Application Surface, and P3 Launch.",
+        "decision_text": "The engagement runs as four sequential milestones that act as acceptance gates: P1 Foundation (weeks 1-6), P2a Services and Data (weeks 7-16), P2b Application Surface (weeks 17-21), and P3 Launch (weeks 22-26).",
         "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Sequential gates ensure each milestone is accepted before the next begins, with UAT after each one.",
+        "rationale": "Each milestone has its own work output, acceptance criteria and sign-off, and the next milestone starts only after the prior one is accepted.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 1 Overview; Section 7 Assumptions & Dependencies",
+          "clause_or_slide": "Section 1, Section 4, Section 7",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-02",
-        "decision_text": "Estimated schedule is 26 weeks from the start date: P1 weeks 1-6, P2a weeks 7-16, P2b weeks 17-21, P3 weeks 22-26.",
+        "id": "DEC-01",
+        "decision_text": "Toptal owns ARC application development (micro-frontend shell, ARC micro-frontend, FastAPI services, nomenclature service) and QA test automation. The Client owns the platform layer and the data tier.",
         "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Provides the agreed baseline timeline, assuming no holiday breaks or stoppages.",
+        "rationale": "ARC is one application within a larger Client platform, so ownership boundaries are fixed up front.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 Work Output; Section 7 Assumptions & Dependencies",
+          "clause_or_slide": "Section 1, Section 7",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-03",
-        "decision_text": "Toptal owns ARC application development (micro-frontend shell, ARC micro-frontend, FastAPI services, nomenclature service) and QA test automation; Client owns the platform layer and data tier.",
-        "decision_owner": "Engagement Manager",
-        "decision_date": null,
-        "rationale": "Clear ownership boundaries separate Toptal-built work from Client-built components.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 1 Overview; Section 7 Assumptions & Dependencies",
-          "confidence_score": 0.95
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-04",
-        "decision_text": "Work follows SAFe-aligned methodology and terminology; industry-standard definitions apply where SAFe is silent.",
+        "id": "DEC-01",
+        "decision_text": "Work will follow SAFe-aligned methodology and terminology, and industry-standard definitions apply to terms SAFe does not cover.",
         "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Ensures a shared vocabulary for agile terms such as epic, feature, and backlog.",
+        "rationale": "A shared vocabulary avoids ambiguity in agile and product-development terms.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 1 Overview",
+          "clause_or_slide": "Section 1",
           "confidence_score": 0.9
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-05",
-        "decision_text": "QA is delivered as automated test scripts, their execution, and defect reports rather than manual QA passes, and testing covers the full platform including SSO and external integrations.",
-        "decision_owner": "QA Lead",
+        "id": "DEC-01",
+        "decision_text": "QA output consists of automated test scripts, their execution and defect reports, not manual QA passes. Testing covers the full platform, including SSO and external integrations.",
+        "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Testing ARC requires validation against the full platform, and automation provides repeatable results.",
+        "rationale": "Testing ARC means testing against the full platform, delivered through automation.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 Quality Assurance and Test Automation",
+          "clause_or_slide": "Section 3",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-06",
-        "decision_text": "For Client-built components marked 'Certification', Toptal delivers test scripts, execution, and a defect report; achieving the target and remediating failures is Client's responsibility.",
-        "decision_owner": "Engagement Manager",
+        "id": "DEC-01",
+        "decision_text": "For 'Certification' criteria on Client-built components, Toptal delivers and executes the test scripts and issues a defect report. Achieving the target and remediating failures is the Client's responsibility and is not a condition of acceptance.",
+        "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Toptal does not control Client-built components, so acceptance depends on testing delivery rather than target achievement.",
+        "rationale": "Toptal does not control the quality of Client-built components, so its acceptance depends on test delivery and reporting only.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 Quality Assurance and Test Automation; Section 4 Work Output",
+          "clause_or_slide": "Section 3, Section 4",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-07",
-        "decision_text": "If telemetry shows a missed latency target is caused by a Client-owned platform component, the criterion is treated as met for Toptal's work and logged in the defect report for Client remediation.",
-        "decision_owner": "Engagement Manager",
+        "id": "DEC-01",
+        "decision_text": "If telemetry shows a missed latency or render-time target is caused by a Client-owned platform component, the criterion is treated as met for Toptal's work and the finding is logged in the defect report for Client remediation.",
+        "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Toptal-built components run on Client-owned platform components (e.g., Snowflake, Azure AD, CloudFront) that affect latency.",
+        "rationale": "Toptal-built components run on Client-owned platform components (Snowflake, Azure AD, CloudFront, upstream systems, network) that Toptal does not control.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 Work Output",
+          "clause_or_slide": "Section 4",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-08",
-        "decision_text": "UAT runs after each milestone and is limited to two runs per milestone within the fixed price; additional runs are handled by Change Order.",
-        "decision_owner": "Engagement Manager",
+        "id": "DEC-01",
+        "decision_text": "Toptal will re-run tests once after the Client remediates a failed Certification target. Additional re-runs require a Change Order.",
+        "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Caps UAT effort to protect the fixed price and schedule.",
+        "rationale": "Limits retest effort to what is covered in the fixed price.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 Assumptions & Dependencies",
+          "clause_or_slide": "Section 3",
+          "confidence_score": 0.8
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "UAT runs after each milestone and is limited to two runs per milestone, covering all UAT and not only Toptal-built work. Additional runs require a Change Order.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "UAT is included in the fixed price, so its volume is capped.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 7",
           "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
-        "id": "DEC-09",
-        "decision_text": "Re-testing after Client remediation of failed Certification targets is included once; additional re-runs and rework from upstream changes (e.g., Snowflake schema or taxonomy shifts) are handled by Change Order.",
-        "decision_owner": "Engagement Manager",
+        "id": "DEC-01",
+        "decision_text": "Toptal will use the Client's existing design system for all user-facing screens. Creating, extending or maintaining the design system is out of scope, and extra components or changes require a Change Order.",
+        "decision_owner": "PMO Lead",
         "decision_date": null,
-        "rationale": "Controls scope for test cycles driven by factors outside Toptal's control.",
+        "rationale": "Estimates only cover integrating the design system and building a limited number of ARC-specific components.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 Quality Assurance and Test Automation; Section 7 Assumptions & Dependencies",
+          "clause_or_slide": "Section 7, Section 9",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "Platform infrastructure/DevOps, security design, architecture and design stories, Snowflake data model design, data ingestion and migration build, and go-live and production deployment are out of scope for Toptal and performed by the Client.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "These items sit in the Client-owned platform and data tiers, while Toptal's QA automation for them remains in scope where listed.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 9",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "Post-go-live support is limited to a 48-hour post-deployment defect watch. Hypercare and any post-launch maintenance phase, including test script maintenance, are out of scope.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Test script maintenance covers in-flight upkeep during development only.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 3, Section 9",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "Governance cadence consists of a Day 1 kickoff, biweekly sprint demos, participation in the Client's daily standups, ad-hoc working sessions, and a milestone acceptance review at the end of each milestone.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Keeps stakeholders aligned on progress, risks and decisions needed.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 5.1",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "The Delivery Manager sends a Weekly Status Report to the Client Contact covering billing snapshot, milestone progress, work output status, open risks/issues, and blockers/decisions needed. The Client confirms acceptance or gives feedback in response.",
+        "decision_owner": "Delivery Manager",
+        "decision_date": null,
+        "rationale": "Provides regular reporting and a written decision and feedback loop.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 5.2",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "Client-owned stories and code dependencies must be complete before the related Toptal work begins. P2a starts once HS-4781 is complete.",
+        "decision_owner": "Client",
+        "decision_date": null,
+        "rationale": "Schedule and fixed fees assume Client-built work, personnel, environments and approvals are ready before dependent Toptal work is scheduled.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 6, Section 7",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-01",
+        "decision_text": "The Cogen API is assumed to be about 95% available and stable. Test failures and re-test cycles caused by availability below that level are handled by Change Order.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Cogen is an external integration in test scope that Toptal does not control.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Section 7",
           "confidence_score": 0.85
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-10",
-        "decision_text": "Toptal will use Client's existing design system for all user-facing screens; creating, extending, or maintaining it is excluded, and additional components or changes are handled by Change Order.",
-        "decision_owner": "Engagement Manager",
-        "decision_date": null,
-        "rationale": "Keeps design system ownership with the Client and limits scope to ARC-specific components.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 Assumptions & Dependencies; Section 9 Out of Scope",
-          "confidence_score": 0.9
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-11",
-        "decision_text": "The Cogen API is assumed to be about 95% available and stable; test failures and re-tests from lower availability are handled by Change Order.",
-        "decision_owner": "Engagement Manager",
-        "decision_date": null,
-        "rationale": "Cogen availability is outside Toptal's control and could otherwise cause unplanned test effort.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 Assumptions & Dependencies",
-          "confidence_score": 0.9
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-12",
-        "decision_text": "Governance cadence: Day 1 kickoff, biweekly sprint demos, joining Client daily standups, ad-hoc working sessions, and a milestone acceptance review at each milestone end.",
-        "decision_owner": "Delivery Manager",
-        "decision_date": null,
-        "rationale": "Keeps the teams aligned and provides regular visibility into progress, risks, and decisions needed.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 5.1 Engagement Cadence",
-          "confidence_score": 0.95
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-13",
-        "decision_text": "The Delivery Manager sends a Weekly Status Report covering billing snapshot, milestone progress, Work Output status, open risks/issues, and blockers/decisions; the Client Contact confirms acceptance or feedback.",
-        "decision_owner": "Delivery Manager",
-        "decision_date": null,
-        "rationale": "Ensures consistent reporting and timely Client responses on decisions and feedback.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 5.2 Weekly Report; Section 6 Client Responsibilities",
-          "confidence_score": 0.95
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-14",
-        "decision_text": "Client-built dependencies and Client-owned stories must be complete before related Toptal work begins; P2a starts only after Client completes HS-4781.",
-        "decision_owner": "Client Sponsor",
-        "decision_date": null,
-        "rationale": "Toptal's schedule and fixed fees depend on Client completing prerequisite work, personnel availability, environments, and approvals on time.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 6 Client Responsibilities; Section 7 Assumptions & Dependencies",
-          "confidence_score": 0.9
-        },
-        "status": "Approved",
-        "linked_action_id": null
-      },
-      {
-        "id": "DEC-15",
-        "decision_text": "Hypercare beyond the 48-hour post-deployment defect watch and any post-launch maintenance or test-script maintenance phase are out of scope.",
-        "decision_owner": "Engagement Manager",
-        "decision_date": null,
-        "rationale": "Script maintenance covers in-flight upkeep only, and post-launch support is not part of the agreed scope.",
-        "linked_raid_item": null,
-        "linked_artifact": null,
-        "source_reference": {
-          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 Quality Assurance and Test Automation; Section 9 Out of Scope",
-          "confidence_score": 0.9
         },
         "status": "Approved",
         "linked_action_id": null

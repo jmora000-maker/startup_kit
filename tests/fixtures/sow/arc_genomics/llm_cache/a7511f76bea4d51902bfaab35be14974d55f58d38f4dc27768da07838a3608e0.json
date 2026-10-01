@@ -1,0 +1,50 @@
+{
+  "key": "a7511f76bea4d51902bfaab35be14974d55f58d38f4dc27768da07838a3608e0",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "CommunicationsExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract required communications, reports, and governance meetings.\n\nCONSTRAINTS:\n1. Extract primary governance communications and meetings (maximum 8-10 key governance events/reports).\n2. Keep all descriptions, audiences, formats, and notes concise and direct (1 sentence per field).\n\nFor each item:\n- id: COM-01, COM-02...\n- name: Report or meeting name (e.g., Weekly Check-in, Weekly PSR, MBR/QBR)\n- audience: Target stakeholders\n- content_owner: Role responsible for preparation\n- cadence: Frequency (Weekly, Monthly, etc.)\n- governance_tier_applicability: Tiers where this applies\n- format: Format (e.g., Virtual 30-min call, Email/PDF report)\n- delivery_day: Day of week or period\n- escalation_route: Escalation channel\n- pmo_health_rating_notes: PMO health rating mechanism\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "communications": [
+      {
+        "id": "COM-01",
+        "name": "Phase Deliverable Acceptance Review",
+        "audience": "Client project stakeholders",
+        "content_owner": "Not specified",
+        "cadence": "End of each phase (P1 week 4, P2 week 10, P3 week 14)",
+        "governance_tier_applicability": "Elevated",
+        "format": "Not specified",
+        "delivery_day": "Weeks 4, 10 and 14",
+        "escalation_route": "Not specified",
+        "pmo_health_rating_notes": "Not specified",
+        "linked_action_id": null
+      },
+      {
+        "id": "COM-02",
+        "name": "Audit Committee Sign-off for Reconciliation Tool (Deliverable 3.1)",
+        "audience": "Client audit committee",
+        "content_owner": "Not specified",
+        "cadence": "One-time, within 5 business days of Deliverable 3.1 submission",
+        "governance_tier_applicability": "Elevated",
+        "format": "Not specified",
+        "delivery_day": "Within 5 business days of submission",
+        "escalation_route": "Not specified",
+        "pmo_health_rating_notes": "Not specified",
+        "linked_action_id": null
+      },
+      {
+        "id": "COM-03",
+        "name": "Legacy DB2 Schema Specification Checkpoint",
+        "audience": "Client technical stakeholders",
+        "content_owner": "Not specified",
+        "cadence": "One-time",
+        "governance_tier_applicability": "Elevated",
+        "format": "Not specified",
+        "delivery_day": "By week 2",
+        "escalation_route": "Not specified",
+        "pmo_health_rating_notes": "Not specified",
+        "linked_action_id": null
+      }
+    ]
+  }
+}

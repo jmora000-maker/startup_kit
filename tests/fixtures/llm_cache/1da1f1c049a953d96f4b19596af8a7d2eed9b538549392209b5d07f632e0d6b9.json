@@ -8,89 +8,94 @@
     "milestones": [
       {
         "id": "M1",
-        "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/data/governance validation delivered (estimated weeks 1-6).",
+        "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1–6).",
         "external_date": null,
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "Client provides design system access and named contact by the start date",
+          "Client provides design system access (code library, tokens, design files, guidelines, named contact) by the Start Date",
           "Client IdP team available for Azure AD / MSAL authentication",
-          "Client completes Client-owned stories and environments before dependent Toptal work begins"
+          "Client-owned stories and code dependencies completed before related Toptal work begins",
+          "Coding and delivery documentation standards provided on or before the start date"
         ],
         "critical_path_assumptions": [
-          "Schedule is measured from the start date and assumes no holiday breaks or stoppages",
-          "Milestones run sequentially as acceptance gates"
+          "Schedule is measured from the Start Date: weeks 1–6",
+          "No holiday breaks or stoppages assumed",
+          "UAT runs after the milestone, limited to two runs"
         ],
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Milestone 1) and Section 7",
+          "clause_or_slide": "Section 4 (Milestone 1: P1 Foundation) and Section 7",
           "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "id": "M2",
-        "description": "P2a Services and Data accepted: FastAPI search and async endpoints, OneGWAS integration, performance spike, and data ingestion/migration validation delivered (estimated weeks 7-16).",
+        "description": "P2a Services and Data accepted: FastAPI search/detail endpoints, async query processing, OneGWAS integration, performance spike, and data ingestion validation delivered (est. weeks 7–16).",
         "external_date": null,
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "Client completes Snowflake data model story HS-4781 before P2a begins",
-          "Client-built ingestion, migration and ETL work completed before related validation",
-          "Domain users and domain experts for trait taxonomy available"
+          "Client completes Snowflake data model story (HS-4781) before P2a begins",
+          "P1 Foundation accepted",
+          "Client domain users and domain experts available for trait taxonomy",
+          "Client maintains development environment and resolves blockers"
         ],
         "critical_path_assumptions": [
-          "P2a begins after HS-4781 is complete",
-          "Cogen API assumed ~95% available and stable"
+          "Schedule is measured from the Start Date: weeks 7–16",
+          "Cogen API assumed ~95% available and stable",
+          "Upstream Snowflake schema changes or taxonomy shifts handled by Change Order"
         ],
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Milestone 2) and Section 7",
+          "clause_or_slide": "Section 4 (Milestone 2: P2a Services and Data) and Section 7",
           "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "id": "M3",
-        "description": "P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, nomenclature service, and related test suites delivered (estimated weeks 17-21).",
+        "description": "P2b Application Surface accepted: faceted search UI, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (est. weeks 17–21).",
         "external_date": null,
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "P2a acceptance before P2b begins",
-          "Client provides UI/UX designs for the Milestone 3 screens by the start date",
-          "Client design system access and advance notice of design-system changes"
+          "P2a accepted before P2b begins",
+          "Client provides UI/UX designs for the Milestone 3 screens by the Start Date",
+          "Client provides design system access and advance notice of design-system changes"
         ],
         "critical_path_assumptions": [
-          "Estimates cover integrating the design system and a limited number of ARC-specific components",
-          "UAT limited to two runs per milestone"
+          "Schedule is measured from the Start Date: weeks 17–21",
+          "Estimates cover only a limited number of ARC-specific components; additional components addressed by Change Order"
         ],
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Milestone 3) and Section 7",
+          "clause_or_slide": "Section 4 (Milestone 3: P2b Application Surface) and Section 7",
           "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "id": "M4",
-        "description": "P3 Launch accepted: full test suites, UAT, hardening, production smoke tests with 48-hour defect watch, MTA Store parity confirmation, and training materials delivered (estimated weeks 22-26).",
+        "description": "P3 Launch accepted: integration, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials delivered (est. weeks 22–26).",
         "external_date": null,
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "P2b acceptance before P3 begins",
+          "P2b accepted before P3 begins",
           "Client scientist UAT groups available",
-          "Client maintains staging and production environments and resolves blockers",
+          "Client maintains staging and production environments",
           "Client remediates defects in Client-built components"
         ],
         "critical_path_assumptions": [
-          "Hypercare beyond the 48-hour defect watch is out of scope",
-          "UAT beyond two runs per milestone handled by Change Order"
+          "Schedule is measured from the Start Date: weeks 22–26",
+          "UAT limited to two runs per milestone; additional runs by Change Order",
+          "Hypercare beyond the 48-hour defect watch is out of scope"
         ],
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Milestone 4) and Section 7",
+          "clause_or_slide": "Section 4 (Milestone 4: P3 Launch) and Section 7",
           "confidence_score": 0.9
         },
         "linked_action_id": null

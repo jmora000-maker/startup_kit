@@ -9,41 +9,41 @@
       {
         "anomaly_id": "AMB-01",
         "category": "Date Conflict",
-        "conflicting_clauses": "Exhibit A, Overview: milestones are 'P1 Foundation, P2a, P2b, P3 Launch'. Work Output table numbers them 'Milestone 1-4' (P2b = Milestone 3, P3 = Milestone 4). Client Responsibilities: 'UI/UX designs for the Milestone 3 screens'.",
-        "risk_impact": "Mixed P-labels and Milestone numbers can cause the wrong milestone to be read for design delivery, billing and sign-off timing.",
-        "recommended_clarification": "Please confirm the single milestone naming convention, and confirm that 'Milestone 3 screens' means the P2b Application Surface screens and the date the UI/UX designs are due.",
+        "conflicting_clauses": "Schedule: \"P1 weeks 1–6, P2a weeks 7–16, P2b weeks 17–21, P3 weeks 22–26\" and \"P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; P3 begins upon acceptance of P2b\". Client dependencies: \"must be completed before the related Toptal-owned Work can begin\".",
+        "risk_impact": "Fixed week ranges conflict with start dates that depend on Client work and Client sign-off. Client delays could consume Toptal schedule and margin with no stated relief.",
+        "recommended_clarification": "Do the week ranges move with actual gate and dependency completion? Is a delay in Client dependencies or sign-off an explicit trigger for a schedule extension or Change Order?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 1 (Overview), Section 4 (Work Output), Section 6 (Client Responsibilities); Pages 1, 4-8",
-          "confidence_score": 0.85
+          "clause_or_slide": "Section 7 Assumptions & Dependencies; Section 6 Client Responsibilities",
+          "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-02",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "Assumptions: 'Estimates include integrating it and building up to [N] ARC-specific components... Further components or changes are addressed by Change Order.'",
-        "risk_impact": "The component cap is an unfilled placeholder, so the Change Order trigger for design-system components cannot be enforced. This creates margin and scope-creep risk on the P2b UI build.",
-        "recommended_clarification": "What is the agreed number [N] of ARC-specific components, and which components (e.g., interval visualization, facet panel) are included?",
+        "category": "Date Conflict",
+        "conflicting_clauses": "\"The estimated schedule, measured from the Start Date...\" and \"Coding standards and delivery documentation standards... are required on or before the start date\". No Start Date value is given. Also: \"no breaks or stoppages due to holidays will occur\".",
+        "risk_impact": "With no confirmed Start Date, every week range and the holiday assumption are unanchored. Holiday or access-provisioning slippage may fall on Toptal.",
+        "recommended_clarification": "What is the confirmed Start Date, and which holiday calendar applies? Is a holiday-related pause a Change Order trigger?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 (Assumptions & Dependencies); Page 9",
-          "confidence_score": 0.95
+          "clause_or_slide": "Section 7 Assumptions; Section 6 Client Responsibilities",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-03",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "Assumptions: 'The Cogen API is assumed to be available and stable at approximately 95%, as assessed by Syngenta. Test failures and re-test cycles arising from Cogen availability below that level will be addressed by Change Order.'",
-        "risk_impact": "'Approximately 95%' has no measurement window or method, and the assessor is not defined as a role or process. Disputes over what triggers a Change Order could cause unfunded re-testing.",
-        "recommended_clarification": "Please define the Cogen availability metric (measurement period, method, tool) and who records the measurement that triggers a Change Order.",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Milestones are named P1, P2a, P2b, P3, but the Work Output table labels them Milestone 1–4 (P2b = Milestone 3, P3 = Milestone 4). Cross-references also point to the wrong places: Certification labels are said to be in the QA section but sit in the Work Output table, a non-existent \"Client-built\" subsection is cited, and Client responsibilities are cited as the governance section.",
+        "risk_impact": "Inconsistent milestone naming and broken cross-references can cause disputes over which gate, billing event or criterion applies, for example \"Milestone 3 screens\" design delivery.",
+        "recommended_clarification": "Please confirm one milestone naming convention (P-codes or numbers) and correct the cross-references so Certification labels, Client responsibilities and design deliverables map to the right milestones.",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 (Assumptions & Dependencies); Page 8",
+          "clause_or_slide": "Sections 1, 3, 4, 6, 7",
           "confidence_score": 0.85
         },
         "linked_action_id": null
@@ -51,154 +51,168 @@
       {
         "anomaly_id": "AMB-04",
         "category": "Scope Contradiction",
-        "conflicting_clauses": "Assumptions: 'The external API integrations within scope are Cogen and Tagasys.' Third Party Items: 'Cogen and Tagasys APIs... Provided by Client during the engagement. [confirm]'. The Work Output table has no story for Cogen or Tagasys.",
-        "risk_impact": "The integrations are called in scope, but no build or test deliverable, acceptance criteria or confirmed provider exists. This leaves the scope boundary and test effort undefined.",
-        "recommended_clarification": "Please confirm whether Cogen and Tagasys integration build is in Toptal's scope or only testing, which stories cover them, and who provides the API access and credentials.",
+        "conflicting_clauses": "QA principle: \"Achievement of the targets is assessed under the corresponding build story, not the test deliverable.\" Yet test-suite stories (HS-4779, HS-4775, HS-4794, HS-4804, HS-4825) carry numeric acceptance targets, e.g. HS-4779 \"Search P95 < 1s\" and HS-4794 \"lookup P95 < 200ms\".",
+        "risk_impact": "Test deliverables could be rejected for missed targets, or accepted regardless, depending on the reading. This creates duplicate acceptance exposure for the same latency commitment.",
+        "recommended_clarification": "Is test-suite acceptance based only on delivery, execution and reporting, or also on meeting the listed targets? If only delivery, can the numeric targets be removed from the test stories?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 (Assumptions), Section 8 (Third Party Items), Section 4 (Work Output); Pages 4-9",
-          "confidence_score": 0.85
+          "clause_or_slide": "Section 3 QA principles; Section 4 Work Output table",
+          "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-05",
         "category": "Ambiguous Acceptance",
-        "conflicting_clauses": "Work Output, Latency Acceptance Criteria: telemetry 'may show that a missed target is attributable to a Client-owned platform component... the criterion will be treated as met'. The query observability is only delivered under HS-4942 (P2a), but latency criteria start in P1 (HS-4762, HS-4763). Test conditions (data volume, load, environment) are not defined, and only HS-4772 says 'excl. network'.",
-        "risk_impact": "Latency acceptance depends on an attribution judgment with no defined method, evidence standard or decision-maker, and telemetry may not exist for P1. Acceptance of latency criteria could be disputed or delayed.",
-        "recommended_clarification": "Please define who determines attribution and on what evidence, the standard test conditions for latency targets, and how P1 latency criteria are assessed before HS-4942 telemetry exists.",
+        "conflicting_clauses": "\"Telemetry... may show that a missed target is attributable to a Client-owned platform component... the criterion will be treated as met.\" Query observability is only delivered in P2a (HS-4942), but P1 stories (HS-4762, HS-4763) already carry latency targets.",
+        "risk_impact": "Attribution of a miss is subjective, with no named decision-maker or method. P1 latency targets may be untestable or unattributable before observability exists, so acceptance could be contested.",
+        "recommended_clarification": "Who decides attribution, and on what evidence and method? How are P1 latency targets measured and attributed before HS-4942 telemetry is available?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Work Output - Latency Acceptance Criteria and table); Pages 3-6",
+          "clause_or_slide": "Section 4 Latency Acceptance Criteria; Section 2.1; HS-4942",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-06",
-        "category": "Ambiguous Acceptance",
-        "conflicting_clauses": "QA principles: for test-suite Work Output (HS-4779, 4775, 4825 etc.) 'Achievement of the targets is assessed under the corresponding build story, not the test deliverable.' Yet the table sets the same targets on those test stories ('Search P95 < 1s' on HS-4777, HS-4779, HS-4775 and HS-4825, labeled Toptal · Latency).",
-        "risk_impact": "The same latency target is repeated across build and test stories, and it is unclear whether test stories are accepted on delivery or on hitting the target. This risks duplicate or failed acceptance gates and withheld milestone payment.",
-        "recommended_clarification": "Please confirm that test-suite stories are accepted on delivery, execution and results report only, and that the search P95 < 1s target is measured once, under HS-4777.",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Latency targets are given as P50/P90/P95 values, e.g. \"Shell load P50 < 1.5s\" and \"Search P95 < 1s\", without test conditions. Only HS-4772 states \"(excl. network)\"; HS-4775 states \"search < 1s\" with no percentile; P3 uses an undefined \"production-like volume\"; and \"p95 targets defined\" is itself an HS-4942 output.",
+        "risk_impact": "Without defined load, data volume, environment or measurement point, pass/fail on performance criteria cannot be objectively determined.",
+        "recommended_clarification": "What are the measurement conditions (environment, data volume, concurrency, network inclusion) and the definition of \"production-like volume\" for each latency criterion? Which percentile applies to HS-4775?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 (QA and Test Automation), Section 4 (Work Output table); Pages 3-6",
+          "clause_or_slide": "Section 4 Work Output table (HS-4762, HS-4772, HS-4775, HS-4825, HS-4942)",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-07",
-        "category": "Date Conflict",
-        "conflicting_clauses": "Assumptions: 'P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; and P3 Launch begins upon acceptance of P2b', alongside fixed estimated weeks (P1 1-6, P2a 7-16, P2b 17-21, P3 22-26). HS-4781 (Snowflake schema DDL) is a Client-owned out-of-scope story.",
-        "risk_impact": "Fixed week windows conflict with start triggers that depend on Client completion and Client acceptance, with no time limit for either. Client delays could compress or shift the schedule without a defined remedy.",
-        "recommended_clarification": "Please confirm the target date for HS-4781, the maximum Client review and acceptance period per milestone, and whether schedule and fees are adjusted automatically if these are exceeded.",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "In scope: \"Build automated pipeline quality gates and deployment smoke checks (HS-4770)\", labeled Certification. Out of scope: \"CI/CD pipelines\" and \"Achievement of numeric targets for Client-built work, including... CI/CD quality gates\".",
+        "risk_impact": "It is unclear whether Toptal builds or only tests the pipeline gates. Misalignment could lead to unplanned DevOps work or a rejected deliverable.",
+        "recommended_clarification": "For HS-4770, does Toptal author the pipeline gate and smoke-check automation, or only test Client-built pipelines? Who owns the pipeline configuration?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 (Assumptions & Dependencies), Section 6 (Client Responsibilities); Pages 7-9",
+          "clause_or_slide": "Section 2.1 (HS-4770); Section 4 table; Section 9 Out of Scope",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-08",
-        "category": "Ownership Gap",
-        "conflicting_clauses": "Assumptions: 'UAT runs after each Milestone... limited to two (2) runs per Milestone, covering all UAT and not only Toptal-built Work.' P3 activities: Toptal will 'Execute UAT cycles with Client's scientist groups' (HS-4828). Out of Scope: 'UAT coordination and sign-off (HS-4827)' is performed by Client.",
-        "risk_impact": "It is unclear who runs, coordinates and signs off UAT, and whether the two-run cap includes Client-driven runs for non-Toptal work. This creates unplanned Change Orders or unfunded UAT effort.",
-        "recommended_clarification": "Please clarify who executes versus coordinates UAT in each milestone, what counts as a 'run', and whether UAT runs on Client-built components count against the cap.",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "\"ARC reads Snowflake tables populated by upstream systems... all of which are within Client's control\" versus Toptal building \"OneGWAS direct-write integration that writes completed OneGWAS results... to Snowflake ARC\" (HS-4803). Upstream names also vary (\"1GWAS\", \"GATS-B\" vs \"OneGWAS\", \"PHG/GATSBY\").",
+        "risk_impact": "Ownership of OneGWAS write path and its upstream dependencies is unclear. Write P95 < 60s depends on OneGWAS, which the Client owns.",
+        "recommended_clarification": "Please confirm the system names and who owns the OneGWAS-to-Snowflake write path and its upstream output contract. Are HS-4803 targets conditional on OneGWAS performance?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 2.4 (P3 Launch), Section 7 (Assumptions), Section 9 (Out of Scope); Pages 3, 8, 10",
-          "confidence_score": 0.85
+          "clause_or_slide": "Section 2.2 (HS-4803); Section 7 Assumptions",
+          "confidence_score": 0.8
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-09",
-        "category": "Ambiguous Acceptance",
-        "conflicting_clauses": "HS-4943: 'All critical and high defects in Toptal-built Work closed'. HS-4938: 'scan clean'. HS-4829: 'delivered and reviewed'. No severity definitions, scan tool or threshold, or review standard is given.",
-        "risk_impact": "Subjective terms with no objective definition can lead to disputed defect classification and delayed or contested milestone acceptance.",
-        "recommended_clarification": "Please provide the defect severity definitions, the security scan tool and pass threshold, and the review criteria and reviewer for training and documentation acceptance.",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "\"Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope\" versus \"Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.\"",
+        "risk_impact": "Test boundary is open to interpretation. Full-platform end-to-end tests (e.g. HS-4825 \"all flows\") may exceed the budgeted Certification items and trigger scope disputes.",
+        "recommended_clarification": "Please provide an explicit list of components that are in test scope (including SSO, Cogen and Tagasys). Which components are tested only as dependencies of flows and not certified?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (Work Output table - HS-4938, HS-4943, HS-4829); Pages 4, 6-7",
-          "confidence_score": 0.8
+          "clause_or_slide": "Section 3 Test scope; Section 7 Assumptions",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-10",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "HS-4788: 'legacy traffic = 0 over watch window before decommission'. The watch window is not defined. HS-4832 defines only a '48-hour defect watch'. Legacy redirects and teardown (HS-4787) are Client out-of-scope.",
-        "risk_impact": "Without a defined watch window, the end of the P3 acceptance gate is open-ended. Zero legacy traffic also depends on Client-controlled redirects, which could delay final milestone closure.",
-        "recommended_clarification": "What is the duration of the legacy traffic watch window, who measures it, and does it extend beyond the 48-hour defect watch or the P3 milestone end?",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "\"Cogen and Tagasys APIs... Provided by Client during the engagement. [confirm]\"; \"Cogen API is assumed to be available and stable at approximately 95%, as assessed by Syngenta\". Syngenta is otherwise not defined as a party.",
+        "risk_impact": "Unconfirmed provisioning, an approximate threshold, an unnamed assessor and no measurement window make it unclear when test failures become billable Change Orders.",
+        "recommended_clarification": "Who provides and owns the Cogen and Tagasys APIs, and is Syngenta the Client? What is the exact availability threshold, measurement period and assessor?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 4 (HS-4788, HS-4832), Section 9 (Out of Scope); Pages 6-7, 10",
-          "confidence_score": 0.8
+          "clause_or_slide": "Section 7 Assumptions; Section 8 Third Party Items",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-11",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "QA principles: 'Toptal will re-execute the applicable test scripts in accordance with the Assumptions outlined in this contract. Additional re-runs will be addressed by Change Order.' The Assumptions do not state how many re-runs are included.",
-        "risk_impact": "The included number of re-test cycles is undefined. Re-testing after Client remediation could be treated as chargeable at any point.",
-        "recommended_clarification": "How many re-test cycles per Certification target are included in the fixed price, and what is the time window for re-execution after Client remediation?",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "\"Execute UAT cycles with Client's scientist groups, and triage and track defects (HS-4828)\" and \"UAT... included within the fixed price... limited to two (2) runs per Milestone, covering all UAT and not only Toptal-built Work\", versus out of scope: \"UAT coordination and sign-off (HS-4827)\".",
+        "risk_impact": "Toptal executes UAT but the two-run cap covers all UAT, including Client-built components. Run exhaustion could trigger Change Orders or milestone delay if coordination and sign-off are delegated unclearly.",
+        "recommended_clarification": "What does Toptal do in UAT versus Client's UAT coordination and sign-off? Does the two-run cap apply to Client-built-component defects, and can a run be counted if it is blocked by Client delays?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 (QA and Test Automation - Re-testing), Section 7 (Assumptions); Pages 3, 8-9",
+          "clause_or_slide": "Section 2.4 (HS-4828); Section 7 Assumptions; Section 9 Out of Scope",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-12",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "QA principles: 'Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope.' Assumptions: 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
-        "risk_impact": "'Full platform' testing conflicts with the limit to listed Toptal-built and Certification items. This invites scope expansion without a Change Order.",
-        "recommended_clarification": "Please confirm that test scope is limited to the stories listed in the Work Output table, and list the platform components included in 'full platform' testing.",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Subjective terms: HS-4832 \"48-hour defect watch clean\"; HS-4943 \"All critical and high defects... closed\"; HS-4829 \"delivered and reviewed\"; HS-4785 \"data-quality issue log triaged/closed\"; HS-4788 \"legacy traffic = 0 over watch window\". No severity scale, reviewer or window is defined.",
+        "risk_impact": "Open-ended terms could delay milestone sign-off or cause disputes. The unnamed reviewers and undefined watch window make P3 closure uncertain.",
+        "recommended_clarification": "Please define defect severity levels, \"clean\", the reviewer and review period for training materials, and the duration of the HS-4788 watch window.",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 3 (QA and Test Automation - Test scope), Section 7 (Assumptions); Pages 3, 9",
+          "clause_or_slide": "Section 4 Work Output table (P3 Launch and P2a rows)",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-13",
-        "category": "Date Conflict",
-        "conflicting_clauses": "Assumptions: schedule is 'measured from the Start Date' (P1 weeks 1-6 to P3 weeks 22-26). 'The schedule and cost were created considering that no breaks or stoppages due to holidays will occur.' Client standards are required 'on or before the start date'. No Start Date is stated.",
-        "risk_impact": "With no confirmed Start Date and a no-holiday assumption across a 26-week plan, week-based milestone dates cannot be fixed. Any holiday or late prerequisite becomes an unfunded delay risk.",
-        "recommended_clarification": "Please confirm the Start Date and the holiday calendar, and whether holiday stoppages extend the schedule without penalty.",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "HS-4938 is labeled Toptal-owned with \"scan clean; findings in Toptal-built components remediated, findings in Client-built components reported to Client\". \"Scan clean\" may conflict with unremediated Client-component findings. HS-4785 needs \"domain-user comparison sign-off\" and HS-4791 needs \"approvals captured\", both of which depend on Client personnel.",
+        "risk_impact": "A Toptal-owned acceptance may be unachievable if Client-component findings or Client approvals remain open, so milestone sign-off could stall.",
+        "recommended_clarification": "Does \"scan clean\" apply only to Toptal-built components? Is acceptance independent of Client approval timing for HS-4785 and HS-4791?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 7 (Assumptions), Section 6 (Client Responsibilities); Pages 7-8",
+          "clause_or_slide": "Section 4 Work Output table (HS-4938, HS-4785, HS-4791)",
           "confidence_score": 0.8
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-14",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "P1 activities: 'Build automated pipeline quality gates and deployment smoke checks (HS-4770)'. The Work Output table labels HS-4770 as 'Certification' ('Executed against target: quality gates block on fail'). Out of Scope: CI/CD pipelines and 'CI/CD quality gates' targets are Client-owned.",
-        "risk_impact": "It is unclear whether Toptal builds the quality gates or only tests Client-built ones. This affects effort, acceptance and who is accountable for the target.",
-        "recommended_clarification": "Is HS-4770 a Toptal-built deliverable or a validation of Client-built pipeline gates, and who owns the quality-gate configuration and target?",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Re-testing: \"Toptal will re-execute the applicable test scripts in accordance with the Assumptions outlined in this contract. Additional re-runs will be addressed by Change Order.\" The Assumptions state no re-test count or turnaround.",
+        "risk_impact": "The number of included re-runs for failed Certification targets is undefined. Repeated retests after Client remediation could erode margin or cause Change Order disputes.",
+        "recommended_clarification": "How many re-test cycles per Certification item are included, and what is the expected turnaround after Client remediation?",
         "status": "Open",
         "source_reference": {
           "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-          "clause_or_slide": "Section 2.1 (P1 Foundation), Section 4 (HS-4770), Section 9 (Out of Scope); Pages 1, 4, 10",
+          "clause_or_slide": "Section 3 Re-testing; Section 7 Assumptions",
           "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-15",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "\"The Delivery Manager will send a Weekly Status Report... after the Weekly Status Meeting\", but the cadence lists only a kickoff, biweekly demo, daily standups, ad-hoc sessions and milestone review. Client responsibilities require a \"Timely written response\" to decision requests and reports, with no timeframe. The design-system component limit is an unfilled \"[N]\".",
+        "risk_impact": "No defined weekly meeting or response time makes decision latency unmeasurable. An unfilled component cap leaves design-system scope unquantified for Change Order purposes.",
+        "recommended_clarification": "Is there a Weekly Status Meeting, and what are the response-time targets for decisions and report confirmation? What is the value of [N] for ARC-specific components?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
+          "clause_or_slide": "Sections 5.1, 5.2, 6, 7",
+          "confidence_score": 0.8
         },
         "linked_action_id": null
       }

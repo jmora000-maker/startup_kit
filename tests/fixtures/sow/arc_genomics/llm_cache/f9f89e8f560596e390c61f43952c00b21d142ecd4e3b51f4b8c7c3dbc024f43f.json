@@ -1,0 +1,165 @@
+{
+  "key": "f9f89e8f560596e390c61f43952c00b21d142ecd4e3b51f4b8c7c3dbc024f43f",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "ContractConflictsExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract the most critical contractual ambiguities, contradictory clauses, conflicting dates, subjective acceptance terms, and duplicate or unaligned commitments (NFR-02).\n\nCRITICAL CONSTRAINTS:\n1. Focus on the most material ambiguities and conflicts (maximum 15 items).\n2. Keep descriptions, quotes, and recommendations concise and direct (1-2 sentences per field).\n3. Do not duplicate similar items.\n\nFor each detected ambiguity or conflict:\n- anomaly_id: Sequential identifier (e.g., AMB-01, AMB-02...)\n- category: One of 'Date Conflict', 'Scope Contradiction', 'Ambiguous Acceptance', 'Unclear SLA', 'Ownership Gap'\n- conflicting_clauses: Concise quotes or citations from source documents with document name and section/page reference\n- risk_impact: Concise summary of the schedule, margin, or contractual risk (1-2 sentences)\n- recommended_clarification: Actionable clarification question for Client/Contracting\n- status: 'Open'\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "ambiguities": [
+      {
+        "anomaly_id": "AMB-01",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+        "risk_impact": "Phases are expressed only in relative weeks, so the timeline has no fixed anchor. Late ERP access would block Phase 2 catalog work with no stated schedule or commercial relief.",
+        "recommended_clarification": "What is the confirmed project start date, and by what calendar date will the client deliver ERP catalog feed access? Will Phase 2 dates move day-for-day if access is late?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 4",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-02",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+        "risk_impact": "Without testable criteria, milestone sign-off is subjective. This risks disputed acceptance, delayed milestone completion, and unbilled or contested effort.",
+        "recommended_clarification": "What objective acceptance criteria apply to each phase deliverable? Who signs off, and within how many business days is a deemed-acceptance applied if no response is given?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.92
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-03",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+        "risk_impact": "The pricing engine is a milestone item but not a listed deliverable. This creates a risk of unplanned effort or a scope dispute.",
+        "recommended_clarification": "Is the pricing engine in contracted scope? If so, what functionality is required (rules, promotions, tax), and should it be added to the deliverables list?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-04",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+        "risk_impact": "It is unclear whether a separate mobile web interface is expected or whether a responsive web store satisfies it. This risks front-end scope and testing effort being under- or over-estimated.",
+        "recommended_clarification": "Is the responsive web store the only front-end deliverable, or is a separate mobile web interface also required? Which devices and browsers must be supported?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 1, 2 and 3",
+          "confidence_score": 0.82
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-05",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+        "risk_impact": "Training, UAT support, and production rollout are milestone activities without defined deliverables. This creates uncertainty on effort, format, and completion evidence.",
+        "recommended_clarification": "What training materials are required (format, audience, volume)? What is Toptal's role in UAT and production rollout, and what outputs are expected?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-06",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+        "risk_impact": "Compliance review delays could stall phase completion and go-live. The plan has no defined review windows, and there is no remedy for a missed turnaround.",
+        "recommended_clarification": "At which points will compliance reviews be submitted, and what happens to the schedule and fees if the 5-business-day turnaround is missed?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.88
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-07",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+        "risk_impact": "Performance expectations are undefined, so the result cannot be objectively accepted. Sandbox latency outside Toptal's control could cause a failed or disputed acceptance.",
+        "recommended_clarification": "What performance and load targets must the platform meet, and how will acceptance account for third-party sandbox latency?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-08",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+        "risk_impact": "Fixed-duration, acceptance-gated phases under Time and Materials blur commercial expectations. The client may expect fixed-price outcomes, which risks margin erosion and billing disputes.",
+        "recommended_clarification": "Is the 18-week plan an estimate or a commitment? What is the budget ceiling or not-to-exceed amount, and how are changes handled?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Header and Section 2",
+          "confidence_score": 0.75
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-09",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+        "risk_impact": "Strict sequencing leaves no room for parallel front-end and test automation work. Any slip in an earlier phase pushes the 18-week end date.",
+        "recommended_clarification": "May front-end and test automation work start before the prior phase is accepted? In which phase is the regression suite due?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2, 3 and 4",
+          "confidence_score": 0.78
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-10",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+        "risk_impact": "Unassigned owners for external access and environments can delay Phases 1-2. Toptal may be held accountable for dependencies it does not control.",
+        "recommended_clarification": "Who are the named client owners for ERP feed access, payment provider sandbox credentials, and AWS account provisioning, and by what dates will each be ready?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-11",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+        "risk_impact": "Unclear UAT resourcing and post-launch ownership may delay go-live or create unplanned support obligations after the final phase.",
+        "recommended_clarification": "Who performs UAT and gives go-live approval, and who owns production support after rollout? Is any hypercare period expected?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.78
+        },
+        "linked_action_id": null
+      }
+    ]
+  }
+}

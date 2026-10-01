@@ -12,40 +12,43 @@
     "delivery_manager": null,
     "talent_pm": null,
     "pmo_lead": null,
-    "executive_summary": "Toptal will build the ARC application, one application within the client's larger genomics platform, and deliver QA test automation across four sequential milestones: P1 Foundation, P2a Services and Data, P2b Application Surface, and P3 Launch. The stack includes a React/Next.js micro-frontend shell and ARC micro-frontend, FastAPI and nomenclature services, Snowflake, and Azure AD/MSAL, tested with Playwright, Jest, and Pytest. The client owns the platform infrastructure and data tier, including ingestion pipelines and the Snowflake data model.",
-    "project_purpose": "Build the ARC genomics application and automate its QA testing so scientists can search and visualize genomic association data within the client's platform.",
+    "executive_summary": "Toptal will build the ARC application components (micro-frontend shell, ARC micro-frontend, FastAPI services and nomenclature service) and deliver QA test automation for the ARC genomics program within the client's larger platform. The stack includes React/Next.js, FastAPI, Snowflake, Azure AD/MSAL, Celery/RQ, Playwright, Jest and Pytest. Work is delivered across four sequential milestone-gated phases (P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch) over an estimated 26 weeks, using SAFe-aligned methodology.",
+    "project_purpose": "Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.",
     "delivery_objectives": [
-      "Build the micro-frontend shell and ARC micro-frontend with faceted search, result detail, and haplotype visualization.",
-      "Build the FastAPI services (search, async processing, OneGWAS write integration) and the nomenclature service.",
-      "Deliver automated test scripts, execution, and defect reports for Toptal-built and designated client-built components.",
-      "Run UAT after each milestone, then harden, smoke test, and run a 48-hour defect watch at launch.",
-      "Produce training materials and user documentation."
+      "Build the micro-frontend shell with global navigation, routing and Azure AD/MSAL authentication.",
+      "Deliver FastAPI faceted search, detail, asynchronous query and haplotype endpoints over Snowflake ARC tables.",
+      "Build the ARC micro-frontend search, result detail and PHG/GATSBY interval visualization, plus the nomenclature service.",
+      "Build the OneGWAS direct-write integration to Snowflake ARC with retryable error handling.",
+      "Deliver automated test scripts, execution results and defect reports for Toptal-built and designated client-built components.",
+      "Support UAT, pre-launch hardening, production smoke tests with a 48-hour defect watch, and training materials and user documentation."
     ],
     "success_criteria": [
-      "Each milestone passes its acceptance gate with client sign-off.",
-      "Toptal-built components meet the stated latency and render-time targets (e.g., search P95 < 1s), unless telemetry attributes a miss to client-owned platform components.",
-      "For client-built components, test scripts are delivered and executed and a defect report is issued; achieving the targets is the client's responsibility.",
+      "Each milestone passes its acceptance gate with its own work output, acceptance criteria and client sign-off.",
+      "Latency targets are met for Toptal-built components, for example search P95 under 1s and shell load P95 under 3s.",
       "No open critical defects in Toptal-built work at UAT exit, and all critical and high defects closed with a green full regression before cutover.",
-      "Production smoke tests pass 100% and the 48-hour defect watch is clean."
+      "Production smoke tests pass 100% and the 48-hour defect watch is clean.",
+      "For client-built components, test scripts are delivered and executed and defect reports issued; achieving the targets is the client's responsibility."
     ],
     "high_level_scope": [
-      "P1 Foundation (weeks 1-6): micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, pipeline quality gates, security testing, and validation of the data model and governance controls.",
-      "P2a Services and Data (weeks 7-16): FastAPI search and detail endpoints, async query processing, OneGWAS direct-write integration, performance spike, and validation of data ingestion, migration, extraction, and taxonomy.",
-      "P2b Application Surface (weeks 17-21): ARC micro-frontend search and results, detail view, haplotype features, nomenclature service, and related test suites.",
-      "P3 Launch (weeks 22-26): integration, performance, security, and cross-browser (Chrome and Edge) testing, test data, UAT, hardening, production smoke tests, MTA Store parity confirmation, and training documentation."
+      "P1 Foundation (est. weeks 1-6): micro-frontend shell, authentication integration, end-to-end test harness, pipeline quality gates, security testing and data model/governance validation.",
+      "P2a Services and Data (est. weeks 7-16): FastAPI search and async endpoints, performance spike, OneGWAS integration, and validation of client-built data ingestion and migration.",
+      "P2b Application Surface (est. weeks 17-21): ARC micro-frontend search and visualization, haplotype features, nomenclature service, and related test suites.",
+      "P3 Launch (est. weeks 22-26): integration, performance, security and cross-browser (Chrome and Edge) testing, UAT, hardening, production smoke tests, MTA Store parity confirmation, and training documentation."
     ],
     "exclusions": [
-      "Platform infrastructure, DevOps, CI/CD pipelines, security design, and architecture and design stories.",
-      "Snowflake data model design, data governance controls, and data ingestion and migration builds.",
-      "Integration test plan, UAT coordination and sign-off, go-live planning, production deployment, and decommission activities.",
+      "Platform infrastructure, DevOps, Terraform, CI/CD pipelines, monitoring and observability.",
+      "Security design, threat modeling, platform hardening and RBAC/secrets implementation.",
+      "Architecture and API design stories, and Snowflake data model design and schema.",
+      "Data ingestion and migration builds, and trait taxonomy definition.",
+      "Integration test planning, UAT coordination and sign-off, go-live planning, production deployment and MTA Store decommission.",
       "Hypercare and post-launch maintenance beyond the 48-hour defect watch.",
-      "Remediation of defects in client-built components and achievement of numeric targets for client-built work.",
-      "Creation, extension, or maintenance of the client's design system."
+      "Remediation of defects in client-built components, and achievement of numeric targets for client-built work.",
+      "Creating, extending or maintaining the client-provided design system."
     ],
     "source_reference": {
       "document_name": "[V1] Exhibit A - Arc Genomics Platform.pdf",
-      "clause_or_slide": "Section 1 Overview; Section 2 Activities; Section 4 Work Output; Section 7 Assumptions & Dependencies; Section 9 Out of Scope",
-      "confidence_score": 0.8
+      "clause_or_slide": "Section 1 Overview; Section 2 Activities; Section 7 Assumptions & Dependencies; Section 9 Out of Scope",
+      "confidence_score": 0.85
     }
   }
 }

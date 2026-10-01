@@ -1,0 +1,39 @@
+{
+  "key": "884127118ba5fb4b4e98a016e94fd5bdf5eb59c4e493cab6b018689274c59639",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "CharterExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract the overall Project Charter and Governance metadata.\n\nCONSTRAINTS:\n- Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.\n- Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.\n\nExtract:\n- project_name: Title of the project or engagement.\n- client_name: Name of the client or sponsoring organization.\n- governance_tier: 'Guided', 'Partnered', or 'Elevated' (default 'Partnered').\n- contract_type: 'Time and Materials' or 'Fixed Bid' (default 'Time and Materials').\n- delivery_manager: Named Delivery Manager if mentioned, else null.\n- talent_pm: Named Talent Project Manager if mentioned, else null.\n- pmo_lead: Named PMO Lead if mentioned, else null.\n- executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.\n- source_reference: Document name, section/slide reference, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "project_name": "Core Ledger Modernization",
+    "client_name": "Horizon Financial Services",
+    "governance_tier": "Elevated",
+    "contract_type": "Fixed Bid",
+    "delivery_manager": null,
+    "talent_pm": null,
+    "pmo_lead": null,
+    "executive_summary": "The project migrates Horizon Financial Services' legacy ledger databases into a modern event-driven cloud ledger on AWS. The scope covers a secure cloud landing zone (Terraform), Kafka-based ingestion and transformation pipelines, historical data cleansing and migration, automated dual-run reconciliation, and production cutover with operator handoff. Delivery runs across three phases over 14 weeks.",
+    "project_purpose": "Migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.",
+    "delivery_objectives": [
+      "Establish a cloud data landing zone with security and encryption controls for financial data",
+      "Build event-driven Kafka ingestion pipelines and transformation workers",
+      "Cleanse and migrate historical ledger data",
+      "Deliver an automated dual-run ledger balance reconciliation tool",
+      "Complete production cutover with runbook and operator handoff documentation"
+    ],
+    "success_criteria": [
+      "All six contracted deliverables (1.1, 1.2, 2.1, 2.2, 3.1, 3.2) completed and accepted across the three phases"
+    ],
+    "high_level_scope": [
+      "P1 Ingestion Setup (weeks 1-4)",
+      "P2 Data Pipeline and Transformation (weeks 5-10)",
+      "P3 Reconciliation and Final Cutover (weeks 11-14)"
+    ],
+    "exclusions": [],
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Header and Sections 1-3",
+      "confidence_score": 0.95
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "key": "2f4ba8dd766e99c36df98175daa9679b937293197d4805f9855063eecd56ec8a",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "TalentOnboardingExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the project talent staffing and onboarding requirements.\n\nCONSTRAINTS:\n1. Focus on core delivery roles and essential technical skills (maximum 10 key roles/skills).\n2. Keep descriptions and gap notes concise (1-2 sentences).\n\nExtract:\n- talent_pm: Named Talent PM or '[UNASSIGNED - TO BE CONFIRMED]'\n- delivery_manager: Named Delivery Manager or '[UNASSIGNED - TO BE CONFIRMED]'\n- pmo_lead: Named PMO Lead\n- required_roles: Roles required to staff delivery (maximum 10 key roles)\n- required_skills: Key technical skills (e.g. AWS, Terraform, Python) (maximum 10 skills)\n- staffing_gaps: Any identified staffing gaps\n- replacement_plan: Protocol for talent replacement\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "talent_onboarding": {
+      "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+      "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+      "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+      "onboarding_completion_date": null,
+      "onboarding_attendees": [],
+      "artifacts_walked_through": [],
+      "delivery_talent_roster": [],
+      "required_roles": [
+        "Cloud/DevOps Engineer (AWS, Terraform, CI/CD, container orchestration)",
+        "Backend Engineer (Python FastAPI, PostgreSQL microservices)",
+        "Identity/Security Engineer (IAM, SSO, role-based access control)",
+        "Search/Data Engineer (catalog search API and indexing pipeline)",
+        "Integration Engineer (payment gateway, legacy ERP catalog feeds)",
+        "Frontend Engineer (responsive web store and mobile web interface)",
+        "QA/Test Automation Engineer (end-to-end regression suite)"
+      ],
+      "required_skills": [
+        "AWS",
+        "Terraform (IaC)",
+        "Python FastAPI",
+        "PostgreSQL",
+        "Microservices architecture",
+        "Container orchestration",
+        "CI/CD pipelines",
+        "IAM/SSO and role-based access control",
+        "Payment gateway integration",
+        "Automated end-to-end testing"
+      ],
+      "staffing_gaps": [
+        "No Talent PM, Delivery Manager, or PMO Lead has been named yet.",
+        "No individual engineers have been identified or assigned to any delivery role."
+      ],
+      "replacement_plan": "PMO Lead coordinates talent matching within 5 business days if replacement needed",
+      "team_baseline_review_confirmation": false
+    }
+  }
+}
