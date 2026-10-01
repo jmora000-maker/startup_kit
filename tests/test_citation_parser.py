@@ -13,7 +13,7 @@ def test_citation_parser_three_formats():
     # Format 2: Exhibit / Attachment / Appendix
     ref2, _ = extract_contract_reference("Exhibit A, Client Responsibilities: HS-4763 requires MSAL caching while Section 5 specifies session statelessness")
     assert "Exhibit A, Client Responsibilities" in ref2
-    assert "Stories: HS-4763" in ref2
+    assert "SOW refs: HS-4763" in ref2
     assert "Sections: 5" in ref2
 
     # Format 3: Document file

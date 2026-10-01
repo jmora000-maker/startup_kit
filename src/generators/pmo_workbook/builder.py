@@ -87,7 +87,7 @@ SEQUENTIAL_GATE_REGEX = re.compile(
 
 # Citation pattern 1: [V1] doc_name, ref: text (v3 A7)
 CITATION_FMT1_REGEX = re.compile(
-    r"^\s*\[V\d+\]\s*(?P<doc>[^,]+?\.(?:pdf|docx|pptx))\s*,?\s*(?P<ref>[^:]*?)\s*:\s*(?P<text>.+)$",
+    r"^\s*\[V\d+\]\s*(?P<doc>[^,]+?\.(?:pdf|docx|pptx|txt|md))\s*,?\s*(?P<ref>[^:]*?)\s*:\s*(?P<text>.+)$",
     re.IGNORECASE
 )
 CONTRACT_REF_REGEX = CITATION_FMT1_REGEX
@@ -98,9 +98,25 @@ EXHIBIT_REGEX = re.compile(
     re.IGNORECASE
 )
 DOC_FILE_REGEX = re.compile(
-    r"\b([A-Za-z0-9_\-]+\.(?:pdf|docx|pptx))\b",
+    r"\b([A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md))\b",
     re.IGNORECASE
 )
+
+
+def strip_citation_from_clause(clause_text: str, category: Optional[str] = None) -> str:
+    """Remove citation from clause text per RAID-03 wherever it appears after category prefix."""
+    text = clause_text.strip()
+    if category and text.lower().startswith(f"{category.lower()}:"):
+        text = text[len(category) + 1:].strip()
+
+    # Citation Format 1: [V#] doc.ext, ref:
+    text = re.sub(r'^\s*\[V\d+\]\s*[^,:\n]+(?:\.[a-zA-Z0-9]{2,4})?(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
+    # Citation Format 2: Exhibit|Schedule|Appendix|Attachment|Annex <id>[, <section words>]:
+    text = re.sub(r'^\s*(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
+    # Citation Format 3: <document>.<ext>[, <ref>]:
+    text = re.sub(r'^\s*[A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md)(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
+
+    return text.strip()
 
 
 def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]:
@@ -148,7 +164,7 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
     if exhibit_or_doc:
         parts.append(exhibit_or_doc)
     if stories:
-        parts.append(f"Stories: {', '.join(stories)}")
+        parts.append(f"SOW refs: {', '.join(stories)}")
     if sections:
         parts.append(f"Sections: {', '.join(sections)}")
 
@@ -1666,12 +1682,13 @@ def build_workbook_model(
             ref_str = match.group("ref").strip()
             text_str = match.group("text").strip()
             contract_ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
-            desc_text = f"{amb_item.category}: {text_str}" if amb_item.category else text_str
+            clean_clause_text = text_str
             ref_note = None
         else:
             contract_ref, ref_note = extract_contract_reference(conf_clauses)
-            clean_clause_text = re.sub(r'^\s*(?:\[V\d+\]\s*[^:]*:\s*|Exhibit\s+[A-Z0-9]+[^:]*:\s*)', '', conf_clauses, flags=re.IGNORECASE)
-            desc_text = f"{amb_item.category}: {clean_clause_text}" if amb_item.category else clean_clause_text
+            clean_clause_text = strip_citation_from_clause(conf_clauses, amb_item.category)
+
+        desc_text = f"{amb_item.category}: {clean_clause_text}" if amb_item.category else clean_clause_text
 
         desc = clean_contract_text(desc_text)
         src_val = "Baseline - Contract Clarifications"

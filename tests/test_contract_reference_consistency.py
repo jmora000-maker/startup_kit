@@ -11,6 +11,6 @@ def test_contract_reference_consistency(arc_run3):
     for r in model.raid_rows:
         if r.category in ("Contract Clarification", "Open Question"):
             assert r.contract_reference != "", f"RAID row {r.raid_id} ({r.category}) has blank Contract Reference"
-            assert "Stories:" in r.contract_reference or "Sections:" in r.contract_reference or r.contract_reference == "Not cited"
+            assert "SOW refs:" in r.contract_reference or "Sections:" in r.contract_reference or r.contract_reference == "Not cited"
         else:
             assert r.contract_reference == "", f"RAID row {r.raid_id} ({r.category}) has non-blank Contract Reference: {r.contract_reference}"

@@ -21,7 +21,7 @@ BANNED_EFFORT_WORDS = {
     "capacity", "fte", "story points", "man-day", "manday", "person-day"
 }
 BANNED_EFFORT_REGEX = re.compile(r'\b(' + '|'.join(BANNED_EFFORT_WORDS) + r')\b', re.IGNORECASE)
-CITATION_PREFIX_REGEX = re.compile(r'^\s*(\[V\d+\]|Exhibit\s+[A-Z0-9]+,)', re.IGNORECASE)
+CITATION_PREFIX_REGEX = re.compile(r'^\s*(\[V\d+\]|Exhibit\s+[A-Z0-9]+,|[A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md)\s*[,:])', re.IGNORECASE)
 PLACEHOLDER_REGEX = re.compile(r'\[(?:CONFIRMATION REQUIRED|TBD|UNASSIGNED|TO BE CONFIRMED|ACT-[^\]]+)\]', re.IGNORECASE)
 BANNED_WORKSTREAM_NAMES = ["Project Management", "Kickoff", "Reporting and Control", "Ongoing"]
 
@@ -55,7 +55,9 @@ def load_oracle_for_folder(folder_path: Path, project_name: str = "") -> Optiona
         arc_path = oracles_dir / "arc.json"
         if arc_path.exists():
             with open(arc_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                content = f.read()
+                cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                return json.loads(cleaned)
     return None
 
 
@@ -698,8 +700,8 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 
                 if contract_ref:
                     parts = [p.strip() for p in contract_ref.split("|")]
-                    if any(p == "" or p == "Stories:" or p == "Sections:" for p in parts) or contract_ref.endswith("|") or contract_ref.startswith("|"):
-                        violations.append(InvariantViolation("INV-13", f"RAID row {raid_id} Contract Reference has empty part: '{contract_ref}'", "RAID Log"))
+                    if any(p == "" or p.startswith("Stories:") or p == "SOW refs:" or p == "Sections:" for p in parts) or contract_ref.endswith("|") or contract_ref.startswith("|") or contract_ref.endswith(","):
+                        violations.append(InvariantViolation("INV-13", f"RAID row {raid_id} Contract Reference has empty or outdated part: '{contract_ref}'", "RAID Log"))
 
                 # INV-23: Every Contract Reference is 'Not cited', blank (on non-clarification rows), or valid citation
                 if cat in ("Contract Clarification", "Open Question") or contract_ref:
