@@ -129,7 +129,7 @@ def test_inv_06_fails_on_missing_milestone_acceptance(base_artifacts, tmp_path):
     wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]
     wb = openpyxl.load_workbook(wb_file)
     ws = wb["WBS"]
-    for r in range(5, 50):
+    for r in range(5, ws.max_row + 1):
         if "Milestone Acceptance" in str(ws.cell(row=r, column=4).value or ""):
             ws.cell(row=r, column=4, value="Standard Review")
             break
