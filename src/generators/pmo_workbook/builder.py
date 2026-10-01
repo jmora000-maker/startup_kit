@@ -49,6 +49,8 @@ from src.generators.pmo_workbook.mapping import (
     tokenize_v2,
     compute_idf,
     compute_score,
+    extract_usable_sow_references,
+    match_item_to_deliverables_by_reference,
 )
 from src.generators.pmo_workbook.rows import (
     ScheduleRow,
@@ -701,12 +703,12 @@ def build_workbook_model(
     story_to_deliv_ids: Dict[str, Set[str]] = {}
     for d in filtered_deliverables:
         text = f"{d.name or ''} {d.description or ''} {d.acceptance_criteria or ''} {d.sow_reference or ''}"
-        for s in extract_sow_references(text):
+        for s in extract_usable_sow_references(text):
             story_to_deliv_ids.setdefault(s, set()).add(d.id)
 
     for wp in filtered_backlog:
         text = f"{wp.title or ''} {wp.description or ''} {wp.sow_reference or ''}"
-        for s in extract_sow_references(text):
+        for s in extract_usable_sow_references(text):
             wp_deliv_id = None
             for d_id, wps in matched_wps_by_deliv.items():
                 if any(w.id == wp.id for w in wps):
@@ -1465,12 +1467,7 @@ def build_workbook_model(
         raid_id: str,
     ) -> Tuple[str, str, str, str]:
         """Find matching deliverables via story index (v4 A17) and link milestone(s) (v5 A23)."""
-        item_stories = set(extract_sow_references(item_text_for_stories))
-        matched_deliv_ids: Set[str] = set()
-        for s in item_stories:
-            if s in story_to_deliv_ids:
-                matched_deliv_ids.update(story_to_deliv_ids[s])
-
+        matched_deliv_ids = match_item_to_deliverables_by_reference(item_text_for_stories, story_to_deliv_ids)
         sorted_deliv_ids = sorted(list(matched_deliv_ids), key=natural_sort_key)
         linked_deliv_str = ", ".join(sorted_deliv_ids)
 
@@ -1678,7 +1675,7 @@ def build_workbook_model(
 
         desc = clean_contract_text(desc_text)
         src_val = "Baseline - Contract Clarifications"
-        src_id = amb_item.anomaly_id or ""
+        src_id = amb_item.anomaly_id or getattr(amb_item, "id", "") or ""
         owner_val, owner_n = normalize_owner_v2(getattr(amb_item, "owner", "") or "Talent PM")
         prob, imp, sev_val = "", "", ""
         trig = ""

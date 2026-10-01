@@ -65,3 +65,89 @@ def test_arc_raid_linking(arc_baseline):
 
     # Check evidence consistency flags count in model: exactly 12 (v3 A9)
     assert model.evidence_flags_count == 12
+
+
+def test_raid_linking_shared_section_and_multi_deliverable_reference():
+    """Verify that section-kind references and references shared by multiple deliverables
+    are not used to link RAID items to deliverables or milestones."""
+    from src.core.models import (
+        SourceReference,
+        Deliverable,
+        Milestone,
+        RiskAssumption,
+        ContractAmbiguityItem,
+        ProjectStartupCharter,
+        StartupKitBaseline,
+    )
+
+    ref = SourceReference(document_name="Test_SOW.pdf", clause_or_slide="Section 3.1", confidence_score=0.95)
+    milestones = [
+        Milestone(id="M1", description="P1 Foundation accepted: auth and foundation delivered", source_reference=ref),
+        Milestone(id="M2", description="P2 Services accepted: api and services delivered", source_reference=ref),
+    ]
+    deliverables = [
+        Deliverable(id="DEL-01", milestone_id="M1", name="P1 Delivery Auth", sow_reference="Section 3.1, HS-4770"),
+        Deliverable(id="DEL-02", milestone_id="M1", name="P1 Delivery Ingestion", sow_reference="Section 3.1, HS-4809"),
+        Deliverable(id="DEL-03", milestone_id="M2", name="P2 Delivery API", sow_reference="Section 3.1, HS-4809"),
+    ]
+    r_item1 = ContractAmbiguityItem(
+        id="CONF-01",
+        anomaly_id="CONF-01",
+        category="Date Conflict",
+        conflicting_clauses="Proposal schedule commits Milestone 2 delivery per Section 3.1 by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+        status="Open",
+        contract_reference="Section 3.1",
+        source_reference=ref,
+    )
+    r_item2 = RiskAssumption(
+        id="RSK-01",
+        description="Risk around shared work items HS-4809 across deliverables.",
+        type="Risk",
+        category="Delivery Risk",
+        status="Open",
+        source_reference=ref,
+    )
+    r_item3 = RiskAssumption(
+        id="RSK-02",
+        description="Risk on specific component HS-4770.",
+        type="Risk",
+        category="Delivery Risk",
+        status="Open",
+        source_reference=ref,
+    )
+
+    baseline = StartupKitBaseline(
+        project_name="Test Project",
+        governance_tier="Partnered",
+        contract_type="Time and Materials",
+        charter=ProjectStartupCharter(
+            project_name="Test Project",
+            client_name="Client Corp",
+            contract_type="Time and Materials",
+            delivery_manager="Jane Doe",
+            talent_pm="John Smith",
+            pmo_lead="Sarah Connor",
+        ),
+        milestones=milestones,
+        deliverables=deliverables,
+        backlog_seed=[],
+        raid_items=[r_item2, r_item3],
+        contract_ambiguities=[r_item1],
+    )
+
+    model = build_workbook_model(baseline, start_date=date(2026, 10, 5))
+    raid_by_src = {r.source_id: r for r in model.raid_rows}
+
+    # CONF-01 should link to M2 (from text) and NOT link to DEL-01, DEL-02, DEL-03 via Section 3.1
+    conf1_row = raid_by_src["CONF-01"]
+    assert conf1_row.linked_milestone == "M2"
+    assert conf1_row.linked_deliverables == ""
+
+    # RSK-01 cites SOW-SHARED which is shared by DEL-02 and DEL-03, so it must not link to any deliverable
+    rsk1_row = raid_by_src["RSK-01"]
+    assert rsk1_row.linked_deliverables == ""
+
+    # RSK-02 cites SOW-01 which uniquely belongs to DEL-01 (in M1)
+    rsk2_row = raid_by_src["RSK-02"]
+    assert rsk2_row.linked_deliverables == "DEL-01"
+    assert rsk2_row.linked_milestone == "M1"

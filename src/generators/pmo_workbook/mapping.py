@@ -624,6 +624,34 @@ def map_deliverables_to_milestones_v2(
     return deliv_mapping, wp_to_ms, deliv_to_matched_wp
 
 
+def extract_usable_sow_references(text: str) -> List[str]:
+    """Extract SOW references from text, excluding Section-kind references (v6 Section 1.1)."""
+    return [r for r in extract_sow_references(text) if detect_sow_reference_kind(r) != "Section"]
+
+
+def match_item_to_deliverables_by_reference(
+    item_text_or_refs: Union[str, Sequence[str], Set[str]],
+    reference_to_deliv_map: Dict[str, Set[str]],
+) -> Set[str]:
+    """Match an item to deliverable IDs using a reference-to-deliverable index.
+
+    Rule: Section-kind references, and any reference shared by more than one deliverable,
+    must not be used to link items to deliverables or milestones.
+    """
+    if isinstance(item_text_or_refs, str):
+        refs = extract_usable_sow_references(item_text_or_refs)
+    else:
+        refs = [r for r in item_text_or_refs if detect_sow_reference_kind(r) != "Section"]
+
+    matched_deliv_ids: Set[str] = set()
+    for ref in refs:
+        deliv_ids = reference_to_deliv_map.get(ref, set())
+        if len(deliv_ids) == 1:
+            matched_deliv_ids.update(deliv_ids)
+
+    return matched_deliv_ids
+
+
 def map_work_packages_to_deliverables(
     work_packages: Sequence[WorkPackageSeed],
     deliverables_in_milestone: Sequence[Deliverable],
@@ -646,22 +674,20 @@ def map_work_packages_to_deliverables(
     deliv_names = [d.name or d.description or "" for d in deliverables_in_milestone]
 
     # Pre-extract unique work item references per deliverable (exclude Section references)
-    deliv_item_refs: Dict[str, Set[str]] = {}
+    deliv_ref_index: Dict[str, Set[str]] = {}
     for d in deliverables_in_milestone:
-        refs = set(r for r in extract_sow_references(f"{d.sow_reference or ''}") if detect_sow_reference_kind(r) != "Section")
-        deliv_item_refs[d.id] = refs
+        for ref in extract_usable_sow_references(f"{d.sow_reference or ''}"):
+            deliv_ref_index.setdefault(ref, set()).add(d.id)
 
     unassigned_wps: List[WorkPackageSeed] = []
     # Pass 0: Match by unique work item ID (e.g. SOW-01)
     for wp in work_packages:
-        wp_item_refs = set(r for r in extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}") if detect_sow_reference_kind(r) != "Section")
-        matched_deliv_id = None
-        if wp_item_refs:
-            matching_delivs = [d_id for d_id, d_refs in deliv_item_refs.items() if wp_item_refs & d_refs]
-            if len(matching_delivs) == 1:
-                matched_deliv_id = matching_delivs[0]
-
-        if matched_deliv_id:
+        matched_delivs = match_item_to_deliverables_by_reference(
+            f"{wp.sow_reference or ''} {wp.title or ''}",
+            deliv_ref_index
+        )
+        if len(matched_delivs) == 1:
+            matched_deliv_id = list(matched_delivs)[0]
             matched_by_deliv[matched_deliv_id].append(wp)
         else:
             unassigned_wps.append(wp)
