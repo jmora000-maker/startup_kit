@@ -1,0 +1,219 @@
+{
+  "key": "e9640eff6abe10b5971f4c4417aeb75ffc7fe908a88de5731b2cd6159093a5fe",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "DecisionsExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract key baseline decisions already agreed during pre-sales or Readiness (maximum 15 key decisions). Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.\n\nCONSTRAINTS:\n1. Extract maximum 15 key decisions.\n2. Keep decision statements and rationales concise and direct (1-2 sentences).\n\nFor each decision:\n- id: DEC-01, DEC-02...\n- decision_text: Concise statement of decision\n- decision_owner: Responsible owner\n- decision_date: Date if known\n- rationale: Concise context or reason for decision (do not cite SOW or documents)\n- linked_raid_item: Linked risk or assumption ID if applicable\n- status: Status (default 'Approved')\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "decisions": [
+      {
+        "id": "DEC-01",
+        "decision_text": "The engagement is contracted as a Fixed Bid.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Scope is defined by six contracted deliverables across three phases, so the commercial model is fixed.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Header - Contract Type",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-02",
+        "decision_text": "The project operates under the Elevated governance tier.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Elevated governance gives the highest level of oversight for this financial-services ledger migration.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Header - Governance Tier",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-03",
+        "decision_text": "Legacy ledger databases will be migrated to a modern event-driven cloud ledger on AWS.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "This is the core objective of the Core Ledger Modernization project for Horizon Financial Services.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 1",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-04",
+        "decision_text": "Delivery is split into three phases over 14 weeks: Ingestion Setup (weeks 1-4), Data Pipeline and Transformation (weeks 5-10), and Reconciliation and Final Cutover (weeks 11-14).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "A phased structure sequences setup, pipeline build, and cutover with clear timeboxes.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.95
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-05",
+        "decision_text": "Each phase is complete only when both of its deliverables are completed and accepted.",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Acceptance-based phase gates give a clear, objective measure of milestone completion.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-06",
+        "decision_text": "The cloud data landing zone will be delivered as an architecture with Terraform configuration (Deliverable 1.1).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "It provides the foundation for ingestion work in Phase 1.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 1.1",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 1.1",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-07",
+        "decision_text": "Security and encryption controls will protect financial data in transit and at rest (Deliverable 1.2).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "The migration handles sensitive financial data that must be protected throughout.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 1.2",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 1.2",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-08",
+        "decision_text": "Data ingestion will use event-driven Kafka pipelines with transformation workers (Deliverable 2.1).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "This supports the target event-driven ledger architecture.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 2.1",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 2.1",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-09",
+        "decision_text": "Historical ledger data will be cleansed and migrated using execution scripts (Deliverable 2.2).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Cleansing and scripted migration prepare legacy data for the new ledger.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 2.2",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 2.2",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-10",
+        "decision_text": "Ledger balances will be validated with a dual-run automated reconciliation tool (Deliverable 3.1).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "Running old and new ledgers in parallel with automated reconciliation validates the migration before cutover.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 3.1",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 3.1",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-11",
+        "decision_text": "Production cutover will be supported by a cutover runbook and operator handoff documentation (Deliverable 3.2).",
+        "decision_owner": "PMO Lead",
+        "decision_date": null,
+        "rationale": "These ensure a controlled cutover and a smooth handover to operators.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 3.2",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 - Deliverable 3.2",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-12",
+        "decision_text": "The client will provide legacy DB2 schema specifications by week 2.",
+        "decision_owner": "Horizon Financial Services",
+        "decision_date": null,
+        "rationale": "Schema specifications are needed early to support landing zone and pipeline design.",
+        "linked_raid_item": null,
+        "linked_artifact": null,
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4 - Dependency",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      },
+      {
+        "id": "DEC-13",
+        "decision_text": "The client audit committee will sign off Deliverable 3.1 within 5 business days.",
+        "decision_owner": "Horizon Financial Services",
+        "decision_date": null,
+        "rationale": "A fast sign-off keeps the reconciliation and final cutover phase on schedule.",
+        "linked_raid_item": null,
+        "linked_artifact": "Deliverable 3.1",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4 - Assumption",
+          "confidence_score": 0.9
+        },
+        "status": "Approved",
+        "linked_action_id": null
+      }
+    ]
+  }
+}

@@ -2,8 +2,26 @@
 
 import pytest
 from datetime import date
+import os
 import pymupdf as fitz
 from pptx import Presentation
+
+# Default LLM cache mode to replay in test environment (QA-01)
+os.environ.setdefault("LLM_CACHE_MODE", "replay")
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-snapshots",
+        action="store_true",
+        default=False,
+        help="Update snapshot JSON files with newly generated outputs (QA-03)"
+    )
+
+
+@pytest.fixture
+def update_snapshots(request):
+    return request.config.getoption("--update-snapshots")
 from src.core.models import (
     SourceReference,
     Deliverable,
@@ -2077,3 +2095,8 @@ def arc_run4():
             overall_status="Onboarding in progress"
         )
     )
+
+@pytest.fixture
+def arc_run5(arc_run4):
+    """ARC Genomics Platform fixture for run 5."""
+    return arc_run4.model_copy(deep=True)

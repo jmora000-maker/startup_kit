@@ -10,6 +10,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from src.core.interfaces import ILLMClient
 from src.config import config, resolve_anthropic_model
+from src.llm.caching_client import CachingLLMClient, LLMCacheMiss, compute_cache_key
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")

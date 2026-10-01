@@ -1,0 +1,2360 @@
+{
+  "project_name": "Core Ledger Modernization",
+  "governance_tier": "Elevated",
+  "contract_type": "Fixed Bid",
+  "governance_context": {
+    "project_name": "Core Ledger Modernization",
+    "governance_tier": "Elevated",
+    "contract_type": "Fixed Bid",
+    "client_name": "Horizon Financial Services",
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "executive_summary": "The project migrates Horizon Financial Services' legacy ledger databases into a modern event-driven cloud ledger on AWS. The scope covers a secure cloud landing zone (Terraform), Kafka-based ingestion and transformation pipelines, historical data cleansing and migration, automated dual-run reconciliation, and production cutover with operator handoff. Delivery runs across three phases over 14 weeks.",
+    "workflow_state": "Clarification Pending",
+    "sla_met": true
+  },
+  "charter": {
+    "project_name": "Core Ledger Modernization",
+    "client_name": "Horizon Financial Services",
+    "project_purpose": "Migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.",
+    "delivery_objectives": [
+      "Establish a cloud data landing zone with security and encryption controls for financial data",
+      "Build event-driven Kafka ingestion pipelines and transformation workers",
+      "Cleanse and migrate historical ledger data",
+      "Deliver an automated dual-run ledger balance reconciliation tool",
+      "Complete production cutover with runbook and operator handoff documentation"
+    ],
+    "success_criteria": [
+      "All six contracted deliverables (1.1, 1.2, 2.1, 2.2, 3.1, 3.2) completed and accepted across the three phases"
+    ],
+    "high_level_scope": [
+      "P1 Ingestion Setup (weeks 1-4)",
+      "P2 Data Pipeline and Transformation (weeks 5-10)",
+      "P3 Reconciliation and Final Cutover (weeks 11-14)"
+    ],
+    "exclusions": [
+      "Custom infrastructure outside documented cloud provider scope",
+      "Unapproved out-of-scope feature requests without formal Change Order"
+    ],
+    "key_deliverables_summary": [
+      "DEL-01: Cloud Data Landing Zone Architecture and Terraform Configuration",
+      "DEL-02: Security and Encryption Controls",
+      "DEL-03: Kafka Ingestion Pipelines and Transformation Workers",
+      "DEL-04: Historical Ledger Data Cleansing and Migration Scripts",
+      "DEL-05: Dual-Run Automated Ledger Balance Reconciliation Tool",
+      "DEL-06: Production Cutover Runbook and Operator Handoff Documentation"
+    ],
+    "key_milestones_summary": [
+      "M1: Phase 1 (Ingestion Setup, weeks 1-4) complete: landing zone architecture, Terraform configuration, and security and encryption controls delivered and accepted. ([DATE TBD])",
+      "M2: Phase 2 (Data Pipeline and Transformation, weeks 5-10) complete: Kafka ingestion pipelines, transformation workers, and data cleansing and migration scripts delivered and accepted. ([DATE TBD])",
+      "M3: Phase 3 (Reconciliation and Final Cutover, weeks 11-14) complete: reconciliation tool, production cutover runbook, and operator handoff documentation delivered and accepted. ([DATE TBD])"
+    ],
+    "contract_type": "Fixed Bid",
+    "governance_tier": "Elevated",
+    "delivery_model": "Toptal Talent Team (Agile/Milestone Hybrid)",
+    "governance_model": "PMO Elevated Tier Governance Model",
+    "major_startup_risks": [
+      "High-volume batch reconciliation during month-end close may require dedicated compute capacity."
+    ],
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "escalation_path": "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO",
+    "unresolved_assumptions_status": "2 dependencies/assumptions logged, awaiting mobilization validation",
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Header and Sections 1-3",
+      "confidence_score": 0.95
+    }
+  },
+  "sow_interpretation": {
+    "contracted_deliverables": [
+      "Deliverable 1.1: Cloud data landing zone architecture and Terraform configuration.",
+      "Deliverable 1.2: Security and encryption controls for financial data in transit and at rest.",
+      "Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.",
+      "Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.",
+      "Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.",
+      "Deliverable 3.2: Production cutover runbook and operator handoff documentation."
+    ],
+    "out_of_scope_items": [
+      "Custom infrastructure outside documented cloud provider scope",
+      "Unapproved out-of-scope feature requests without formal Change Order"
+    ],
+    "customer_obligations": [
+      "Provide schema specifications for the legacy DB2 databases by week 2.",
+      "Provide audit committee sign-off on the reconciliation tool (Deliverable 3.1)."
+    ],
+    "assumptions": [
+      "The client audit committee will sign off on Deliverable 3.1 within 5 business days."
+    ],
+    "constraints": [
+      "Fixed bid contract with an Elevated governance tier.",
+      "Delivery is planned over 14 weeks in three phases: Ingestion Setup (weeks 1-4), Data Pipeline and Transformation (weeks 5-10), and Reconciliation and Final Cutover (weeks 11-14).",
+      "Each phase is complete only when its deliverables are completed and accepted.",
+      "High-volume batch reconciliation during month-end close may require dedicated compute capacity."
+    ],
+    "platform_environment_commitments": [
+      "Target is a modern event-driven cloud ledger on AWS.",
+      "Infrastructure is provisioned as code using Terraform in a cloud data landing zone.",
+      "Data ingestion uses Kafka event-driven pipelines.",
+      "Financial data must be encrypted in transit and at rest."
+    ],
+    "dependencies": [
+      "Client delivery of legacy DB2 schema specifications by week 2 gates the start of pipeline and migration work.",
+      "Audit committee sign-off is required for Deliverable 3.1."
+    ],
+    "approval_expectations": "Audit committee signs off on Deliverable 3.1 within 5 business days; each phase requires its deliverables to be completed and accepted.",
+    "ambiguity_notes": [
+      "No out-of-scope items or exclusions are explicitly defined.",
+      "Acceptance criteria for all deliverables are not specified.",
+      "Review and sign-off windows for deliverables other than Deliverable 3.1 are not stated.",
+      "It is unclear who funds the dedicated compute capacity that may be needed for month-end reconciliation.",
+      "Scope of historical data (volume, date range, and number of DB2 databases) is not defined.",
+      "Dual-run duration and cutover success criteria are not defined.",
+      "Client environment, access, and data-provision obligations beyond the DB2 schemas are not stated."
+    ],
+    "confirmation_required_items": [
+      "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
+      "Delivery Manager role is unassigned. [CONFIRMATION REQUIRED]",
+      "Talent PM role is unassigned. [CONFIRMATION REQUIRED]",
+      "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]"
+    ],
+    "contract_ambiguities": [
+      {
+        "anomaly_id": "AMB-01",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
+        "risk_impact": "Phase completion and payment depend on acceptance that cannot be objectively tested. This risks disputes and delays on a Fixed Bid contract.",
+        "recommended_clarification": "Can the Client confirm written acceptance criteria, the named approver, and the review turnaround time for each deliverable?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 and Section 3",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-02",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Risks and Dependencies: \"Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\" Phases and Milestones: P3 (weeks 11-14) requires 3.1 to be \"completed and accepted\".",
+        "risk_impact": "The sign-off turnaround is only an assumption, not a binding commitment. A late committee decision could push P3 past week 14 with no defined remedy.",
+        "recommended_clarification": "Will the Client commit to the 5-business-day sign-off as a contractual obligation, and what is the consequence (deemed acceptance or timeline relief) if it is missed?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4 and Section 2",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-03",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
+        "risk_impact": "Late or incomplete schemas compress P1 and P2, and the schedule has no relief mechanism. Under a Fixed Bid, Toptal could absorb the delay cost.",
+        "recommended_clarification": "Will the Client confirm the schema delivery date and completeness standard, and agree that late delivery extends the timeline and adjusts cost?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4 and Section 2",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-04",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
+        "risk_impact": "Without a start date, it is unclear whether weeks 11-14 coincide with a month-end close. This could change reconciliation timing and the cutover window.",
+        "recommended_clarification": "What are the project start date and target cutover date, and which month-end close is planned for dual-run reconciliation?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 and Section 4",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-05",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
+        "risk_impact": "Unplanned AWS compute cost or provisioning delays could erode margin or block reconciliation on a Fixed Bid.",
+        "recommended_clarification": "Will the Client provision and fund the dedicated compute capacity, and what volume and performance level should it be sized for?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-06",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
+        "risk_impact": "It is unclear whether Toptal must execute the production cutover or only document it. A mismatch in expectations could add unfunded effort.",
+        "recommended_clarification": "Is Toptal responsible for executing the production cutover, or only for delivering the runbook and handoff to Client operators?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 and Section 3 (Deliverable 3.2)",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-07",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
+        "risk_impact": "Other legacy database types, if any, would be out of the stated dependency and could expand scope and effort.",
+        "recommended_clarification": "Is the migration scope limited to DB2 databases, and if not, which other sources are included and when will their schemas be provided?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 1 and Section 4",
+          "confidence_score": 0.75
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-08",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
+        "risk_impact": "Subjective data quality and balance-match standards could lead to repeated rework or rejection of the migration and reconciliation outputs.",
+        "recommended_clarification": "What cleansing rules, data volumes, reconciliation match tolerances and dual-run duration define a successful migration and reconciliation?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverables 2.2 and 3.1)",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-09",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
+        "risk_impact": "Without defined standards, the Client could reject the controls as insufficient, causing rework or schedule slip in P1.",
+        "recommended_clarification": "Which security and compliance standards must the controls meet, and who validates them?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 1.2)",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-10",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
+        "risk_impact": "Performance expectations are undefined, so the Client may later claim the pipelines under-perform. This creates an acceptance dispute and possible unfunded tuning work.",
+        "recommended_clarification": "What throughput, latency and availability targets must the pipelines meet for acceptance?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 2.1)",
+          "confidence_score": 0.7
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-11",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
+        "risk_impact": "It is unclear who builds or owns the target ledger and the AWS environments. A gap could block pipeline integration and cutover.",
+        "recommended_clarification": "Who is responsible for designing, building and operating the target cloud ledger and AWS accounts, and by when will they be available?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 1 and Section 3",
+          "confidence_score": 0.7
+        },
+        "linked_action_id": null
+      }
+    ],
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Sections 2, 3 and 4",
+      "confidence_score": 0.85
+    }
+  },
+  "deliverables": [
+    {
+      "id": "DEL-01",
+      "name": "Cloud Data Landing Zone Architecture and Terraform Configuration",
+      "description": "Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.1",
+        "confidence_score": 0.95
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 1.1 (Phase P1 Ingestion Setup, weeks 1-4)",
+      "evidence_required": "Client acceptance of the deliverable, which is required to close phase P1.",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria and client approver are not specified."
+      ],
+      "linked_action_id": "ACT-01"
+    },
+    {
+      "id": "DEL-02",
+      "name": "Security and Encryption Controls",
+      "description": "Security and encryption controls that protect financial data in transit and at rest.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.2",
+        "confidence_score": 0.95
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 1.2 (Phase P1 Ingestion Setup, weeks 1-4)",
+      "evidence_required": "Client acceptance of the deliverable, which is required to close phase P1.",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria and client approver are not specified."
+      ],
+      "linked_action_id": "ACT-18"
+    },
+    {
+      "id": "DEL-03",
+      "name": "Kafka Ingestion Pipelines and Transformation Workers",
+      "description": "Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.1",
+        "confidence_score": 0.95
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 2.1 (Phase P2 Data Pipeline and Transformation, weeks 5-10)",
+      "evidence_required": "Client acceptance of the deliverable, which is required to close phase P2.",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria and client approver are not specified."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-04",
+      "name": "Historical Ledger Data Cleansing and Migration Scripts",
+      "description": "Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.2",
+        "confidence_score": 0.95
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 2.2 (Phase P2 Data Pipeline and Transformation, weeks 5-10)",
+      "evidence_required": "Client acceptance of the deliverable, which is required to close phase P2.",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria and client approver are not specified."
+      ],
+      "linked_action_id": "ACT-29"
+    },
+    {
+      "id": "DEL-05",
+      "name": "Dual-Run Automated Ledger Balance Reconciliation Tool",
+      "description": "Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.1; Section 4 - Assumption",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 3.1 (Phase P3 Reconciliation and Final Cutover, weeks 11-14)",
+      "evidence_required": "Sign-off from the client audit committee, which is required to close phase P3.",
+      "client_approver": "Client audit committee",
+      "submission_target_date": null,
+      "review_window": "Audit committee signs off on Deliverable 3.",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria are not specified; the client audit committee is expected to sign off within 5 business days."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-06",
+      "name": "Production Cutover Runbook and Operator Handoff Documentation",
+      "description": "Runbook for the production cutover and handoff documentation for the operators of the new ledger.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.2",
+        "confidence_score": 0.95
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "Deliverable 3.2 (Phase P3 Reconciliation and Final Cutover, weeks 11-14)",
+      "evidence_required": "Client acceptance of the deliverable, which is required to close phase P3.",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria and client approver are not specified."
+      ],
+      "linked_action_id": "ACT-19"
+    }
+  ],
+  "milestones": [
+    {
+      "id": "M1",
+      "description": "Phase 1 (Ingestion Setup, weeks 1-4) complete: landing zone architecture, Terraform configuration, and security and encryption controls delivered and accepted.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Client provides schema specifications for legacy DB2 databases by week 2."
+      ],
+      "critical_path_assumptions": [],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 (P1) and Section 3 (Deliverables 1.1, 1.2)",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": "ACT-02"
+    },
+    {
+      "id": "M2",
+      "description": "Phase 2 (Data Pipeline and Transformation, weeks 5-10) complete: Kafka ingestion pipelines, transformation workers, and data cleansing and migration scripts delivered and accepted.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Phase 1 completed and accepted.",
+        "Client provides schema specifications for legacy DB2 databases by week 2."
+      ],
+      "critical_path_assumptions": [],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 (P2) and Section 3 (Deliverables 2.1, 2.2)",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    },
+    {
+      "id": "M3",
+      "description": "Phase 3 (Reconciliation and Final Cutover, weeks 11-14) complete: reconciliation tool, production cutover runbook, and operator handoff documentation delivered and accepted.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Phase 2 completed and accepted.",
+        "Client audit committee sign-off for the reconciliation tool."
+      ],
+      "critical_path_assumptions": [
+        "Client audit committee provides sign-off within 5 business days for the reconciliation tool.",
+        "Dedicated compute capacity may be needed for high-volume batch reconciliation during month-end close."
+      ],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 (P3), Section 3 (Deliverables 3.1, 3.2) and Section 4",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    }
+  ],
+  "backlog_seed": [
+    {
+      "id": "WP-01",
+      "parent_deliverable_id": "DEL-01",
+      "title": "Landing Zone Architecture Design",
+      "description": "Design the cloud data landing zone architecture on AWS for the legacy ledger migration. Ref: Deliverable 1.1",
+      "preliminary_sequence": 1,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 1.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 1.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-02",
+      "parent_deliverable_id": "DEL-01",
+      "title": "Terraform Configuration Build",
+      "description": "Build the Terraform configuration that provisions the approved landing zone architecture. Ref: Deliverable 1.1",
+      "preliminary_sequence": 2,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-01"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 1.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 1.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-03",
+      "parent_deliverable_id": "DEL-02",
+      "title": "Encryption In Transit and At Rest",
+      "description": "Implement encryption controls for financial data in transit and at rest. Ref: Deliverable 1.2",
+      "preliminary_sequence": 3,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-01"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 1.2 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 1.2",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-04",
+      "parent_deliverable_id": "DEL-02",
+      "title": "Security Controls Verification",
+      "description": "Verify and document that the security and encryption controls work as designed. Ref: Deliverable 1.2",
+      "preliminary_sequence": 4,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-02",
+        "WP-03"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 1.2 completed and accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": "Deliverable 1.2",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-05",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Kafka Ingestion Pipelines",
+      "description": "Build event-driven Kafka ingestion pipelines for legacy ledger data. Ref: Deliverable 2.1",
+      "preliminary_sequence": 5,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-02",
+        "Client provides DB2 schema specifications by week 2"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 2.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 2.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-06",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Transformation Workers",
+      "description": "Develop transformation workers that map legacy DB2 ledger data to the new event-driven ledger model. Ref: Deliverable 2.1",
+      "preliminary_sequence": 6,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-05",
+        "Client provides DB2 schema specifications by week 2"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 2.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 2.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-07",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Pipeline Testing and Acceptance",
+      "description": "Test the ingestion pipelines and transformation workers end to end and prepare them for acceptance. Ref: Deliverable 2.1",
+      "preliminary_sequence": 7,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-05",
+        "WP-06"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 2.1 completed and accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": "Deliverable 2.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-08",
+      "parent_deliverable_id": "DEL-04",
+      "title": "Data Cleansing Scripts",
+      "description": "Develop scripts to cleanse historical ledger data before migration. Ref: Deliverable 2.2",
+      "preliminary_sequence": 8,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "Client provides DB2 schema specifications by week 2"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 2.2 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 2.2",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-09",
+      "parent_deliverable_id": "DEL-04",
+      "title": "Migration Execution Scripts",
+      "description": "Develop and validate scripts that execute the migration of cleansed historical ledger data. Ref: Deliverable 2.2",
+      "preliminary_sequence": 9,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-06",
+        "WP-08"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 2.2 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 2.2",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-10",
+      "parent_deliverable_id": "DEL-05",
+      "title": "Reconciliation Tool Build",
+      "description": "Build the automated tool that reconciles ledger balances between legacy and new systems during dual run. Ref: Deliverable 3.1",
+      "preliminary_sequence": 10,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-07",
+        "WP-09"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 3.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 3.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-11",
+      "parent_deliverable_id": "DEL-05",
+      "title": "Month-End Compute Capacity Planning",
+      "description": "Assess whether high-volume month-end batch reconciliation needs dedicated compute capacity and plan accordingly. Ref: Deliverable 3.1 risk",
+      "preliminary_sequence": 11,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-10"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 3.1 completed and accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": "Deliverable 3.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-12",
+      "parent_deliverable_id": "DEL-05",
+      "title": "Audit Committee Sign-Off",
+      "description": "Present the reconciliation tool to the client audit committee and obtain sign-off, assumed within 5 business days. Ref: Deliverable 3.1",
+      "preliminary_sequence": 12,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-10",
+        "WP-11"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Audit committee sign-off within 5 business days",
+        "Deliverable 3.1 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 3.1",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-13",
+      "parent_deliverable_id": "DEL-06",
+      "title": "Production Cutover Runbook",
+      "description": "Write the production cutover runbook covering the steps for the final ledger cutover. Ref: Deliverable 3.2",
+      "preliminary_sequence": 13,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-09",
+        "WP-10"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 3.2 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 3.2",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-14",
+      "parent_deliverable_id": "DEL-06",
+      "title": "Operator Handoff Documentation",
+      "description": "Prepare operator handoff documentation and hand the new ledger over to client operators. Ref: Deliverable 3.2",
+      "preliminary_sequence": 14,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-13",
+        "WP-12"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Deliverable 3.2 completed and accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": "Deliverable 3.2",
+      "status": "Draft",
+      "linked_action_id": null
+    }
+  ],
+  "dependencies_assumptions": [
+    {
+      "id": "DEP-01",
+      "type": "Dependency",
+      "description": "Client must provide schema specifications for the legacy DB2 databases by week 2 so ingestion and transformation design can proceed.",
+      "category": "Technical",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "owner": "Client",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    },
+    {
+      "id": "ASM-01",
+      "type": "Assumption",
+      "description": "The client audit committee will sign off on Deliverable 3.1 (dual-run reconciliation tool) within 5 business days.",
+      "category": "Schedule",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "owner": "Client",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    }
+  ],
+  "raid_items": [
+    {
+      "id": "R-01",
+      "type": "Risk",
+      "description": "High-volume batch reconciliation during month-end close may require dedicated compute capacity.",
+      "owner": "Unassigned",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "category": "Technical",
+      "probability": "Medium",
+      "impact": "High",
+      "severity": "High",
+      "trigger_or_early_warning": "Reconciliation runs slow or fail under month-end load",
+      "mitigation_or_response": "Size and reserve compute capacity for reconciliation before the dual-run phase.",
+      "due_date": null,
+      "linked_decision": null,
+      "linked_dependency_or_assumption": null,
+      "linked_action_id": "ACT-03"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-01",
+      "decision_text": "The engagement is contracted as a Fixed Bid.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Scope is defined by six contracted deliverables across three phases, so the commercial model is fixed.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Header - Contract Type",
+        "confidence_score": 0.95
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-02",
+      "decision_text": "The project operates under the Elevated governance tier.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Elevated governance gives the highest level of oversight for this financial-services ledger migration.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Header - Governance Tier",
+        "confidence_score": 0.95
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-03",
+      "decision_text": "Legacy ledger databases will be migrated to a modern event-driven cloud ledger on AWS.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "This is the core objective of the Core Ledger Modernization project for Horizon Financial Services.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 1",
+        "confidence_score": 0.95
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-04",
+      "decision_text": "Delivery is split into three phases over 14 weeks: Ingestion Setup (weeks 1-4), Data Pipeline and Transformation (weeks 5-10), and Reconciliation and Final Cutover (weeks 11-14).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "A phased structure sequences setup, pipeline build, and cutover with clear timeboxes.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2",
+        "confidence_score": 0.95
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-05",
+      "decision_text": "Each phase is complete only when both of its deliverables are completed and accepted.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Acceptance-based phase gates give a clear, objective measure of milestone completion.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-06",
+      "decision_text": "The cloud data landing zone will be delivered as an architecture with Terraform configuration (Deliverable 1.1).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "It provides the foundation for ingestion work in Phase 1.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.1",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-07",
+      "decision_text": "Security and encryption controls will protect financial data in transit and at rest (Deliverable 1.2).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "The migration handles sensitive financial data that must be protected throughout.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.2",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-08",
+      "decision_text": "Data ingestion will use event-driven Kafka pipelines with transformation workers (Deliverable 2.1).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "This supports the target event-driven ledger architecture.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.1",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-09",
+      "decision_text": "Historical ledger data will be cleansed and migrated using execution scripts (Deliverable 2.2).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Cleansing and scripted migration prepare legacy data for the new ledger.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.2",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-10",
+      "decision_text": "Ledger balances will be validated with a dual-run automated reconciliation tool (Deliverable 3.1).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Running old and new ledgers in parallel with automated reconciliation validates the migration before cutover.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.1",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-11",
+      "decision_text": "Production cutover will be supported by a cutover runbook and operator handoff documentation (Deliverable 3.2).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "These ensure a controlled cutover and a smooth handover to operators.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.2",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-12",
+      "decision_text": "The client will provide legacy DB2 schema specifications by week 2.",
+      "decision_owner": "Horizon Financial Services",
+      "decision_date": null,
+      "rationale": "Schema specifications are needed early to support landing zone and pipeline design.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4 - Dependency",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-13",
+      "decision_text": "The client audit committee will sign off Deliverable 3.1 within 5 business days.",
+      "decision_owner": "Horizon Financial Services",
+      "decision_date": null,
+      "rationale": "A fast sign-off keeps the reconciliation and final cutover phase on schedule.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4 - Assumption",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    }
+  ],
+  "communications_plan": [
+    {
+      "id": "COM-01",
+      "name": "Phase Deliverable Acceptance Review",
+      "audience": "Client project stakeholders",
+      "content_owner": "Not specified",
+      "cadence": "End of each phase (P1 week 4, P2 week 10, P3 week 14)",
+      "governance_tier_applicability": "Elevated",
+      "format": "Not specified",
+      "delivery_day": "Weeks 4, 10 and 14",
+      "escalation_route": "Not specified",
+      "pmo_health_rating_notes": "Not specified",
+      "linked_action_id": null
+    },
+    {
+      "id": "COM-02",
+      "name": "Audit Committee Sign-off for Reconciliation Tool (Deliverable 3.1)",
+      "audience": "Client audit committee",
+      "content_owner": "Not specified",
+      "cadence": "One-time, within 5 business days of Deliverable 3.1 submission",
+      "governance_tier_applicability": "Elevated",
+      "format": "Not specified",
+      "delivery_day": "Within 5 business days of submission",
+      "escalation_route": "Not specified",
+      "pmo_health_rating_notes": "Not specified",
+      "linked_action_id": null
+    },
+    {
+      "id": "COM-03",
+      "name": "Legacy DB2 Schema Specification Checkpoint",
+      "audience": "Client technical stakeholders",
+      "content_owner": "Not specified",
+      "cadence": "One-time",
+      "governance_tier_applicability": "Elevated",
+      "format": "Not specified",
+      "delivery_day": "By week 2",
+      "escalation_route": "Not specified",
+      "pmo_health_rating_notes": "Not specified",
+      "linked_action_id": null
+    }
+  ],
+  "stakeholders": [
+    {
+      "name": "[UNASSIGNED - TO BE CONFIRMED]",
+      "role": "PMO Lead",
+      "organization": "Toptal PMO",
+      "decision_rights": "G-01 Gate Sign-off, Talent Staffing/Replacement, Work-at-Risk Approvals, Delivery Risk & Recovery",
+      "approver_responsibilities": "G-01 Gate, Baseline Exceptions, PMO Health Ratings, Talent Baseline Sign-off",
+      "escalation_responsibility": "Director, PMO",
+      "reporting_accountability": "Independent Weekly Health Rating, Leadership Rollup",
+      "linked_action_id": null
+    },
+    {
+      "name": "Director, PMO",
+      "role": "Director, PMO",
+      "organization": "Toptal PMO Leadership",
+      "decision_rights": "Elevated Tier Approvals, Major Commercial Exception Sign-offs, Executive Escalations",
+      "approver_responsibilities": "Elevated Tier G-01 Concurrence, Governance Policy Exceptions",
+      "escalation_responsibility": "VP, Delivery / Executive Leadership",
+      "reporting_accountability": "Executive PMO Portfolio Review",
+      "linked_action_id": null
+    },
+    {
+      "name": "Client Audit Committee",
+      "role": "Client Approver",
+      "organization": "Horizon Financial Services",
+      "decision_rights": "Signs off on Deliverable 3.1 (dual-run ledger balance reconciliation tool), expected within 5 business days.",
+      "approver_responsibilities": "Deliverable 3.1 acceptance.",
+      "escalation_responsibility": "Not specified",
+      "reporting_accountability": "Not specified",
+      "linked_action_id": null
+    },
+    {
+      "name": "Horizon Financial Services Client Counterpart",
+      "role": "Client Counterpart (Sponsor / Approver not named)",
+      "organization": "Horizon Financial Services",
+      "decision_rights": "Not specified",
+      "approver_responsibilities": "Provides legacy DB2 schema specifications by week 2. Phase deliverables must be accepted, but the accepting individual is not named.",
+      "escalation_responsibility": "Not specified",
+      "reporting_accountability": "Not specified",
+      "linked_action_id": null
+    }
+  ],
+  "raci_matrix": [
+    {
+      "decision_or_activity": "Startup readiness (G-01 gate)",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Talent staffing & replacement",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Work at risk / commercial exceptions",
+      "pmo_lead": "R, A",
+      "delivery_manager": "I",
+      "talent_pm": "I",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Scope & change",
+      "pmo_lead": "R",
+      "delivery_manager": "A",
+      "talent_pm": "—",
+      "sales_accounts": "C, R",
+      "client": "A"
+    },
+    {
+      "decision_or_activity": "Delivery risk & recovery",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "R",
+      "sales_accounts": "I",
+      "client": "I"
+    }
+  ],
+  "commercial_guardrails": {
+    "contract_type_implication": "Fixed Bid: price and scope are fixed across the 3 phases and 6 deliverables, so any additional work must go through a change order to protect margin.",
+    "billing_consumption_assumption": "Billing and timesheet rules are not specified; confirmation required. Invoicing is expected to follow phase milestones, with each phase complete once its deliverables are accepted.",
+    "staffing_assumption": "Team size and allocation are not specified; confirmation required. Staffing must cover a 14-week, 3-phase plan.",
+    "commercial_exposure_note": "Month-end reconciliation may need dedicated compute capacity, which could add unplanned cost. Late client schema specifications (due week 2) or audit sign-off beyond 5 business days could delay delivery and erode margin.",
+    "approved_work_rule": "Only the six defined deliverables and approved Change Orders are authorized for execution.",
+    "non_approved_work_rule": "No out-of-scope tasks shall be performed without a written Change Order.",
+    "work_at_risk_rule": "Work-at-risk requires written PMO Lead approval and executive exception sign-off.",
+    "change_control_trigger": "Material scope shift, timeline variance > 5 days, or budget variance > 10%.",
+    "change_order_route": "PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
+    "budget_baseline": "[CONFIRMATION REQUIRED]",
+    "variance_indicator": "Green (<5% variance)",
+    "margin_risk_indicator": "Medium",
+    "escalation_threshold": "Budget burn rate exceeding weekly cap by >10%"
+  },
+  "talent_onboarding": {
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "onboarding_completion_date": null,
+    "onboarding_attendees": [],
+    "artifacts_walked_through": [],
+    "delivery_talent_roster": [],
+    "required_roles": [
+      "Cloud Architect (AWS landing zone and Terraform)",
+      "Security Engineer (encryption controls for data in transit and at rest)",
+      "Data Engineer (Kafka event-driven ingestion pipelines and transformation workers)",
+      "Data Migration Engineer (historical ledger cleansing and migration scripts)",
+      "Reconciliation/QA Engineer (dual-run ledger balance reconciliation tool)",
+      "DevOps/Cutover Engineer (production cutover runbook and operator handoff)"
+    ],
+    "required_skills": [
+      "AWS",
+      "Terraform",
+      "Apache Kafka",
+      "Event-driven architecture",
+      "Data encryption and security controls",
+      "Legacy DB2 databases",
+      "Data cleansing and migration",
+      "Automated ledger reconciliation",
+      "Financial ledger data",
+      "Cutover runbook documentation"
+    ],
+    "staffing_gaps": [
+      "Talent PM, Delivery Manager and PMO Lead are not named and must be confirmed.",
+      "No named engineers are assigned to any delivery role, so the delivery roster is unstaffed.",
+      "Dedicated compute capacity for month-end batch reconciliation is a risk that may need specific resourcing."
+    ],
+    "replacement_plan": "PMO Lead coordinates talent matching within 5 business days if replacement needed",
+    "team_baseline_review_confirmation": false
+  },
+  "readiness_checklist": [
+    {
+      "item_id": "G01-01",
+      "gate_criterion": "Startup Kit created within 1 day of delivery handoff (SLA)",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Startup Kit drafted on 2026-10-01 (Project awarded 2026-09-30). SLA Met.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-02",
+      "gate_criterion": "Governance tier assigned and cadence established",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Governance Tier confirmed as 'Elevated' with reporting cadence.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-03",
+      "gate_criterion": "Deliverables mapped to owners with explicit acceptance routes",
+      "related_section4_artifact": "Deliverables and Acceptance Matrix",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "6 deliverables mapped to acceptance routes and evidence expectations.",
+      "exception_required": true,
+      "exception_details": "Unstated acceptance criteria or unassigned owners flagged for client confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-04",
+      "gate_criterion": "Milestone delivery plan with external dates and internal buffers committed",
+      "related_section4_artifact": "Milestone Delivery Plan",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Confirmation Required",
+      "evidence": "3 milestones mapped with external dates and internal buffer calculations.",
+      "exception_required": true,
+      "exception_details": "Uncommitted milestone dates require client confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-05",
+      "gate_criterion": "Risks, Assumptions, Issues, and Dependencies seeded and owned",
+      "related_section4_artifact": "RAID Log",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "1 RAID items and 2 dependencies/assumptions baselined.",
+      "exception_required": true,
+      "exception_details": "RAID log items or dependencies pending owner assignment.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-06",
+      "gate_criterion": "Talent PM and DM briefed on governance cadence and KO decks",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "In Progress",
+      "evidence": "Talent onboarding walkthrough session mapped against Section 4 artifacts.",
+      "exception_required": true,
+      "exception_details": "Talent PM / Delivery Manager onboarding briefing pending.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-07",
+      "gate_criterion": "Client onboarding dependencies and prerequisites mapped",
+      "related_section4_artifact": "SOW Interpretation Summary",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Customer obligations (2) and prerequisites documented.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-08",
+      "gate_criterion": "Talent roster staffed with named leads and delivery talent",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "In Progress",
+      "evidence": "0 delivery talent roles listed; 0 named",
+      "exception_required": true,
+      "exception_details": "Talent roster staffing in progress.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-09",
+      "gate_criterion": "Client sponsor and decision escalation path identified",
+      "related_section4_artifact": "Stakeholder and Responsibility Model",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "4 key stakeholder roles (including PMO Lead & Director) and escalation paths identified.",
+      "exception_required": true,
+      "exception_details": "Client sponsor and decision escalation path pending confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-10",
+      "gate_criterion": "RACI and PMO decision rights matrix baselined",
+      "related_section4_artifact": "RACI / Decision Rights Matrix",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Standard PMO decision rights and AR-10 accountability model baselined.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-11",
+      "gate_criterion": "Communications and reporting plan cadence defined",
+      "related_section4_artifact": "Communications and Reporting Plan",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Phase Deliverable Acceptance Review, Audit Committee Sign-off for Reconciliation Tool (Deliverable 3.1), Legacy DB2 Schema Specification Checkpoint",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-12",
+      "gate_criterion": "Commercial guardrails and margin protections established",
+      "related_section4_artifact": "Commercial and Margin Guardrails",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Commercial controls and work-at-risk rules defined for Fixed Bid.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-13",
+      "gate_criterion": "Change control procedure and written sign-off route defined",
+      "related_section4_artifact": "Change Control Procedure",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Formal Change Order route and threshold rules configured.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-14",
+      "gate_criterion": "Contractual ambiguities and conflicts logged with risk-impact mitigations",
+      "related_section4_artifact": "Contract Ambiguity & Conflict Analysis",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "11 contractual ambiguities logged with recommended clarifications.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Pending Review"
+    },
+    {
+      "item_id": "G01-15",
+      "gate_criterion": "Unresolved ambiguities and open questions listed",
+      "related_section4_artifact": "Startup Readiness Checklist",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "32 validation points logged for mobilization confirmation.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Pending Review"
+    }
+  ],
+  "gate_decision": {
+    "gate_decision_status": "Rework Required",
+    "approver_name": "[UNASSIGNED - TO BE CONFIRMED]",
+    "approval_date": "2026-10-01",
+    "decision_comments": "Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.",
+    "approved_with_exception": false,
+    "rework_required": true,
+    "bypass_reason": "Baseline drafted within 1 day; pending minor client confirmations",
+    "bypass_approving_authority": "PMO Lead",
+    "exception_expiry_date": null,
+    "readiness_score": 32.3,
+    "readiness_breakdown": {
+      "mandatory_g01_controls": 60.0,
+      "deliverable_acceptance_rigor": 5.0,
+      "talent_staffing_readiness": 20.0,
+      "commercial_risk_mitigation": 20.0
+    },
+    "workflow_state": "Clarification Pending",
+    "sla_met": true,
+    "segregation_of_duties_verified": true,
+    "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
+    "reviewer_names": [
+      "Delivery Manager",
+      "Technical Lead"
+    ],
+    "concurring_approver_name": "Director, PMO",
+    "open_exceptions_count": 6
+  },
+  "action_required_items": [
+    {
+      "action_id": "ACT-01",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable DEL-01 (Cloud Data Landing Zone Architecture and Terraform Configuration) lacks objective acceptance criteria.",
+      "required_action": "Define objective UAT pass criteria and sign-off metrics for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 3.2,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-02",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-04",
+      "related_artifact": "Milestone Delivery Plan",
+      "target_table_title": "Milestone Delivery Plan",
+      "target_column_header": "External Date",
+      "target_entity_id": "M1",
+      "finding_description": "Milestone M1 (Phase 1 (Ingestion Setup, weeks 1-4) complete: landing zone architecture, Terraform configuration, and security and encryption controls delivered and accepted.) commitment date or buffer unconfirmed.",
+      "required_action": "Lock external milestone date and 7-day internal buffer for M1.",
+      "owner": "Delivery Manager",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 2.6,
+      "target_gate_impact": "Clears G01-04 to Approved"
+    },
+    {
+      "action_id": "ACT-03",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-05",
+      "related_artifact": "RAID Log",
+      "target_table_title": "RAID Log",
+      "target_column_header": "Owner",
+      "target_entity_id": "R-01",
+      "finding_description": "RAID item 'High-volume batch reconciliation during month-end close may require dedicated compute capacity.' lacks assigned owner or mitigation.",
+      "required_action": "Assign risk owner and document mitigation for 'High-volume batch reconciliati'.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 7.7,
+      "target_gate_impact": "Clears G01-05 to Approved"
+    },
+    {
+      "action_id": "ACT-04",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-06",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "Talent Onboarding Record",
+      "target_column_header": "Named Talent",
+      "target_entity_id": null,
+      "finding_description": "Talent PM / Delivery Manager onboarding briefing pending.",
+      "required_action": "Complete briefing on PMO cadences and approve KO deck",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.3,
+      "target_gate_impact": "Clears G01-06 to Approved"
+    },
+    {
+      "action_id": "ACT-05",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "Talent Onboarding Record",
+      "target_column_header": "Named Talent",
+      "target_entity_id": null,
+      "finding_description": "Talent roster staffing in progress.",
+      "required_action": "Confirm candidate selection and lock staffing",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 2.1,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-06",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-09",
+      "related_artifact": "Stakeholder and Responsibility Model",
+      "target_table_title": "Stakeholder and Responsibility Model",
+      "target_column_header": "Decision Rights",
+      "target_entity_id": null,
+      "finding_description": "Client sponsor and decision escalation path pending confirmation.",
+      "required_action": "Confirm primary client sign-off authority and title",
+      "owner": "Delivery Manager",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.7,
+      "target_gate_impact": "Clears G01-09 to Approved"
+    },
+    {
+      "action_id": "ACT-07",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What are the specific acceptance criteria for each of the six deliverables (1.1 through 3.2)?",
+      "required_action": "Review deliverable validation point during kickoff: What are the specific acceptance criteria for each of the six deliverables (1.1 through 3.2)?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-08",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the project start date, and what are the calendar dates for the end of each phase?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the project start date, and what are the calendar dates for the end of each phase?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-09",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who is the named client approver authorized to sign off on each deliverable and phase?",
+      "required_action": "Review deliverable validation point during kickoff: Who is the named client approver authorized to sign off on each deliverable and phase?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-10",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who are the members of the client audit committee, and how will they be engaged for the Deliverable 3.1 sign-off?",
+      "required_action": "Review deliverable validation point during kickoff: Who are the members of the client audit committee, and how will they be engaged for the Deliverable 3.1 sign-off?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-11",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the sign-off turnaround time for deliverables other than 3.1, and what happens if sign-off is delayed?",
+      "required_action": "Review deliverable validation point during kickoff: What is the sign-off turnaround time for deliverables other than 3.1, and what happens if sign-off is delayed?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-12",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-04",
+      "related_artifact": "Milestone Delivery Plan",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who at the client is responsible for delivering the DB2 schema specifications, and what is the confirmed delivery date (currently expected by week 2)?",
+      "required_action": "Confirm milestone schedule during kickoff: Who at the client is responsible for delivering the DB2 schema specifications, and what is the confirmed delivery date (currently expected by week 2)?",
+      "owner": "Delivery Manager",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-04 to Approved"
+    },
+    {
+      "action_id": "ACT-13",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the contingency plan if the DB2 schema specifications arrive after week 2?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the contingency plan if the DB2 schema specifications arrive after week 2?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-14",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Which legacy ledger databases are in scope, and what are their approximate data volumes and record counts?",
+      "required_action": "Review and clarify during mobilization kickoff: Which legacy ledger databases are in scope, and what are their approximate data volumes and record counts?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-15",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the required duration of the dual-run period, and what reconciliation tolerance or accuracy threshold defines a successful balance match?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the required duration of the dual-run period, and what reconciliation tolerance or accuracy threshold defines a successful balance match?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-16",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-12",
+      "related_artifact": "Commercial and Margin Guardrails",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who funds and provisions the dedicated compute capacity needed for month-end batch reconciliation, and what are the sizing requirements?",
+      "required_action": "Review and clarify during mobilization kickoff: Who funds and provisions the dedicated compute capacity needed for month-end batch reconciliation, and what are the sizing requirements?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-12 to Approved"
+    },
+    {
+      "action_id": "ACT-17",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-18",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-02",
+      "finding_description": "What are the client's security and compliance requirements (e.g., regulatory standards, encryption key management) for Deliverable 1.2?",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-02.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-19",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-06",
+      "finding_description": "What are the cutover go/no-go criteria and rollback requirements, and who makes the final decision?",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-06.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-20",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
+      "required_action": "Review and clarify during mobilization kickoff: What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-21",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-22",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-23",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-02",
+      "finding_description": "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-02.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-24",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-02",
+      "finding_description": "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-02.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-25",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-26",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-27",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-28",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-29",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-04",
+      "finding_description": "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria.",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-04.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-30",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-04",
+      "finding_description": "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-04.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-31",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-04",
+      "finding_description": "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-04.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-32",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-04",
+      "finding_description": "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-04.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-33",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M1.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M1.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-34",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M2.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M2.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-35",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M3.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M3.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-36",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Delivery Manager role is .",
+      "required_action": "Review and clarify during mobilization kickoff: Delivery Manager role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-37",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Talent PM role is .",
+      "required_action": "Review and clarify during mobilization kickoff: Talent PM role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-38",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "PMO Lead role is .",
+      "required_action": "Review and clarify during mobilization kickoff: PMO Lead role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    }
+  ],
+  "open_questions": [
+    "What are the specific acceptance criteria for each of the six deliverables (1.1 through 3.2)?",
+    "What is the project start date, and what are the calendar dates for the end of each phase?",
+    "Who is the named client approver authorized to sign off on each deliverable and phase?",
+    "Who are the members of the client audit committee, and how will they be engaged for the Deliverable 3.1 sign-off?",
+    "What is the sign-off turnaround time for deliverables other than 3.1, and what happens if sign-off is delayed?",
+    "Who at the client is responsible for delivering the DB2 schema specifications, and what is the confirmed delivery date (currently expected by week 2)?",
+    "What is the contingency plan if the DB2 schema specifications arrive after week 2?",
+    "Which legacy ledger databases are in scope, and what are their approximate data volumes and record counts?",
+    "What is the required duration of the dual-run period, and what reconciliation tolerance or accuracy threshold defines a successful balance match?",
+    "Who funds and provisions the dedicated compute capacity needed for month-end batch reconciliation, and what are the sizing requirements?",
+    "What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
+    "What are the client's security and compliance requirements (e.g., regulatory standards, encryption key management) for Deliverable 1.2?",
+    "What are the cutover go/no-go criteria and rollback requirements, and who makes the final decision?",
+    "What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
+    "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
+    "Delivery Manager role is unassigned. [CONFIRMATION REQUIRED]",
+    "Talent PM role is unassigned. [CONFIRMATION REQUIRED]",
+    "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]"
+  ],
+  "contract_ambiguities": [
+    {
+      "anomaly_id": "AMB-01",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
+      "risk_impact": "Phase completion and payment depend on acceptance that cannot be objectively tested. This risks disputes and delays on a Fixed Bid contract.",
+      "recommended_clarification": "Can the Client confirm written acceptance criteria, the named approver, and the review turnaround time for each deliverable?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 and Section 3",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-02",
+      "category": "Unclear SLA",
+      "conflicting_clauses": "Risks and Dependencies: \"Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\" Phases and Milestones: P3 (weeks 11-14) requires 3.1 to be \"completed and accepted\".",
+      "risk_impact": "The sign-off turnaround is only an assumption, not a binding commitment. A late committee decision could push P3 past week 14 with no defined remedy.",
+      "recommended_clarification": "Will the Client commit to the 5-business-day sign-off as a contractual obligation, and what is the consequence (deemed acceptance or timeline relief) if it is missed?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4 and Section 2",
+        "confidence_score": 0.85
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-03",
+      "category": "Date Conflict",
+      "conflicting_clauses": "Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
+      "risk_impact": "Late or incomplete schemas compress P1 and P2, and the schedule has no relief mechanism. Under a Fixed Bid, Toptal could absorb the delay cost.",
+      "recommended_clarification": "Will the Client confirm the schema delivery date and completeness standard, and agree that late delivery extends the timeline and adjusts cost?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4 and Section 2",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-04",
+      "category": "Date Conflict",
+      "conflicting_clauses": "Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
+      "risk_impact": "Without a start date, it is unclear whether weeks 11-14 coincide with a month-end close. This could change reconciliation timing and the cutover window.",
+      "recommended_clarification": "What are the project start date and target cutover date, and which month-end close is planned for dual-run reconciliation?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 and Section 4",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-05",
+      "category": "Ownership Gap",
+      "conflicting_clauses": "Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
+      "risk_impact": "Unplanned AWS compute cost or provisioning delays could erode margin or block reconciliation on a Fixed Bid.",
+      "recommended_clarification": "Will the Client provision and fund the dedicated compute capacity, and what volume and performance level should it be sized for?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.85
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-06",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
+      "risk_impact": "It is unclear whether Toptal must execute the production cutover or only document it. A mismatch in expectations could add unfunded effort.",
+      "recommended_clarification": "Is Toptal responsible for executing the production cutover, or only for delivering the runbook and handoff to Client operators?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 and Section 3 (Deliverable 3.2)",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-07",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
+      "risk_impact": "Other legacy database types, if any, would be out of the stated dependency and could expand scope and effort.",
+      "recommended_clarification": "Is the migration scope limited to DB2 databases, and if not, which other sources are included and when will their schemas be provided?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 1 and Section 4",
+        "confidence_score": 0.75
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-08",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
+      "risk_impact": "Subjective data quality and balance-match standards could lead to repeated rework or rejection of the migration and reconciliation outputs.",
+      "recommended_clarification": "What cleansing rules, data volumes, reconciliation match tolerances and dual-run duration define a successful migration and reconciliation?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Deliverables 2.2 and 3.1)",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-09",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
+      "risk_impact": "Without defined standards, the Client could reject the controls as insufficient, causing rework or schedule slip in P1.",
+      "recommended_clarification": "Which security and compliance standards must the controls meet, and who validates them?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Deliverable 1.2)",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-10",
+      "category": "Unclear SLA",
+      "conflicting_clauses": "Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
+      "risk_impact": "Performance expectations are undefined, so the Client may later claim the pipelines under-perform. This creates an acceptance dispute and possible unfunded tuning work.",
+      "recommended_clarification": "What throughput, latency and availability targets must the pipelines meet for acceptance?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Deliverable 2.1)",
+        "confidence_score": 0.7
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-11",
+      "category": "Ownership Gap",
+      "conflicting_clauses": "Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
+      "risk_impact": "It is unclear who builds or owns the target ledger and the AWS environments. A gap could block pipeline integration and cutover.",
+      "recommended_clarification": "Who is responsible for designing, building and operating the target cloud ledger and AWS accounts, and by when will they be available?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 1 and Section 3",
+        "confidence_score": 0.7
+      },
+      "linked_action_id": null
+    }
+  ],
+  "sow_stories_catalogue": [
+    {
+      "reference": "Deliverable 1.1",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-01",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.1",
+        "confidence_score": 0.95
+      }
+    },
+    {
+      "reference": "Deliverable 1.2",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-02",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 1.2",
+        "confidence_score": 0.95
+      }
+    },
+    {
+      "reference": "Deliverable 2.1",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-03",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.1",
+        "confidence_score": 0.95
+      }
+    },
+    {
+      "reference": "Deliverable 2.2",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-04",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 2.2",
+        "confidence_score": 0.95
+      }
+    },
+    {
+      "reference": "Deliverable 3.1",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-05",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.1; Section 4 - Assumption",
+        "confidence_score": 0.9
+      }
+    },
+    {
+      "reference": "Deliverable 3.2",
+      "reference_kind": "Deliverable number",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-06",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 - Deliverable 3.2",
+        "confidence_score": 0.95
+      }
+    }
+  ],
+  "readiness_score": 32.3,
+  "readiness_breakdown": {
+    "mandatory_g01_controls": 60.0,
+    "deliverable_acceptance_rigor": 5.0,
+    "talent_staffing_readiness": 20.0,
+    "commercial_risk_mitigation": 20.0
+  },
+  "workflow_state": "Clarification Pending",
+  "sow_awarded_date": "2026-09-30",
+  "kit_drafted_date": "2026-10-01",
+  "sla_met": true,
+  "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
+  "reviewer_names": [
+    "Delivery Manager",
+    "Technical Lead"
+  ],
+  "approver_name": "[UNASSIGNED - TO BE CONFIRMED]",
+  "concurring_approver_name": "Director, PMO",
+  "segregation_of_duties_verified": true
+}

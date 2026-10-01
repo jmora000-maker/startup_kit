@@ -175,12 +175,14 @@ def format_workbook_export_summary(
 
     ws_count = result.workstreams_count if result.workstreams_count else 0
     ms_count = result.milestones_count if result.milestones_count else result.schedule_rows
+    cp_count = getattr(result, "checkpoints_count", 0)
+    cp_str = f" (+{cp_count} checkpoints)" if cp_count > 0 else ""
 
     lines = [
         sep_double,
         f"{COLOR_BOLD}{COLOR_CYAN}                     PROJECT DELIVERY WORKBOOK{COLOR_RESET}",
         sep_single,
-        f"   • Project Schedule     : {ws_count} workstreams, {ms_count} milestones",
+        f"   • Project Schedule     : {ws_count} workstreams, {ms_count} milestones{cp_str}",
         f"   • WBS                  : {result.wbs_rows} elements ({result.task_rows} tasks)",
         f"   • RAID Log             : {result.raid_rows} items",
     ]
@@ -196,6 +198,17 @@ def format_workbook_export_summary(
         if use_color:
             unmapped_str = f"{COLOR_AMBER}{unmapped_str}{COLOR_RESET}"
         lines.append(unmapped_str)
+
+    # Validation findings summary (OUT-09)
+    if result.validation and result.validation.findings:
+        repaired_n = len(result.validation.repaired)
+        warn_n = len(result.validation.warnings)
+        err_n = len(result.validation.errors)
+        lines.append(sep_single)
+        lines.append(f"   {COLOR_BOLD}EXTRACTION VALIDATION (Section 4):{COLOR_RESET}")
+        lines.append(f"   • Findings             : {repaired_n} repaired, {warn_n} warning(s), {err_n} error(s)")
+        for f in result.validation.findings[:5]:
+            lines.append(f"     - [{f.invariant_id}] ({f.severity.upper()}): {f.message}")
 
     # Traceability Self-Check (v3 A13, v5 A22, v6 Section 1.1)
     if result.traceability:

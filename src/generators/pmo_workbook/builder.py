@@ -1,6 +1,7 @@
 """Pure workbook model builder converting StartupKitBaseline into project delivery workbook rows (v3 spec)."""
 
 import re
+import math
 import logging
 from datetime import date, timedelta
 from typing import List, Dict, Optional, Tuple, Set, Sequence, Union, Any
@@ -58,9 +59,9 @@ from src.generators.pmo_workbook.rows import (
 
 logger = logging.getLogger(__name__)
 
-# Defensive filter: Drop any item matching this pattern
+# Defensive filter: Drop any item matching this pattern (MS-07, Appendix C, INV-04)
 DEFENSIVE_FILTER_REGEX = re.compile(
-    r"\b(G-?01|readiness\s+gate|startup\s+readiness|readiness\s+checklist|readiness\s+score|gate\s+decision)\b",
+    r"\b(G-?01|g01|readiness\s+gate|startup\s+readiness|readiness\s+checklist|readiness\s+score|gate\s+decision|gate\s+approval|startup\s+kit|mobiliz\w*|ACT-\d+)\b",
     re.IGNORECASE
 )
 
@@ -330,7 +331,7 @@ def calculate_start_date(baseline: StartupKitBaseline, user_start_date: Optional
     basis = "Assumed - first Monday after award; confirm"
     if ref_date is None:
         ref_date = today
-        basis = "Assumed - first Monday after generation; confirm"
+        basis = "Assumed - first Monday after generation date; confirm"
 
     # First Monday on or after ref_date
     days_to_monday = (0 - ref_date.weekday()) % 7
@@ -620,6 +621,22 @@ def build_workbook_model(
                 ms_predecessors[curr_m.id].append(prev_m.id)
                 ms_notes[curr_m.id].append(f"Predecessor from sequential-gate assumption ({sequential_gate_source_id})")
 
+    # DT-06: Predecessor sanity: drop any predecessor pointing to same or later gate in delivery order
+    ms_order_index = {m.id: i for i, m in enumerate(sorted_milestones)}
+    for curr_m in sorted_milestones:
+        curr_idx = ms_order_index[curr_m.id]
+        sanitized_preds = []
+        for p in ms_predecessors.get(curr_m.id, []):
+            p_idx = ms_order_index.get(p)
+            if p_idx is not None and p_idx < curr_idx:
+                sanitized_preds.append(p)
+            else:
+                logger.warning(
+                    "DT-06: Predecessor %s on %s is forward/self/invalid and has been dropped.",
+                    p, curr_m.id
+                )
+        ms_predecessors[curr_m.id] = sanitized_preds
+
     # Group milestones into phase workstreams preserving delivery order (v3 A1: exactly one per SOW phase)
     workstream_groups: List[Tuple[str, List[Milestone]]] = []
     seen_workstreams: Dict[str, List[Milestone]] = {}
@@ -738,7 +755,7 @@ def build_workbook_model(
                         best_d.sow_reference = f"{best_d.sow_reference or ''}, {s_item.reference}".strip(", ")
     degenerate_wp_ids = detect_degenerate_work_packages(filtered_backlog, filtered_deliverables)
 
-    # Multi-deliverable work package scoring (v6 A30)
+    # Multi-deliverable work package scoring (MAP-07)
     wp_also_covers: Dict[str, List[str]] = {}
     deliv_covered_by: Dict[str, List[str]] = {}
     all_deliv_names = [d_item.name or d_item.description or "" for d_item in filtered_deliverables]
@@ -747,6 +764,7 @@ def build_workbook_model(
     for d_item in filtered_deliverables:
         assigned_wps = matched_wps_by_deliv.get(d_item.id, [])
         non_deg_wps = [w for w in assigned_wps if w.id not in degenerate_wp_ids]
+        d_gate, _, _ = deliv_mapping.get(d_item.id, (None, "", False))
         for wp in non_deg_wps:
             wp_toks = tokenize_v2(wp.title or "")
             corpus = all_deliv_toks + [wp_toks]
@@ -754,10 +772,15 @@ def build_workbook_model(
             N = len(corpus)
             for other_idx, other_d in enumerate(filtered_deliverables):
                 if other_d.id != d_item.id:
-                    score = compute_score(wp_toks, all_deliv_toks[other_idx], idf_dict, N)
-                    if score >= 0.299:
-                        wp_also_covers.setdefault(wp.id, []).append(other_d.id)
-                        deliv_covered_by.setdefault(other_d.id, []).append(f"{wp.id} ({d_item.id})")
+                    other_gate, _, _ = deliv_mapping.get(other_d.id, (None, "", False))
+                    # MAP-07: Only within the same gate
+                    if d_gate and other_gate and d_gate.id == other_gate.id:
+                        score = compute_score(wp_toks, all_deliv_toks[other_idx], idf_dict, N)
+                        shared_toks = set(wp_toks) & set(all_deliv_toks[other_idx])
+                        has_distinctive = any(idf_dict.get(t, 0.0) >= math.log(2.0) for t in shared_toks)
+                        if score >= 0.45 and has_distinctive:
+                            wp_also_covers.setdefault(wp.id, []).append(other_d.id)
+                            deliv_covered_by.setdefault(other_d.id, []).append(f"{wp.id} ({d_item.id})")
 
     # Map milestone ID to its Schedule WBS Code (e.g. "1.1", "2.1")
     ms_wbs_code_map: Dict[str, str] = {}
@@ -1610,7 +1633,8 @@ def build_workbook_model(
             ref_note = None
         else:
             contract_ref, ref_note = extract_contract_reference(conf_clauses)
-            desc_text = f"{amb_item.category}: {conf_clauses}" if amb_item.category else conf_clauses
+            clean_clause_text = re.sub(r'^\s*(?:\[V\d+\]\s*[^:]*:\s*|Exhibit\s+[A-Z0-9]+[^:]*:\s*)', '', conf_clauses, flags=re.IGNORECASE)
+            desc_text = f"{amb_item.category}: {clean_clause_text}" if amb_item.category else clean_clause_text
 
         desc = clean_contract_text(desc_text)
         src_val = "Baseline - Contract Clarifications"

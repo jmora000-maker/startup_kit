@@ -1,0 +1,44 @@
+{
+  "key": "e388697075b53afcc532f128be24cc1635fecf3ed795d30e295e3eae8e5350c8",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "CharterExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract the overall Project Charter and Governance metadata.\n\nCONSTRAINTS:\n- Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.\n- Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.\n\nExtract:\n- project_name: Title of the project or engagement.\n- client_name: Name of the client or sponsoring organization.\n- governance_tier: 'Guided', 'Partnered', or 'Elevated' (default 'Partnered').\n- contract_type: 'Time and Materials' or 'Fixed Bid' (default 'Time and Materials').\n- delivery_manager: Named Delivery Manager if mentioned, else null.\n- talent_pm: Named Talent Project Manager if mentioned, else null.\n- pmo_lead: Named PMO Lead if mentioned, else null.\n- executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.\n- source_reference: Document name, section/slide reference, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "project_name": "Omnichannel Digital Platform",
+    "client_name": "Apex Global Retail Inc.",
+    "governance_tier": "Partnered",
+    "contract_type": "Time and Materials",
+    "delivery_manager": null,
+    "talent_pm": null,
+    "pmo_lead": null,
+    "executive_summary": "The project builds and deploys a unified omnichannel digital commerce platform for Apex Global Retail Inc. The solution uses Python FastAPI and PostgreSQL microservices on AWS, provisioned with Terraform. Scope covers customer checkout microservices, catalog search services, a mobile web interface, and cloud infrastructure deployment across three phases over 18 weeks.",
+    "project_purpose": "Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.",
+    "delivery_objectives": [
+      "Establish the architecture and core foundation: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning (weeks 1-4)",
+      "Implement core services: product catalog search, basket management, pricing engine, and payment gateway integration (weeks 5-12)",
+      "Deliver the web store front-end, complete end-to-end integration and user acceptance testing, roll out to production, and provide training materials (weeks 13-18)"
+    ],
+    "success_criteria": [
+      "Infrastructure provisioning and core foundation accepted at the end of Phase 1",
+      "Catalog search, basket management, pricing engine, and payment gateway integration accepted at the end of Phase 2",
+      "Web store front-end, testing, production rollout, and training materials accepted at the end of Phase 3"
+    ],
+    "high_level_scope": [
+      "Core cloud infrastructure and container orchestration platform",
+      "User identity, SSO, and role-based access control integration",
+      "Product catalogue search API and indexing pipeline",
+      "Basket and checkout orchestration service",
+      "Payment gateway integration and secure transaction logging",
+      "Responsive web customer store application",
+      "Automated end-to-end regression test suite",
+      "Platform deployment runbook and operational documentation"
+    ],
+    "exclusions": [],
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Header, Section 1 (Executive Summary), Section 3 (Scope), Section 5 (Decisions)",
+      "confidence_score": 0.95
+    }
+  }
+}

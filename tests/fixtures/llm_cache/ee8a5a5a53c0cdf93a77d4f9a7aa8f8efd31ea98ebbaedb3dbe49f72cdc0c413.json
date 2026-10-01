@@ -1,0 +1,234 @@
+{
+  "key": "ee8a5a5a53c0cdf93a77d4f9a7aa8f8efd31ea98ebbaedb3dbe49f72cdc0c413",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "DeliverablesExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract key contractual project deliverables.\n\nCONSTRAINTS:\n1. Focus strictly on top key contractual deliverables and major deliverables (maximum 15-20 deliverables).\n2. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.\n3. Keep acceptance criteria concise and direct (1-2 sentences). If not explicitly stated, you MUST set acceptance_criteria to null.\n\nFor each deliverable:\n- id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)\n- name: Concise title of the deliverable\n- description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.\n- owner: Named owner or role if stated, else 'Unassigned'.\n- acceptance_criteria: Exact explicit acceptance criteria if provided in the text (state concisely and directly without referencing the SOW or documents). If NOT explicitly stated, you MUST set this to null.\n- sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or section references) if mentioned, else null.\n- source_reference: The source document name, section/clause, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "deliverables": [
+      {
+        "id": "DEL-01",
+        "name": "Core Cloud Infrastructure and Container Orchestration Platform",
+        "description": "Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P1); Section 5 (Decisions)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P1",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-02",
+        "name": "Identity, SSO and Role-Based Access Control Integration",
+        "description": "Integration of user identity, single sign-on (SSO), and role-based access control into the platform.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P1)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P1",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-03",
+        "name": "Product Catalogue Search API and Indexing Pipeline",
+        "description": "Product catalogue search API and the indexing pipeline that feeds it. Depends on client access to legacy ERP product catalog feeds before week 5.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2); Section 4 (Dependencies)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P2",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-04",
+        "name": "Basket and Checkout Orchestration Service",
+        "description": "Basket management and checkout orchestration service, including the pricing engine.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P2",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-05",
+        "name": "Payment Gateway Integration and Secure Transaction Logging",
+        "description": "Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2); Section 4 (Risks)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P2",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client.",
+          "Client security compliance review is expected within 5 business days of submission."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-06",
+        "name": "Responsive Web Customer Store Application",
+        "description": "Responsive web storefront application for customers, built as the web store front-end.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P3)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-07",
+        "name": "Automated End-to-End Regression Test Suite",
+        "description": "Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P3)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-08",
+        "name": "Platform Deployment Runbook and Operational Documentation",
+        "description": "Deployment runbook and operational documentation for the platform.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Contracted Deliverables)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "sow.txt (Section 3 (Contracted Deliverables))",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client.",
+          "Delivery phase not specified."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-09",
+        "name": "User Acceptance Testing and Production Rollout",
+        "description": "User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P3)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-10",
+        "name": "Training Materials",
+        "description": "Training materials delivered in the final phase (weeks 13-18).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P3)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "P3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not specified and need to be agreed with the client.",
+          "Training format and audience not specified."
+        ],
+        "linked_action_id": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,2398 @@
+{
+  "project_name": "Omnichannel Digital Platform",
+  "governance_tier": "Partnered",
+  "contract_type": "Time and Materials",
+  "governance_context": {
+    "project_name": "Omnichannel Digital Platform",
+    "governance_tier": "Partnered",
+    "contract_type": "Time and Materials",
+    "client_name": "Apex Global Retail Inc.",
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "executive_summary": "The project builds and deploys a unified omnichannel digital commerce platform for Apex Global Retail Inc. The solution uses Python FastAPI and PostgreSQL microservices on AWS, provisioned with Terraform. Scope covers customer checkout microservices, catalog search services, a mobile web interface, and cloud infrastructure deployment across three phases over 18 weeks.",
+    "workflow_state": "Clarification Pending",
+    "sla_met": true
+  },
+  "charter": {
+    "project_name": "Omnichannel Digital Platform",
+    "client_name": "Apex Global Retail Inc.",
+    "project_purpose": "Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.",
+    "delivery_objectives": [
+      "Establish the architecture and core foundation: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning (weeks 1-4)",
+      "Implement core services: product catalog search, basket management, pricing engine, and payment gateway integration (weeks 5-12)",
+      "Deliver the web store front-end, complete end-to-end integration and user acceptance testing, roll out to production, and provide training materials (weeks 13-18)"
+    ],
+    "success_criteria": [
+      "Infrastructure provisioning and core foundation accepted at the end of Phase 1",
+      "Catalog search, basket management, pricing engine, and payment gateway integration accepted at the end of Phase 2",
+      "Web store front-end, testing, production rollout, and training materials accepted at the end of Phase 3"
+    ],
+    "high_level_scope": [
+      "Core cloud infrastructure and container orchestration platform",
+      "User identity, SSO, and role-based access control integration",
+      "Product catalogue search API and indexing pipeline",
+      "Basket and checkout orchestration service",
+      "Payment gateway integration and secure transaction logging",
+      "Responsive web customer store application",
+      "Automated end-to-end regression test suite",
+      "Platform deployment runbook and operational documentation"
+    ],
+    "exclusions": [
+      "Custom infrastructure outside documented cloud provider scope",
+      "Unapproved out-of-scope feature requests without formal Change Order"
+    ],
+    "key_deliverables_summary": [
+      "DEL-01: Core Cloud Infrastructure and Container Orchestration Platform",
+      "DEL-02: Identity, SSO and Role-Based Access Control Integration",
+      "DEL-03: Product Catalogue Search API and Indexing Pipeline",
+      "DEL-04: Basket and Checkout Orchestration Service",
+      "DEL-05: Payment Gateway Integration and Secure Transaction Logging",
+      "DEL-06: Responsive Web Customer Store Application",
+      "DEL-07: Automated End-to-End Regression Test Suite",
+      "DEL-08: Platform Deployment Runbook and Operational Documentation",
+      "DEL-09: User Acceptance Testing and Production Rollout",
+      "DEL-10: Training Materials"
+    ],
+    "key_milestones_summary": [
+      "M1: Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning. ([DATE TBD])",
+      "M2: Phase 2 (Service Implementation, weeks 5-12) accepted: catalog search, basket management, pricing engine, and payment gateway integration. ([DATE TBD])",
+      "M3: Phase 3 (User Experience and Launch, weeks 13-18) accepted: web store front-end, end-to-end integration testing, UAT, production rollout, and training materials. ([DATE TBD])"
+    ],
+    "contract_type": "Time and Materials",
+    "governance_tier": "Partnered",
+    "delivery_model": "Toptal Talent Team (Agile/Milestone Hybrid)",
+    "governance_model": "PMO Partnered Tier Governance Model",
+    "major_startup_risks": [
+      "Slow response times from the third-party payment provider sandbox API may impact performance testing."
+    ],
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "escalation_path": "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO",
+    "unresolved_assumptions_status": "3 dependencies/assumptions logged, awaiting mobilization validation",
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Header, Section 1 (Executive Summary), Section 3 (Scope), Section 5 (Decisions)",
+      "confidence_score": 0.95
+    }
+  },
+  "sow_interpretation": {
+    "contracted_deliverables": [
+      "Core cloud infrastructure and container orchestration platform.",
+      "User identity, SSO, and role-based access control integration.",
+      "Product catalogue search API and indexing pipeline.",
+      "Basket and checkout orchestration service.",
+      "Payment gateway integration with secure transaction logging.",
+      "Responsive web customer store application.",
+      "Automated end-to-end regression test suite.",
+      "Platform deployment runbook and operational documentation."
+    ],
+    "out_of_scope_items": [
+      "Custom infrastructure outside documented cloud provider scope",
+      "Unapproved out-of-scope feature requests without formal Change Order"
+    ],
+    "customer_obligations": [
+      "Provide access to legacy ERP product catalog feeds before week 5.",
+      "Client security team to complete compliance review within 5 business days of each submission."
+    ],
+    "assumptions": [
+      "Client security team completes compliance reviews within 5 business days of submission.",
+      "Work runs sequentially across the three delivery phases: Architecture and Core Foundation, Service Implementation, and User Experience and Launch."
+    ],
+    "constraints": [
+      "Delivery is planned over 18 weeks in three phases (weeks 1-4, 5-12, 13-18).",
+      "Microservices must be built with Python FastAPI and PostgreSQL.",
+      "Third-party payment provider sandbox API latency may affect performance testing."
+    ],
+    "platform_environment_commitments": [
+      "AWS is the standard cloud platform.",
+      "Infrastructure is provisioned as code using Terraform.",
+      "Microservices are built with Python FastAPI and PostgreSQL.",
+      "A CI/CD pipeline and infrastructure provisioning are set up in Phase 1.",
+      "Production rollout is completed in Phase 3."
+    ],
+    "dependencies": [
+      "Access to legacy ERP product catalog feeds is needed before week 5.",
+      "Third-party payment provider sandbox API is needed for payment integration and performance testing.",
+      "Client security team compliance reviews are needed to progress."
+    ],
+    "approval_expectations": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on completion of its listed outputs.",
+    "ambiguity_notes": [
+      "No out-of-scope items or exclusions are explicitly defined.",
+      "Acceptance criteria for deliverables and phase milestones are not specified.",
+      "Calendar dates for milestones are not stated; only week ranges are given.",
+      "General client review and sign-off windows beyond security compliance review are not defined.",
+      "Training material scope and format (audience, volume) are not detailed.",
+      "Performance and load testing targets are not defined.",
+      "Mobile web interface is mentioned in the summary, but only a responsive web store is listed as a deliverable.",
+      "Pricing engine is listed in Phase 2 but not in the contracted deliverables list."
+    ],
+    "confirmation_required_items": [
+      "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-02: Integration of user identity, single sign-on (SSO), and role-based access control into the platform.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-02: Integration of user identity, single sign-on (SSO), and role-based access control into the platform.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-03: Product catalogue search API and the indexing pipeline that feeds it. Depends on client access to legacy ERP product catalog feeds before week 5.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-03: Product catalogue search API and the indexing pipeline that feeds it. Depends on client access to legacy ERP product catalog feeds before week 5.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+      "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' owner is unassigned. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
+      "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
+      "Delivery Manager role is unassigned. [CONFIRMATION REQUIRED]",
+      "Talent PM role is unassigned. [CONFIRMATION REQUIRED]",
+      "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]"
+    ],
+    "contract_ambiguities": [
+      {
+        "anomaly_id": "AMB-01",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+        "risk_impact": "Phases are expressed only in relative weeks, so the timeline has no fixed anchor. Late ERP access would block Phase 2 catalog work with no stated schedule or commercial relief.",
+        "recommended_clarification": "What is the confirmed project start date, and by what calendar date will the client deliver ERP catalog feed access? Will Phase 2 dates move day-for-day if access is late?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 4",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-02",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+        "risk_impact": "Without testable criteria, milestone sign-off is subjective. This risks disputed acceptance, delayed milestone completion, and unbilled or contested effort.",
+        "recommended_clarification": "What objective acceptance criteria apply to each phase deliverable? Who signs off, and within how many business days is a deemed-acceptance applied if no response is given?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.92
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-03",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+        "risk_impact": "The pricing engine is a milestone item but not a listed deliverable. This creates a risk of unplanned effort or a scope dispute.",
+        "recommended_clarification": "Is the pricing engine in contracted scope? If so, what functionality is required (rules, promotions, tax), and should it be added to the deliverables list?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-04",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+        "risk_impact": "It is unclear whether a separate mobile web interface is expected or whether a responsive web store satisfies it. This risks front-end scope and testing effort being under- or over-estimated.",
+        "recommended_clarification": "Is the responsive web store the only front-end deliverable, or is a separate mobile web interface also required? Which devices and browsers must be supported?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 1, 2 and 3",
+          "confidence_score": 0.82
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-05",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+        "risk_impact": "Training, UAT support, and production rollout are milestone activities without defined deliverables. This creates uncertainty on effort, format, and completion evidence.",
+        "recommended_clarification": "What training materials are required (format, audience, volume)? What is Toptal's role in UAT and production rollout, and what outputs are expected?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.85
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-06",
+        "category": "Unclear SLA",
+        "conflicting_clauses": "Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+        "risk_impact": "Compliance review delays could stall phase completion and go-live. The plan has no defined review windows, and there is no remedy for a missed turnaround.",
+        "recommended_clarification": "At which points will compliance reviews be submitted, and what happens to the schedule and fees if the 5-business-day turnaround is missed?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.88
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-07",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+        "risk_impact": "Performance expectations are undefined, so the result cannot be objectively accepted. Sandbox latency outside Toptal's control could cause a failed or disputed acceptance.",
+        "recommended_clarification": "What performance and load targets must the platform meet, and how will acceptance account for third-party sandbox latency?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-08",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+        "risk_impact": "Fixed-duration, acceptance-gated phases under Time and Materials blur commercial expectations. The client may expect fixed-price outcomes, which risks margin erosion and billing disputes.",
+        "recommended_clarification": "Is the 18-week plan an estimate or a commitment? What is the budget ceiling or not-to-exceed amount, and how are changes handled?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Header and Section 2",
+          "confidence_score": 0.75
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-09",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+        "risk_impact": "Strict sequencing leaves no room for parallel front-end and test automation work. Any slip in an earlier phase pushes the 18-week end date.",
+        "recommended_clarification": "May front-end and test automation work start before the prior phase is accepted? In which phase is the regression suite due?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2, 3 and 4",
+          "confidence_score": 0.78
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-10",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+        "risk_impact": "Unassigned owners for external access and environments can delay Phases 1-2. Toptal may be held accountable for dependencies it does not control.",
+        "recommended_clarification": "Who are the named client owners for ERP feed access, payment provider sandbox credentials, and AWS account provisioning, and by what dates will each be ready?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.8
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "AMB-11",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+        "risk_impact": "Unclear UAT resourcing and post-launch ownership may delay go-live or create unplanned support obligations after the final phase.",
+        "recommended_clarification": "Who performs UAT and gives go-live approval, and who owns production support after rollout? Is any hypercare period expected?",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Sections 2 and 3",
+          "confidence_score": 0.78
+        },
+        "linked_action_id": null
+      }
+    ],
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Sections 1-5",
+      "confidence_score": 0.85
+    }
+  },
+  "deliverables": [
+    {
+      "id": "DEL-01",
+      "name": "Core Cloud Infrastructure and Container Orchestration Platform",
+      "description": "Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P1); Section 5 (Decisions)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P1",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": "ACT-01"
+    },
+    {
+      "id": "DEL-02",
+      "name": "Identity, SSO and Role-Based Access Control Integration",
+      "description": "Integration of user identity, single sign-on (SSO), and role-based access control into the platform.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P1)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P1",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Security compliance review assumed within 5 business days of submission; overall review window not specified",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": "ACT-23"
+    },
+    {
+      "id": "DEL-03",
+      "name": "Product Catalogue Search API and Indexing Pipeline",
+      "description": "Product catalogue search API and the indexing pipeline that feeds it. Depends on client access to legacy ERP product catalog feeds before week 5.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2); Section 4 (Dependencies)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P2",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-04",
+      "name": "Basket and Checkout Orchestration Service",
+      "description": "Basket management and checkout orchestration service, including the pricing engine.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P2",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-05",
+      "name": "Payment Gateway Integration and Secure Transaction Logging",
+      "description": "Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P2); Section 4 (Risks)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P2",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Security compliance review assumed within 5 business days of submission; overall review window not specified",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client.",
+        "Client security compliance review is expected within 5 business days of submission."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-06",
+      "name": "Responsive Web Customer Store Application",
+      "description": "Responsive web storefront application for customers, built as the web store front-end.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P3)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P3",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": "ACT-16"
+    },
+    {
+      "id": "DEL-07",
+      "name": "Automated End-to-End Regression Test Suite",
+      "description": "Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables); Section 2 (P3)",
+        "confidence_score": 0.85
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P3",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": "ACT-13"
+    },
+    {
+      "id": "DEL-08",
+      "name": "Platform Deployment Runbook and Operational Documentation",
+      "description": "Deployment runbook and operational documentation for the platform.",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables)",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "sow.txt (Section 3 (Contracted Deliverables))",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client.",
+        "Delivery phase not specified."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-09",
+      "name": "User Acceptance Testing and Production Rollout",
+      "description": "User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 (P3)",
+        "confidence_score": 0.85
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P3",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client."
+      ],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-10",
+      "name": "Training Materials",
+      "description": "Training materials delivered in the final phase (weeks 13-18).",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 (P3)",
+        "confidence_score": 0.85
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "acceptance_criteria": null,
+      "sow_reference": "P3",
+      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+      "submission_target_date": null,
+      "review_window": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co...",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [
+        "Acceptance criteria not specified and need to be agreed with the client.",
+        "Training format and audience not specified."
+      ],
+      "linked_action_id": "ACT-33"
+    }
+  ],
+  "milestones": [
+    {
+      "id": "M1",
+      "description": "Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [],
+      "critical_path_assumptions": [
+        "Work executes sequentially across the three delivery phases."
+      ],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": "ACT-02"
+    },
+    {
+      "id": "M2",
+      "description": "Phase 2 (Service Implementation, weeks 5-12) accepted: catalog search, basket management, pricing engine, and payment gateway integration.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Client provides access to legacy ERP product catalog feeds prior to week 5.",
+        "Client security team completes compliance review within 5 business days of submission."
+      ],
+      "critical_path_assumptions": [
+        "Work executes sequentially across the three delivery phases.",
+        "Payment provider sandbox API latency may affect performance testing."
+      ],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2; Section 4",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    },
+    {
+      "id": "M3",
+      "description": "Phase 3 (User Experience and Launch, weeks 13-18) accepted: web store front-end, end-to-end integration testing, UAT, production rollout, and training materials.",
+      "external_date": null,
+      "internal_buffer_date": null,
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Client security team completes compliance review within 5 business days of submission."
+      ],
+      "critical_path_assumptions": [
+        "Work executes sequentially across the three delivery phases."
+      ],
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    }
+  ],
+  "backlog_seed": [
+    {
+      "id": "WP-01",
+      "parent_deliverable_id": "DEL-01",
+      "title": "Provision AWS Infrastructure with Terraform",
+      "description": "Provision the core AWS cloud environment as code using Terraform. Ref: DEL-01",
+      "preliminary_sequence": 1,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Phase P1: infrastructure provisioning accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-02",
+      "parent_deliverable_id": "DEL-01",
+      "title": "Set Up Container Orchestration and CI/CD Pipeline",
+      "description": "Deploy the container orchestration platform and build the CI/CD pipeline. Ref: DEL-01",
+      "preliminary_sequence": 2,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-01"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Phase P1: CI/CD pipeline accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-03",
+      "parent_deliverable_id": "DEL-01",
+      "title": "Establish Microservices Framework Baseline",
+      "description": "Set up the microservices framework using Python FastAPI and PostgreSQL as the standard for all services. Ref: DEL-01",
+      "preliminary_sequence": 3,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-01"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Phase P1: microservices framework setup accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-04",
+      "parent_deliverable_id": "DEL-02",
+      "title": "Integrate Identity, SSO and RBAC",
+      "description": "Integrate identity management, single sign-on and role-based access control with the platform. Identity provider and role model are not yet defined. Ref: DEL-02",
+      "preliminary_sequence": 4,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-01",
+        "WP-03"
+      ],
+      "linked_milestones": [
+        "P1"
+      ],
+      "linked_acceptance_items": [
+        "Phase P1: IAM integration accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-05",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Build Catalogue Indexing Pipeline",
+      "description": "Ingest legacy ERP product catalogue feeds and build the indexing pipeline. Requires client access to the ERP feeds before week 5. Ref: DEL-03",
+      "preliminary_sequence": 5,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-03",
+        "Client access to legacy ERP product catalogue feeds before week 5"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: product catalogue search service accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-06",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Develop Catalogue Search API",
+      "description": "Develop the product catalogue search API on top of the indexing pipeline. Ref: DEL-03",
+      "preliminary_sequence": 6,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-05"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: product catalogue search service accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-07",
+      "parent_deliverable_id": "DEL-04",
+      "title": "Develop Basket Management Service",
+      "description": "Build the basket management microservice. Ref: DEL-04",
+      "preliminary_sequence": 7,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-03",
+        "WP-04"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: basket management accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-08",
+      "parent_deliverable_id": "DEL-04",
+      "title": "Build Pricing Engine and Checkout Orchestration",
+      "description": "Build the pricing engine and the checkout orchestration flow. Pricing engine scope and rules are not yet detailed. Ref: DEL-04",
+      "preliminary_sequence": 8,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-07"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: pricing engine accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-09",
+      "parent_deliverable_id": "DEL-05",
+      "title": "Integrate Payment Gateway",
+      "description": "Integrate the third-party payment gateway with checkout. Provider sandbox latency may affect performance testing, and the client security compliance review (5 business days) is needed. Ref: DEL-05",
+      "preliminary_sequence": 9,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-08",
+        "Client security compliance review (5 business days from submission)"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: payment gateway integration accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-10",
+      "parent_deliverable_id": "DEL-05",
+      "title": "Implement Secure Transaction Logging",
+      "description": "Implement secure logging of payment transactions. Ref: DEL-05",
+      "preliminary_sequence": 10,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-09"
+      ],
+      "linked_milestones": [
+        "P2"
+      ],
+      "linked_acceptance_items": [
+        "Phase P2: payment gateway integration accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-11",
+      "parent_deliverable_id": "DEL-06",
+      "title": "Build Responsive Web Store Front-End",
+      "description": "Build the responsive web customer store application integrated with the catalogue, basket and checkout services. Ref: DEL-06",
+      "preliminary_sequence": 11,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-06",
+        "WP-08",
+        "WP-09"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Phase P3: web store front-end accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-12",
+      "parent_deliverable_id": "DEL-07",
+      "title": "Create Automated E2E Regression Suite",
+      "description": "Build the automated end-to-end regression test suite and run integration testing across all services. Ref: DEL-07",
+      "preliminary_sequence": 12,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-11"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Phase P3: end-to-end integration testing accepted"
+      ],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-13",
+      "parent_deliverable_id": "DEL-08",
+      "title": "Produce Deployment Runbook and Ops Documentation",
+      "description": "Document platform deployment procedures and operational guidance. The delivery phase for this item is not stated. Ref: DEL-08",
+      "preliminary_sequence": 13,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-02",
+        "WP-12"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [],
+      "uncertain_scope": true,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-14",
+      "parent_deliverable_id": "DEL-09",
+      "title": "Conduct UAT and Production Rollout",
+      "description": "Support user acceptance testing and execute the production rollout. Acceptance criteria and rollout approach are not yet defined. Ref: DEL-09",
+      "preliminary_sequence": 14,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-12",
+        "WP-13"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Phase P3: user acceptance testing and production rollout accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-15",
+      "parent_deliverable_id": "DEL-10",
+      "title": "Deliver Training Materials",
+      "description": "Prepare and hand over training materials for the platform. Format and audience are not yet defined. Ref: DEL-10",
+      "preliminary_sequence": 15,
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "dependency_references": [
+        "WP-13"
+      ],
+      "linked_milestones": [
+        "P3"
+      ],
+      "linked_acceptance_items": [
+        "Phase P3: training material delivery accepted"
+      ],
+      "uncertain_scope": true,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    }
+  ],
+  "dependencies_assumptions": [
+    {
+      "id": "DEP-01",
+      "type": "Dependency",
+      "description": "Client must provide access to the legacy ERP product catalog feeds before week 5 so catalog search and indexing work can start.",
+      "category": "Technical",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "owner": "Client",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    },
+    {
+      "id": "ASM-01",
+      "type": "Assumption",
+      "description": "Client security team will complete each compliance review within 5 business days of submission.",
+      "category": "Governance",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "owner": "Client",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    },
+    {
+      "id": "ASM-02",
+      "type": "Assumption",
+      "description": "Work executes sequentially across the three delivery phases: Architecture and Core Foundation, Service Implementation, and User Experience and Launch.",
+      "category": "Schedule",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.9
+      },
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    }
+  ],
+  "raid_items": [
+    {
+      "id": "R-01",
+      "type": "Risk",
+      "description": "Slow response times from the third-party payment provider sandbox API may impact performance testing.",
+      "owner": "Unassigned",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.95
+      },
+      "category": "Technical",
+      "probability": "Medium",
+      "impact": "Medium",
+      "severity": "Medium",
+      "trigger_or_early_warning": "Sandbox latency observed during payment gateway integration",
+      "mitigation_or_response": "Active monitoring by PMO and Delivery Manager",
+      "due_date": null,
+      "linked_decision": null,
+      "linked_dependency_or_assumption": null,
+      "linked_action_id": "ACT-03"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-01",
+      "decision_text": "AWS is the cloud platform standard, with Terraform used for infrastructure as code.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Sets a single cloud and infrastructure provisioning approach for the whole platform build.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 5",
+        "confidence_score": 1.0
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-02",
+      "decision_text": "Microservices are built with Python FastAPI and PostgreSQL.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Sets a common application and database technology stack for all services.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 5",
+        "confidence_score": 1.0
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-03",
+      "decision_text": "The engagement runs as Time and Materials.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Agreed commercial model for the Omnichannel Digital Platform engagement.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Header",
+        "confidence_score": 1.0
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-04",
+      "decision_text": "The project operates under the Partnered governance tier.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Agreed governance level for oversight and delivery management.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Header",
+        "confidence_score": 1.0
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-05",
+      "decision_text": "Delivery runs sequentially over 18 weeks in three phases: Architecture and Core Foundation (weeks 1-4), Service Implementation (weeks 5-12), and User Experience and Launch (weeks 13-18).",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Establishes the phase structure and timeline baseline, with each phase accepted before the next builds on it.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2 and Section 4",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-06",
+      "decision_text": "Scope covers customer checkout microservices, catalog search services, a mobile web interface, and AWS cloud infrastructure deployment.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Defines the core scope of the unified omnichannel digital commerce platform.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 1",
+        "confidence_score": 0.95
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-07",
+      "decision_text": "Deliverables include an automated end-to-end regression test suite and a platform deployment runbook with operational documentation.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Ensures the platform is testable and can be operated after launch.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3",
+        "confidence_score": 0.9
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-08",
+      "decision_text": "The client provides access to legacy ERP product catalog feeds before week 5.",
+      "decision_owner": "PMO Lead",
+      "decision_date": null,
+      "rationale": "Catalog search service work in Service Implementation depends on this access.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.85
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    }
+  ],
+  "communications_plan": [
+    {
+      "id": "COM-01",
+      "name": "Weekly Check-in (30 min)",
+      "audience": "Talent PM, Delivery Manager, PMO Lead",
+      "content_owner": "Talent PM",
+      "cadence": "Weekly (30 min)",
+      "governance_tier_applicability": "All Tiers",
+      "format": "Virtual Meeting",
+      "delivery_day": "Every Tuesday",
+      "escalation_route": "PMO Lead -> Director, PMO",
+      "pmo_health_rating_notes": "Evidence is exchanged at the weekly check-in; PMO Lead assesses project health.",
+      "linked_action_id": null
+    },
+    {
+      "id": "COM-02",
+      "name": "Weekly Project Status Report (PSR)",
+      "audience": "Client Sponsor, Delivery Manager, PMO Lead",
+      "content_owner": "Talent PM",
+      "cadence": "Weekly",
+      "governance_tier_applicability": "All Tiers",
+      "format": "Written Report (Email / Portal)",
+      "delivery_day": "Every Friday COB",
+      "escalation_route": "PMO Lead -> Director, PMO",
+      "pmo_health_rating_notes": "PMO Lead independently issues health rating before executive distribution.",
+      "linked_action_id": null
+    },
+    {
+      "id": "COM-03",
+      "name": "Monthly / Quarterly Business Review (MBR/QBR - G-07)",
+      "audience": "Executive Sponsors, Director PMO, Client VP",
+      "content_owner": "Delivery Manager",
+      "cadence": "Monthly",
+      "governance_tier_applicability": "Partnered, Elevated",
+      "format": "Executive Presentation Deck",
+      "delivery_day": "Last Thursday of Month",
+      "escalation_route": "Director, PMO",
+      "pmo_health_rating_notes": "Strategic governance, milestone progress, and budget burndown review.",
+      "linked_action_id": null
+    }
+  ],
+  "stakeholders": [
+    {
+      "name": "[UNASSIGNED - TO BE CONFIRMED]",
+      "role": "PMO Lead",
+      "organization": "Toptal PMO",
+      "decision_rights": "G-01 Gate Sign-off, Talent Staffing/Replacement, Work-at-Risk Approvals, Delivery Risk & Recovery",
+      "approver_responsibilities": "G-01 Gate, Baseline Exceptions, PMO Health Ratings, Talent Baseline Sign-off",
+      "escalation_responsibility": "Director, PMO",
+      "reporting_accountability": "Independent Weekly Health Rating, Leadership Rollup",
+      "linked_action_id": null
+    },
+    {
+      "name": "Director, PMO",
+      "role": "Director, PMO",
+      "organization": "Toptal PMO Leadership",
+      "decision_rights": "Elevated Tier Approvals, Major Commercial Exception Sign-offs, Executive Escalations",
+      "approver_responsibilities": "Elevated Tier G-01 Concurrence, Governance Policy Exceptions",
+      "escalation_responsibility": "VP, Delivery / Executive Leadership",
+      "reporting_accountability": "Executive PMO Portfolio Review",
+      "linked_action_id": null
+    },
+    {
+      "name": "[UNASSIGNED - TO BE CONFIRMED]",
+      "role": "Delivery Manager",
+      "organization": "Toptal",
+      "decision_rights": "Voice of the customer, scope accountability, client alignment",
+      "approver_responsibilities": "Scope change alignment, handoff readiness",
+      "escalation_responsibility": "PMO Lead",
+      "reporting_accountability": "Weekly PSR Review",
+      "linked_action_id": null
+    },
+    {
+      "name": "[UNASSIGNED - TO BE CONFIRMED]",
+      "role": "Talent PM",
+      "organization": "Toptal",
+      "decision_rights": "Project delivery, sprint coordination, day-to-day execution",
+      "approver_responsibilities": "Work package progress, deliverable submission drafts",
+      "escalation_responsibility": "Delivery Manager",
+      "reporting_accountability": "Weekly PSR Author",
+      "linked_action_id": null
+    },
+    {
+      "name": "Apex Global Retail Inc.",
+      "role": "Client Sponsor / Approver",
+      "organization": "Client",
+      "decision_rights": "Contractual approvals, deliverable sign-offs, change orders",
+      "approver_responsibilities": "Deliverables acceptance, scope amendments",
+      "escalation_responsibility": "Client Executive Leadership",
+      "reporting_accountability": "Recipient of Weekly PSR & MBR",
+      "linked_action_id": null
+    }
+  ],
+  "raci_matrix": [
+    {
+      "decision_or_activity": "Startup readiness (G-01 gate)",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Talent staffing & replacement",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Work at risk / commercial exceptions",
+      "pmo_lead": "R, A",
+      "delivery_manager": "I",
+      "talent_pm": "I",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Scope & change",
+      "pmo_lead": "R",
+      "delivery_manager": "A",
+      "talent_pm": "—",
+      "sales_accounts": "C, R",
+      "client": "A"
+    },
+    {
+      "decision_or_activity": "Delivery risk & recovery",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "R",
+      "sales_accounts": "I",
+      "client": "I"
+    }
+  ],
+  "commercial_guardrails": {
+    "contract_type_implication": "Time and Materials: billing follows actual effort, so hours must be tracked against approved scope and phase plans to protect margin.",
+    "billing_consumption_assumption": "[CONFIRMATION REQUIRED] Invoicing cadence and timesheet rules are not specified; confirm before the first billing cycle.",
+    "staffing_assumption": "Work runs sequentially across three phases over 18 weeks (P1 weeks 1-4, P2 weeks 5-12, P3 weeks 13-18), so staffing should follow phase demand. [CONFIRMATION REQUIRED] Team size and roles are not specified.",
+    "commercial_exposure_note": "Delays in client ERP catalog feed access (needed before week 5) or in the 5-business-day security compliance review could create idle time or rework. Payment provider sandbox latency may also extend performance testing effort.",
+    "approved_work_rule": "Only authorized project scope and approved Change Orders are authorized for execution.",
+    "non_approved_work_rule": "No out-of-scope tasks shall be performed without written Change Order.",
+    "work_at_risk_rule": "Work-at-risk requires written PMO Lead approval and executive exception sign-off.",
+    "change_control_trigger": "Material scope shift, timeline variance > 5 days, or budget variance > 10%.",
+    "change_order_route": "PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order.",
+    "budget_baseline": "[CONFIRMATION REQUIRED]",
+    "variance_indicator": "Not yet measurable: no budget baseline is confirmed. Use Green (<5% variance) once a baseline is set.",
+    "margin_risk_indicator": "Medium",
+    "escalation_threshold": "Budget burn rate exceeding weekly cap by >10%."
+  },
+  "talent_onboarding": {
+    "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
+    "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
+    "pmo_lead": "[UNASSIGNED - TO BE CONFIRMED]",
+    "onboarding_completion_date": null,
+    "onboarding_attendees": [],
+    "artifacts_walked_through": [],
+    "delivery_talent_roster": [],
+    "required_roles": [
+      "Cloud/DevOps Engineer (AWS, Terraform, CI/CD, container orchestration)",
+      "Backend Engineer (Python FastAPI, PostgreSQL microservices)",
+      "Identity/Security Engineer (IAM, SSO, role-based access control)",
+      "Search/Data Engineer (catalog search API and indexing pipeline)",
+      "Integration Engineer (payment gateway, legacy ERP catalog feeds)",
+      "Frontend Engineer (responsive web store and mobile web interface)",
+      "QA/Test Automation Engineer (end-to-end regression suite)"
+    ],
+    "required_skills": [
+      "AWS",
+      "Terraform (IaC)",
+      "Python FastAPI",
+      "PostgreSQL",
+      "Microservices architecture",
+      "Container orchestration",
+      "CI/CD pipelines",
+      "IAM/SSO and role-based access control",
+      "Payment gateway integration",
+      "Automated end-to-end testing"
+    ],
+    "staffing_gaps": [
+      "No Talent PM, Delivery Manager, or PMO Lead has been named yet.",
+      "No individual engineers have been identified or assigned to any delivery role."
+    ],
+    "replacement_plan": "PMO Lead coordinates talent matching within 5 business days if replacement needed",
+    "team_baseline_review_confirmation": false
+  },
+  "readiness_checklist": [
+    {
+      "item_id": "G01-01",
+      "gate_criterion": "Startup Kit created within 1 day of delivery handoff (SLA)",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Startup Kit drafted on 2026-10-01 (Project awarded 2026-09-30). SLA Met.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-02",
+      "gate_criterion": "Governance tier assigned and cadence established",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Governance Tier confirmed as 'Partnered' with reporting cadence.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-03",
+      "gate_criterion": "Deliverables mapped to owners with explicit acceptance routes",
+      "related_section4_artifact": "Deliverables and Acceptance Matrix",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "10 deliverables mapped to acceptance routes and evidence expectations.",
+      "exception_required": true,
+      "exception_details": "Unstated acceptance criteria or unassigned owners flagged for client confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-04",
+      "gate_criterion": "Milestone delivery plan with external dates and internal buffers committed",
+      "related_section4_artifact": "Milestone Delivery Plan",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Confirmation Required",
+      "evidence": "3 milestones mapped with external dates and internal buffer calculations.",
+      "exception_required": true,
+      "exception_details": "Uncommitted milestone dates require client confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-05",
+      "gate_criterion": "Risks, Assumptions, Issues, and Dependencies seeded and owned",
+      "related_section4_artifact": "RAID Log",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "1 RAID items and 3 dependencies/assumptions baselined.",
+      "exception_required": true,
+      "exception_details": "RAID log items or dependencies pending owner assignment.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-06",
+      "gate_criterion": "Talent PM and DM briefed on governance cadence and KO decks",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "In Progress",
+      "evidence": "Talent onboarding walkthrough session mapped against Section 4 artifacts.",
+      "exception_required": true,
+      "exception_details": "Talent PM / Delivery Manager onboarding briefing pending.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-07",
+      "gate_criterion": "Client onboarding dependencies and prerequisites mapped",
+      "related_section4_artifact": "SOW Interpretation Summary",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Customer obligations (2) and prerequisites documented.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-08",
+      "gate_criterion": "Talent roster staffed with named leads and delivery talent",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "In Progress",
+      "evidence": "0 delivery talent roles listed; 0 named",
+      "exception_required": true,
+      "exception_details": "Talent roster staffing in progress.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-09",
+      "gate_criterion": "Client sponsor and decision escalation path identified",
+      "related_section4_artifact": "Stakeholder and Responsibility Model",
+      "owner": "Delivery Manager",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "5 key stakeholder roles (including PMO Lead & Director) and escalation paths identified.",
+      "exception_required": true,
+      "exception_details": "Client sponsor and decision escalation path pending confirmation.",
+      "approval_status": "Exception Required"
+    },
+    {
+      "item_id": "G01-10",
+      "gate_criterion": "RACI and PMO decision rights matrix baselined",
+      "related_section4_artifact": "RACI / Decision Rights Matrix",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Standard PMO decision rights and AR-10 accountability model baselined.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-11",
+      "gate_criterion": "Communications and reporting plan cadence defined",
+      "related_section4_artifact": "Communications and Reporting Plan",
+      "owner": "Talent PM",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Weekly Check-in (30 min), Weekly Project Status Report (PSR), Monthly / Quarterly Business Review (MBR/QBR - G-07)",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-12",
+      "gate_criterion": "Commercial guardrails and margin protections established",
+      "related_section4_artifact": "Commercial and Margin Guardrails",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Commercial controls and work-at-risk rules defined for Time and Materials.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-13",
+      "gate_criterion": "Change control procedure and written sign-off route defined",
+      "related_section4_artifact": "Change Control Procedure",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Formal Change Order route and threshold rules configured.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-14",
+      "gate_criterion": "Contractual ambiguities and conflicts logged with risk-impact mitigations",
+      "related_section4_artifact": "Contract Ambiguity & Conflict Analysis",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "11 contractual ambiguities logged with recommended clarifications.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Pending Review"
+    },
+    {
+      "item_id": "G01-15",
+      "gate_criterion": "Unresolved ambiguities and open questions listed",
+      "related_section4_artifact": "Startup Readiness Checklist",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "34 validation points logged for mobilization confirmation.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Pending Review"
+    }
+  ],
+  "gate_decision": {
+    "gate_decision_status": "Rework Required",
+    "approver_name": "[UNASSIGNED - TO BE CONFIRMED]",
+    "approval_date": "2026-10-01",
+    "decision_comments": "Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.",
+    "approved_with_exception": false,
+    "rework_required": true,
+    "bypass_reason": "Baseline drafted within 1 day; pending minor client confirmations",
+    "bypass_approving_authority": "PMO Lead",
+    "exception_expiry_date": null,
+    "readiness_score": 31.0,
+    "readiness_breakdown": {
+      "mandatory_g01_controls": 60.0,
+      "deliverable_acceptance_rigor": 0.0,
+      "talent_staffing_readiness": 20.0,
+      "commercial_risk_mitigation": 20.0
+    },
+    "workflow_state": "Clarification Pending",
+    "sla_met": true,
+    "segregation_of_duties_verified": true,
+    "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
+    "reviewer_names": [
+      "Delivery Manager",
+      "Technical Lead"
+    ],
+    "concurring_approver_name": null,
+    "open_exceptions_count": 6
+  },
+  "action_required_items": [
+    {
+      "action_id": "ACT-01",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable DEL-01 (Core Cloud Infrastructure and Container Orchestration Platform) lacks objective acceptance criteria.",
+      "required_action": "Define objective UAT pass criteria and sign-off metrics for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 2.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-02",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-04",
+      "related_artifact": "Milestone Delivery Plan",
+      "target_table_title": "Milestone Delivery Plan",
+      "target_column_header": "External Date",
+      "target_entity_id": "M1",
+      "finding_description": "Milestone M1 (Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning.) commitment date or buffer unconfirmed.",
+      "required_action": "Lock external milestone date and 7-day internal buffer for M1.",
+      "owner": "Delivery Manager",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 2.5,
+      "target_gate_impact": "Clears G01-04 to Approved"
+    },
+    {
+      "action_id": "ACT-03",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-05",
+      "related_artifact": "RAID Log",
+      "target_table_title": "RAID Log",
+      "target_column_header": "Owner",
+      "target_entity_id": "R-01",
+      "finding_description": "RAID item 'Slow response times from the third-party payment provider sandbox API may impact performance testing.' lacks assigned owner or mitigation.",
+      "required_action": "Assign risk owner and document mitigation for 'Slow response times from the t'.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 7.6,
+      "target_gate_impact": "Clears G01-05 to Approved"
+    },
+    {
+      "action_id": "ACT-04",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-06",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "Talent Onboarding Record",
+      "target_column_header": "Named Talent",
+      "target_entity_id": null,
+      "finding_description": "Talent PM / Delivery Manager onboarding briefing pending.",
+      "required_action": "Complete briefing on PMO cadences and approve KO deck",
+      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.3,
+      "target_gate_impact": "Clears G01-06 to Approved"
+    },
+    {
+      "action_id": "ACT-05",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "Talent Onboarding Record",
+      "target_column_header": "Named Talent",
+      "target_entity_id": null,
+      "finding_description": "Talent roster staffing in progress.",
+      "required_action": "Confirm candidate selection and lock staffing",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 2.1,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-06",
+      "item_type": "Open Exception",
+      "checklist_id": "G01-09",
+      "related_artifact": "Stakeholder and Responsibility Model",
+      "target_table_title": "Stakeholder and Responsibility Model",
+      "target_column_header": "Decision Rights",
+      "target_entity_id": null,
+      "finding_description": "Client sponsor and decision escalation path pending confirmation.",
+      "required_action": "Confirm primary client sign-off authority and title",
+      "owner": "Delivery Manager",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.7,
+      "target_gate_impact": "Clears G01-09 to Approved"
+    },
+    {
+      "action_id": "ACT-07",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What are the specific acceptance criteria for each of the eight contracted deliverables?",
+      "required_action": "Review deliverable validation point during kickoff: What are the specific acceptance criteria for each of the eight contracted deliverables?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-08",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who is the client sign-off approver for each phase and deliverable acceptance?",
+      "required_action": "Review deliverable validation point during kickoff: Who is the client sign-off approver for each phase and deliverable acceptance?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-09",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What are the calendar start date and target completion dates for Phases 1, 2, and 3?",
+      "required_action": "Review and clarify during mobilization kickoff: What are the calendar start date and target completion dates for Phases 1, 2, and 3?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-10",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the planned go-live date for the production rollout?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the planned go-live date for the production rollout?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-11",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Which identity provider and SSO protocol (e.g., SAML, OIDC) will be integrated, and what roles must be supported?",
+      "required_action": "Review and clarify during mobilization kickoff: Which identity provider and SSO protocol (e.g., SAML, OIDC) will be integrated, and what roles must be supported?",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-12",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What performance, load, and latency targets must the platform meet, and how will they be tested?",
+      "required_action": "Review and clarify during mobilization kickoff: What performance, load, and latency targets must the platform meet, and how will they be tested?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-13",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-07",
+      "finding_description": "What are the scope and success criteria for user acceptance testing, and who will participate from the client side?",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-07.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-14",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Which security and compliance standards (e.g., PCI DSS) apply, and who is the client security reviewer?",
+      "required_action": "Review and clarify during mobilization kickoff: Which security and compliance standards (e.g., PCI DSS) apply, and who is the client security reviewer?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-15",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-12",
+      "related_artifact": "Commercial and Margin Guardrails",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What is the team composition, allocation, and the T&M budget or not-to-exceed cap for the 18-week engagement?",
+      "required_action": "Review and clarify during mobilization kickoff: What is the team composition, allocation, and the T&M budget or not-to-exceed cap for the 18-week engagement?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-12 to Approved"
+    },
+    {
+      "action_id": "ACT-16",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-06",
+      "finding_description": "Will the mobile web interface mentioned in scope be delivered as part of the responsive web store, or is a separate mobile deliverable expected?",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-06.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-17",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "What training audience, format, and volume are expected for the training materials?",
+      "required_action": "Review and clarify during mobilization kickoff: What training audience, format, and volume are expected for the training materials?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-18",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Who will own operations and support after production rollout, and is a hypercare or warranty period expected?",
+      "required_action": "Review and clarify during mobilization kickoff: Who will own operations and support after production rollout, and is a hypercare or warranty period expected?",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-19",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-20",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-21",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-22",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-23",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-02",
+      "finding_description": "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' is missing explicit acceptance criteria.",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-02.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-24",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-02",
+      "finding_description": "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-02.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-25",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-06",
+      "finding_description": "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-06.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-26",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-06",
+      "finding_description": "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-06.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-27",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-28",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-29",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-30",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-31",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria.",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-32",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-01",
+      "finding_description": "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-01.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-33",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Acceptance Criteria",
+      "target_entity_id": "DEL-10",
+      "finding_description": "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria.",
+      "required_action": "Clarify and confirm acceptance criteria for DEL-10.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-34",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-03",
+      "related_artifact": "Deliverables and Acceptance Matrix",
+      "target_table_title": "Deliverables and Acceptance Matrix",
+      "target_column_header": "Client Approver",
+      "target_entity_id": "DEL-10",
+      "finding_description": "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' owner is .",
+      "required_action": "Confirm client sign-off approver for DEL-10.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-03 to Approved"
+    },
+    {
+      "action_id": "ACT-35",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M1.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M1.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-36",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M2.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M2.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-37",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-15",
+      "related_artifact": "Startup Readiness Checklist",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Confirm committed external completion date for M3.",
+      "required_action": "Review and clarify during mobilization kickoff: Confirm committed external completion date for M3.",
+      "owner": "PMO Lead",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-15 to Approved"
+    },
+    {
+      "action_id": "ACT-38",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Delivery Manager role is .",
+      "required_action": "Review and clarify during mobilization kickoff: Delivery Manager role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-39",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "Talent PM role is .",
+      "required_action": "Review and clarify during mobilization kickoff: Talent PM role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    },
+    {
+      "action_id": "ACT-40",
+      "item_type": "Open Clarification",
+      "checklist_id": "G01-08",
+      "related_artifact": "Talent Onboarding Record",
+      "target_table_title": "SOW Interpretation Summary",
+      "target_column_header": "Ambiguities & Clarification Notes",
+      "target_entity_id": null,
+      "finding_description": "PMO Lead role is .",
+      "required_action": "Review and clarify during mobilization kickoff: PMO Lead role is unassigned.",
+      "owner": "Talent PM",
+      "resolution_deadline": "Prior to Mobilize Kickoff",
+      "score_recovery_delta": 1.5,
+      "target_gate_impact": "Clears G01-08 to Approved"
+    }
+  ],
+  "open_questions": [
+    "What are the specific acceptance criteria for each of the eight contracted deliverables?",
+    "Who is the client sign-off approver for each phase and deliverable acceptance?",
+    "What are the calendar start date and target completion dates for Phases 1, 2, and 3?",
+    "What is the planned go-live date for the production rollout?",
+    "Which identity provider and SSO protocol (e.g., SAML, OIDC) will be integrated, and what roles must be supported?",
+    "What performance, load, and latency targets must the platform meet, and how will they be tested?",
+    "What are the scope and success criteria for user acceptance testing, and who will participate from the client side?",
+    "Which security and compliance standards (e.g., PCI DSS) apply, and who is the client security reviewer?",
+    "What is the team composition, allocation, and the T&M budget or not-to-exceed cap for the 18-week engagement?",
+    "Will the mobile web interface mentioned in scope be delivered as part of the responsive web store, or is a separate mobile deliverable expected?",
+    "What training audience, format, and volume are expected for the training materials?",
+    "Who will own operations and support after production rollout, and is a hypercare or warranty period expected?",
+    "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-01: Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code. It includes the microservices framework setup and CI/CD pipeline.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-04: Basket management and checkout orchestration service, including the pricing engine.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-05: Integration with the payment gateway and secure logging of payment transactions. Performance testing may be affected by latency in the third-party sandbox API.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-06: Responsive web storefront application for customers, built as the web store front-end.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-07: Automated end-to-end regression test suite covering the integrated platform. It supports end-to-end integration testing.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-08: Deployment runbook and operational documentation for the platform.' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-09: User acceptance testing and production rollout of the platform, delivered in the final phase (weeks 13-18).' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+    "Deliverable 'DEL-10: Training materials delivered in the final phase (weeks 13-18).' owner is unassigned. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
+    "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
+    "Delivery Manager role is unassigned. [CONFIRMATION REQUIRED]",
+    "Talent PM role is unassigned. [CONFIRMATION REQUIRED]",
+    "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]"
+  ],
+  "contract_ambiguities": [
+    {
+      "anomaly_id": "AMB-01",
+      "category": "Date Conflict",
+      "conflicting_clauses": "Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+      "risk_impact": "Phases are expressed only in relative weeks, so the timeline has no fixed anchor. Late ERP access would block Phase 2 catalog work with no stated schedule or commercial relief.",
+      "recommended_clarification": "What is the confirmed project start date, and by what calendar date will the client deliver ERP catalog feed access? Will Phase 2 dates move day-for-day if access is late?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 2 and 4",
+        "confidence_score": 0.9
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-02",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+      "risk_impact": "Without testable criteria, milestone sign-off is subjective. This risks disputed acceptance, delayed milestone completion, and unbilled or contested effort.",
+      "recommended_clarification": "What objective acceptance criteria apply to each phase deliverable? Who signs off, and within how many business days is a deemed-acceptance applied if no response is given?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 2",
+        "confidence_score": 0.92
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-03",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+      "risk_impact": "The pricing engine is a milestone item but not a listed deliverable. This creates a risk of unplanned effort or a scope dispute.",
+      "recommended_clarification": "Is the pricing engine in contracted scope? If so, what functionality is required (rules, promotions, tax), and should it be added to the deliverables list?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 2 and 3",
+        "confidence_score": 0.85
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-04",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+      "risk_impact": "It is unclear whether a separate mobile web interface is expected or whether a responsive web store satisfies it. This risks front-end scope and testing effort being under- or over-estimated.",
+      "recommended_clarification": "Is the responsive web store the only front-end deliverable, or is a separate mobile web interface also required? Which devices and browsers must be supported?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 1, 2 and 3",
+        "confidence_score": 0.82
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-05",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+      "risk_impact": "Training, UAT support, and production rollout are milestone activities without defined deliverables. This creates uncertainty on effort, format, and completion evidence.",
+      "recommended_clarification": "What training materials are required (format, audience, volume)? What is Toptal's role in UAT and production rollout, and what outputs are expected?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 2 and 3",
+        "confidence_score": 0.85
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-06",
+      "category": "Unclear SLA",
+      "conflicting_clauses": "Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+      "risk_impact": "Compliance review delays could stall phase completion and go-live. The plan has no defined review windows, and there is no remedy for a missed turnaround.",
+      "recommended_clarification": "At which points will compliance reviews be submitted, and what happens to the schedule and fees if the 5-business-day turnaround is missed?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.88
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-07",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+      "risk_impact": "Performance expectations are undefined, so the result cannot be objectively accepted. Sandbox latency outside Toptal's control could cause a failed or disputed acceptance.",
+      "recommended_clarification": "What performance and load targets must the platform meet, and how will acceptance account for third-party sandbox latency?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-08",
+      "category": "Scope Contradiction",
+      "conflicting_clauses": "Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+      "risk_impact": "Fixed-duration, acceptance-gated phases under Time and Materials blur commercial expectations. The client may expect fixed-price outcomes, which risks margin erosion and billing disputes.",
+      "recommended_clarification": "Is the 18-week plan an estimate or a commitment? What is the budget ceiling or not-to-exceed amount, and how are changes handled?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Header and Section 2",
+        "confidence_score": 0.75
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-09",
+      "category": "Date Conflict",
+      "conflicting_clauses": "Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+      "risk_impact": "Strict sequencing leaves no room for parallel front-end and test automation work. Any slip in an earlier phase pushes the 18-week end date.",
+      "recommended_clarification": "May front-end and test automation work start before the prior phase is accepted? In which phase is the regression suite due?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 2, 3 and 4",
+        "confidence_score": 0.78
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-10",
+      "category": "Ownership Gap",
+      "conflicting_clauses": "Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+      "risk_impact": "Unassigned owners for external access and environments can delay Phases 1-2. Toptal may be held accountable for dependencies it does not control.",
+      "recommended_clarification": "Who are the named client owners for ERP feed access, payment provider sandbox credentials, and AWS account provisioning, and by what dates will each be ready?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 4",
+        "confidence_score": 0.8
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "AMB-11",
+      "category": "Ownership Gap",
+      "conflicting_clauses": "Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+      "risk_impact": "Unclear UAT resourcing and post-launch ownership may delay go-live or create unplanned support obligations after the final phase.",
+      "recommended_clarification": "Who performs UAT and gives go-live approval, and who owns production support after rollout? Is any hypercare period expected?",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Sections 2 and 3",
+        "confidence_score": 0.78
+      },
+      "linked_action_id": null
+    }
+  ],
+  "sow_stories_catalogue": [
+    {
+      "reference": "Section 3",
+      "reference_kind": "Section",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-08",
+      "source_reference": {
+        "document_name": "sow.txt",
+        "clause_or_slide": "Section 3 (Contracted Deliverables)",
+        "confidence_score": 0.9
+      }
+    }
+  ],
+  "readiness_score": 31.0,
+  "readiness_breakdown": {
+    "mandatory_g01_controls": 60.0,
+    "deliverable_acceptance_rigor": 0.0,
+    "talent_staffing_readiness": 20.0,
+    "commercial_risk_mitigation": 20.0
+  },
+  "workflow_state": "Clarification Pending",
+  "sow_awarded_date": "2026-09-30",
+  "kit_drafted_date": "2026-10-01",
+  "sla_met": true,
+  "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
+  "reviewer_names": [
+    "Delivery Manager",
+    "Technical Lead"
+  ],
+  "approver_name": "[UNASSIGNED - TO BE CONFIRMED]",
+  "concurring_approver_name": null,
+  "segregation_of_duties_verified": true
+}

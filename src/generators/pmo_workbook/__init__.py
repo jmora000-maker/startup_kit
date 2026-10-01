@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Optional, Dict, Any
-from src.core.models import StartupKitBaseline
+from src.core.models import StartupKitBaseline, ValidationReport
 from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook.builder import build_workbook_model
 from src.generators.pmo_workbook.writer import write_workbook
@@ -20,9 +20,11 @@ class PMOWorkbookResult:
     unmapped_deliverables: int
     workstreams_count: int = 0
     milestones_count: int = 0
+    checkpoints_count: int = 0
     excluded_items: int = 0
     evidence_flags: int = 0
     traceability: Dict[str, Any] = field(default_factory=dict)
+    validation: Optional[ValidationReport] = None
 
 
 def export_pmo_workbook(
@@ -40,7 +42,8 @@ def export_pmo_workbook(
 
     task_count = sum(1 for w in model.wbs_rows if w.level == 4)
     num_ws = sum(1 for s in model.schedule_rows if s.row_type == "Workstream")
-    num_ms = sum(1 for s in model.schedule_rows if s.row_type in ("Milestone", "Recurring"))
+    num_ms = sum(1 for s in model.schedule_rows if s.row_type == "Milestone")
+    num_cp = sum(1 for s in model.schedule_rows if s.row_type == "Checkpoint")
 
     return PMOWorkbookResult(
         file_path=saved_path,
@@ -51,9 +54,11 @@ def export_pmo_workbook(
         unmapped_deliverables=model.unmapped_deliverables_count,
         workstreams_count=num_ws,
         milestones_count=num_ms,
+        checkpoints_count=num_cp,
         excluded_items=model.excluded_items_count,
         evidence_flags=model.evidence_flags_count,
         traceability=model.traceability,
+        validation=getattr(baseline, "validation_report", None),
     )
 
 

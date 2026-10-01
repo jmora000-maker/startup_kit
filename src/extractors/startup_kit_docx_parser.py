@@ -197,6 +197,9 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         # 6. Milestone Delivery Plan
         milestones = self._parse_milestones_table(tables, delivery_manager, src_ref)
 
+        # 6b. Interim Checkpoints Table (KIT-02)
+        interim_checkpoints = self._parse_checkpoints_table(tables, src_ref)
+
         # 7. Scope Decomposition / Backlog Seed
         backlog_seed = self._parse_backlog_table(tables)
 
@@ -377,7 +380,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                         owner=wp.owner or "Toptal",
                         type="Build",
                         deliverable_id=wp.parent_deliverable_id,
-                        source_reference=wp.source_reference
+                        source_reference=getattr(wp, "source_reference", None)
                     ))
 
         baseline = StartupKitBaseline(
@@ -389,6 +392,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             sow_interpretation=sow_interpretation,
             deliverables=deliverables,
             milestones=milestones,
+            interim_checkpoints=interim_checkpoints,
             backlog_seed=backlog_seed,
             dependencies_assumptions=dependencies_assumptions,
             raid_items=raid_items,
@@ -958,6 +962,40 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             ))
 
         return milestones
+
+    def _parse_checkpoints_table(
+        self,
+        tables: List[Table],
+        src_ref: SourceReference
+    ) -> List[Milestone]:
+        """Parse Interim Checkpoints table (KIT-02)."""
+        checkpoints: List[Milestone] = []
+        tbl = self._find_table_by_header(tables, ["checkpoint id", "phase", "description"])
+        if not tbl:
+            tbl = self._find_table_by_header(tables, ["checkpoint", "description"])
+        if not tbl:
+            return checkpoints
+
+        header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
+        id_idx = next((i for i, h in enumerate(header_cells) if "id" in h or "checkpoint" in h), 0)
+        desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 2)
+        if desc_idx >= len(header_cells):
+            desc_idx = 1
+
+        for row in tbl.rows[1:]:
+            cells = [clean_text(c.text) for c in row.cells]
+            if len(cells) >= 2:
+                cp_id = cells[id_idx] if id_idx < len(cells) else f"CP-{len(checkpoints)+1:02d}"
+                cp_desc = cells[desc_idx] if desc_idx < len(cells) else ""
+                checkpoints.append(Milestone(
+                    id=cp_id,
+                    description=cp_desc,
+                    external_date=None,
+                    internal_buffer_date=None,
+                    owner="Talent PM",
+                    source_reference=src_ref
+                ))
+        return checkpoints
 
     def _parse_backlog_table(self, tables: List[Table]) -> List[WorkPackageSeed]:
         """Parse Scope Decomposition / Backlog Seed table."""

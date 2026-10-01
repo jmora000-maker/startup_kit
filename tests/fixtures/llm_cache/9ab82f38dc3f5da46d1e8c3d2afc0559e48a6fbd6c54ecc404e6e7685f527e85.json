@@ -1,0 +1,67 @@
+{
+  "key": "9ab82f38dc3f5da46d1e8c3d2afc0559e48a6fbd6c54ecc404e6e7685f527e85",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "MilestonesExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract key delivery milestones, target dates, and phase gates.\n\nCONSTRAINTS:\n1. Extract key delivery milestones and phase gates (maximum 15 milestones).\n2. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.\n\nFor each milestone:\n- id: Sequential identifier (e.g., M1, M2, M3...)\n- description: Concise milestone name or phase completion outcome. Do NOT mention or refer to the SOW or other documents.\n- external_date: Contractual or committed target date in ISO format YYYY-MM-DD. If no specific date is found, set to null.\n- internal_buffer_date: Internal target date with contingency buffer in ISO format YYYY-MM-DD if explicitly mentioned, else null.\n- source_reference: The source document name, section/page, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "milestones": [
+      {
+        "id": "M1",
+        "description": "Phase 1 (Ingestion Setup, weeks 1-4) complete: landing zone architecture, Terraform configuration, and security and encryption controls delivered and accepted.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [
+          "Client provides schema specifications for legacy DB2 databases by week 2."
+        ],
+        "critical_path_assumptions": [],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P1) and Section 3 (Deliverables 1.1, 1.2)",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "id": "M2",
+        "description": "Phase 2 (Data Pipeline and Transformation, weeks 5-10) complete: Kafka ingestion pipelines, transformation workers, and data cleansing and migration scripts delivered and accepted.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [
+          "Phase 1 completed and accepted.",
+          "Client provides schema specifications for legacy DB2 databases by week 2."
+        ],
+        "critical_path_assumptions": [],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P2) and Section 3 (Deliverables 2.1, 2.2)",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "id": "M3",
+        "description": "Phase 3 (Reconciliation and Final Cutover, weeks 11-14) complete: reconciliation tool, production cutover runbook, and operator handoff documentation delivered and accepted.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [
+          "Phase 2 completed and accepted.",
+          "Client audit committee sign-off for the reconciliation tool."
+        ],
+        "critical_path_assumptions": [
+          "Client audit committee provides sign-off within 5 business days for the reconciliation tool.",
+          "Dedicated compute capacity may be needed for high-volume batch reconciliation during month-end close."
+        ],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P3), Section 3 (Deliverables 3.1, 3.2) and Section 4",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      }
+    ]
+  }
+}

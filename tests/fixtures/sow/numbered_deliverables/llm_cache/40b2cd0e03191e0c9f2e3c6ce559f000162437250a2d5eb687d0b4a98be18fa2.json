@@ -1,0 +1,165 @@
+{
+  "key": "40b2cd0e03191e0c9f2e3c6ce559f000162437250a2d5eb687d0b4a98be18fa2",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "AcceptanceProcessExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the deliverables in the provided documents and extract explicit acceptance process details. Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.\n\nCONSTRAINTS:\n1. Focus only on primary deliverables and major acceptance gates (maximum 15 deliverables).\n2. Keep all text fields (description, acceptance criteria, evidence, rework path) brief and direct (1-2 sentences maximum).\n3. Do NOT cite or reference the SOW, contracts, or source documents in descriptions or criteria.\n\nFor each deliverable:\n- id: Deliverable ID (DEL-01, etc.)\n- name: Deliverable title\n- description: Concise deliverable description (1-2 sentences)\n- sow_reference: Section or clause reference\n- acceptance_criteria: Explicit criteria or null (do not cite documents)\n- evidence_required: Documents, artifacts, or sign-offs required as proof (1-2 sentences)\n- client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'\n- submission_target_date: Target submission date (YYYY-MM-DD) if stated\n- review_window: Client review window (e.g. '5 business days')\n- rejection_rework_path: Rework and resubmission mechanism (1-2 sentences)\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "acceptance_matrix_items": [
+      {
+        "id": "DEL-01",
+        "name": "Cloud Data Landing Zone Architecture and Terraform Configuration",
+        "description": "Cloud data landing zone architecture and the Terraform configuration used to provision it. Part of the P1 Ingestion Setup phase (weeks 1-4).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 1.1); Section 2 (P1)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 1.1",
+        "evidence_required": "Client acceptance of the deliverable, which is required to close phase P1.",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Client approver is not named.",
+          "Review window and rework path are not defined.",
+          "Only a phase window (weeks 1-4) is given, with no exact submission date."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-02",
+        "name": "Security and Encryption Controls",
+        "description": "Security and encryption controls protecting financial data in transit and at rest. Part of the P1 Ingestion Setup phase (weeks 1-4).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 1.2); Section 2 (P1)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 1.2",
+        "evidence_required": "Client acceptance of the deliverable, which is required to close phase P1.",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Client approver is not named.",
+          "Review window and rework path are not defined.",
+          "Only a phase window (weeks 1-4) is given, with no exact submission date."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-03",
+        "name": "Event-Driven Kafka Ingestion Pipelines and Transformation Workers",
+        "description": "Event-driven Kafka ingestion pipelines and the workers that transform ingested data. Part of the P2 Data Pipeline and Transformation phase (weeks 5-10).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 2.1); Section 2 (P2)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 2.1",
+        "evidence_required": "Client acceptance of the deliverable, which is required to close phase P2.",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Client approver is not named.",
+          "Review window and rework path are not defined.",
+          "Only a phase window (weeks 5-10) is given, with no exact submission date.",
+          "Depends on the client providing legacy DB2 schema specifications by week 2."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-04",
+        "name": "Historical Ledger Data Cleansing and Migration Execution Scripts",
+        "description": "Scripts that cleanse historical ledger data and execute the migration. Part of the P2 Data Pipeline and Transformation phase (weeks 5-10).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 2.2); Section 2 (P2)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 2.2",
+        "evidence_required": "Client acceptance of the deliverable, which is required to close phase P2.",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Client approver is not named.",
+          "Review window and rework path are not defined.",
+          "Only a phase window (weeks 5-10) is given, with no exact submission date.",
+          "Depends on the client providing legacy DB2 schema specifications by week 2."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-05",
+        "name": "Dual-Run Automated Ledger Balance Reconciliation Tool",
+        "description": "Automated tool that reconciles ledger balances while the legacy and new systems run in parallel. Part of the P3 Reconciliation and Final Cutover phase (weeks 11-14).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 3.1); Section 4 (Assumptions); Section 2 (P3)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 3.1; Section 4",
+        "evidence_required": "Sign-off from the client audit committee, which is required to close phase P3.",
+        "client_approver": "Client audit committee",
+        "submission_target_date": null,
+        "review_window": "5 business days",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Named audit committee approver or chair is not identified.",
+          "The 5-business-day sign-off window is an assumption, not a confirmed commitment.",
+          "Rework path is not defined.",
+          "Only a phase window (weeks 11-14) is given, with no exact submission date.",
+          "High-volume month-end batch reconciliation may need dedicated compute capacity."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-06",
+        "name": "Production Cutover Runbook and Operator Handoff Documentation",
+        "description": "Runbook for the production cutover and documentation for handing operations over to the client. Part of the P3 Reconciliation and Final Cutover phase (weeks 11-14).",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3 (Deliverable 3.2); Section 2 (P3)",
+          "confidence_score": 0.9
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3, Deliverable 3.2",
+        "evidence_required": "Client acceptance of the deliverable, which is required to close phase P3.",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "rejection_rework_path": "[NOT SPECIFIED - TO BE CONFIRMED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria are not defined.",
+          "Client approver is not named.",
+          "Review window and rework path are not defined.",
+          "Only a phase window (weeks 11-14) is given, with no exact submission date."
+        ],
+        "linked_action_id": null
+      }
+    ]
+  }
+}

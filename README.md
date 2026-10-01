@@ -217,6 +217,7 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 | `--api-key` / `--anthropic-api-key` | String | Anthropic API Key (overrides `ANTHROPIC_API_KEY` in env/`.env`) | `config.anthropic_api_key` |
 | `--openai-api-key` | String | OpenAI API Key (overrides `OPENAI_API_KEY` in env/`.env`) | `config.openai_api_key` |
 | `--model` | String | LLM model name (e.g., `claude-sonnet-5-5`, `gpt-4o`) | `claude-sonnet-5-5` (Anthropic) / `gpt-4o` (OpenAI) |
+| `--llm-cache` | Choice | LLM cache mode (`off`, `record`, `replay`; default from `LLM_CACHE_MODE` or `off`) | `off` (`replay` in tests) |
 | `--reingest-docx` / `--docx-file` | Path | Path to existing `*_Startup_Kit.docx` to re-ingest and recalculate readiness score (bypasses raw ingestion in `inputs/`) | `None` |
 | `--output-file` | Path | Explicit destination file path for regenerated Word report | In-place overwrite / parent dir |
 | `--inputs-dir` | Path | Path to directory containing input documents | `inputs/` (`inputs/SOWs/Test` for `--mock`) |
@@ -228,14 +229,14 @@ python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive
 | `--talent-pm` | String | Set Talent PM name | `[UNASSIGNED - TO BE CONFIRMED]` |
 | `--non-interactive` | Flag | Disable interactive directory and role prompts (uses defaults) | `False` |
 | `--mock` | Flag | Run offline deterministic mock extraction (zero token cost) | `False` |
-| `--start-date` | String | Project Start Date in ISO format (`YYYY-MM-DD`); planned dates are derived from this date | First Monday on/after award date |
+| `--start-date` | String | Project Start Date in ISO format (`YYYY-MM-DD`); planned dates are derived from this date | First Monday on/after award date or generation date |
 | `--export-tools` | Flag | Write the Project Delivery Workbook Excel workbook (default when no output flag is given) | `False` |
 | `--kit` | Flag | Write the Startup Kit Word document | `False` |
 | `--checklist` | Flag | Write the Startup Readiness Checklist Word document | `False` |
 | `--all` | Flag | Write the Startup Kit, the Readiness Checklist, and the Project Delivery Workbook | `False` |
 | `-v`, `--verbose` | Flag | Enable verbose debug logging | `False` |
 
-With no output flag, only the workbook is written.
+> **Workflow Advice:** Always generate the Project Delivery Workbook for an approved Kit with `--reingest-docx`, because regenerating from the SOW can renumber deliverables and work packages. Re-ingesting preserves established IDs and ensures deterministic workbook generation.
 
 ### Example Commands
 

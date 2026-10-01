@@ -1,0 +1,276 @@
+{
+  "key": "be1e4ceb1538f9ef683d414471227db8237fd05d47e99fb5068aade46f6dff37",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "AcceptanceProcessExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the deliverables in the provided documents and extract explicit acceptance process details. Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.\n\nCONSTRAINTS:\n1. Focus only on primary deliverables and major acceptance gates (maximum 15 deliverables).\n2. Keep all text fields (description, acceptance criteria, evidence, rework path) brief and direct (1-2 sentences maximum).\n3. Do NOT cite or reference the SOW, contracts, or source documents in descriptions or criteria.\n\nFor each deliverable:\n- id: Deliverable ID (DEL-01, etc.)\n- name: Deliverable title\n- description: Concise deliverable description (1-2 sentences)\n- sow_reference: Section or clause reference\n- acceptance_criteria: Explicit criteria or null (do not cite documents)\n- evidence_required: Documents, artifacts, or sign-offs required as proof (1-2 sentences)\n- client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'\n- submission_target_date: Target submission date (YYYY-MM-DD) if stated\n- review_window: Client review window (e.g. '5 business days')\n- rejection_rework_path: Rework and resubmission mechanism (1-2 sentences)\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "acceptance_matrix_items": [
+      {
+        "id": "DEL-01",
+        "name": "Core Cloud Infrastructure and Container Orchestration Platform",
+        "description": "Core AWS cloud infrastructure and container orchestration platform, provisioned with Terraform as infrastructure as code.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 5",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Review window and rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-02",
+        "name": "Identity, SSO and Role-Based Access Control Integration",
+        "description": "Integration of user identity, single sign-on and role-based access control into the platform.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P1)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "Completed client security compliance review; any other evidence [CONFIRMATION REQUIRED].",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Security compliance review assumed within 5 business days of submission; overall review window not specified",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-03",
+        "name": "Product Catalogue Search API and Indexing Pipeline",
+        "description": "Product catalogue search API and indexing pipeline, built on client ERP product catalog feeds.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P2); Section 4",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Client must provide ERP catalog feed access before week 5 to avoid delaying acceptance"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-04",
+        "name": "Basket and Checkout Orchestration Service",
+        "description": "Service that manages customer baskets and orchestrates the checkout process.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P2)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Review window and rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-05",
+        "name": "Payment Gateway Integration and Secure Transaction Logging",
+        "description": "Integration with the payment gateway, with secure logging of transactions.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P2); Section 4",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "Completed client security compliance review; any other evidence [CONFIRMATION REQUIRED].",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Security compliance review assumed within 5 business days of submission; overall review window not specified",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Payment provider sandbox latency may affect performance testing evidence"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-06",
+        "name": "Responsive Web Customer Store Application",
+        "description": "Responsive web storefront application for customers.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P3)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Review window and rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-07",
+        "name": "Automated End-to-End Regression Test Suite",
+        "description": "Automated end-to-end regression test suite for the platform.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3; Section 2 (P3)",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Review window and rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-08",
+        "name": "Platform Deployment Runbook and Operational Documentation",
+        "description": "Runbook for deploying the platform, plus operational documentation.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 3",
+          "confidence_score": 0.85
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 3",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Review window and rework path not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-09",
+        "name": "Phase 1 Acceptance Gate: Architecture and Core Foundation",
+        "description": "Weeks 1-4: microservices framework setup, IAM integration, CI/CD pipeline and infrastructure provisioning accepted by the client.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P1)",
+          "confidence_score": 0.8
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 2 (P1)",
+        "evidence_required": "Client acceptance of the Phase 1 scope; format of sign-off [CONFIRMATION REQUIRED].",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Sign-off format not defined"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-10",
+        "name": "Phase 2 Acceptance Gate: Service Implementation",
+        "description": "Weeks 5-12: product catalog search service, basket management, pricing engine and payment gateway integration accepted by the client.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P2)",
+          "confidence_score": 0.8
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 2 (P2)",
+        "evidence_required": "Client acceptance of the Phase 2 scope; format of sign-off [CONFIRMATION REQUIRED].",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "Pricing engine is a Phase 2 acceptance item but not a listed deliverable"
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-11",
+        "name": "Phase 3 Acceptance Gate: User Experience and Launch",
+        "description": "Weeks 13-18: web store front-end, end-to-end integration testing, user acceptance testing, production rollout and training materials accepted by the client.",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2 (P3)",
+          "confidence_score": 0.8
+        },
+        "owner": "Unassigned",
+        "acceptance_criteria": null,
+        "sow_reference": "Section 2 (P3)",
+        "evidence_required": "Client acceptance of the Phase 3 scope, including user acceptance testing outcome; format of sign-off [CONFIRMATION REQUIRED].",
+        "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
+        "submission_target_date": null,
+        "review_window": "Not specified [CONFIRMATION REQUIRED]",
+        "rejection_rework_path": "Not specified [CONFIRMATION REQUIRED]",
+        "unresolved_acceptance_clarifications": [
+          "Acceptance criteria not defined",
+          "Client approver not named",
+          "User acceptance testing pass criteria not defined",
+          "Training materials are a Phase 3 acceptance item but not a listed deliverable"
+        ],
+        "linked_action_id": null
+      }
+    ]
+  }
+}

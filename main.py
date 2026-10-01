@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from src.config import config, normalize_person_name
 from src.extractors.service import IngestionService
-from src.llm.client import LangChainLLMClient, MockLLMClient
+from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
 from src.orchestrator import StartupKitController
@@ -551,6 +551,12 @@ def parse_args():
         help="Run using offline deterministic Mock LLM client (no API keys required)"
     )
     parser.add_argument(
+        "--llm-cache",
+        choices=["off", "record", "replay"],
+        default=None,
+        help="LLM cache mode (off, record, replay; default from LLM_CACHE_MODE or off)"
+    )
+    parser.add_argument(
         "--start-date",
         type=str,
         default=None,
@@ -827,6 +833,8 @@ def main():
             default_openai_key=config.openai_api_key,
         )
 
+        cache_mode = args.llm_cache or config.llm_cache_mode
+
         if args.mock:
             logger.info("Using offline Mock LLM client for deterministic generation.")
             llm_client = create_mock_llm_client()
@@ -837,11 +845,17 @@ def main():
             else:
                 openai_model = args.model if (args.model and args.model != config.anthropic_model) else config.openai_model
                 logger.info("Using OpenAI LangChain client with model: %s", openai_model)
-                llm_client = LangChainLLMClient(
+                inner = LangChainLLMClient(
                     api_key="",
                     openai_api_key=active_openai_key,
                     openai_model_name=openai_model,
                     temperature=config.temperature,
+                )
+                llm_client = CachingLLMClient(
+                    inner_client=inner,
+                    cache_dir=config.llm_cache_dir,
+                    mode=cache_mode,
+                    model_id=openai_model
                 )
         else:  # anthropic (default)
             if not active_api_key and not active_openai_key:
@@ -849,11 +863,17 @@ def main():
                 llm_client = create_mock_llm_client()
             elif not active_api_key and active_openai_key:
                 logger.info("ANTHROPIC_API_KEY is not set; using OpenAI LangChain client with model: %s", config.openai_model)
-                llm_client = LangChainLLMClient(
+                inner = LangChainLLMClient(
                     api_key="",
                     openai_api_key=active_openai_key,
                     openai_model_name=config.openai_model,
                     temperature=config.temperature,
+                )
+                llm_client = CachingLLMClient(
+                    inner_client=inner,
+                    cache_dir=config.llm_cache_dir,
+                    mode=cache_mode,
+                    model_id=config.openai_model
                 )
             else:
                 anthropic_model = args.model or config.anthropic_model
@@ -862,12 +882,18 @@ def main():
                 else:
                     logger.info("Using Anthropic Claude LangChain client with model: %s", anthropic_model)
 
-                llm_client = LangChainLLMClient(
+                inner = LangChainLLMClient(
                     api_key=active_api_key,
                     model_name=anthropic_model,
                     temperature=config.temperature,
                     openai_api_key=active_openai_key,
                     openai_model_name=config.openai_model,
+                )
+                llm_client = CachingLLMClient(
+                    inner_client=inner,
+                    cache_dir=config.llm_cache_dir,
+                    mode=cache_mode,
+                    model_id=anthropic_model
                 )
 
         controller = StartupKitController(

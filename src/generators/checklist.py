@@ -321,13 +321,13 @@ class G01ChecklistRenderer:
                 "Change Control Triggers & Change Order Route",
                 f"• Triggers: {cg.change_control_trigger}\n• Route: {cg.change_order_route}",
                 "PMO Lead leads → DM aligns client → Client approves → Contracting issues change order",
-                "Variance > 5% or Schedule Slip > 3 Days"
+                "Schedule slip > 3 days or acceptance rejection" if contract_type == "Fixed Bid" else "Variance > 5% or Schedule Slip > 3 Days"
             ),
             (
                 "Budget vs. Actuals & Variance Baseline",
-                f"• Budget Baseline: {cg.budget_baseline}\n• Variance Baseline: {cg.variance_indicator}",
+                f"• Baseline Target: {cg.budget_baseline}\n• Variance Baseline: {cg.variance_indicator}" if contract_type == "Fixed Bid" else f"• Budget Baseline: {cg.budget_baseline}\n• Variance Baseline: {cg.variance_indicator}",
                 "PMO Lead / Delivery Manager",
-                "Monthly Budget & Burn Audit"
+                "Milestone acceptance and Change Order log review" if contract_type == "Fixed Bid" else "Monthly Budget & Burn Audit"
             ),
             (
                 "Margin Risk Indicators",

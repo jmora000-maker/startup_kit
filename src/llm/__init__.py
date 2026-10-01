@@ -1,6 +1,6 @@
 """LLM module exports."""
 
-from src.llm.client import LangChainLLMClient, MockLLMClient
+from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient, LLMCacheMiss, compute_cache_key
 from src.llm.prompts import (
     SYSTEM_PROMPT,
     CHARTER_PROMPT,

@@ -556,6 +556,27 @@ class DocxGenerator(IDocumentWriter):
         style_table(ms_table, col_widths=[0.9, 2.2, 1.1, 1.1, 1.0, 1.5])
         doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
+        # 1.3b Interim Checkpoints Table (KIT-02)
+        if baseline.interim_checkpoints:
+            add_section_heading(doc, "Interim Checkpoints", level=2)
+            cp_table = doc.add_table(rows=1, cols=4)
+            cp_headers = ["Checkpoint ID", "Phase", "Description", "Source Reference"]
+            for idx, h in enumerate(cp_headers):
+                cp_table.cell(0, idx).text = h
+            for cp in baseline.interim_checkpoints:
+                row = cp_table.add_row()
+                row.cells[0].text = cp.id
+                phase_m = re.search(r'\b(P\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
+                phase_str = phase_m.group(1).upper() if phase_m else "N/A"
+                row.cells[1].text = phase_str
+                row.cells[2].text = cp.description or ""
+                src_doc = sanitize_report_text(cp.source_reference.document_name) if cp.source_reference else "Project Baseline"
+                if not src_doc or any(k in src_doc.lower() for k in ("input document", "sow")):
+                    src_doc = "Project Baseline"
+                row.cells[3].text = src_doc
+            style_table(cp_table, col_widths=[1.2, 1.2, 3.4, 1.4])
+            doc.add_paragraph().paragraph_format.space_after = Pt(6)
+
         # =========================================================================
         # LAYER 2: DELIVERY CONTROL PACK
         # =========================================================================

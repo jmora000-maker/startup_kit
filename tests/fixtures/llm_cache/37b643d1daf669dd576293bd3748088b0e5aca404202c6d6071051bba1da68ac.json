@@ -1,0 +1,99 @@
+{
+  "key": "37b643d1daf669dd576293bd3748088b0e5aca404202c6d6071051bba1da68ac",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "RAIDExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract key RAID items (Risks, Assumptions, Issues, Dependencies).\n\nCONSTRAINTS:\n1. Extract the most critical items (maximum 20 items total across all 4 categories).\n2. Keep descriptions concise, direct, and actionable (1-2 sentences).\n3. Do NOT reference the SOW or other documents in descriptions; state the risk, assumption, issue, or dependency directly.\n\nFor each item:\n- type: Must be exactly one of: 'Risk', 'Assumption', 'Issue', 'Dependency'.\n- description: Concise statement of the risk, assumption, issue, or external dependency.\n- owner: Responsible party or role, else 'Unassigned'.\n- status: Current status, default 'Open'.\n- source_reference: The source document name, section/slide, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "items": [
+      {
+        "id": "D-01",
+        "type": "Dependency",
+        "description": "Client must provide access to the legacy ERP product catalog feeds before week 5 so catalog search and indexing work can start.",
+        "owner": "Client",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.95
+        },
+        "category": "Technical",
+        "probability": "Medium",
+        "impact": "High",
+        "severity": "High",
+        "trigger_or_early_warning": "ERP feed access not confirmed by end of week 3",
+        "mitigation_or_response": "Active monitoring by PMO and Delivery Manager",
+        "due_date": null,
+        "linked_decision": null,
+        "linked_dependency_or_assumption": null,
+        "linked_action_id": null
+      },
+      {
+        "id": "R-01",
+        "type": "Risk",
+        "description": "Slow response times from the third-party payment provider sandbox API may impact performance testing.",
+        "owner": "Unassigned",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.95
+        },
+        "category": "Technical",
+        "probability": "Medium",
+        "impact": "Medium",
+        "severity": "Medium",
+        "trigger_or_early_warning": "Sandbox latency observed during payment gateway integration",
+        "mitigation_or_response": "Active monitoring by PMO and Delivery Manager",
+        "due_date": null,
+        "linked_decision": null,
+        "linked_dependency_or_assumption": null,
+        "linked_action_id": "ACT-01"
+      },
+      {
+        "id": "A-01",
+        "type": "Assumption",
+        "description": "Client security team will complete each compliance review within 5 business days of submission.",
+        "owner": "Client",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.95
+        },
+        "category": "Governance",
+        "probability": "Medium",
+        "impact": "Medium",
+        "severity": "Medium",
+        "trigger_or_early_warning": "Compliance review exceeds 5 business days",
+        "mitigation_or_response": "Active monitoring by PMO and Delivery Manager",
+        "due_date": null,
+        "linked_decision": null,
+        "linked_dependency_or_assumption": null,
+        "linked_action_id": null
+      },
+      {
+        "id": "A-02",
+        "type": "Assumption",
+        "description": "Work executes sequentially across the three delivery phases: Architecture and Core Foundation, Service Implementation, and User Experience and Launch.",
+        "owner": "Unassigned",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 4",
+          "confidence_score": 0.9
+        },
+        "category": "Schedule",
+        "probability": "Medium",
+        "impact": "Medium",
+        "severity": "Medium",
+        "trigger_or_early_warning": "Phase exit criteria not met on schedule or phases overlap",
+        "mitigation_or_response": "Active monitoring by PMO and Delivery Manager",
+        "due_date": null,
+        "linked_decision": null,
+        "linked_dependency_or_assumption": null,
+        "linked_action_id": null
+      }
+    ]
+  }
+}

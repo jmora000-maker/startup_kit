@@ -1,0 +1,61 @@
+{
+  "key": "5763af6da0c5930592c5520e9ef47f1a72b1f2ea56697b3a1105bfe6ea927421",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "SOWInterpretationExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract the Scope & Baseline Interpretation Summary.\n\nCONSTRAINTS:\n1. Extract only the top essential items per category (maximum 5-8 items per list field).\n2. Keep each item/summary concise, direct, and self-contained (1-2 sentences maximum per item).\n3. Do NOT mention or reference the SOW, contracts, or source documents in any text or field.\n\nExtract:\n- contracted_deliverables: Key deliverables agreed for the project (maximum 8 items). Keep descriptions concise and self-contained.\n- out_of_scope_items: Explicit scope exclusions and out-of-scope tasks (maximum 8 items).\n- customer_obligations: Prerequisites, data, environments, or access customer must provide (maximum 8 items).\n- assumptions: Baseline delivery and project assumptions (maximum 8 items).\n- constraints: Known delivery, technical, regulatory, or schedule constraints (maximum 8 items).\n- platform_environment_commitments: Cloud platform (AWS/Azure/GCP) and infrastructure commitments (maximum 8 items).\n- dependencies: External dependencies (maximum 8 items).\n- approval_expectations: Client review windows and sign-off expectations (maximum 5 items).\n- ambiguity_notes: Unclear or unconfirmed scope terms (maximum 8 items, stating scope gaps concisely without referencing documents).\n\nKeep all text concise, simplified, and self-contained without referencing the SOW or other documents.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "contracted_deliverables": [
+      "Core cloud infrastructure and container orchestration platform.",
+      "User identity, SSO, and role-based access control integration.",
+      "Product catalogue search API and indexing pipeline.",
+      "Basket and checkout orchestration service.",
+      "Payment gateway integration with secure transaction logging.",
+      "Responsive web customer store application.",
+      "Automated end-to-end regression test suite.",
+      "Platform deployment runbook and operational documentation."
+    ],
+    "out_of_scope_items": [],
+    "customer_obligations": [
+      "Provide access to legacy ERP product catalog feeds before week 5.",
+      "Client security team to complete compliance review within 5 business days of each submission."
+    ],
+    "assumptions": [
+      "Client security team completes compliance reviews within 5 business days of submission.",
+      "Work runs sequentially across the three delivery phases: Architecture and Core Foundation, Service Implementation, and User Experience and Launch."
+    ],
+    "constraints": [
+      "Delivery is planned over 18 weeks in three phases (weeks 1-4, 5-12, 13-18).",
+      "Microservices must be built with Python FastAPI and PostgreSQL.",
+      "Third-party payment provider sandbox API latency may affect performance testing."
+    ],
+    "platform_environment_commitments": [
+      "AWS is the standard cloud platform.",
+      "Infrastructure is provisioned as code using Terraform.",
+      "Microservices are built with Python FastAPI and PostgreSQL.",
+      "A CI/CD pipeline and infrastructure provisioning are set up in Phase 1.",
+      "Production rollout is completed in Phase 3."
+    ],
+    "dependencies": [
+      "Access to legacy ERP product catalog feeds is needed before week 5.",
+      "Third-party payment provider sandbox API is needed for payment integration and performance testing.",
+      "Client security team compliance reviews are needed to progress."
+    ],
+    "approval_expectations": "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on completion of its listed outputs.",
+    "ambiguity_notes": [
+      "No out-of-scope items or exclusions are explicitly defined.",
+      "Acceptance criteria for deliverables and phase milestones are not specified.",
+      "Calendar dates for milestones are not stated; only week ranges are given.",
+      "General client review and sign-off windows beyond security compliance review are not defined.",
+      "Training material scope and format (audience, volume) are not detailed.",
+      "Performance and load testing targets are not defined.",
+      "Mobile web interface is mentioned in the summary, but only a responsive web store is listed as a deliverable.",
+      "Pricing engine is listed in Phase 2 but not in the contracted deliverables list."
+    ],
+    "source_reference": {
+      "document_name": "sow.txt",
+      "clause_or_slide": "Sections 1-5",
+      "confidence_score": 0.85
+    }
+  }
+}

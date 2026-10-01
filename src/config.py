@@ -101,11 +101,13 @@ class AppConfig:
     default_governance_tier: str = os.getenv("DEFAULT_GOVERNANCE_TIER", "Partnered")
     default_contract_type: str = os.getenv("DEFAULT_CONTRACT_TYPE", "Time and Materials")
     max_tokens: int = int(os.getenv("MAX_TOKENS", "16384"))
+    llm_cache_mode: str = os.getenv("LLM_CACHE_MODE", "off").lower()
+    llm_cache_dir: Path = Path(os.getenv("LLM_CACHE_DIR", "tests/fixtures/llm_cache"))
 
 
 # Tool reserved prefixes that must never be classified as SOW identifiers (v6 Section 1.1)
 TOOL_RESERVED_PREFIXES: set[str] = {
-    "DEL", "WP", "RSK", "ISS", "DEP", "ASM", "AMB", "Q", "M", "MS", "COM", "DEC", "ACT", "ACT-REQ", "RAID", "G01", "G"
+    "DEL", "WP", "RSK", "ISS", "DEP", "ASM", "AMB", "Q", "M", "MS", "CP", "COM", "DEC", "ACT", "ACT-REQ", "RAID", "G01", "G"
 }
 
 # Configurable, ordered list of (Kind, Pattern) tuples for SOW reference detection (v6 Section 1.1)

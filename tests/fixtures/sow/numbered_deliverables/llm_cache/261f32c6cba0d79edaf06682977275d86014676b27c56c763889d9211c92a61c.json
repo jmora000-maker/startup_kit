@@ -1,0 +1,313 @@
+{
+  "key": "261f32c6cba0d79edaf06682977275d86014676b27c56c763889d9211c92a61c",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "ScopeDecompositionExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages (maximum 15 work packages). Keep titles and descriptions concise.\n\nCONSTRAINTS:\n1. Maximum 15 work packages total.\n2. Keep descriptions brief and actionable (1-2 sentences maximum), appending SOW references if applicable (e.g. 'Stories: HS-4781', 'Deliverable 1.2').\n3. Every work package MUST reference an existing parent deliverable ID from the deliverables list below, and its associated linked milestone IDs.\n\nDELIVERABLES LIST:\n- DEL-01: Cloud Data Landing Zone Architecture and Terraform Configuration\n- DEL-02: Security and Encryption Controls\n- DEL-03: Kafka Ingestion Pipelines and Transformation Workers\n- DEL-04: Historical Ledger Data Cleansing and Migration Scripts\n- DEL-05: Dual-Run Automated Ledger Balance Reconciliation Tool\n- DEL-06: Production Cutover Runbook and Operator Handoff Documentation\n\nFor each work package:\n- id: e.g. WP-01, WP-02\n- parent_deliverable_id: e.g. DEL-01 (MUST match one of the deliverable IDs listed above)\n- title: Concise work package title\n- description: Brief description of tasks (1-2 sentences, with 'Stories: <ID>' or 'Ref: <Section>' suffix if SOW references apply)\n- preliminary_sequence: Integer sequence order (1, 2, 3...)\n- owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'\n- dependency_references: List of IDs or descriptions of prerequisites\n- linked_milestones: Associated milestone IDs (e.g. M1)\n- linked_acceptance_items: Associated acceptance criteria references\n- uncertain_scope: Boolean flag indicating if scope is unconfirmed\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - ENTERPRISE DATA MIGRATION\nClient: Horizon Financial Services\nProject Name: Core Ledger Modernization\nContract Type: Fixed Bid\nGovernance Tier: Elevated\n\n1. EXECUTIVE SUMMARY\nHorizon Financial Services is engaging Toptal to migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Ingestion Setup (weeks 1-4): Deliverable 1.1 and Deliverable 1.2 completed and accepted.\n- P2 Data Pipeline and Transformation (weeks 5-10): Deliverable 2.1 and Deliverable 2.2 completed and accepted.\n- P3 Reconciliation and Final Cutover (weeks 11-14): Deliverable 3.1 and Deliverable 3.2 completed and accepted.\n\n3. CONTRACTED DELIVERABLES\n- Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform configuration.\n- Deliverable 1.2: Security and Encryption Controls for financial data in transit and at rest.\n- Deliverable 2.1: Event-driven Kafka ingestion pipelines and transformation workers.\n- Deliverable 2.2: Historical ledger data cleansing and migration execution scripts.\n- Deliverable 3.1: Dual-run automated ledger balance reconciliation tool.\n- Deliverable 3.2: Production cutover runbook and operator handoff documentation.\n\n4. RISKS AND DEPENDENCIES\n- Dependency: Client provides schema specifications for legacy DB2 databases by week 2.\n- Risk: High volume batch reconciliation during month-end close may require dedicated compute capacity.\n- Assumption: Client audit committee will provide sign-off within 5 business days for Deliverable 3.1.\n\n",
+  "response": {
+    "work_packages": [
+      {
+        "id": "WP-01",
+        "parent_deliverable_id": "DEL-01",
+        "title": "Landing Zone Architecture Design",
+        "description": "Design the cloud data landing zone architecture on AWS for the legacy ledger migration. Ref: Deliverable 1.1",
+        "preliminary_sequence": 1,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 1.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 1.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-02",
+        "parent_deliverable_id": "DEL-01",
+        "title": "Terraform Configuration Build",
+        "description": "Build the Terraform configuration that provisions the approved landing zone architecture. Ref: Deliverable 1.1",
+        "preliminary_sequence": 2,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-01"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 1.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 1.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-03",
+        "parent_deliverable_id": "DEL-02",
+        "title": "Encryption In Transit and At Rest",
+        "description": "Implement encryption controls for financial data in transit and at rest. Ref: Deliverable 1.2",
+        "preliminary_sequence": 3,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-01"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 1.2 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 1.2",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-04",
+        "parent_deliverable_id": "DEL-02",
+        "title": "Security Controls Verification",
+        "description": "Verify and document that the security and encryption controls work as designed. Ref: Deliverable 1.2",
+        "preliminary_sequence": 4,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-02",
+          "WP-03"
+        ],
+        "linked_milestones": [
+          "P1"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 1.2 completed and accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": "Deliverable 1.2",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-05",
+        "parent_deliverable_id": "DEL-03",
+        "title": "Kafka Ingestion Pipelines",
+        "description": "Build event-driven Kafka ingestion pipelines for legacy ledger data. Ref: Deliverable 2.1",
+        "preliminary_sequence": 5,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-02",
+          "Client provides DB2 schema specifications by week 2"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 2.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 2.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-06",
+        "parent_deliverable_id": "DEL-03",
+        "title": "Transformation Workers",
+        "description": "Develop transformation workers that map legacy DB2 ledger data to the new event-driven ledger model. Ref: Deliverable 2.1",
+        "preliminary_sequence": 6,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-05",
+          "Client provides DB2 schema specifications by week 2"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 2.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 2.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-07",
+        "parent_deliverable_id": "DEL-03",
+        "title": "Pipeline Testing and Acceptance",
+        "description": "Test the ingestion pipelines and transformation workers end to end and prepare them for acceptance. Ref: Deliverable 2.1",
+        "preliminary_sequence": 7,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-05",
+          "WP-06"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 2.1 completed and accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": "Deliverable 2.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-08",
+        "parent_deliverable_id": "DEL-04",
+        "title": "Data Cleansing Scripts",
+        "description": "Develop scripts to cleanse historical ledger data before migration. Ref: Deliverable 2.2",
+        "preliminary_sequence": 8,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "Client provides DB2 schema specifications by week 2"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 2.2 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 2.2",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-09",
+        "parent_deliverable_id": "DEL-04",
+        "title": "Migration Execution Scripts",
+        "description": "Develop and validate scripts that execute the migration of cleansed historical ledger data. Ref: Deliverable 2.2",
+        "preliminary_sequence": 9,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-06",
+          "WP-08"
+        ],
+        "linked_milestones": [
+          "P2"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 2.2 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 2.2",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-10",
+        "parent_deliverable_id": "DEL-05",
+        "title": "Reconciliation Tool Build",
+        "description": "Build the automated tool that reconciles ledger balances between legacy and new systems during dual run. Ref: Deliverable 3.1",
+        "preliminary_sequence": 10,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-07",
+          "WP-09"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 3.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 3.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-11",
+        "parent_deliverable_id": "DEL-05",
+        "title": "Month-End Compute Capacity Planning",
+        "description": "Assess whether high-volume month-end batch reconciliation needs dedicated compute capacity and plan accordingly. Ref: Deliverable 3.1 risk",
+        "preliminary_sequence": 11,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-10"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 3.1 completed and accepted"
+        ],
+        "uncertain_scope": true,
+        "sow_reference": "Deliverable 3.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-12",
+        "parent_deliverable_id": "DEL-05",
+        "title": "Audit Committee Sign-Off",
+        "description": "Present the reconciliation tool to the client audit committee and obtain sign-off, assumed within 5 business days. Ref: Deliverable 3.1",
+        "preliminary_sequence": 12,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-10",
+          "WP-11"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Audit committee sign-off within 5 business days",
+          "Deliverable 3.1 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 3.1",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-13",
+        "parent_deliverable_id": "DEL-06",
+        "title": "Production Cutover Runbook",
+        "description": "Write the production cutover runbook covering the steps for the final ledger cutover. Ref: Deliverable 3.2",
+        "preliminary_sequence": 13,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-09",
+          "WP-10"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 3.2 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 3.2",
+        "status": "Draft",
+        "linked_action_id": null
+      },
+      {
+        "id": "WP-14",
+        "parent_deliverable_id": "DEL-06",
+        "title": "Operator Handoff Documentation",
+        "description": "Prepare operator handoff documentation and hand the new ledger over to client operators. Ref: Deliverable 3.2",
+        "preliminary_sequence": 14,
+        "owner": "[UNASSIGNED - TO BE CONFIRMED]",
+        "dependency_references": [
+          "WP-13",
+          "WP-12"
+        ],
+        "linked_milestones": [
+          "P3"
+        ],
+        "linked_acceptance_items": [
+          "Deliverable 3.2 completed and accepted"
+        ],
+        "uncertain_scope": false,
+        "sow_reference": "Deliverable 3.2",
+        "status": "Draft",
+        "linked_action_id": null
+      }
+    ]
+  }
+}

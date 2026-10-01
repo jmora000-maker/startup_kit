@@ -1,0 +1,68 @@
+{
+  "key": "58886d8622512dbb3b931707ca11dca6fc683c4a77d1e8f1655d07aaaa74a0c4",
+  "model_id": "claude-sonnet-5-5",
+  "schema_name": "MilestonesExtraction",
+  "system_prompt": "You are an expert Toptal PMO Delivery Lead and Startup Specialist.\nYour goal is to extract structured project management data from provided project documents, pre-sales decks, and context notes to build the PMO Startup Kit.\n\nSTRICT BUSINESS RULES & CONSTRAINTS:\n1. NO HALLUCINATION: Extract only factual information present in the input documents.\n2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.\n3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.\n4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).\n5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).\n6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:\n   - document_name: exact filename where the information was found\n   - clause_or_slide: the section number, heading, or slide number (e.g. \"Section 3.2\", \"Slide 4\", \"Page 2\")\n   - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.\n7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.\n8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.\n",
+  "prompt": "Analyze the provided project documents and extract key delivery milestones, target dates, and phase gates.\n\nCONSTRAINTS:\n1. Extract key delivery milestones and phase gates (maximum 15 milestones).\n2. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.\n\nFor each milestone:\n- id: Sequential identifier (e.g., M1, M2, M3...)\n- description: Concise milestone name or phase completion outcome. Do NOT mention or refer to the SOW or other documents.\n- external_date: Contractual or committed target date in ISO format YYYY-MM-DD. If no specific date is found, set to null.\n- internal_buffer_date: Internal target date with contingency buffer in ISO format YYYY-MM-DD if explicitly mentioned, else null.\n- source_reference: The source document name, section/page, and confidence score.\n\nDOCUMENTS CONTENT:\n=== DOCUMENT: sow.txt (Format: TXT) ===\nSTATEMENT OF WORK - DIGITAL TRANSFORMATION INITIATIVE\nClient: Apex Global Retail Inc.\nProject Name: Omnichannel Digital Platform\nContract Type: Time and Materials\nGovernance Tier: Partnered\n\n1. EXECUTIVE SUMMARY\nApex Global Retail is engaging Toptal to build and deploy a unified omnichannel digital commerce platform. The engagement encompasses customer checkout microservices, catalog search services, mobile web interface, and cloud infrastructure deployment on AWS.\n\n2. PHASES AND MILESTONES\n- P1 Architecture and Core Foundation (weeks 1-4): Microservices framework setup, IAM integration, CI/CD pipeline, and infrastructure provisioning accepted.\n- P2 Service Implementation (weeks 5-12): Product catalog search service, basket management, pricing engine, and payment gateway integration accepted.\n- P3 User Experience and Launch (weeks 13-18): Web store front-end, end-to-end integration testing, user acceptance testing, production rollout, and training material delivery accepted.\n\n3. CONTRACTED DELIVERABLES & SCOPE\n- Core cloud infrastructure and container orchestration platform\n- User identity, SSO, and role-based access control integration\n- Product catalogue search API and indexing pipeline\n- Basket and checkout orchestration service\n- Payment gateway integration and secure transaction logging\n- Responsive web customer store application\n- Automated end-to-end regression test suite\n- Platform deployment runbook and operational documentation\n\n4. KEY RISKS, ASSUMPTIONS & DEPENDENCIES\n- Dependency: Client provides access to legacy ERP product catalog feeds prior to week 5.\n- Risk: Third-party payment provider sandbox API response latency may impact performance testing.\n- Assumption: Client security team will complete compliance review within 5 business days of submission.\n- Assumption: Work executes sequentially across the three defined delivery phases.\n\n5. DECISIONS\n- Cloud platform standard is AWS using Terraform for IaC.\n- Microservices built with Python FastAPI and PostgreSQL.\n\n",
+  "response": {
+    "milestones": [
+      {
+        "id": "M1",
+        "description": "Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [],
+        "critical_path_assumptions": [
+          "Work executes sequentially across the three delivery phases."
+        ],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "id": "M2",
+        "description": "Phase 2 (Service Implementation, weeks 5-12) accepted: catalog search, basket management, pricing engine, and payment gateway integration.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [
+          "Client provides access to legacy ERP product catalog feeds prior to week 5.",
+          "Client security team completes compliance review within 5 business days of submission."
+        ],
+        "critical_path_assumptions": [
+          "Work executes sequentially across the three delivery phases.",
+          "Payment provider sandbox API latency may affect performance testing."
+        ],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2; Section 4",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      },
+      {
+        "id": "M3",
+        "description": "Phase 3 (User Experience and Launch, weeks 13-18) accepted: web store front-end, end-to-end integration testing, UAT, production rollout, and training materials.",
+        "external_date": null,
+        "internal_buffer_date": null,
+        "owner": "Delivery Manager",
+        "key_dependencies": [
+          "Client security team completes compliance review within 5 business days of submission."
+        ],
+        "critical_path_assumptions": [
+          "Work executes sequentially across the three delivery phases."
+        ],
+        "source_reference": {
+          "document_name": "sow.txt",
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.9
+        },
+        "linked_action_id": null
+      }
+    ]
+  }
+}

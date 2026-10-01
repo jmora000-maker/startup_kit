@@ -16,7 +16,8 @@ from src.core.interfaces import (
 from src.core.models import StartupKitBaseline, OutputSelection, RunResult
 from src.extractors.service import IngestionService
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
-from src.llm.client import LangChainLLMClient, MockLLMClient
+from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
+from src.llm.validation import validate_and_repair_baseline
 from src.llm.parsers import (
     CharterDomainExtractor,
     DeliverablesDomainExtractor,
@@ -70,13 +71,22 @@ class StartupKitController:
         docx_parser: Optional[IStartupKitDocxParser] = None,
     ):
         self.ingestion_service = ingestion_service or IngestionService()
-        self.llm_client = llm_client or LangChainLLMClient(
-            api_key=config.anthropic_api_key,
-            model_name=config.anthropic_model,
-            openai_api_key=config.openai_api_key,
-            openai_model_name=config.openai_model,
-            temperature=config.temperature
-        )
+        if llm_client:
+            self.llm_client = llm_client
+        else:
+            inner_client = LangChainLLMClient(
+                api_key=config.anthropic_api_key,
+                model_name=config.anthropic_model,
+                openai_api_key=config.openai_api_key,
+                openai_model_name=config.openai_model,
+                temperature=config.temperature
+            )
+            self.llm_client = CachingLLMClient(
+                inner_client=inner_client,
+                cache_dir=config.llm_cache_dir,
+                mode=config.llm_cache_mode,
+                model_id=config.anthropic_model
+            )
         self.aggregator = aggregator or BaselineAggregator()
         self.doc_writer = doc_writer or DocxGenerator()
         self.docx_parser = docx_parser or StartupKitDocxParser()
@@ -152,10 +162,6 @@ class StartupKitController:
                 executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)
                 if self.sow_interpretation_extractor else None
             )
-            future_backlog = (
-                executor.submit(self.backlog_extractor.extract, documents, self.llm_client)
-                if self.backlog_extractor else None
-            )
             future_acceptance = (
                 executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)
                 if self.acceptance_extractor else None
@@ -164,9 +170,13 @@ class StartupKitController:
                 executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)
                 if self.stakeholders_extractor else None
             )
-            future_communications = (
+            future_comms = (
                 executor.submit(self.communications_extractor.extract, documents, self.llm_client)
                 if self.communications_extractor else None
+            )
+            future_commercial = (
+                executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
+                if self.commercial_extractor else None
             )
             future_talent = (
                 executor.submit(self.talent_extractor.extract, documents, self.llm_client)
@@ -187,14 +197,19 @@ class StartupKitController:
             raid = future_raid.result()
             questions = future_questions.result()
             sow_interpretation = future_sow.result() if future_sow else None
-            backlog = future_backlog.result() if future_backlog else None
             acceptance = future_acceptance.result() if future_acceptance else None
             stakeholders = future_stakeholders.result() if future_stakeholders else None
-            communications = future_communications.result() if future_communications else None
-            commercial = None
+            communications = future_comms.result() if future_comms else None
+            commercial = future_commercial.result() if future_commercial else None
             talent = future_talent.result() if future_talent else None
             decisions = future_decisions.result() if future_decisions else None
             conflicts = future_conflicts.result() if future_conflicts else None
+
+        # Backlog extraction passes deliverables
+        backlog = (
+            self.backlog_extractor.extract(documents, self.llm_client, deliverables=deliverables.deliverables)
+            if self.backlog_extractor else None
+        )
 
         # Apply leadership and governance overrides
         if tier_override and tier_override in ("Guided", "Partnered", "Elevated"):
@@ -239,6 +254,10 @@ class StartupKitController:
             decisions_ext=decisions,
             conflicts_ext=conflicts,
         )
+
+        # 3b. Extraction Validation Layer (Section 4, VAL-01 to VAL-07)
+        logger.info("Running extraction validation layer and reconciliation...")
+        validation_report = validate_and_repair_baseline(baseline)
 
         # 4. Document & Workbook Generation according to outputs selection
         kit_path: Optional[Path] = None

@@ -1,0 +1,892 @@
+{
+  "project_name": "Pfizer Analytics & Cloud Modernization",
+  "governance_tier": "Partnered",
+  "contract_type": "Time and Materials",
+  "governance_context": {
+    "project_name": "Pfizer Analytics & Cloud Modernization",
+    "governance_tier": "Partnered",
+    "contract_type": "Time and Materials",
+    "client_name": "Pfizer Inc.",
+    "delivery_manager": "Jane Doe",
+    "talent_pm": "John Smith",
+    "pmo_lead": "Sarah Connor",
+    "executive_summary": "Modernization of clinical analytics data pipelines into AWS cloud infrastructure.",
+    "workflow_state": "Ready for G-01 Gate Review",
+    "sla_met": true
+  },
+  "charter": {
+    "project_name": "Pfizer Analytics & Cloud Modernization",
+    "client_name": "Pfizer Inc.",
+    "project_purpose": "Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.",
+    "delivery_objectives": [
+      "Deploy production-grade AWS infrastructure via Terraform",
+      "Migrate and automate ETL pipelines for clinical analytics",
+      "Establish automated testing and compliance reporting"
+    ],
+    "success_criteria": [
+      "Zero data loss during pipeline cutover",
+      "ETL throughput improvement by 40%",
+      "Full sign-off by Pfizer Architecture and Compliance leads"
+    ],
+    "high_level_scope": [
+      "Cloud infrastructure architecture and provisioning",
+      "Automated CI/CD data ingestion pipeline",
+      "Validation and regulatory compliance documentation"
+    ],
+    "exclusions": [
+      "Legacy data cleansing prior to migration",
+      "On-premise hardware decommissioning"
+    ],
+    "key_deliverables_summary": [
+      "DEL-01: Cloud Architecture & Security Design",
+      "DEL-02: Automated CI/CD Data Ingestion Pipeline",
+      "DEL-03: Validation and Compliance Documentation"
+    ],
+    "key_milestones_summary": [
+      "M1: Project Kickoff & Architecture Baseline (2026-10-15)",
+      "M2: Data Pipeline Production Go-Live (2026-11-30)"
+    ],
+    "contract_type": "Time and Materials",
+    "governance_tier": "Partnered",
+    "delivery_model": "Toptal Talent Team (Agile/Milestone Hybrid)",
+    "governance_model": "PMO Partnered Tier Governance Model",
+    "major_startup_risks": [
+      "Client IAM and AWS account provisioning delays"
+    ],
+    "delivery_manager": "Jane Doe",
+    "talent_pm": "John Smith",
+    "pmo_lead": "Sarah Connor",
+    "escalation_path": "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO",
+    "unresolved_assumptions_status": "2 dependencies/assumptions logged, awaiting mobilization validation",
+    "source_reference": {
+      "document_name": "SOW_Document.pdf",
+      "clause_or_slide": "Section 3.1",
+      "confidence_score": 0.92
+    }
+  },
+  "sow_interpretation": {
+    "contracted_deliverables": [
+      "Cloud Architecture & Security Design",
+      "Automated CI/CD Data Ingestion Pipeline",
+      "Validation and Compliance Documentation"
+    ],
+    "out_of_scope_items": [
+      "Legacy on-premise hardware decommissioning",
+      "Pre-migration data cleansing and enrichment"
+    ],
+    "customer_obligations": [
+      "Provide AWS account access and role credentials",
+      "Deliver anonymized clinical test datasets",
+      "Review deliverable submissions within 5 business days"
+    ],
+    "assumptions": [
+      "Core team operates remotely across Eastern time zone",
+      "Pfizer security review board approves standard Terraform modules"
+    ],
+    "constraints": [
+      "HIPAA and 21 CFR Part 11 regulatory compliance",
+      "Dedicated AWS VPC isolation requirements"
+    ],
+    "platform_environment_commitments": [
+      "AWS Cloud Infrastructure (EKS, S3, RDS PostgreSQL, IAM)"
+    ],
+    "dependencies": [
+      "Third-party clinical EDC system API access tokens"
+    ],
+    "approval_expectations": "Formal written approval from Pfizer Engineering Lead within 5 business days.",
+    "ambiguity_notes": [
+      "Automated pipeline UAT threshold not defined of project baseline."
+    ],
+    "confirmation_required_items": [
+      "project baseline work item '' cited in contract ambiguity AMB-01 is not mapped to any baseline deliverable. [CONFIRMATION REQUIRED]"
+    ],
+    "contract_ambiguities": [
+      {
+        "anomaly_id": "AMB-01",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated pytest validation suite.",
+        "risk_impact": "Subjective sign-off criteria could lead to prolonged review cycles and milestone delays.",
+        "recommended_clarification": "Align contractual acceptance criteria to objective automated test passing metrics.",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "SOW_Document.pdf",
+          "clause_or_slide": "Section 3.1",
+          "confidence_score": 0.92
+        },
+        "linked_action_id": null
+      },
+      {
+        "anomaly_id": "CONF-01",
+        "category": "Date Conflict",
+        "conflicting_clauses": "Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+        "risk_impact": "2-week schedule discrepancy between commercial proposal and signed SOW baseline.",
+        "recommended_clarification": "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
+        "status": "Open",
+        "source_reference": {
+          "document_name": "SOW_Document.pdf",
+          "clause_or_slide": "Section 3.1",
+          "confidence_score": 0.92
+        },
+        "linked_action_id": null
+      }
+    ],
+    "source_reference": {
+      "document_name": "SOW_Document.pdf",
+      "clause_or_slide": "Section 3.1",
+      "confidence_score": 0.92
+    }
+  },
+  "deliverables": [
+    {
+      "id": "DEL-01",
+      "name": "Cloud Architecture & Security Design",
+      "description": "Cloud Architecture & Security Design",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "owner": "Talent PM",
+      "acceptance_criteria": "Approved by Pfizer Enterprise Architecture Board",
+      "sow_reference": "SOW_Document.pdf (Section 3.1)",
+      "evidence_required": "Architecture Blueprint & Threat Model Document",
+      "client_approver": "Pfizer Chief Architect",
+      "submission_target_date": null,
+      "review_window": "Formal written approval from Pfizer Engineering Lead within 5 business days.",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-02",
+      "name": "Automated CI/CD Data Ingestion Pipeline",
+      "description": "Automated CI/CD Data Ingestion Pipeline",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "owner": "Talent PM",
+      "acceptance_criteria": "Passing automated test suite report & pipeline run logs approved by Pfizer Data Engineering Lead",
+      "sow_reference": "SOW_Document.pdf (Section 3.1)",
+      "evidence_required": "Passing automated test suite report & pipeline run logs",
+      "client_approver": "Pfizer Data Engineering Lead",
+      "submission_target_date": null,
+      "review_window": "Formal written approval from Pfizer Engineering Lead within 5 business days.",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-03",
+      "name": "Validation and Compliance Documentation",
+      "description": "Validation and Compliance Documentation",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "owner": "Talent PM",
+      "acceptance_criteria": "Signed off by Compliance Lead",
+      "sow_reference": "SOW_Document.pdf (Section 3.1)",
+      "evidence_required": "21 CFR Part 11 Validation Matrix & Traceability Report",
+      "client_approver": "Pfizer Regulatory Compliance Officer",
+      "submission_target_date": null,
+      "review_window": "Formal written approval from Pfizer Engineering Lead within 5 business days.",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    }
+  ],
+  "milestones": [
+    {
+      "id": "M1",
+      "description": "Project Kickoff & Architecture Baseline",
+      "external_date": "2026-10-15",
+      "internal_buffer_date": "2026-10-08",
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "AWS IAM provisioning"
+      ],
+      "critical_path_assumptions": [],
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "linked_action_id": null
+    },
+    {
+      "id": "M2",
+      "description": "Data Pipeline Production Go-Live",
+      "external_date": "2026-11-30",
+      "internal_buffer_date": "2026-11-23",
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Sample clinical dataset delivery"
+      ],
+      "critical_path_assumptions": [],
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "linked_action_id": null
+    }
+  ],
+  "backlog_seed": [
+    {
+      "id": "WP-01",
+      "parent_deliverable_id": "DEL-01",
+      "title": "AWS IAM & VPC Architecture",
+      "description": "Provision core network and security baseline.",
+      "preliminary_sequence": 1,
+      "owner": "Cloud Architect",
+      "dependency_references": [],
+      "linked_milestones": [],
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-02",
+      "parent_deliverable_id": "DEL-02",
+      "title": "Automated Ingestion Pipeline",
+      "description": "Develop CI/CD automated pipeline.",
+      "preliminary_sequence": 2,
+      "owner": "Data Engineer",
+      "dependency_references": [],
+      "linked_milestones": [],
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-03",
+      "parent_deliverable_id": "DEL-03",
+      "title": "Compliance & Traceability",
+      "description": "Generate 21 CFR Part 11 validation evidence.",
+      "preliminary_sequence": 3,
+      "owner": "Talent PM",
+      "dependency_references": [],
+      "linked_milestones": [],
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": null,
+      "status": "Draft",
+      "linked_action_id": null
+    }
+  ],
+  "dependencies_assumptions": [
+    {
+      "id": "ASM-01",
+      "type": "Assumption",
+      "description": "Pfizer provides sample dataset 2 weeks prior to sprint 1",
+      "category": "Data / Customer",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "owner": "PMO Lead",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    },
+    {
+      "id": "DEP-01",
+      "type": "Dependency",
+      "description": "Third-party vendor API access tokens and test endpoints",
+      "category": "External API",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "owner": "Client Lead",
+      "required_validation_date": null,
+      "impact_if_unmet": "Delivery delay / milestone impediment",
+      "status": "Open",
+      "escalation_trigger": "Milestone slip or unconfirmed prerequisite",
+      "linked_milestone": null,
+      "linked_deliverable": null,
+      "linked_open_question": null,
+      "linked_action_id": null
+    }
+  ],
+  "raid_items": [
+    {
+      "id": null,
+      "type": "Risk",
+      "description": "Client IAM and AWS account provisioning delays",
+      "owner": "Delivery Manager",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "category": "Technical / Cloud",
+      "probability": "High",
+      "impact": "High",
+      "severity": "High",
+      "trigger_or_early_warning": "No IAM access provided 5 days prior to sprint 1",
+      "mitigation_or_response": "Escalate to Pfizer VP Sponsor and utilize local sandbox",
+      "due_date": null,
+      "linked_decision": null,
+      "linked_dependency_or_assumption": null,
+      "linked_action_id": null
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-01",
+      "decision_text": "Adopt Terraform for all AWS cloud infrastructure provisioning.",
+      "decision_owner": "Sarah Connor (PMO Lead)",
+      "decision_date": null,
+      "rationale": "Enables standardized CI/CD deployment and automated audit trails.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    },
+    {
+      "id": "DEC-02",
+      "decision_text": "Set project governance tier to Partnered with weekly PSR reporting.",
+      "decision_owner": "Jane Doe (Delivery Manager)",
+      "decision_date": null,
+      "rationale": "Matches engagement size, complexity, and client risk profile.",
+      "linked_raid_item": null,
+      "linked_artifact": null,
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "status": "Approved",
+      "linked_action_id": null
+    }
+  ],
+  "communications_plan": [
+    {
+      "id": "COM-01",
+      "name": "Weekly Project Status Report (PSR)",
+      "audience": "Pfizer & Toptal Leadership",
+      "content_owner": "Talent PM",
+      "cadence": "Weekly (Fridays)",
+      "governance_tier_applicability": "All Tiers",
+      "format": "Email & PDF attachment",
+      "delivery_day": "Friday",
+      "escalation_route": "PMO Lead -> Director, PMO",
+      "pmo_health_rating_notes": "PMO Lead issues independent health rating after evidence exchange",
+      "linked_action_id": null
+    },
+    {
+      "id": "COM-02",
+      "name": "Monthly Business Review (MBR)",
+      "audience": "Pfizer Executive Sponsor & Toptal DM",
+      "content_owner": "Delivery Manager",
+      "cadence": "Monthly",
+      "governance_tier_applicability": "All Tiers",
+      "format": "Virtual Presentation",
+      "delivery_day": "Last Thursday",
+      "escalation_route": "PMO Lead -> Director, PMO",
+      "pmo_health_rating_notes": "PMO Lead issues independent health rating after evidence exchange",
+      "linked_action_id": null
+    }
+  ],
+  "stakeholders": [
+    {
+      "name": "Sarah Connor",
+      "role": "PMO Lead",
+      "organization": "Toptal PMO",
+      "decision_rights": "G-01 Gate Sign-off, Talent Staffing/Replacement, Work-at-Risk Approvals, Delivery Risk & Recovery",
+      "approver_responsibilities": "G-01 Gate, Baseline Exceptions, PMO Health Ratings, Talent Baseline Sign-off",
+      "escalation_responsibility": "Director, PMO",
+      "reporting_accountability": "Independent Weekly Health Rating, Leadership Rollup",
+      "linked_action_id": null
+    },
+    {
+      "name": "Director, PMO",
+      "role": "Director, PMO",
+      "organization": "Toptal PMO Leadership",
+      "decision_rights": "Elevated Tier Approvals, Major Commercial Exception Sign-offs, Executive Escalations",
+      "approver_responsibilities": "Elevated Tier G-01 Concurrence, Governance Policy Exceptions",
+      "escalation_responsibility": "VP, Delivery / Executive Leadership",
+      "reporting_accountability": "Executive PMO Portfolio Review",
+      "linked_action_id": null
+    },
+    {
+      "name": "Jane Doe",
+      "role": "Delivery Manager",
+      "organization": "Toptal",
+      "decision_rights": "Voice of the customer, scope accountability, client alignment",
+      "approver_responsibilities": "Scope change alignment, handoff readiness",
+      "escalation_responsibility": "PMO Lead",
+      "reporting_accountability": "Weekly PSR Review",
+      "linked_action_id": null
+    },
+    {
+      "name": "John Smith",
+      "role": "Talent PM",
+      "organization": "Toptal",
+      "decision_rights": "Project delivery, sprint coordination, day-to-day execution",
+      "approver_responsibilities": "Work package progress, deliverable submission drafts",
+      "escalation_responsibility": "Delivery Manager",
+      "reporting_accountability": "Weekly PSR Author",
+      "linked_action_id": null
+    },
+    {
+      "name": "Pfizer VP Sponsor",
+      "role": "Client Sponsor / Approver",
+      "organization": "Pfizer Inc.",
+      "decision_rights": "Contractual approvals, deliverable sign-offs, change orders",
+      "approver_responsibilities": "Deliverables acceptance, SOW amendments",
+      "escalation_responsibility": "Pfizer Executive Leadership",
+      "reporting_accountability": "Recipient of Weekly PSR & MBR",
+      "linked_action_id": null
+    }
+  ],
+  "raci_matrix": [
+    {
+      "decision_or_activity": "Startup readiness (G-01 gate)",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Talent staffing & replacement",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "C",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Work at risk / commercial exceptions",
+      "pmo_lead": "R, A",
+      "delivery_manager": "I",
+      "talent_pm": "I",
+      "sales_accounts": "C",
+      "client": "I"
+    },
+    {
+      "decision_or_activity": "Scope & change",
+      "pmo_lead": "R",
+      "delivery_manager": "A",
+      "talent_pm": "—",
+      "sales_accounts": "C, R",
+      "client": "A"
+    },
+    {
+      "decision_or_activity": "Delivery risk & recovery",
+      "pmo_lead": "R, A",
+      "delivery_manager": "C",
+      "talent_pm": "R",
+      "sales_accounts": "I",
+      "client": "I"
+    }
+  ],
+  "commercial_guardrails": {
+    "contract_type_implication": "Time and Materials contract: Weekly burn oversight and milestone alignment.",
+    "billing_consumption_assumption": "Weekly timesheet approval against contracted SOW rate card.",
+    "staffing_assumption": "Dedicated core delivery team staffing as defined in Section 3.",
+    "commercial_exposure_note": "Client dependency delays must be logged in RAID to prevent unfunded burn.",
+    "approved_work_rule": "Only explicitly contracted SOW scope and approved Change Orders are authorized for execution.",
+    "non_approved_work_rule": "Tasks exceeding agreed monthly burn ceiling require written client authorization.",
+    "work_at_risk_rule": "Work-at-risk requires written PMO Lead approval and executive exception sign-off.",
+    "change_control_trigger": "Budget burndown exceeding forecast by >10% or scope modification.",
+    "change_order_route": "PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order.",
+    "budget_baseline": "$250,000 USD T&M Budget Cap",
+    "variance_indicator": "Green (<5% variance)",
+    "margin_risk_indicator": "Low",
+    "escalation_threshold": "Budget burn rate exceeding weekly cap by >10%"
+  },
+  "talent_onboarding": {
+    "talent_pm": "John Smith",
+    "delivery_manager": "Jane Doe",
+    "pmo_lead": "Sarah Connor",
+    "onboarding_completion_date": "2026-10-01",
+    "onboarding_attendees": [
+      "Sarah Connor",
+      "Jane Doe",
+      "John Smith"
+    ],
+    "artifacts_walked_through": [
+      "Startup Readiness Checklist",
+      "Charter",
+      "Deliverables Matrix",
+      "RAID Log",
+      "Commercial Guardrails"
+    ],
+    "delivery_talent_roster": [
+      {
+        "role": "Delivery Manager",
+        "name": "Jane Doe",
+        "required_skills": "Delivery Governance, Client Management",
+        "status": "Confirmed",
+        "linked_action_id": null
+      },
+      {
+        "role": "Talent PM",
+        "name": "John Smith",
+        "required_skills": "Agile Coordination, PMO Delivery",
+        "status": "Confirmed",
+        "linked_action_id": null
+      },
+      {
+        "role": "Cloud Architect",
+        "name": "Alex Vance",
+        "required_skills": "AWS Architecture, Terraform, Security",
+        "status": "Confirmed",
+        "linked_action_id": null
+      },
+      {
+        "role": "Data Engineer",
+        "name": "Gordon Freeman",
+        "required_skills": "Python, ETL Pipelines, CI/CD",
+        "status": "Confirmed",
+        "linked_action_id": null
+      }
+    ],
+    "required_roles": [
+      "Delivery Manager",
+      "Talent PM",
+      "Cloud Architect",
+      "Data Engineer"
+    ],
+    "required_skills": [
+      "AWS Architecture",
+      "Python ETL",
+      "Agile Execution",
+      "CI/CD Pipelines"
+    ],
+    "staffing_gaps": [],
+    "replacement_plan": "PMO Lead coordinates talent matching within 5 business days if replacement needed.",
+    "team_baseline_review_confirmation": true
+  },
+  "readiness_checklist": [
+    {
+      "item_id": "G01-01",
+      "gate_criterion": "Startup Kit created within 1 day of delivery handoff (SLA)",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Startup Kit drafted on 2026-10-01 (Project awarded 2026-09-30). SLA Met.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-02",
+      "gate_criterion": "Governance tier assigned and cadence established",
+      "related_section4_artifact": "Project Startup Charter",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Governance Tier confirmed as 'Partnered' with tailored buffers and reporting.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-03",
+      "gate_criterion": "Deliverables mapped to owners with explicit acceptance routes",
+      "related_section4_artifact": "Deliverables and Acceptance Matrix",
+      "owner": "John Smith",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "3 deliverables mapped to acceptance routes and evidence expectations.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-04",
+      "gate_criterion": "Milestone delivery plan with external dates and internal buffers committed",
+      "related_section4_artifact": "Milestone Delivery Plan",
+      "owner": "Jane Doe",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "2 milestones mapped with external dates and internal buffer calculations.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-05",
+      "gate_criterion": "Risks, Assumptions, Issues, and Dependencies seeded and owned",
+      "related_section4_artifact": "RAID Log",
+      "owner": "John Smith",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "1 RAID items and 2 dependencies/assumptions baselined.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-06",
+      "gate_criterion": "Talent PM and DM briefed on governance cadence and KO decks",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Talent onboarding walkthrough session mapped against Section 4 artifacts.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-07",
+      "gate_criterion": "Client onboarding dependencies and prerequisites mapped",
+      "related_section4_artifact": "SOW Interpretation Summary",
+      "owner": "Jane Doe",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Customer obligations (3) and prerequisites documented.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-08",
+      "gate_criterion": "Talent roster staffed with named leads and delivery talent",
+      "related_section4_artifact": "Talent Onboarding Record",
+      "owner": "John Smith",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "4 delivery talent roles listed; 4 named",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-09",
+      "gate_criterion": "Client sponsor and decision escalation path identified",
+      "related_section4_artifact": "Stakeholder and Responsibility Model",
+      "owner": "Jane Doe",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "5 key stakeholder roles (including PMO Lead & Director) and escalation paths identified.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-10",
+      "gate_criterion": "RACI and PMO decision rights matrix baselined",
+      "related_section4_artifact": "RACI / Decision Rights Matrix",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Standard PMO decision rights and AR-10 accountability model baselined.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-11",
+      "gate_criterion": "Communications and reporting plan cadence defined",
+      "related_section4_artifact": "Communications and Reporting Plan",
+      "owner": "John Smith",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Weekly Project Status Report (PSR), Monthly Business Review (MBR)",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-12",
+      "gate_criterion": "Commercial guardrails and margin protections established",
+      "related_section4_artifact": "Commercial and Margin Guardrails",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Commercial controls and work-at-risk rules defined for Time and Materials.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-13",
+      "gate_criterion": "Change control procedure and written sign-off route defined",
+      "related_section4_artifact": "Change Control Procedure",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "Formal Change Order route and threshold rules configured.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    },
+    {
+      "item_id": "G01-14",
+      "gate_criterion": "Contractual ambiguities and conflicts logged with risk-impact mitigations",
+      "related_section4_artifact": "Contract Ambiguity & Conflict Analysis",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Review Required",
+      "evidence": "2 contractual ambiguities logged with recommended clarifications.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Pending Review"
+    },
+    {
+      "item_id": "G01-15",
+      "gate_criterion": "Unresolved ambiguities and open questions listed",
+      "related_section4_artifact": "Startup Readiness Checklist",
+      "owner": "Sarah Connor",
+      "reviewer": "PMO Lead",
+      "approver": "PMO Lead / Director, PMO",
+      "due_date": null,
+      "status": "Complete",
+      "evidence": "3 validation points logged for mobilization confirmation.",
+      "exception_required": false,
+      "exception_details": null,
+      "approval_status": "Approved"
+    }
+  ],
+  "gate_decision": {
+    "gate_decision_status": "Approved for Mobilize",
+    "approver_name": "Sarah Connor",
+    "approval_date": "2026-10-01",
+    "decision_comments": "Readiness baseline verified against Section 4 requirements. 0 exceptions noted; open validation items flagged for Mobilize kickoff.",
+    "approved_with_exception": false,
+    "rework_required": false,
+    "bypass_reason": null,
+    "bypass_approving_authority": null,
+    "exception_expiry_date": null,
+    "readiness_score": 98.7,
+    "readiness_breakdown": {
+      "mandatory_g01_controls": 96.7,
+      "deliverable_acceptance_rigor": 100.0,
+      "talent_staffing_readiness": 100.0,
+      "commercial_risk_mitigation": 100.0
+    },
+    "workflow_state": "Ready for G-01 Gate Review",
+    "sla_met": true,
+    "segregation_of_duties_verified": true,
+    "author_name": "Sarah Connor",
+    "reviewer_names": [
+      "Jane Doe",
+      "Technical Lead"
+    ],
+    "concurring_approver_name": null,
+    "open_exceptions_count": 0
+  },
+  "action_required_items": [],
+  "open_questions": [],
+  "contract_ambiguities": [
+    {
+      "anomaly_id": "AMB-01",
+      "category": "Ambiguous Acceptance",
+      "conflicting_clauses": "Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated pytest validation suite.",
+      "risk_impact": "Subjective sign-off criteria could lead to prolonged review cycles and milestone delays.",
+      "recommended_clarification": "Align contractual acceptance criteria to objective automated test passing metrics.",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "linked_action_id": null
+    },
+    {
+      "anomaly_id": "CONF-01",
+      "category": "Date Conflict",
+      "conflicting_clauses": "Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+      "risk_impact": "2-week schedule discrepancy between commercial proposal and signed SOW baseline.",
+      "recommended_clarification": "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
+      "status": "Open",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      },
+      "linked_action_id": null
+    }
+  ],
+  "sow_stories_catalogue": [
+    {
+      "reference": "Section 3.1",
+      "reference_kind": "Section",
+      "title": "",
+      "phase": "",
+      "owner": "Toptal",
+      "type": "Build",
+      "fingerprint": [],
+      "deliverable_id": "DEL-01",
+      "source_reference": {
+        "document_name": "SOW_Document.pdf",
+        "clause_or_slide": "Section 3.1",
+        "confidence_score": 0.92
+      }
+    }
+  ],
+  "readiness_score": 98.7,
+  "readiness_breakdown": {
+    "mandatory_g01_controls": 96.7,
+    "deliverable_acceptance_rigor": 100.0,
+    "talent_staffing_readiness": 100.0,
+    "commercial_risk_mitigation": 100.0
+  },
+  "workflow_state": "Ready for G-01 Gate Review",
+  "sow_awarded_date": "2026-09-30",
+  "kit_drafted_date": "2026-10-01",
+  "sla_met": true,
+  "author_name": "Sarah Connor",
+  "reviewer_names": [
+    "Jane Doe",
+    "Technical Lead"
+  ],
+  "approver_name": "Sarah Connor",
+  "concurring_approver_name": null,
+  "segregation_of_duties_verified": true
+}
