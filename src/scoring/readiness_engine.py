@@ -681,14 +681,37 @@ class ReadinessScoringEngine:
                 if not item.exception_details:
                     item.exception_details = "Governance tier and reporting cadence pending alignment."
 
-        # G01-03: Deliverables & Acceptance Criteria (v4 B8: check client_approver too)
+        # G01-03: Deliverables & Acceptance Criteria (v4 B8, Rev 4 CHK-03: check client_approver too)
         if "G01-03" in chk_map:
             item = chk_map["G01-03"]
             has_deliv_defects = False
             if not baseline.deliverables:
                 has_deliv_defects = True
             else:
+                has_approver_questions = any(
+                    re.search(
+                        r'\b(?:named\s+client\s+approver|approver\s+names?|sign-?off\s+approver|client\s+approver|authorized\s+to\s+provide\s+milestone\s+sign-?off)\b',
+                        q,
+                        re.IGNORECASE,
+                    )
+                    for q in (baseline.open_questions or [])
+                )
                 for d in baseline.deliverables:
+                    is_generic_approver = bool(
+                        d.client_approver
+                        and re.search(
+                            r"^(?:the\s+)?client(?:'s)?(?:\s+designated)?\s+approvers?(?:\s+or\s+designee)?$|^client\s+approver$|^client\s+sponsor\s*/\s*approver$",
+                            d.client_approver.strip(),
+                            re.IGNORECASE,
+                        )
+                    )
+                    approver_unconfirmed = (
+                        not d.client_approver
+                        or "UNASSIGNED" in d.client_approver.upper()
+                        or "[CONFIRMATION REQUIRED]" in d.client_approver
+                        or d.client_approver.strip().lower() in ("unassigned", "tbd", "[tbd]", "none")
+                        or (is_generic_approver and has_approver_questions)
+                    )
                     if (
                         not d.acceptance_criteria
                         or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria
@@ -696,9 +719,7 @@ class ReadinessScoringEngine:
                         or not d.owner
                         or "UNASSIGNED" in d.owner.upper()
                         or d.owner == "Unassigned"
-                        or not d.client_approver
-                        or "UNASSIGNED" in d.client_approver.upper()
-                        or "[CONFIRMATION REQUIRED]" in d.client_approver
+                        or approver_unconfirmed
                     ):
                         has_deliv_defects = True
                         break

@@ -836,7 +836,34 @@ class BaselineAggregator:
         segregation_verified = (author_name not in reviewer_names)
 
         # 15. Build G-01 Startup Readiness Checklist
-        has_unconfirmed_delivs = any(d.acceptance_criteria is None for d in deliverables)
+        has_approver_questions = any(
+            re.search(
+                r'\b(?:named\s+client\s+approver|approver\s+names?|sign-?off\s+approver|client\s+approver|authorized\s+to\s+provide\s+milestone\s+sign-?off)\b',
+                q,
+                re.IGNORECASE,
+            )
+            for q in (questions or [])
+        )
+
+        def _is_deliv_unconfirmed(d: Deliverable) -> bool:
+            if not d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria or "UNASSIGNED" in d.acceptance_criteria:
+                return True
+            if not d.owner or "UNASSIGNED" in d.owner.upper() or d.owner == "Unassigned":
+                return True
+            if not d.client_approver or "UNASSIGNED" in d.client_approver.upper() or "[CONFIRMATION REQUIRED]" in d.client_approver or d.client_approver.strip().lower() in ("unassigned", "tbd", "[tbd]", "none"):
+                return True
+            is_generic_approver = bool(
+                re.search(
+                    r"^(?:the\s+)?client(?:'s)?(?:\s+designated)?\s+approvers?(?:\s+or\s+designee)?$|^client\s+approver$|^client\s+sponsor\s*/\s*approver$",
+                    d.client_approver.strip(),
+                    re.IGNORECASE,
+                )
+            )
+            if is_generic_approver and has_approver_questions:
+                return True
+            return False
+
+        has_unconfirmed_delivs = any(_is_deliv_unconfirmed(d) for d in deliverables)
         has_unconfirmed_dates = any(m.external_date is None for m in milestones)
         has_unassigned_roles = any("UNASSIGNED" in str(x) for x in [charter.delivery_manager, charter.talent_pm])
         has_ambiguities = len(contract_ambiguities) > 0
