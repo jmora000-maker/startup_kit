@@ -34,3 +34,7 @@ htmlcov/
 
 # Environment / Secret variables
 .env
+
+#powerscript
+.ps1
+review_uploads/
