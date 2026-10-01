@@ -186,22 +186,20 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
     if not text:
         return "Not cited", "No clause reference in baseline"
 
-    # Format 1: [V1] bracket citation
+    doc_citation: Optional[str] = None
     m = CITATION_FMT1_REGEX.match(text)
     if m:
         doc_str = m.group("doc").strip()
-        ref_str = m.group("ref").strip()
-        ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
-        return ref, None
+        doc_citation = doc_str
 
-    # Check for Exhibit or document file citation
     exhibit_match = EXHIBIT_REGEX.search(text)
     doc_match = DOC_FILE_REGEX.search(text)
-    exhibit_or_doc = ""
-    if exhibit_match:
-        exhibit_or_doc = exhibit_match.group(1).strip()
-    elif doc_match:
-        exhibit_or_doc = doc_match.group(1).strip()
+    exhibit_or_doc = doc_citation or ""
+    if not exhibit_or_doc:
+        if exhibit_match:
+            exhibit_or_doc = exhibit_match.group(1).strip()
+        elif doc_match:
+            exhibit_or_doc = doc_match.group(1).strip()
 
     # Extract SOW story IDs / SOW references
     raw_stories = extract_sow_references(text)
@@ -1898,28 +1896,19 @@ def build_workbook_model(
         
         # Parse conflicting_clauses with extract_contract_reference
         conf_clauses = amb_item.conflicting_clauses or ""
-        match = CITATION_FMT1_REGEX.match(conf_clauses)
-        if match:
-            doc_str = match.group("doc").strip()
-            ref_str = match.group("ref").strip()
-            text_str = match.group("text").strip()
-            contract_ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
-            clean_clause_text = text_str
-            ref_note = None
-        else:
-            raw_for_ref = conf_clauses
-            if getattr(amb_item, "source_reference", None):
-                sr = amb_item.source_reference
-                doc_name = getattr(sr, "document_name", "") or ""
-                clause_slide = getattr(sr, "clause_or_slide", "") or ""
-                if doc_name and not (DOC_FILE_REGEX.search(conf_clauses) or EXHIBIT_REGEX.search(conf_clauses) or CITATION_FMT1_REGEX.match(conf_clauses)):
-                    if clause_slide:
-                        raw_for_ref = f"{doc_name}, {clause_slide}: {conf_clauses}"
-                    else:
-                        raw_for_ref = f"{doc_name}: {conf_clauses}"
+        raw_for_ref = conf_clauses
+        if getattr(amb_item, "source_reference", None):
+            sr = amb_item.source_reference
+            doc_name = getattr(sr, "document_name", "") or ""
+            clause_slide = getattr(sr, "clause_or_slide", "") or ""
+            if doc_name and not (DOC_FILE_REGEX.search(conf_clauses) or EXHIBIT_REGEX.search(conf_clauses) or CITATION_FMT1_REGEX.match(conf_clauses)):
+                if clause_slide:
+                    raw_for_ref = f"{doc_name}, {clause_slide}: {conf_clauses}"
+                else:
+                    raw_for_ref = f"{doc_name}: {conf_clauses}"
 
-            contract_ref, ref_note = extract_contract_reference(raw_for_ref)
-            clean_clause_text = strip_citation_from_clause(conf_clauses, amb_item.category, contract_ref)
+        contract_ref, ref_note = extract_contract_reference(raw_for_ref)
+        clean_clause_text = strip_citation_from_clause(conf_clauses, amb_item.category, contract_ref)
 
         desc_text = f"{amb_item.category}: {clean_clause_text}" if amb_item.category else clean_clause_text
 

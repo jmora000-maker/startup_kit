@@ -159,3 +159,37 @@ def test_raid_03_no_information_loss_invariant_across_fixtures():
                     assert st in combined_output or any(part in combined_output for part in st.split()), (
                         f"SOW reference {st} from raw clause '{raw_clauses}' lost in row {r.raid_id}"
                     )
+
+
+def test_raid_03_arc_genomics_citations():
+    """RAID-03: Verify ARC RAID-21, RAID-24, and RAID-26 contract references and SOW refs formatting."""
+    from src.core.models import StartupKitBaseline
+    from src.llm.validation import validate_and_repair_baseline
+
+    with open("tests/fixtures/sow/arc_genomics/baseline.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    baseline = StartupKitBaseline.model_validate(data)
+    validate_and_repair_baseline(baseline)
+    model = build_workbook_model(baseline, start_date=date(2026, 10, 5))
+    raid_map = {r.raid_id: r for r in model.raid_rows}
+
+    # RAID-21: cites HS-4781, Sections 7, 6
+    assert "RAID-21" in raid_map
+    r21 = raid_map["RAID-21"]
+    assert "Exhibit A - Arc Genomics Platform.pdf" in r21.contract_reference
+    assert "SOW refs: HS-4781" in r21.contract_reference
+    assert "Sections: 7, 6" in r21.contract_reference
+
+    # RAID-24: cites HS-4779, HS-4775, HS-4794, HS-4804, HS-4825, Sections 3, 4
+    assert "RAID-24" in raid_map
+    r24 = raid_map["RAID-24"]
+    assert "Exhibit A - Arc Genomics Platform.pdf" in r24.contract_reference
+    assert "SOW refs: HS-4779, HS-4775, HS-4794, HS-4804, HS-4825" in r24.contract_reference
+    assert "Sections: 3, 4" in r24.contract_reference
+
+    # RAID-26: cites HS-4762, HS-4772, HS-4775, HS-4825, HS-4942, Section 4
+    assert "RAID-26" in raid_map
+    r26 = raid_map["RAID-26"]
+    assert "Exhibit A - Arc Genomics Platform.pdf" in r26.contract_reference
+    assert "SOW refs: HS-4762, HS-4772, HS-4775, HS-4825, HS-4942" in r26.contract_reference
+    assert "Sections: 4" in r26.contract_reference
