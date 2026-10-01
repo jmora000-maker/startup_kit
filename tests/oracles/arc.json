@@ -1,4 +1,5 @@
 {
+  "work_item_titles_in_sow": false,
   "fixture": "arc",
   "gate_count": 4,
   "phases": ["P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"],
