@@ -655,10 +655,11 @@ def match_item_to_deliverables_by_reference(
 def map_work_packages_to_deliverables(
     work_packages: Sequence[WorkPackageSeed],
     deliverables_in_milestone: Sequence[Deliverable],
+    ignore_parent_links: bool = False,
 ) -> Tuple[Dict[str, List[WorkPackageSeed]], List[WorkPackageSeed]]:
     """Map work packages within a milestone to its mapped deliverables (MAP-05).
     
-    1. Pass 0: Parent link match (if wp.parent_deliverable_id matches a deliverable in this milestone).
+    1. Pass 0: Parent link match (if wp.parent_deliverable_id matches a deliverable in this milestone, and not ignored as phase order).
     2. Pass 1: Unique work item ID match (excluding non-unique references like Sections).
     3. Pass 2: Best text score >= 0.20 within milestone (ties to lower deliverable ID).
     4. Pass 3 (v6 A29): Distinctive token with IDF >= ln(2) against unassigned deliverables in milestone.
@@ -683,7 +684,7 @@ def map_work_packages_to_deliverables(
     # Pass 0: Parent link match (a valid parent in the same gate) first, before any text scoring
     for wp in work_packages:
         p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
-        if p_id in deliv_ids_in_ms:
+        if not ignore_parent_links and p_id in deliv_ids_in_ms:
             matched_by_deliv[p_id].append(wp)
         else:
             unassigned_after_parent.append(wp)
