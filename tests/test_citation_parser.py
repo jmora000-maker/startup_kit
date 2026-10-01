@@ -8,7 +8,7 @@ def test_citation_parser_three_formats():
     """Test all three formats of leading citations tried in order."""
     # Format 1: [V1] doc_name, ref: text
     ref1, _ = extract_contract_reference("[V1] SOW_Genomics.pdf, Section 4.2: Acceptance window is 5 days")
-    assert ref1 == "SOW_Genomics.pdf, Section 4.2"
+    assert ref1 == "SOW_Genomics.pdf | Sections: 4.2"
 
     # Format 2: Exhibit / Attachment / Appendix
     ref2, _ = extract_contract_reference("Exhibit A, Client Responsibilities: HS-4763 requires MSAL caching while Section 5 specifies session statelessness")

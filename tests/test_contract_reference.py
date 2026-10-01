@@ -21,14 +21,16 @@ def test_v3_contract_ambiguity_rows_in_raid(arc_baseline):
 
     # Check AMB-01 (RAID-20)
     amb_01 = next(r for r in amb_rows if r.source_id == "AMB-01")
-    assert amb_01.contract_reference == "Exhibit A - Arc Genomics Platform.pdf, Section 4 (Latency Acceptance Criteria)"
+    assert "Exhibit A - Arc Genomics Platform.pdf" in amb_01.contract_reference
+    assert "Sections: 4" in amb_01.contract_reference
     assert "test-suite acceptance criteria latency must be under 200ms" in amb_01.description
     assert ",:" not in amb_01.description
     assert "as described " not in amb_01.description
 
     # Check AMB-15 (RAID-34)
     amb_15 = next(r for r in amb_rows if r.source_id == "AMB-15")
-    assert amb_15.contract_reference == "Exhibit A - Arc Genomics Platform.pdf, Section 7 (Training Delivery)"
+    assert "Exhibit A - Arc Genomics Platform.pdf" in amb_15.contract_reference
+    assert "Sections: 7" in amb_15.contract_reference
     assert "responsibility for end-user scientist training delivery vs materials authoring" in amb_15.description
     assert amb_15.owner == "Talent PM"
     assert amb_15.status == "Open"

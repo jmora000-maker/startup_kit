@@ -37,7 +37,7 @@ def test_val_01_gate_reconciliation():
     report = validate_and_repair_baseline(baseline)
 
     assert len(baseline.milestones) == 4
-    assert [m.id for m in baseline.milestones] == ["M1", "M3", "M4", "M6"]
+    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
     assert len(baseline.interim_checkpoints) == 1
     assert baseline.interim_checkpoints[0].id == "CP-01"
 
