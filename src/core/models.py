@@ -344,6 +344,17 @@ class WorkPackageSeed(BaseModel):
     )
 
 
+class SOWStoryItem(BaseModel):
+    """SOW story item catalogued for delivery backlog and traceability (v5 B13)."""
+    id: str  # e.g. "HS-4762"
+    title: str = ""
+    phase: str = ""  # e.g. "P1", "M1"
+    owner: str = "Toptal"  # "Toptal" or "Client"
+    type: str = "Build"  # "Build", "Test", "Certification"
+    deliverable_id: Optional[str] = None
+    source_reference: Optional[SourceReference] = None
+
+
 class ProjectStartupCharter(BaseModel):
     """Project Startup Charter model (Layer 1)."""
     project_name: str = "Project Baseline"
@@ -627,6 +638,7 @@ class StartupKitBaseline(BaseModel):
     action_required_items: List[ActionRequiredItem] = Field(default_factory=list)
     open_questions: List[str] = Field(default_factory=list)
     contract_ambiguities: List[ContractAmbiguityItem] = Field(default_factory=list)
+    sow_stories_catalogue: List[SOWStoryItem] = Field(default_factory=list)
     readiness_score: float = 0.0
     readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
     workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"

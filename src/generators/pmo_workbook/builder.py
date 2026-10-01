@@ -26,6 +26,7 @@ from src.generators.pmo_workbook.workstreams import (
 from src.generators.pmo_workbook.task_library import (
     classify_deliverable_work_type,
     DeliverableTaskTemplate,
+    get_work_type_verb,
 )
 from src.generators.pmo_workbook.mapping import (
     natural_sort_key,
@@ -34,6 +35,8 @@ from src.generators.pmo_workbook.mapping import (
     detect_default_filled_milestone,
     detect_default_filled_deliverable,
     detect_backlog_phase_order,
+    detect_degenerate_work_packages,
+    strip_work_package_prefix,
     link_raid_item_v2,
     score_evidence_consistency,
     tokenize_v2,
@@ -123,6 +126,23 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
     if parts:
         return " | ".join(parts), None
     return "Not cited", "No clause reference in baseline"
+
+
+def extract_story_ids_for_deliverable(d: Deliverable) -> List[str]:
+    """Extract SOW story IDs (HS-####) for a deliverable in order (v5 A21, A22)."""
+    stories: List[str] = []
+    # 1. From sow_reference
+    if getattr(d, "sow_reference", None):
+        for s in re.findall(r"\bHS-\d{3,5}\b", d.sow_reference):
+            if s not in stories:
+                stories.append(s)
+    # 2. From name or description if any
+    text = f"{d.name or ''} {d.description or ''}"
+    for s in re.findall(r"\bHS-\d{3,5}\b", text):
+        if s not in stories:
+            stories.append(s)
+    return stories
+
 
 # Per-milestone communications cadence/name pattern (v3 A6)
 PER_MILESTONE_COMM_REGEX = re.compile(
@@ -604,6 +624,12 @@ def build_workbook_model(
     wbs_rows: List[WBSRow] = []
     schedule_rows: List[ScheduleRow] = []
 
+    story_catalogue_titles: Dict[str, str] = {
+        st.id: st.title for st in getattr(baseline, "sow_stories_catalogue", [])
+        if getattr(st, "id", None) and getattr(st, "title", None)
+    }
+    degenerate_wp_ids = detect_degenerate_work_packages(filtered_backlog, filtered_deliverables)
+
     # Map milestone ID to its Schedule WBS Code (e.g. "1.1", "2.1")
     ms_wbs_code_map: Dict[str, str] = {}
     deliv_wbs_code_map: Dict[str, str] = {}
@@ -637,6 +663,7 @@ def build_workbook_model(
             milestone_id="",
             deliverable_id="",
             source_id="",
+            sow_stories="",
             owner="",
             planned_start=None,
             planned_finish=None,
@@ -676,6 +703,7 @@ def build_workbook_model(
             client_prerequisites="",
             critical_path_assumptions="",
             linked_deliverables="",
+            sow_stories="",
             linked_raid_ids="",
             source="Baseline - Milestone Plan",
             notes="",
@@ -694,6 +722,14 @@ def build_workbook_model(
 
             m_delivs = delivs_by_ms[m.id]
             deliv_ids_str = ", ".join(d.id for d in m_delivs)
+
+            # SOW Stories for Milestone (v5 A22)
+            ms_stories: List[str] = []
+            for d in m_delivs:
+                for s in extract_story_ids_for_deliverable(d):
+                    if s not in ms_stories:
+                        ms_stories.append(s)
+            ms_sow_stories_str = ", ".join(ms_stories)
 
             # Filter out schedule links from client prerequisites (v3 A3)
             raw_deps = m.key_dependencies or []
@@ -728,6 +764,7 @@ def build_workbook_model(
                 client_prerequisites=client_prereqs_str,
                 critical_path_assumptions=cp_assumptions_str,
                 linked_deliverables=deliv_ids_str,
+                sow_stories=ms_sow_stories_str,
                 linked_raid_ids="",  # Populated after RAID pass
                 source="Baseline - Milestone Plan",
                 notes=final_ms_notes,
@@ -744,6 +781,7 @@ def build_workbook_model(
                 milestone_id=m.id,
                 deliverable_id="",
                 source_id="",
+                sow_stories="",
                 owner=ms_owner,
                 planned_start=ms_planned_start.get(m.id),
                 planned_finish=ms_planned_finish.get(m.id),
@@ -805,6 +843,7 @@ def build_workbook_model(
                     milestone_id=m.id,
                     deliverable_id="",
                     source_id="",
+                    sow_stories="",
                     owner="Talent PM",
                     planned_start=prereq_start,
                     planned_finish=prereq_finish,
@@ -834,6 +873,7 @@ def build_workbook_model(
                         milestone_id=m.id,
                         deliverable_id="",
                         source_id="",
+                        sow_stories="",
                         owner="Talent PM",  # v3 A5: role owner
                         planned_start=prereq_start,
                         planned_finish=prereq_finish,
@@ -862,6 +902,15 @@ def build_workbook_model(
                 d_owner, d_owner_note = normalize_owner_v2(d.owner or "Talent PM")
                 _, mapping_basis_str, _ = deliv_mapping[d.id]
 
+                # SOW stories on deliverable (v5 A22)
+                d_story_ids = extract_story_ids_for_deliverable(d)
+                d_sow_stories_str = ", ".join(d_story_ids)
+
+                matched_wps = matched_wps_by_deliv.get(d.id, [])
+                non_degen_wps = [wp for wp in matched_wps if wp.id not in degenerate_wp_ids]
+                degen_wps = [wp for wp in matched_wps if wp.id in degenerate_wp_ids]
+                d_source_id = ", ".join(wp.id for wp in degen_wps) if degen_wps else ""
+
                 # Work type classification
                 work_type, task_templates = classify_deliverable_work_type(d_name)
 
@@ -882,7 +931,13 @@ def build_workbook_model(
                     _, flag_note = evidence_flags_map[d.id]
                     deliv_notes.append(flag_note)
 
-                # Deliverable Level 3 row in WBS (v3 A12: source_id is blank)
+                # Missing evidence note (v5 A26)
+                ev_raw = d.evidence_required or ""
+                is_missing_ev = (not ev_raw.strip()) or ("[CONFIRMATION REQUIRED]" in ev_raw) or (ev_raw.strip().lower() in ("placeholder", "none", "tbd"))
+                if is_missing_ev:
+                    deliv_notes.append("Evidence not defined in baseline - agree with the client")
+
+                # Deliverable Level 3 row in WBS
                 wbs_rows.append(WBSRow(
                     wbs_code=deliv_wbs_code,
                     level=3,
@@ -891,7 +946,8 @@ def build_workbook_model(
                     workstream=ws_name,
                     milestone_id=m.id,
                     deliverable_id=d.id,
-                    source_id="",  # v3 A12: blank on deliverable row
+                    source_id=d_source_id,
+                    sow_stories=d_sow_stories_str,
                     owner=d_owner,
                     planned_start=deliv_start,
                     planned_finish=deliv_finish,
@@ -908,44 +964,56 @@ def build_workbook_model(
                 ))
 
                 # Deliverable Level 4 tasks
-                matched_wps = matched_wps_by_deliv.get(d.id, [])
-                task_rows_to_add: List[Tuple[str, str, str, str, str, str, Optional[str]]] = []
-                # (name, owner, source, source_id, criteria, mapping_basis, note)
+                task_rows_to_add: List[Tuple[str, str, str, str, str, str, Optional[str], str]] = []
+                # (name, owner, source, source_id, criteria, mapping_basis, note, sow_stories)
 
-                # Work type tasks
+                # Work type tasks (v5 A21)
                 for tmpl in task_templates:
-                    if tmpl.is_core and matched_wps:
-                        # Replace core task with one task per work package
-                        for wp in matched_wps:
-                            wp_raw_owner = wp.owner or ""
-                            if wp_raw_owner and not any(ph in wp_raw_owner for ph in ("[UNASSIGNED", "[TBD", "TBD")) and "UNASSIGNED" not in wp_raw_owner.upper():
-                                wp_owner = clean_text_v2(wp_raw_owner)
-                            else:
-                                wp_owner = "Toptal Delivery Team"
-                            wp_title = clean_text_v2(wp.title)
-                            wp_note = None
-                            if not is_backlog_phase_order_detected:
-                                if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
-                                    wp_note = f"Baseline backlog lists parent {wp.parent_deliverable_id}"
-                            task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note))
+                    if tmpl.is_core:
+                        if non_degen_wps:
+                            # Option 1: Non-degenerate work packages
+                            for wp in non_degen_wps:
+                                wp_raw_owner = wp.owner or ""
+                                if wp_raw_owner and not any(ph in wp_raw_owner for ph in ("[UNASSIGNED", "[TBD", "TBD")) and "UNASSIGNED" not in wp_raw_owner.upper():
+                                    wp_owner = clean_text_v2(wp_raw_owner)
+                                else:
+                                    wp_owner = "Toptal Delivery Team"
+                                wp_title = strip_work_package_prefix(clean_text_v2(wp.title))
+                                wp_note = None
+                                if not is_backlog_phase_order_detected:
+                                    if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
+                                        wp_note = f"Baseline backlog lists parent {wp.parent_deliverable_id}"
+                                task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
+                        elif d_story_ids:
+                            # Option 2: SOW stories
+                            verb = get_work_type_verb(work_type)
+                            for s_id in d_story_ids:
+                                s_title = story_catalogue_titles.get(s_id, "")
+                                t_name = f"{verb} {s_id}: {s_title}" if s_title else f"{verb} {s_id}"
+                                task_rows_to_add.append((t_name, "Toptal Delivery Team", "Baseline - SOW Stories", s_id, "", "", None, s_id))
+                        else:
+                            # Option 3: Template core task
+                            tmpl_owner = tmpl.owner_role
+                            task_rows_to_add.append((tmpl.name, tmpl_owner, "PM Best Practice", "", "", "", None, ""))
                     else:
                         tmpl_owner = tmpl.owner_role  # v3 A5: role string directly
-                        task_rows_to_add.append((tmpl.name, tmpl_owner, "PM Best Practice", "", "", "", None))
+                        task_rows_to_add.append((tmpl.name, tmpl_owner, "PM Best Practice", "", "", "", None, ""))
 
-                # Assemble acceptance evidence (v3 A1: PM task tied to deliverable)
-                task_rows_to_add.append(("Assemble acceptance evidence", "Talent PM", "PM Best Practice", "", ev_text, "", None))
+                # Assemble acceptance evidence (v3 A1, v5 A26)
+                ev_task_note = "Evidence not defined in baseline - agree with the client" if is_missing_ev else None
+                task_rows_to_add.append(("Assemble acceptance evidence", "Talent PM", "PM Best Practice", "", ev_text, "", ev_task_note, ""))
 
                 # Internal quality review against acceptance criteria (v3 A1)
-                task_rows_to_add.append(("Internal quality review against acceptance criteria", "Talent PM", "PM Best Practice", "", "", "", None))
+                task_rows_to_add.append(("Internal quality review against acceptance criteria", "Talent PM", "PM Best Practice", "", "", "", None, ""))
 
                 # Per-deliverable acceptance mode only
                 if acceptance_mode == "per-deliverable":
-                    task_rows_to_add.append(("Submit for client review", "Delivery Manager", "PM Best Practice", "", "", "", None))
-                    task_rows_to_add.append(("Address client feedback and rework", "Talent PM", "PM Best Practice", "", "", "", None))
-                    task_rows_to_add.append(("Obtain written client acceptance", "Delivery Manager", "PM Best Practice", "", "", "", None))
+                    task_rows_to_add.append(("Submit for client review", "Delivery Manager", "PM Best Practice", "", "", "", None, ""))
+                    task_rows_to_add.append(("Address client feedback and rework", "Talent PM", "PM Best Practice", "", "", "", None, ""))
+                    task_rows_to_add.append(("Obtain written client acceptance", "Delivery Manager", "PM Best Practice", "", "", "", None, ""))
 
                 prev_task_wbs = ""
-                for t_idx, (t_name, t_owner, t_src, t_src_id, t_crit, t_mb, t_note) in enumerate(task_rows_to_add, 1):
+                for t_idx, (t_name, t_owner, t_src, t_src_id, t_crit, t_mb, t_note, t_sow_stories) in enumerate(task_rows_to_add, 1):
                     t_wbs = f"{deliv_wbs_code}.{t_idx}"
                     t_name_trunc, name_note = truncate_task_name(t_name)
                     all_t_notes = deduplicate_notes([t_note, name_note])
@@ -965,6 +1033,7 @@ def build_workbook_model(
                         milestone_id=m.id,
                         deliverable_id=d.id,
                         source_id=t_src_id,
+                        sow_stories=t_sow_stories,
                         owner=t_owner,
                         planned_start=deliv_start,
                         planned_finish=deliv_finish,
@@ -996,6 +1065,7 @@ def build_workbook_model(
                     milestone_id=m.id,
                     deliverable_id="",
                     source_id="",
+                    sow_stories="",
                     owner="Talent PM",
                     planned_start=deliv_start,
                     planned_finish=deliv_finish,
@@ -1019,7 +1089,7 @@ def build_workbook_model(
                         owp_owner = clean_text_v2(owp_raw_owner)
                     else:
                         owp_owner = "Toptal Delivery Team"
-                    owp_title = clean_text_v2(owp.title)
+                    owp_title = strip_work_package_prefix(clean_text_v2(owp.title))
                     owp_note = None
                     if owp.parent_deliverable_id:
                         owp_note = f"Baseline backlog lists parent {owp.parent_deliverable_id}"
@@ -1036,6 +1106,7 @@ def build_workbook_model(
                         milestone_id=m.id,
                         deliverable_id="",
                         source_id=owp.id,
+                        sow_stories="",
                         owner=owp_owner,
                         planned_start=deliv_start,
                         planned_finish=deliv_finish,
@@ -1065,6 +1136,7 @@ def build_workbook_model(
                 milestone_id=m.id,
                 deliverable_id="",
                 source_id="",
+                sow_stories="",
                 owner="Delivery Manager",
                 planned_start=accept_start,
                 planned_finish=accept_finish,
@@ -1127,6 +1199,7 @@ def build_workbook_model(
                     milestone_id=m.id,
                     deliverable_id="",
                     source_id=a_src_id,
+                    sow_stories="",
                     owner=a_owner,  # v3 A5: role owner
                     planned_start=accept_start,
                     planned_finish=accept_finish,
@@ -1143,7 +1216,7 @@ def build_workbook_model(
                 ))
                 prev_task_wbs = a_wbs
 
-    # 6. Build RAID Log (v3 A4, A7, A8, A11, v4 A16, A17, A18, A19)
+    # 6. Build RAID Log (v3 A4, A7, A8, A11, v4 A16, A17, A18, A19, v5 A23, A25)
     raid_rows: List[RAIDRow] = []
     all_raw_raid: List[Union[RiskAssumption, DependencyAssumptionItem, ContractAmbiguityItem]] = (
         list(filtered_raid_items) + list(filtered_deps) + list(filtered_ambiguities)
@@ -1154,6 +1227,7 @@ def build_workbook_model(
 
     raid_counter = 0
     raid_links_by_ms: Dict[str, List[str]] = {m.id: [] for m in sorted_milestones}
+    ms_by_id: Dict[str, Milestone] = {m.id: m for m in sorted_milestones}
 
     # Decision linking helper (v4 A19)
     decisions = baseline.decisions or []
@@ -1191,7 +1265,7 @@ def build_workbook_model(
         current_ws: str,
         raid_id: str,
     ) -> Tuple[str, str, str, str]:
-        """Find matching deliverables via story index (v4 A17) and link milestone if unlinked."""
+        """Find matching deliverables via story index (v4 A17) and link milestone(s) (v5 A23)."""
         item_stories = set(re.findall(r"\bHS-\d{3,5}\b", item_text_for_stories))
         matched_deliv_ids: Set[str] = set()
         for s in item_stories:
@@ -1205,18 +1279,38 @@ def build_workbook_model(
         new_linked_wbs = current_linked_wbs
         new_ws = current_ws
 
-        if linked_deliv_str and not new_linked_ms:
+        if linked_deliv_str:
             ms_for_matched: Set[str] = set()
             for d_id in sorted_deliv_ids:
                 if d_id in deliv_mapping:
                     m_obj, _, _ = deliv_mapping[d_id]
-                    ms_for_matched.add(m_obj.id)
-            if len(ms_for_matched) == 1:
-                single_m_id = list(ms_for_matched)[0]
-                new_linked_ms = single_m_id
-                p_m = parsed_phases.get(single_m_id)
+                    if m_obj and m_obj.id in ms_by_id:
+                        ms_for_matched.add(m_obj.id)
+
+            if current_linked_ms:
+                for m_id_part in [p.strip() for p in current_linked_ms.split(",") if p.strip()]:
+                    if m_id_part in ms_by_id:
+                        ms_for_matched.add(m_id_part)
+
+            all_linked_ms = sorted(
+                [ms_by_id[m_id] for m_id in ms_for_matched if m_id in ms_by_id],
+                key=lambda m: natural_sort_key(m.id)
+            )
+            if len(all_linked_ms) == 1:
+                single_m = all_linked_ms[0]
+                new_linked_ms = single_m.id
+                p_m = parsed_phases.get(single_m.id)
                 new_ws = p_m.workstream_name if p_m else "Build & Configuration"
-                new_linked_wbs = ms_wbs_code_map.get(single_m_id, "")
+            elif len(all_linked_ms) > 1:
+                new_linked_ms = ", ".join(m.id for m in all_linked_ms)
+                new_ws = "Multiple phases"
+            else:
+                new_linked_ms = ""
+                new_ws = "Cross-phase"
+
+            linked_wbs_codes = [deliv_wbs_code_map[d_id] for d_id in sorted_deliv_ids if d_id in deliv_wbs_code_map]
+            if linked_wbs_codes:
+                new_linked_wbs = ", ".join(linked_wbs_codes)
 
         for d_id in sorted_deliv_ids:
             if d_id in deliv_to_linked_raid_ids:
@@ -1465,8 +1559,6 @@ def build_workbook_model(
         status_val = "Open"
         
         contract_ref, _ = extract_contract_reference(q_str)
-        if contract_ref == "Not cited":
-            contract_ref = ""
 
         raw_decision_val = ""
         decision_val = link_decisions_for_row(desc, contract_ref, raw_decision_val)
@@ -1549,6 +1641,7 @@ def build_workbook_model(
                 client_prerequisites=s.client_prerequisites,
                 critical_path_assumptions=s.critical_path_assumptions,
                 linked_deliverables=s.linked_deliverables,
+                sow_stories=s.sow_stories,
                 linked_raid_ids=r_ids,
                 source=s.source,
                 notes=s.notes,
@@ -1572,6 +1665,7 @@ def build_workbook_model(
                 milestone_id=w.milestone_id,
                 deliverable_id=w.deliverable_id,
                 source_id=w.source_id,
+                sow_stories=w.sow_stories,
                 owner=w.owner,
                 planned_start=w.planned_start,
                 planned_finish=w.planned_finish,
@@ -1620,7 +1714,7 @@ def build_workbook_model(
             break
         cur_week += timedelta(days=7)
 
-    # 8. Traceability self-check (v3 A13)
+    # 8. Traceability self-check (v3 A13, v5 A22)
     wb_ms_ids = {s.milestone_id for s in updated_schedule_rows if s.row_type == "Milestone" and s.milestone_id}
     base_ms_ids = {m.id for m in filtered_milestones}
     missing_ms = sorted(base_ms_ids - wb_ms_ids, key=natural_sort_key)
@@ -1629,7 +1723,12 @@ def build_workbook_model(
     base_deliv_ids = {d.id for d in filtered_deliverables}
     missing_delivs = sorted(base_deliv_ids - wb_deliv_ids, key=natural_sort_key)
 
-    wb_wp_ids = {w.source_id for w in updated_wbs_rows if w.level == 4 and w.source == "Baseline - Backlog" and w.source_id}
+    wb_wp_ids = set()
+    for w in updated_wbs_rows:
+        if w.source_id and (w.source == "Baseline - Backlog" or w.element_type in ("Deliverable", "Work Package")):
+            for p in w.source_id.split(","):
+                if p.strip():
+                    wb_wp_ids.add(p.strip())
     base_wp_ids = {wp.id for wp in filtered_backlog}
     missing_wps = sorted(base_wp_ids - wb_wp_ids, key=natural_sort_key)
 
@@ -1641,6 +1740,22 @@ def build_workbook_model(
     all_base_raid_ids = base_raid_ids | base_dep_ids | base_amb_ids | base_q_ids
     missing_raid = sorted(all_base_raid_ids - wb_raid_src_ids, key=natural_sort_key)
 
+    base_story_ids: Set[str] = set()
+    for d in filtered_deliverables:
+        for s in extract_story_ids_for_deliverable(d):
+            base_story_ids.add(s)
+    if hasattr(baseline, "sow_stories_catalogue") and baseline.sow_stories_catalogue:
+        for st in baseline.sow_stories_catalogue:
+            if getattr(st, "id", None):
+                base_story_ids.add(st.id)
+
+    wb_story_ids: Set[str] = set()
+    for w in updated_wbs_rows:
+        if w.sow_stories:
+            for s in re.findall(r"\bHS-\d{3,5}\b", w.sow_stories):
+                wb_story_ids.add(s)
+    missing_stories = sorted(base_story_ids - wb_story_ids, key=natural_sort_key)
+
     if missing_ms:
         logger.warning("Traceability check: Missing Milestones in workbook: %s", missing_ms)
     if missing_delivs:
@@ -1649,6 +1764,8 @@ def build_workbook_model(
         logger.warning("Traceability check: Missing Work Packages in workbook: %s", missing_wps)
     if missing_raid:
         logger.warning("Traceability check: Missing RAID items in workbook: %s", missing_raid)
+    if missing_stories:
+        logger.warning("Traceability check: Missing SOW Stories in workbook: %s", missing_stories)
 
     traceability_dict: Dict[str, Dict[str, Any]] = {
         "Milestones": {
@@ -1670,6 +1787,11 @@ def build_workbook_model(
             "in_baseline": len(all_base_raid_ids),
             "in_workbook": len(raid_rows),
             "missing_ids": missing_raid,
+        },
+        "SOW Stories": {
+            "in_baseline": len(base_story_ids),
+            "in_workbook": len(wb_story_ids),
+            "missing_ids": missing_stories,
         },
     }
 

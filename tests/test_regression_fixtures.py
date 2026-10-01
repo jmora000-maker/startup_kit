@@ -123,3 +123,94 @@ def test_arc_run2_matches_v4_appendix_b(arc_run2):
     # Traceability: 0 missing IDs
     for cat, data in model.traceability.items():
         assert len(data["missing_ids"]) == 0
+
+
+def test_arc_run3_matches_v5_appendix(arc_run3):
+    """Assert arc_run3 matches v5 Appendix exact expected structure."""
+    model = build_workbook_model(arc_run3, start_date=date(2026, 10, 5))
+
+    # Schedule workstreams & milestones
+    ms_rows = [s for s in model.schedule_rows if s.row_type == "Milestone"]
+    assert len(ms_rows) == 4
+    ws_rows = [s for s in model.schedule_rows if s.row_type == "Workstream"]
+    assert len(ws_rows) == 4
+
+    # Predecessors
+    sched_map = {s.milestone_id: s for s in ms_rows}
+    assert sched_map["M1"].predecessor == ""
+    assert sched_map["M2"].predecessor == "M1"
+    assert sched_map["M3"].predecessor == "M2"
+    assert sched_map["M4"].predecessor == "M3"
+
+    # Schedule SOW Stories column counts
+    m1_stories = [s.strip() for s in sched_map["M1"].sow_stories.split(",") if s.strip()]
+    m2_stories = [s.strip() for s in sched_map["M2"].sow_stories.split(",") if s.strip()]
+    m3_stories = [s.strip() for s in sched_map["M3"].sow_stories.split(",") if s.strip()]
+    m4_stories = [s.strip() for s in sched_map["M4"].sow_stories.split(",") if s.strip()]
+    assert len(m1_stories) == 7
+    assert len(m2_stories) == 11
+    assert len(m3_stories) == 10
+    assert len(m4_stories) == 7
+
+    # Deliverables: 19 deliverables (0 unmapped)
+    assert model.unmapped_deliverables_count == 0
+    deliv_map = {w.deliverable_id: w for w in model.wbs_rows if w.element_type == "Deliverable"}
+    assert len(deliv_map) == 19
+
+    # Deliverables per phase
+    assert deliv_map["DEL-01"].milestone_id == "M1"
+    assert deliv_map["DEL-02"].milestone_id == "M1"
+    assert deliv_map["DEL-03"].milestone_id == "M1"
+
+    for d_num in range(4, 9):
+        assert deliv_map[f"DEL-{d_num:02d}"].milestone_id == "M2"
+
+    for d_num in range(9, 14):
+        assert deliv_map[f"DEL-{d_num:02d}"].milestone_id == "M3"
+
+    for d_num in range(14, 20):
+        assert deliv_map[f"DEL-{d_num:02d}"].milestone_id == "M4"
+
+    # No deliverable's basis is 'Backlog match'
+    for d in deliv_map.values():
+        assert "backlog match" not in d.mapping_basis.lower()
+
+    # Tasks count: 165 tasks (11 prereqs, 130 deliv tasks with 35 story tasks, 24 acceptance tasks)
+    tasks = [w for w in model.wbs_rows if w.level == 4]
+    assert len(tasks) == 165
+
+    prereq_tasks = [w for w in tasks if "Confirm:" in w.name]
+    assert len(prereq_tasks) == 11
+
+    story_tasks = [w for w in tasks if w.source == "Baseline - SOW Stories"]
+    assert len(story_tasks) == 35
+
+    deliv_tasks = [w for w in tasks if w.deliverable_id != ""]
+    assert len(deliv_tasks) == 130
+
+    accept_tasks = [w for w in tasks if w.deliverable_id == "" and "Confirm:" not in w.name]
+    assert len(accept_tasks) == 24
+
+    # RAID: 52 rows
+    assert len(model.raid_rows) == 52
+
+    # RAID-21 (AMB-02) links M2, M3, M4 with 'Multiple phases'
+    raid_map = {r.source_id: r for r in model.raid_rows}
+    assert "AMB-02" in raid_map
+    r21 = raid_map["AMB-02"]
+    assert r21.workstream == "Multiple phases"
+    assert "M2" in r21.linked_milestone and "M3" in r21.linked_milestone and "M4" in r21.linked_milestone
+
+    # Every Contract Clarification and Open Question has Contract Reference
+    for r in model.raid_rows:
+        if r.category in ("Contract Clarification", "Open Question"):
+            assert r.contract_reference != ""
+
+    # Evidence notes: 10
+    assert model.evidence_flags_count == 0  # 0 evidence consistency flags in run 3
+    missing_ev_count = sum(1 for w in deliv_map.values() if "Evidence not defined in baseline" in w.notes)
+    assert missing_ev_count == 10
+
+    # Traceability: 0 missing IDs across all categories including SOW Stories
+    for cat, data in model.traceability.items():
+        assert len(data["missing_ids"]) == 0

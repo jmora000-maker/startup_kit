@@ -170,6 +170,53 @@ def _extract_milestone_n_from_text(text: str) -> List[int]:
     return [int(m) for m in matches]
 
 
+def strip_work_package_prefix(title: Optional[str]) -> str:
+    """Always strip a leading 'Work Package:' (case-insensitive) from work package titles (v5 A24)."""
+    if not title:
+        return ""
+    return re.sub(r"^\s*work\s+package\s*:\s*", "", title, flags=re.IGNORECASE).strip()
+
+
+def detect_degenerate_work_packages(
+    work_packages: Sequence[WorkPackageSeed],
+    deliverables: Sequence[Deliverable],
+) -> Set[str]:
+    """Detect degenerate work packages according to spec v5 A24.
+    
+    A work package is degenerate when:
+      - Every deliverable has exactly one work package, OR
+      - Its title, after removing leading 'Work Package:', scores >= 0.80 against
+        its parent deliverable's name (v2 weighted overlap).
+    """
+    if not work_packages:
+        return set()
+
+    # Condition 1: Every deliverable has exactly one work package
+    if deliverables and len(work_packages) == len(deliverables) and len(deliverables) > 0:
+        return {wp.id for wp in work_packages}
+
+    # Condition 2: Title score >= 0.80 against parent deliverable name
+    degenerate_ids: Set[str] = set()
+    deliv_by_id = {d.id: d for d in deliverables} if deliverables else {}
+    for wp in work_packages:
+        p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
+        parent = deliv_by_id.get(p_id)
+        if parent:
+            clean_wp_title = strip_work_package_prefix(wp.title)
+            p_name = parent.name or parent.description or ""
+            wp_toks = tokenize_v2(clean_wp_title)
+            p_toks = tokenize_v2(p_name)
+            if not wp_toks or not p_toks:
+                continue
+            corpus = [wp_toks, p_toks]
+            idf = compute_idf(corpus)
+            score = compute_score(wp_toks, p_toks, idf, len(corpus))
+            if score >= 0.799:
+                degenerate_ids.add(wp.id)
+
+    return degenerate_ids
+
+
 def detect_backlog_phase_order(
     work_packages: Sequence[WorkPackageSeed],
     milestones: Sequence[Milestone],
@@ -275,18 +322,34 @@ def map_work_packages_to_milestones(
     idf_dict = compute_idf(ms_tokens_list)
     N = len(milestones)
 
+    deliv_by_id = {d.id: d for d in deliverables} if deliverables else {}
+
     for wp in work_packages:
         mapped: Optional[Milestone] = None
         basis: Optional[str] = None
         wp_title = wp.title or ""
 
+        # Rule 0: Backlog link from linked_milestones on real parent deliverable (v5 A24)
+        p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
+        if p_id in deliv_by_id and wp.linked_milestones:
+            for lm in wp.linked_milestones:
+                if lm in ms_by_id:
+                    mapped = ms_by_id[lm]
+                    basis = "Backlog link"
+                    break
+                elif lm.upper() in ms_by_phase:
+                    mapped = ms_by_phase[lm.upper()]
+                    basis = "Backlog link"
+                    break
+
         # Rule 1: Phase code in title
-        phase_codes = _extract_phase_codes_from_text(wp_title)
-        for pc in phase_codes:
-            if pc in ms_by_phase:
-                mapped = ms_by_phase[pc]
-                basis = "Phase code"
-                break
+        if mapped is None:
+            phase_codes = _extract_phase_codes_from_text(wp_title)
+            for pc in phase_codes:
+                if pc in ms_by_phase:
+                    mapped = ms_by_phase[pc]
+                    basis = "Phase code"
+                    break
 
         # Rule 2: ID mention in milestone description / deps / assumptions
         if mapped is None:
@@ -371,11 +434,14 @@ def map_deliverables_to_milestones_v2(
     ms_idf_dict = compute_idf(ms_tokens_list)
     N_ms = len(milestones)
 
-    # 3. Pre-compute IDF across work packages
-    wp_titles = [wp.title or "" for wp in work_packages]
+    # 3. Detect degenerate work packages and compute IDF across usable work packages (v5 A24)
+    degenerate_wp_ids = detect_degenerate_work_packages(work_packages, deliverables)
+    usable_work_packages = [wp for wp in work_packages if wp.id not in degenerate_wp_ids]
+
+    wp_titles = [wp.title or "" for wp in usable_work_packages]
     wp_tokens_list = [tokenize_v2(t) for t in wp_titles]
-    wp_idf_dict = compute_idf(wp_tokens_list)
-    N_wp = len(work_packages)
+    wp_idf_dict = compute_idf(wp_tokens_list) if wp_tokens_list else {}
+    N_wp = len(usable_work_packages)
 
     for d in deliverables:
         d_name = d.name or d.description or ""
@@ -409,12 +475,12 @@ def map_deliverables_to_milestones_v2(
                     basis = "Referenced by milestone"
                     break
 
-        # Rule 2.5: Strong backlog match for deliverables (v4 A14)
-        if mapped is None and work_packages:
+        # Rule 2.5: Strong backlog match for deliverables (v4 A14, v5 A24: non-degenerate only)
+        if mapped is None and usable_work_packages:
             d_tokens = tokenize_v2(d_name)
             best_strong_score = 0.0
             best_strong_wp: Optional[WorkPackageSeed] = None
-            for idx, wp in enumerate(work_packages):
+            for idx, wp in enumerate(usable_work_packages):
                 score = compute_score(d_tokens, wp_tokens_list[idx], wp_idf_dict, N_wp)
                 if score > best_strong_score:
                     best_strong_score = score
@@ -439,12 +505,12 @@ def map_deliverables_to_milestones_v2(
                 mapped = best_ms
                 basis = "Scope match"
 
-        # Rule 4: Backlog text match (score >= 0.30 against work package titles)
-        if mapped is None and work_packages:
+        # Rule 4: Backlog text match (score >= 0.30 against work package titles, non-degenerate only)
+        if mapped is None and usable_work_packages:
             d_tokens = tokenize_v2(d_name)
             best_wp_score = 0.0
             best_wp: Optional[WorkPackageSeed] = None
-            for idx, wp in enumerate(work_packages):
+            for idx, wp in enumerate(usable_work_packages):
                 score = compute_score(d_tokens, wp_tokens_list[idx], wp_idf_dict, N_wp)
                 if score >= 0.299 and score > best_wp_score:
                     best_wp_score = score

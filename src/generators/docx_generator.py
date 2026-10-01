@@ -173,16 +173,18 @@ def find_cell_action(
     if used_actions is None:
         used_actions = set()
 
+    clean_tbl = (table_title or "").lower().strip()
+    clean_col = (column_header or "").lower().strip()
+    clean_ent = (entity_id or "").lower().strip()
+
     # 1. Match by linked_action_id first
     if linked_action_id:
         for a in baseline.action_required_items:
             if a.action_id == linked_action_id and a.action_id not in used_actions:
-                used_actions.add(a.action_id)
-                return a
-
-    clean_tbl = (table_title or "").lower().strip()
-    clean_col = (column_header or "").lower().strip()
-    clean_ent = (entity_id or "").lower().strip()
+                act_col = (a.target_column_header or "").lower().strip()
+                if not act_col or act_col == "general" or act_col in clean_col or clean_col in act_col:
+                    used_actions.add(a.action_id)
+                    return a
 
     # 2. Strict Match by entity_id, table_title, and column_header
     if clean_ent:
@@ -506,9 +508,8 @@ class DocxGenerator(IDocumentWriter):
             ]
 
             if baseline.contract_ambiguities:
-                g01_14_act = find_cell_action(baseline, "SOW Interpretation Summary", "Contract Ambiguities Logged", used_actions=used_actions) or find_cell_action(baseline, "SOW Interpretation Summary", "Ambiguities & Clarification Notes", used_actions=used_actions)
                 amb_summary = f"{len(baseline.contract_ambiguities)} contractual ambiguities logged (see Checklist for detail)"
-                sow_rows.append(("Contract Ambiguities Logged", amb_summary, g01_14_act, "G01-14", "Review contractual ambiguities and recommended clarifications"))
+                sow_rows.append(("Contract Ambiguities Logged", amb_summary, None, "G01-14", "Review contractual ambiguities and recommended clarifications"))
 
             for dim, val, act, fallback_id, fallback_desc in sow_rows:
                 r = sow_table.add_row()
@@ -519,7 +520,11 @@ class DocxGenerator(IDocumentWriter):
                     or is_placeholder
                     or (dim == "Ambiguities & Clarification Notes" and bool(baseline.open_questions) and val != "No critical ambiguities" and bool(val.strip()))
                 )
-                format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
+                # Contract Ambiguities Logged row carries no action tag (v5 B14)
+                if dim == "Contract Ambiguities Logged":
+                    r.cells[1].text = val
+                else:
+                    format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
 
             style_table(sow_table, col_widths=[2.2, 5.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -603,8 +608,8 @@ class DocxGenerator(IDocumentWriter):
             is_approver_unassigned = (not d.client_approver or d.client_approver == "[UNASSIGNED - TO BE CONFIRMED]" or "UNASSIGNED" in d.client_approver.upper() or "[CONFIRMATION REQUIRED]" in d.client_approver)
 
             ac_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Acceptance Criteria", entity_id=d.id, linked_action_id=d.linked_action_id, used_actions=used_actions)
-            owner_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Owner", entity_id=d.id, used_actions=used_actions)
-            approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, used_actions=used_actions)
+            owner_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Owner", entity_id=d.id, linked_action_id=d.linked_action_id, used_actions=used_actions)
+            approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, linked_action_id=d.linked_action_id, used_actions=used_actions)
 
             row.cells[0].text = d.id
             row.cells[1].text = d.name or d.description

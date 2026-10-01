@@ -5,7 +5,8 @@ import re
 from datetime import timedelta, date
 from typing import List, Optional, Set
 from src.config import sanitize_report_text
-from src.generators.pmo_workbook.mapping import tokenize_v2, natural_sort_key
+from src.generators.pmo_workbook.mapping import tokenize_v2, natural_sort_key, strip_work_package_prefix
+from src.generators.pmo_workbook.builder import extract_story_ids_for_deliverable
 from src.core.models import (
     CharterExtraction,
     DeliverablesExtraction,
@@ -30,6 +31,7 @@ from src.core.models import (
     DependencyAssumptionItem,
     DecisionItem,
     WorkPackageSeed,
+    SOWStoryItem,
     CommunicationsPlanItem,
     Stakeholder,
     RACIItem,
@@ -81,50 +83,90 @@ class BaselineAggregator:
                 seen_questions.add(clean_q)
                 questions.append(clean_q)
 
-        # 1. Process Deliverables and check acceptance criteria & ownership (v4 B1, B10)
+        # 1. Process Deliverables and check acceptance criteria & ownership (v4 B1, B10, v5 B11, B12, B16)
         deliverables: List[Deliverable] = [d.model_copy() for d in deliverables_ext.deliverables]
         acc_items = []
         if acceptance_ext:
             acc_items = getattr(acceptance_ext, "acceptance_matrix_items", None) or getattr(acceptance_ext, "acceptance_items", None) or []
+
+        # Default review window from SOW approval expectations (v5 B12)
+        default_review_window = "Not specified [CONFIRMATION REQUIRED]"
+        if sow_interpretation_ext and sow_interpretation_ext.approval_expectations:
+            app_exp = sow_interpretation_ext.approval_expectations.strip()
+            if app_exp and "[CONFIRMATION REQUIRED]" not in app_exp:
+                default_review_window = sanitize_report_text(app_exp)
+
         if acc_items:
-            for acc_item in acc_items:
+            candidate_pairs = []
+            for a_idx, acc_item in enumerate(acc_items):
                 acc_name = getattr(acc_item, "name", "") or getattr(acc_item, "deliverable_name", "") or getattr(acc_item, "description", "") or ""
                 acc_tokens = tokenize_v2(acc_name)
+                acc_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{acc_name} {getattr(acc_item, 'description', '') or ''} {getattr(acc_item, 'sow_reference', '') or ''}"))
 
-                best_deliv: Optional[Deliverable] = None
-                best_score = 0.0
-                for d in deliverables:
+                for d_idx, d in enumerate(deliverables):
                     d_name = d.name or d.description or ""
                     d_tokens = tokenize_v2(d_name)
-                    s1, s2 = set(acc_tokens), set(d_tokens)
-                    jaccard = (len(s1 & s2) / len(s1 | s2)) if (s1 or s2) else 0.0
-                    if jaccard > best_score:
-                        best_score = jaccard
-                        best_deliv = d
-                    elif jaccard == best_score and best_deliv is not None and jaccard >= 0.5:
-                        if acc_item.id == d.id:
-                            best_deliv = d
-                        elif acc_item.id != best_deliv.id and natural_sort_key(d.id) < natural_sort_key(best_deliv.id):
-                            best_deliv = d
+                    d_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{d_name} {d.description or ''} {d.sow_reference or ''}"))
 
-                if best_score >= 0.5 and best_deliv is not None:
-                    deliv = best_deliv
+                    shared_stories = acc_stories & d_stories
+                    if shared_stories:
+                        # Story-ID join takes precedence
+                        pair_score = 2.0 + (len(shared_stories) / max(len(acc_stories | d_stories), 1))
+                        candidate_pairs.append((pair_score, a_idx, d_idx, acc_item, d))
+                    else:
+                        s1, s2 = set(acc_tokens), set(d_tokens)
+                        jaccard = (len(s1 & s2) / len(s1 | s2)) if (s1 or s2) else 0.0
+                        if jaccard >= 0.35:
+                            candidate_pairs.append((jaccard, a_idx, d_idx, acc_item, d))
+
+            # Greedy one-to-one assignment (v5 B11)
+            candidate_pairs.sort(key=lambda c: (-c[0], -(1 if c[3].id == c[4].id else 0), natural_sort_key(c[3].id), natural_sort_key(c[4].id)))
+            assigned_acc: Set[int] = set()
+            assigned_deliv: Set[str] = set()
+
+            for pair_score, a_idx, d_idx, acc_item, d in candidate_pairs:
+                if a_idx not in assigned_acc and d.id not in assigned_deliv:
+                    assigned_acc.add(a_idx)
+                    assigned_deliv.add(d.id)
+
                     if acc_item.client_approver and "UNASSIGNED" not in acc_item.client_approver.upper() and "[CONFIRMATION REQUIRED]" not in acc_item.client_approver:
-                        deliv.client_approver = acc_item.client_approver
+                        d.client_approver = acc_item.client_approver
                     if acc_item.evidence_required and "[CONFIRMATION REQUIRED]" not in acc_item.evidence_required:
-                        deliv.evidence_required = acc_item.evidence_required
-                    if not deliv.acceptance_criteria and acc_item.acceptance_criteria and "[CONFIRMATION REQUIRED]" not in acc_item.acceptance_criteria:
-                        deliv.acceptance_criteria = acc_item.acceptance_criteria
-                    if acc_item.review_window:
-                        deliv.review_window = acc_item.review_window
+                        d.evidence_required = acc_item.evidence_required
+                    if not d.acceptance_criteria and acc_item.acceptance_criteria and "[CONFIRMATION REQUIRED]" not in acc_item.acceptance_criteria:
+                        d.acceptance_criteria = acc_item.acceptance_criteria
+                    if acc_item.review_window and acc_item.review_window.strip() and acc_item.review_window.strip().lower() != "5 business days":
+                        d.review_window = acc_item.review_window
+                    elif default_review_window:
+                        d.review_window = default_review_window
                     if acc_item.rejection_rework_path:
-                        deliv.rejection_rework_path = acc_item.rejection_rework_path
-                    if (not deliv.owner or deliv.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
-                        deliv.owner = acc_item.owner
-                    if getattr(acc_item, "sow_reference", None) and not getattr(deliv, "sow_reference", None):
-                        deliv.sow_reference = acc_item.sow_reference
-                else:
-                    logger.warning("Acceptance item '%s' (%s) could not be matched to any deliverable (best Jaccard: %.2f)", getattr(acc_item, "id", ""), acc_name, best_score)
+                        d.rejection_rework_path = acc_item.rejection_rework_path
+                    if (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
+                        d.owner = acc_item.owner
+                    if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
+                        d.sow_reference = acc_item.sow_reference
+
+            # Log unmatched items and deliverables
+            for a_idx, acc_item in enumerate(acc_items):
+                if a_idx not in assigned_acc:
+                    logger.warning("Acceptance item '%s' (%s) was not matched to any deliverable", getattr(acc_item, "id", ""), getattr(acc_item, "name", ""))
+
+            for d in deliverables:
+                if d.id not in assigned_deliv:
+                    logger.info("Deliverable '%s' (%s) had no matched acceptance item - using SOW review window default", d.id, d.name)
+                    if not d.review_window or d.review_window.strip().lower() == "5 business days":
+                        d.review_window = default_review_window
+        else:
+            for d in deliverables:
+                if not d.review_window or d.review_window.strip().lower() == "5 business days":
+                    d.review_window = default_review_window
+
+        # Granularity check (v5 B16)
+        for d in deliverables:
+            text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
+            d_stories = set(re.findall(r"\bHS-\d{3,5}\b", text_block))
+            if len(d_stories) > 5:
+                logger.warning("Deliverable '%s' carries %d stories (> 5 stories threshold) - review grouping", d.id, len(d_stories))
 
         # Completeness check for SOW story IDs (v4 B10)
         covered_stories: Set[str] = set()
@@ -399,32 +441,74 @@ class BaselineAggregator:
                 source_reference=charter.source_reference
             )
 
-        # 9. Build Scope Decomposition / Backlog Seed (Layer 2, v4 B4)
+        # 9. Build SOW Story Catalogue & Scope Decomposition Backlog Seed (Layer 2, v4 B4, v5 B13)
+        sow_stories_catalogue: List[SOWStoryItem] = []
+        seen_catalogue_stories: Set[str] = set()
+
+        for d in deliverables:
+            text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
+            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+                if s_id not in seen_catalogue_stories:
+                    seen_catalogue_stories.add(s_id)
+                    sow_stories_catalogue.append(SOWStoryItem(
+                        id=s_id,
+                        title="",
+                        phase="",
+                        owner="Toptal",
+                        type="Build",
+                        deliverable_id=d.id,
+                        source_reference=d.source_reference
+                    ))
+
         backlog_seed: List[WorkPackageSeed] = []
         deliv_id_set = {d.id for d in deliverables}
         if backlog_ext and backlog_ext.work_packages:
             for wp in backlog_ext.work_packages:
                 wp_copy = wp.model_copy()
+                wp_copy.title = strip_work_package_prefix(wp_copy.title)
                 if wp_copy.parent_deliverable_id and wp_copy.parent_deliverable_id not in deliv_id_set:
                     logger.warning("Work package %s parent deliverable '%s' does not exist in deliverables; clearing parent.", wp_copy.id, wp_copy.parent_deliverable_id)
                     wp_copy.parent_deliverable_id = None
                 backlog_seed.append(wp_copy)
         else:
-            for i, deliv in enumerate(deliverables):
-                wp = WorkPackageSeed(
-                    id=f"WP-{i+1:02d}",
-                    parent_deliverable_id=deliv.id,
-                    title=f"Work Package: {deliv.name or deliv.description}",
-                    description=f"Decomposition and implementation tasks for {deliv.id}.",
-                    preliminary_sequence=i + 1,
-                    owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
-                    dependency_references=[da.id for da in dependencies_assumptions[:2]],
-                    linked_milestones=[],
-                    linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
-                    uncertain_scope=deliv.acceptance_criteria is None,
-                    status="Draft"
-                )
-                backlog_seed.append(wp)
+            # Build backlog from SOW stories if present on deliverables (v5 B13)
+            wp_counter = 0
+            for deliv in deliverables:
+                d_story_ids = extract_story_ids_for_deliverable(deliv)
+                if d_story_ids:
+                    for s_id in d_story_ids:
+                        wp_counter += 1
+                        wp = WorkPackageSeed(
+                            id=f"WP-{wp_counter:02d}",
+                            parent_deliverable_id=deliv.id,
+                            title=f"Build {s_id}",
+                            description=f"Implementation story {s_id} for {deliv.id}.",
+                            preliminary_sequence=wp_counter,
+                            owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
+                            dependency_references=[da.id for da in dependencies_assumptions[:2]],
+                            linked_milestones=[],
+                            linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
+                            uncertain_scope=deliv.acceptance_criteria is None,
+                            sow_reference=s_id,
+                            status="Draft"
+                        )
+                        backlog_seed.append(wp)
+                else:
+                    wp_counter += 1
+                    wp = WorkPackageSeed(
+                        id=f"WP-{wp_counter:02d}",
+                        parent_deliverable_id=deliv.id,
+                        title=f"{deliv.name or deliv.description}",
+                        description=f"Decomposition and implementation tasks for {deliv.id}.",
+                        preliminary_sequence=wp_counter,
+                        owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
+                        dependency_references=[da.id for da in dependencies_assumptions[:2]],
+                        linked_milestones=[],
+                        linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
+                        uncertain_scope=deliv.acceptance_criteria is None,
+                        status="Draft"
+                    )
+                    backlog_seed.append(wp)
 
         # 10. Build Communications Plan (Layer 2)
         communications_plan: List[CommunicationsPlanItem] = []
@@ -878,6 +962,7 @@ class BaselineAggregator:
             readiness_checklist=readiness_checklist,
             open_questions=questions,
             contract_ambiguities=contract_ambiguities,
+            sow_stories_catalogue=sow_stories_catalogue,
             sow_awarded_date=awarded_dt,
             kit_drafted_date=drafted_dt,
             sla_met=sla_met,

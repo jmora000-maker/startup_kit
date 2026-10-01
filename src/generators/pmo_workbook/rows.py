@@ -24,6 +24,7 @@ class ScheduleRow:
     client_prerequisites: str
     critical_path_assumptions: str
     linked_deliverables: str
+    sow_stories: str
     linked_raid_ids: str
     source: str
     notes: str
@@ -41,6 +42,7 @@ class WBSRow:
     milestone_id: str
     deliverable_id: str
     source_id: str
+    sow_stories: str
     owner: str
     planned_start: Optional[date]
     planned_finish: Optional[date]

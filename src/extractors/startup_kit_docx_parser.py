@@ -19,6 +19,7 @@ from src.core.models import (
     DependencyAssumptionItem,
     DecisionItem,
     WorkPackageSeed,
+    SOWStoryItem,
     Stakeholder,
     RACIItem,
     CommunicationsPlanItem,
@@ -32,6 +33,7 @@ from src.core.models import (
     SOWInterpretationSummary,
     ContractAmbiguityItem,
 )
+from src.generators.pmo_workbook.mapping import strip_work_package_prefix
 from src.scoring.readiness_engine import ReadinessScoringEngine
 
 logger = logging.getLogger(__name__)
@@ -342,6 +344,38 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             author_name=resolved_pmo
         )
 
+        # Extract SOW story catalogue (v5 B13)
+        sow_stories_catalogue: List[SOWStoryItem] = []
+        seen_catalogue_stories: Set[str] = set()
+        for d in deliverables:
+            text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
+            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+                if s_id not in seen_catalogue_stories:
+                    seen_catalogue_stories.add(s_id)
+                    sow_stories_catalogue.append(SOWStoryItem(
+                        id=s_id,
+                        title="",
+                        phase="",
+                        owner="Toptal",
+                        type="Build",
+                        deliverable_id=d.id,
+                        source_reference=d.source_reference
+                    ))
+        for wp in backlog_seed:
+            text_block = f"{wp.title or ''} {wp.description or ''} {wp.sow_reference or ''}"
+            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+                if s_id not in seen_catalogue_stories:
+                    seen_catalogue_stories.add(s_id)
+                    sow_stories_catalogue.append(SOWStoryItem(
+                        id=s_id,
+                        title=strip_work_package_prefix(wp.title),
+                        phase="",
+                        owner=wp.owner or "Toptal",
+                        type="Build",
+                        deliverable_id=wp.parent_deliverable_id,
+                        source_reference=wp.source_reference
+                    ))
+
         baseline = StartupKitBaseline(
             project_name=project_name,
             governance_tier=governance_tier,
@@ -364,6 +398,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             gate_decision=gate_decision,
             open_questions=open_questions,
             contract_ambiguities=contract_ambiguities,
+            sow_stories_catalogue=sow_stories_catalogue,
             readiness_score=0.0,
             workflow_state=workflow_state,
             sow_awarded_date=date.today(),

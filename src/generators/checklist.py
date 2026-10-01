@@ -289,21 +289,21 @@ class G01ChecklistRenderer:
         rows_data = [
             (
                 "Contract Type Implications",
-                cg.contract_type_implication or f"Managed delivery under {contract_type} governance rules.",
+                cg.contract_type_implication or (f"Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin [Standard PMO guardrail - confirm]." if contract_type == "Fixed Bid" else f"Managed delivery under {contract_type} governance rules."),
                 "PMO Lead",
                 f"Contract Model: {contract_type}"
             ),
             (
                 "Billing or Consumption Assumptions",
-                cg.billing_consumption_assumption or ("Invoicing tied strictly to formal client milestone acceptance sign-offs." if contract_type == "Fixed Bid" else "Weekly timesheet approval and hourly/daily burn rate tracking against budget cap."),
+                cg.billing_consumption_assumption or ("Invoicing tied strictly to formal client milestone acceptance sign-offs [Standard PMO guardrail - confirm]." if contract_type == "Fixed Bid" else "Weekly timesheet approval and hourly/daily burn rate tracking against budget cap."),
                 "Delivery Manager / Talent PM",
-                "Periodic Invoicing / Burn Tracking"
+                "Milestone-acceptance invoicing" if contract_type == "Fixed Bid" else "Periodic Invoicing / Burn Tracking"
             ),
             (
                 "Staffing Assumptions & Commercial Exposure",
-                f"{cg.staffing_assumption or 'Dedicated talent staffing mapped to contracted roles.'}\n• Commercial Exposure: {cg.commercial_exposure_note or 'Client dependency delays must be logged immediately to prevent unfunded team standby burn.'}",
+                f"{cg.staffing_assumption or ('Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment [Standard PMO guardrail - confirm].' if contract_type == 'Fixed Bid' else 'Dedicated talent staffing mapped to contracted roles.')}\n• Commercial Exposure: {cg.commercial_exposure_note or ('Delivery delays directly erode project margin. Scope creep without Change Order is prohibited [Standard PMO guardrail - confirm].' if contract_type == 'Fixed Bid' else 'Client dependency delays must be logged immediately to prevent unfunded team standby burn.')}",
                 "Talent PM / Delivery Manager",
-                "Roster Locked & Rate Realization"
+                "Fixed scope; changes by Change Order" if contract_type == "Fixed Bid" else "Roster Locked & Rate Realization"
             ),
             (
                 "Approved & Non-Approved Work Rules",
@@ -331,13 +331,13 @@ class G01ChecklistRenderer:
             ),
             (
                 "Margin Risk Indicators",
-                f"Margin Risk Level: {cg.margin_risk_indicator} — Labor rate realization, unbilled delivery effort, and milestone buffers tracked continuously.",
+                f"Margin Risk Level: {cg.margin_risk_indicator} — Scope containment, acceptance precision, and milestone contingency buffers tracked continuously [Standard PMO guardrail - confirm]." if contract_type == "Fixed Bid" else f"Margin Risk Level: {cg.margin_risk_indicator} — Labor rate realization, unbilled delivery effort, and milestone buffers tracked continuously.",
                 "PMO Lead / Commercial Lead",
                 "Active Margin Protection"
             ),
             (
                 "Internal Escalation Thresholds",
-                cg.escalation_threshold or "Budget burn rate exceeding weekly cap by >10% or milestone delay > 3 days.",
+                cg.escalation_threshold or ("Milestone slip > 3 days or client acceptance rejection [Standard PMO guardrail - confirm]." if contract_type == "Fixed Bid" else "Budget burn rate exceeding weekly cap by >10% or milestone delay > 3 days."),
                 "Delivery Manager → PMO Lead → Director, PMO → VP, Delivery",
                 "Immediate Escalation (<24h SLA)"
             ),

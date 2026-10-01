@@ -77,9 +77,10 @@ SCHEDULE_COL_WIDTHS = [
     35,  # R: Client Prerequisites
     35,  # S: Critical Path Assumptions
     20,  # T: Linked Deliverables
-    18,  # U: Linked RAID IDs
-    26,  # V: Source
-    40,  # W: Notes
+    22,  # U: SOW Stories (v5 A22)
+    18,  # V: Linked RAID IDs
+    26,  # W: Source
+    40,  # X: Notes
 ]
 
 WBS_COL_WIDTHS = [
@@ -91,19 +92,20 @@ WBS_COL_WIDTHS = [
     12,  # F: Milestone ID
     12,  # G: Deliverable ID
     12,  # H: Source ID
-    22,  # I: Owner
-    13,  # J: Planned Start
-    13,  # K: Planned Finish
-    13,  # L: Milestone Finish
-    13,  # M: Status
-    10,  # N: % Complete
-    14,  # O: Cadence
-    18,  # P: Predecessors
-    40,  # Q: Acceptance / Completion Criteria
-    18,  # R: Linked RAID IDs
-    26,  # S: Source
-    22,  # T: Mapping Basis
-    40,  # U: Notes
+    20,  # I: SOW Stories (v5 A22)
+    22,  # J: Owner
+    13,  # K: Planned Start
+    13,  # L: Planned Finish
+    13,  # M: Milestone Finish
+    13,  # N: Status
+    10,  # O: % Complete
+    14,  # P: Cadence
+    18,  # Q: Predecessors
+    40,  # R: Acceptance / Completion Criteria
+    18,  # S: Linked RAID IDs
+    26,  # T: Source
+    22,  # U: Mapping Basis
+    40,  # V: Notes
 ]
 
 RAID_COL_WIDTHS = [
@@ -253,7 +255,7 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         "Internal Buffer Date", "External Commitment Date", "Date Basis",
         "Duration (working days)", "Days to Finish", "Status", "Health",
         "Predecessor", "Client Prerequisites", "Critical Path Assumptions",
-        "Linked Deliverables", "Linked RAID IDs", "Source", "Notes"
+        "Linked Deliverables", "SOW Stories", "Linked RAID IDs", "Source", "Notes"
     ]
 
     # Row 5: Column headers
@@ -264,8 +266,8 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         cell.alignment = ALIGN_HEADER
         cell.border = BORDER_ALL_THIN
 
-    # Timeline headers starting at col 24 (X)
-    timeline_start_col = 24
+    # Timeline headers starting at col 25 (Y)
+    timeline_start_col = 25
     for idx, w_date in enumerate(model.timeline_weeks):
         col_idx = timeline_start_col + idx
         cell = ws.cell(row=5, column=col_idx, value=w_date)
@@ -371,23 +373,26 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         # Col T: Linked Deliverables
         ws.cell(row=r, column=20, value=_clean_cell_str(s.linked_deliverables))
 
-        # Col U: Linked RAID IDs
-        ws.cell(row=r, column=21, value=_clean_cell_str(s.linked_raid_ids))
+        # Col U: SOW Stories (v5 A22)
+        ws.cell(row=r, column=21, value=_clean_cell_str(s.sow_stories))
 
-        # Col V: Source
-        ws.cell(row=r, column=22, value=_clean_cell_str(s.source))
+        # Col V: Linked RAID IDs
+        ws.cell(row=r, column=22, value=_clean_cell_str(s.linked_raid_ids))
 
-        # Col W: Notes
-        ws.cell(row=r, column=23, value=_clean_cell_str(s.notes))
+        # Col W: Source
+        ws.cell(row=r, column=23, value=_clean_cell_str(s.source))
+
+        # Col X: Notes
+        ws.cell(row=r, column=24, value=_clean_cell_str(s.notes))
 
         # Formatting row
         if s.row_type == "Workstream":
-            _apply_row_styling(ws, r, FONT_WBS_L1, fill=FILL_LIGHT_BG, max_col=23)
+            _apply_row_styling(ws, r, FONT_WBS_L1, fill=FILL_LIGHT_BG, max_col=24)
         else:
-            _apply_row_styling(ws, r, FONT_BODY, max_col=23)
+            _apply_row_styling(ws, r, FONT_BODY, max_col=24)
 
         # Center align codes & dates
-        for col_c in (1, 2, 4, 8, 9, 10, 11, 13, 14, 15, 16, 17):
+        for col_c in (1, 2, 4, 8, 9, 10, 11, 13, 14, 15, 16, 17, 20, 21, 22):
             ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
 
         # Outline level
@@ -416,9 +421,9 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
     # Freeze panes at F6
     ws.freeze_panes = "F6"
 
-    # Autofilter A5:W{last_row}
+    # Autofilter A5:X{last_row}
     if last_row >= 5:
-        ws.auto_filter.ref = f"A5:W{last_row}"
+        ws.auto_filter.ref = f"A5:X{last_row}"
 
     # Data Validation
     if last_row >= 6:
@@ -485,7 +490,7 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
 
     headers = [
         "WBS Code", "Level", "Element Type", "Name", "Workstream",
-        "Milestone ID", "Deliverable ID", "Source ID", "Owner", "Planned Start",
+        "Milestone ID", "Deliverable ID", "Source ID", "SOW Stories", "Owner", "Planned Start",
         "Planned Finish", "Milestone Finish", "Status", "% Complete", "Cadence",
         "Predecessors", "Acceptance / Completion Criteria", "Linked RAID IDs",
         "Source", "Mapping Basis", "Notes"
@@ -509,48 +514,49 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
         ws.cell(row=r, column=6, value=_clean_cell_str(w.milestone_id))
         ws.cell(row=r, column=7, value=_clean_cell_str(w.deliverable_id))
         ws.cell(row=r, column=8, value=_clean_cell_str(w.source_id))
-        ws.cell(row=r, column=9, value=_clean_cell_str(w.owner))
+        ws.cell(row=r, column=9, value=_clean_cell_str(w.sow_stories))
+        ws.cell(row=r, column=10, value=_clean_cell_str(w.owner))
 
         # Dates
-        cell_j = ws.cell(row=r, column=10, value=w.planned_start)
-        cell_k = ws.cell(row=r, column=11, value=w.planned_finish)
-        cell_l = ws.cell(row=r, column=12, value=w.milestone_date)
-        cell_j.number_format = "YYYY-MM-DD"
+        cell_k = ws.cell(row=r, column=11, value=w.planned_start)
+        cell_l = ws.cell(row=r, column=12, value=w.planned_finish)
+        cell_m = ws.cell(row=r, column=13, value=w.milestone_date)
         cell_k.number_format = "YYYY-MM-DD"
         cell_l.number_format = "YYYY-MM-DD"
+        cell_m.number_format = "YYYY-MM-DD"
 
-        # Col M: Status
-        ws.cell(row=r, column=13, value=_clean_cell_str(w.status))
+        # Col N: Status
+        ws.cell(row=r, column=14, value=_clean_cell_str(w.status))
 
-        # Col N: % Complete
-        cell_n = ws.cell(row=r, column=14, value=1.0 if w.status == "Complete" else 0.0)
-        cell_n.number_format = "0%"
+        # Col O: % Complete
+        cell_o = ws.cell(row=r, column=15, value=1.0 if w.status == "Complete" else 0.0)
+        cell_o.number_format = "0%"
 
-        ws.cell(row=r, column=15, value=_clean_cell_str(w.cadence))
-        ws.cell(row=r, column=16, value=_clean_cell_str(w.predecessors))
-        ws.cell(row=r, column=17, value=_clean_cell_str(w.acceptance_criteria))
-        ws.cell(row=r, column=18, value=_clean_cell_str(w.linked_raid_ids))
-        ws.cell(row=r, column=19, value=_clean_cell_str(w.source))
-        ws.cell(row=r, column=20, value=_clean_cell_str(w.mapping_basis))
-        ws.cell(row=r, column=21, value=_clean_cell_str(w.notes))
+        ws.cell(row=r, column=16, value=_clean_cell_str(w.cadence))
+        ws.cell(row=r, column=17, value=_clean_cell_str(w.predecessors))
+        ws.cell(row=r, column=18, value=_clean_cell_str(w.acceptance_criteria))
+        ws.cell(row=r, column=19, value=_clean_cell_str(w.linked_raid_ids))
+        ws.cell(row=r, column=20, value=_clean_cell_str(w.source))
+        ws.cell(row=r, column=21, value=_clean_cell_str(w.mapping_basis))
+        ws.cell(row=r, column=22, value=_clean_cell_str(w.notes))
 
         # Styling
         if w.level == 1:
-            _apply_row_styling(ws, r, FONT_WBS_L1, fill=FILL_LIGHT_BG, max_col=21)
+            _apply_row_styling(ws, r, FONT_WBS_L1, fill=FILL_LIGHT_BG, max_col=22)
         elif w.level == 2:
-            _apply_row_styling(ws, r, FONT_BODY_BOLD, max_col=21)
+            _apply_row_styling(ws, r, FONT_BODY_BOLD, max_col=22)
         elif w.level == 3:
-            _apply_row_styling(ws, r, FONT_BODY_BOLD, max_col=21)
+            _apply_row_styling(ws, r, FONT_BODY_BOLD, max_col=22)
         else:
-            _apply_row_styling(ws, r, FONT_BODY, max_col=21)
+            _apply_row_styling(ws, r, FONT_BODY, max_col=22)
 
         # Center alignment
-        for col_c in (1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16):
+        for col_c in (1, 2, 3, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 21):
             ws.cell(row=r, column=col_c).alignment = ALIGN_CENTER
 
         # Evidence consistency warning fill on Criteria cell (v3 A9)
         if w.level == 3 and w.deliverable_id and w.deliverable_id in model.flagged_evidence_deliverables:
-            ws.cell(row=r, column=17).fill = FILL_WARNING
+            ws.cell(row=r, column=18).fill = FILL_WARNING
 
         # Outline level
         if w.outline_level > 0:
@@ -568,17 +574,17 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
     ws.freeze_panes = "E6"
 
     if last_row >= 5:
-        ws.auto_filter.ref = f"A5:U{last_row}"
+        ws.auto_filter.ref = f"A5:V{last_row}"
 
     # Data validation
     if last_row >= 6:
         dv_status = DataValidation(type="list", formula1="=List_Schedule_Statuses", allow_blank=True)
         ws.add_data_validation(dv_status)
-        dv_status.add(f"M6:M{last_row}")
+        dv_status.add(f"N6:N{last_row}")
 
         dv_cad = DataValidation(type="list", formula1="=List_Cadences", allow_blank=True)
         ws.add_data_validation(dv_cad)
-        dv_cad.add(f"O6:O{last_row}")
+        dv_cad.add(f"P6:P{last_row}")
 
 
 def _write_raid_sheet(wb: Workbook, model: WorkbookModel):

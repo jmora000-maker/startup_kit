@@ -82,6 +82,20 @@ WORK_TYPE_PATTERNS = [
 ]
 
 
+WORK_TYPE_VERBS: Dict[str, str] = {
+    "Build": "Build",
+    "Integration": "Build",
+    "Test": "Automate and execute",
+    "Analysis": "Complete",
+    "Documentation": "Produce",
+}
+
+
+def get_work_type_verb(work_type: str) -> str:
+    """Get the standard story task verb for a work type (v5 A21)."""
+    return WORK_TYPE_VERBS.get(work_type, "Build")
+
+
 def classify_deliverable_work_type(deliverable_name: str) -> Tuple[str, List[DeliverableTaskTemplate]]:
     """Classify deliverable name into work type by counting keyword hits (word-start, case-insensitive).
     

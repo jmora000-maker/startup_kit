@@ -34,8 +34,8 @@ def test_v3_evidence_consistency_flags(arc_baseline, tmp_path):
 
     for row in deliv_rows:
         deliv_id = row[6].value
-        crit_cell = row[16]
-        notes_val = str(row[20].value or "")
+        crit_cell = row[17]
+        notes_val = str(row[21].value or "")
         if deliv_id in expected_flagged:
             assert "Evidence may belong to" in notes_val
             # Warning fill applied
