@@ -1,5 +1,10 @@
 {
-  "work_item_titles_in_sow": false,
+    "work_item_titles_in_sow": true,
+  "sample_work_item_titles": {
+    "HS-4770": "Pipeline quality-gate and\ndeployment smoke-\ncheck automation",
+    "HS-4762": "<Micro-frontend shell with\nglobal navigation,\nrouting, built with Client's\ndesign system and\nsharing it with remotes>",
+    "HS-4809": "<Haplotype filter,\nindicator, interval\nvisualization, and variant-\nversus-pangenome\ncomparison>"
+  },
   "fixture": "arc",
   "gate_count": 4,
   "phases": ["P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"],
