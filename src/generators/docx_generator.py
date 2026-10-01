@@ -573,7 +573,7 @@ class DocxGenerator(IDocumentWriter):
                 row = cp_table.add_row()
                 row.cells[0].text = cp.id
                 phase_m = re.search(r'\b(P\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
-                phase_str = phase_m.group(1).upper() if phase_m else "N/A"
+                phase_str = cp.phase or (phase_m.group(1).upper() if phase_m else "P3")
                 row.cells[1].text = phase_str
                 row.cells[2].text = cp.description or ""
                 src_doc = sanitize_report_text(cp.source_reference.document_name) if cp.source_reference else "Project Baseline"

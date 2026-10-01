@@ -984,6 +984,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
 
         header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells]
         id_idx = next((i for i, h in enumerate(header_cells) if "id" in h or "checkpoint" in h), 0)
+        phase_idx = next((i for i, h in enumerate(header_cells) if "phase" in h), -1)
         desc_idx = next((i for i, h in enumerate(header_cells) if "desc" in h), 2)
         if desc_idx >= len(header_cells):
             desc_idx = 1
@@ -992,10 +993,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             cells = [clean_text(c.text) for c in row.cells]
             if len(cells) >= 2:
                 cp_id = cells[id_idx] if id_idx < len(cells) else f"CP-{len(checkpoints)+1:02d}"
+                cp_phase = cells[phase_idx] if (phase_idx != -1 and phase_idx < len(cells)) else None
                 cp_desc = cells[desc_idx] if desc_idx < len(cells) else ""
                 checkpoints.append(Milestone(
                     id=cp_id,
                     description=cp_desc,
+                    phase=cp_phase,
                     external_date=None,
                     internal_buffer_date=None,
                     owner="Talent PM",

@@ -80,6 +80,34 @@ def test_inv_01_fails_on_broken_gate_count(base_artifacts, tmp_path):
     assert any(v.inv_id == "INV-01" for v in violations)
 
 
+def test_inv_01_fails_on_checkpoint_blank_or_na_phase(tmp_path):
+    """Broken-input unit test proving checkpoint with blank or N/A phase triggers INV-01 violation (MS-05, KIT-02)."""
+    fixture_dir = Path("tests/fixtures/sow/arc_overextracted")
+    baseline_file = fixture_dir / "baseline.json"
+    with open(baseline_file, "r", encoding="utf-8") as f:
+        baseline_data = json.load(f)
+    baseline = StartupKitBaseline.model_validate(baseline_data)
+    validate_and_repair_baseline(baseline)
+
+    writer = DocxGenerator()
+    writer.write_kit_docx(baseline, tmp_path)
+    writer.write_checklist_docx(baseline, tmp_path)
+    export_pmo_workbook(baseline, tmp_path)
+
+    kit_file = list(tmp_path.glob("*_Startup_Kit.docx"))[0]
+    doc = docx.Document(kit_file)
+    for t in doc.tables:
+        hdr = " ".join([c.text.lower() for c in t.rows[0].cells])
+        if "checkpoint" in hdr and "phase" in hdr:
+            if len(t.rows) > 1:
+                t.rows[1].cells[1].text = "N/A"
+    doc.save(kit_file)
+
+    oracle = load_oracle("arc_overextracted")
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
+    assert any(v.inv_id == "INV-01" and "Checkpoint" in v.message and "N/A" in v.message for v in violations)
+
+
 def test_inv_02_fails_on_broken_l1_workstreams(base_artifacts, tmp_path):
     oracle = _copy_artifacts(base_artifacts, tmp_path)
     wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]

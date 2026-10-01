@@ -213,6 +213,13 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
         check_unique_ids(kit_work_packages, "WP", "Work Packages")
         check_unique_ids(kit_decisions, "DEC", "Decisions")
 
+        # MS-05 / KIT-02: Every checkpoint has a phase; never blank or 'N/A'
+        for cp in kit_checkpoints:
+            cp_id = cp[0] if len(cp) > 0 else "CP-??"
+            cp_phase = cp[1].strip() if len(cp) > 1 else ""
+            if not cp_phase or cp_phase.upper() in ("N/A", "NONE", ""):
+                violations.append(InvariantViolation("INV-01", f"Checkpoint {cp_id} has blank or 'N/A' phase '{cp_phase}'", "Kit"))
+
         # INV-07: Every Kit work package has an existing parent deliverable, a valid SOW reference, and a non-placeholder owner
         deliv_ids = {d[0] for d in kit_deliverables if d}
         for wp in kit_work_packages:
