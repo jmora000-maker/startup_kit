@@ -74,7 +74,8 @@ def test_qa_09_carried_merged_gates_and_checkpoints_verification(arc_run5: Start
     assert [m.milestone_id for m in reconciled_ms_rows] == ["M1", "M2", "M3", "M4"]
 
     # FMT-03: Row types
-    row_types = {r.row_type for r in reconciled_model.schedule_rows}
-    assert "Workstream" in row_types
-    assert "Milestone" in row_types
-    assert "Deliverable" in row_types
+    sched_types = {r.row_type for r in reconciled_model.schedule_rows}
+    assert "Workstream" in sched_types
+    assert "Milestone" in sched_types
+    wbs_types = {r.element_type for r in reconciled_model.wbs_rows}
+    assert "Deliverable" in wbs_types
