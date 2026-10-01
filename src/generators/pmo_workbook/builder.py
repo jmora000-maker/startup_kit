@@ -1148,6 +1148,18 @@ def build_workbook_model(
                                 else:
                                     wp_owner = "Toptal Delivery Team"
                                 wp_title = strip_work_package_prefix(clean_text_v2(wp.title))
+                                verb = get_work_type_verb(work_type)
+                                if ":" in wp_title:
+                                    parts = wp_title.split(":", 1)
+                                    ref_prefix = parts[0].strip()
+                                    rest = parts[1].strip()
+                                    if extract_sow_references(ref_prefix):
+                                        t_name = f"{verb} {ref_prefix}: {rest}"
+                                    else:
+                                        t_name = wp_title
+                                else:
+                                    t_name = wp_title
+
                                 wp_note_parts = []
                                 if not is_backlog_phase_order_detected:
                                     if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
@@ -1155,7 +1167,7 @@ def build_workbook_model(
                                 if wp.id in wp_also_covers:
                                     wp_note_parts.append(f"Also covers {', '.join(wp_also_covers[wp.id])}")
                                 wp_note = " | ".join(wp_note_parts) if wp_note_parts else None
-                                task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
+                                task_rows_to_add.append((t_name, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
                         elif d_story_ids:
                             # Option 2: SOW work items (TXT-04)
                             verb = get_work_type_verb(work_type)

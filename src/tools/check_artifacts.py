@@ -596,6 +596,68 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                                     "WBS"
                                 ))
 
+        # Oracle sample work item titles verification (REF-05)
+        if oracle and oracle.get("work_item_titles_in_sow") and oracle.get("sample_work_item_titles"):
+            sample_titles = oracle["sample_work_item_titles"]
+            
+            def _norm_s(s: str) -> str:
+                cleaned = s.replace("<", "").replace(">", "")
+                cleaned = re.sub(r'-\s*\n\s*', '-', cleaned)
+                return " ".join(cleaned.lower().split())
+
+            # 1. Check Kit work packages
+            for s_id, sample in sample_titles.items():
+                norm_sample = _norm_s(sample)
+                sample_words = norm_sample.split()
+                sample_prefix = " ".join(sample_words[:min(4, len(sample_words))])
+                
+                matching_wp = None
+                for wp in kit_work_packages:
+                    wp_title = wp[2] if len(wp) > 2 else ""
+                    if s_id in wp_title or (len(wp) > 5 and s_id in str(wp[5])):
+                        matching_wp = wp
+                        break
+                
+                if not matching_wp:
+                    violations.append(InvariantViolation(
+                        "INV-20",
+                        f"Kit lacks work package matching SOW reference '{s_id}'",
+                        "Startup Kit"
+                    ))
+                else:
+                    norm_wp_title = _norm_s(matching_wp[2])
+                    if sample_prefix not in norm_wp_title:
+                        violations.append(InvariantViolation(
+                            "INV-20",
+                            f"Kit work package for {s_id} ('{matching_wp[2]}') does not contain sample title '{sample}'",
+                            "Startup Kit"
+                        ))
+
+            # 2. Check WBS task names
+            if "WBS" in wb.sheetnames:
+                wbs_sheet = wb["WBS"]
+                for s_id, sample in sample_titles.items():
+                    norm_sample = _norm_s(sample)
+                    sample_words = norm_sample.split()
+                    sample_prefix = " ".join(sample_words[:min(4, len(sample_words))])
+                    
+                    found_wbs = False
+                    for row in wbs_sheet.iter_rows(min_row=5, values_only=True):
+                        t_name = str(row[3] or "")
+                        t_src_id = str(row[7] or "")
+                        t_sow_refs = str(row[8] or "")
+                        if s_id in t_name or s_id == t_src_id or s_id in t_sow_refs:
+                            norm_t_name = _norm_s(t_name)
+                            if sample_prefix in norm_t_name:
+                                found_wbs = True
+                                break
+                    if not found_wbs:
+                        violations.append(InvariantViolation(
+                            "INV-20",
+                            f"WBS task name for {s_id} does not contain sample title '{sample}'",
+                            "WBS"
+                        ))
+
         # Inspect RAID Log for INV-09, INV-13, INV-23
         raid_source_ids: List[str] = []
         wb_open_q_count = 0

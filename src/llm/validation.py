@@ -50,6 +50,53 @@ ARC_KNOWN_REF_PHASES = {
     "HS-4781": "P1", "HS-4827": "P3", "HS-4824": "P3"
 }
 
+# Known descriptive titles for standard ARC SOW references (REF-05)
+ARC_KNOWN_REF_TITLES = {
+    # P1 Foundation
+    "HS-4762": "Micro-frontend shell with global navigation, routing, built with Client's design system and sharing it with remotes",
+    "HS-4763": "Azure AD / MSAL authentication integration, propagated to remotes",
+    "HS-4765": "Shell and authentication-flow E2E test harness",
+    "HS-4938": "Authentication negative-test suite and security scan results",
+    "HS-4770": "Pipeline quality-gate and deployment smoke-check automation",
+    "HS-4782": "Data model validation scripts, results, and defect report",
+    "HS-4941": "Data governance validation scripts, audit results, and gap log",
+    # P2a Services and Data
+    "HS-4777": "Faceted search and detail endpoints",
+    "HS-4778": "Asynchronous long-running query processing with health checks",
+    "HS-4779": "Backend integration and load test suites and results",
+    "HS-4942": "Performance spike output: benchmarks, query observability, p95 definitions, and tuning backlog",
+    "HS-4803": "OneGWAS direct-write integration with retryable error handling",
+    "HS-4804": "OneGWAS E2E and failure/retry test suite and results",
+    "HS-4797": "GWAS Atlas ETL validation scripts, results, and defect report",
+    "HS-4785": "MTA Store migration validation, data-quality issue log, and sign-off support",
+    "HS-4807": "PHG/GATSBY ingestion validation scripts, results, and defect report",
+    "HS-4801": "PubMed/literature extraction validation scripts, results, and defect report",
+    "HS-4791": "Trait taxonomy validation scripts, results, and defect report",
+    # P2b Application Surface
+    "HS-4772": "Faceted search and results table",
+    "HS-4773": "Result detail view and interval-based visualization",
+    "HS-4809": "Haplotype filter, indicator, interval visualization, and variant-versus-pangenome comparison",
+    "HS-4810": "Haplotype search/filter endpoints",
+    "HS-4813": "Haplotype API and data access",
+    "HS-4793": "Nomenclature service",
+    "HS-4775": "Frontend unit, integration, accessibility, and performance test suites",
+    "HS-4815": "Haplotype endpoint integration tests and results",
+    "HS-4794": "Nomenclature test suite and results",
+    "HS-4811": "Haplotype search and visualization tests and results",
+    # P3 Launch
+    "HS-4825": "Integration, performance, security, and cross-browser test suites and results",
+    "HS-4826": "Test data and fixtures",
+    "HS-4828": "UAT execution records and defect log",
+    "HS-4943": "Hardening iteration results, including full regression run",
+    "HS-4832": "Production smoke test results and 48-hour defect watch report",
+    "HS-4788": "MTA Store parity and usage-zero confirmation report",
+    "HS-4829": "Training materials and user documentation",
+    # Client-owned
+    "HS-4781": "Snowflake data model design and provisioning",
+    "HS-4827": "Client scientist UAT group participation",
+    "HS-4824": "MTA Store legacy system decommission",
+}
+
 
 def determine_sow_gate_count(baseline: StartupKitBaseline) -> Optional[int]:
     """Determine the expected SOW gate count following VAL-01 precedence rules."""
@@ -156,8 +203,10 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
 
     catalogue = baseline.sow_stories_catalogue or []
     
-    # VAL-09: Assign phase to catalogue items from grouping or references
+    # VAL-09, REF-05: Assign title and phase to catalogue items from grouping or references
     for item in catalogue:
+        if not item.title and item.reference in ARC_KNOWN_REF_TITLES:
+            item.title = ARC_KNOWN_REF_TITLES[item.reference]
         if not item.phase:
             # Check known reference map
             if item.reference in ARC_KNOWN_REF_PHASES:
@@ -239,14 +288,22 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
                 elif item_phase.startswith("P") and item_phase in phase_to_gate:
                     linked_ms = [phase_to_gate[item_phase]]
 
-                # VAL-08: Work package title
+                # VAL-08, REF-05: Work package title
                 raw_title = item.title.strip() if item.title else ""
                 # Strip generic filler
                 raw_title = re.sub(r'\b(?:implementation\s+task|decomposition\s+and\s+implementation\s+tasks?\s+for|work\s+package)\b', '', raw_title, flags=re.IGNORECASE).strip(" :-")
                 
                 if raw_title and len(raw_title) > 3:
-                    wp_title = raw_title
+                    if ref_str and not raw_title.startswith(f"{ref_str}:"):
+                        wp_title = f"{ref_str}: {raw_title}"
+                    else:
+                        wp_title = raw_title
                 else:
+                    findings.append(ValidationFinding(
+                        invariant_id="INV-20",
+                        severity="warning",
+                        message=f"SOW work item '{ref_str}' has no descriptive title in SOW; using fallback title."
+                    ))
                     wp_title = f"{ref_str}: {d.name}" if ref_str else d.name
 
                 if len(wp_title) > 120:

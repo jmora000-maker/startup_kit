@@ -369,13 +369,19 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     ))
         for wp in backlog_seed:
             text_block = f"{wp.title or ''} {wp.description or ''} {wp.sow_reference or ''}"
+            wp_clean_title = strip_work_package_prefix(wp.title)
+            extracted_title = wp_clean_title
+            if ":" in wp_clean_title:
+                parts = wp_clean_title.split(":", 1)
+                if re.match(r'^[A-Za-z0-9_\-]+$', parts[0].strip()):
+                    extracted_title = parts[1].strip()
             for s_id in extract_sow_references(text_block):
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
                     sow_stories_catalogue.append(SOWWorkItem(
                         reference=s_id,
                         reference_kind=detect_sow_reference_kind(s_id) or "Story ID",
-                        title=strip_work_package_prefix(wp.title),
+                        title=extracted_title,
                         phase="",
                         owner=wp.owner or "Toptal",
                         type="Build",

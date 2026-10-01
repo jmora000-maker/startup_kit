@@ -654,10 +654,27 @@ def map_work_packages_to_deliverables(
     if not deliverables_in_milestone:
         return matched_by_deliv, list(work_packages)
 
+    deliv_ids_in_ms = {d.id: d for d in deliverables_in_milestone}
     deliv_names = [d.name or d.description or "" for d in deliverables_in_milestone]
 
     unassigned_wps: List[WorkPackageSeed] = []
+    # Pass 0 (MAP-05): Match by SOW reference on deliverable
     for wp in work_packages:
+        wp_refs = extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}")
+        matched_d = None
+        if wp_refs:
+            for d in deliverables_in_milestone:
+                d_refs = extract_sow_references(f"{d.sow_reference or ''}")
+                if any(r in d_refs for r in wp_refs):
+                    matched_d = d
+                    break
+        if matched_d is not None:
+            matched_by_deliv[matched_d.id].append(wp)
+        else:
+            unassigned_wps.append(wp)
+
+    remaining_unassigned: List[WorkPackageSeed] = []
+    for wp in unassigned_wps:
         wp_title = wp.title or ""
         wp_tokens = tokenize_v2(wp_title)
 
@@ -684,7 +701,7 @@ def map_work_packages_to_deliverables(
         if best_deliv is not None:
             matched_by_deliv[best_deliv.id].append(wp)
         else:
-            unassigned_wps.append(wp)
+            remaining_unassigned.append(wp)
 
     # Pass 2 (v6 A29): Distinctive shared token with IDF >= ln(2) against empty deliverables in same milestone
     import math
@@ -694,7 +711,7 @@ def map_work_packages_to_deliverables(
     ms_corpus = [tokenize_v2(name) for name in deliv_names] + [tokenize_v2(wp.title or "") for wp in work_packages]
     ms_idf = compute_idf(ms_corpus)
 
-    for wp in unassigned_wps:
+    for wp in remaining_unassigned:
         wp_tokens = set(tokenize_v2(wp.title or ""))
         assigned_deliv = None
 
