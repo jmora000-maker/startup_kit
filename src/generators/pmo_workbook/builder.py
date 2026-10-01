@@ -1439,12 +1439,12 @@ def build_workbook_model(
             return raw_decision.strip()
         if not decisions:
             return ""
-        row_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{row_desc} {row_ref}"))
+        row_stories = set(extract_sow_references(f"{row_desc} {row_ref}"))
         candidates: List[Tuple[float, str]] = []
         row_tokens = tokenize_v2(row_desc)
         for d_idx, dec in enumerate(decisions):
             dec_text = f"{dec.decision_text or ''} {dec.rationale or ''}"
-            dec_stories = set(re.findall(r"\bHS-\d{3,5}\b", dec_text))
+            dec_stories = set(extract_sow_references(dec_text))
             if row_stories and (row_stories & dec_stories):
                 candidates.append((2.0, dec.id))
             else:
@@ -1465,7 +1465,7 @@ def build_workbook_model(
         raid_id: str,
     ) -> Tuple[str, str, str, str]:
         """Find matching deliverables via story index (v4 A17) and link milestone(s) (v5 A23)."""
-        item_stories = set(re.findall(r"\bHS-\d{3,5}\b", item_text_for_stories))
+        item_stories = set(extract_sow_references(item_text_for_stories))
         matched_deliv_ids: Set[str] = set()
         for s in item_stories:
             if s in story_to_deliv_ids:

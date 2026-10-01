@@ -479,6 +479,13 @@ class BaselineAggregator:
         sow_stories_catalogue: List[SOWWorkItem] = []
         seen_catalogue_stories: Set[str] = set()
 
+        if backlog_ext and getattr(backlog_ext, "work_items", None):
+            for item in backlog_ext.work_items:
+                ref = (item.reference or "").strip()
+                if ref and ref not in seen_catalogue_stories:
+                    seen_catalogue_stories.add(ref)
+                    sow_stories_catalogue.append(item)
+
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
             for s_id in extract_sow_references(text_block):

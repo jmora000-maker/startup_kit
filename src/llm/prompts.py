@@ -128,27 +128,35 @@ DOCUMENTS CONTENT:
 {documents_text}
 """
 
-SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project deliverables and decompose them into a preliminary backlog seed / work packages (maximum 15 work packages). Keep titles and descriptions concise.
+SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project documents and deliverables to extract the SOW Work Item Catalogue and preliminary backlog work packages.
 
-CONSTRAINTS:
-1. Maximum 15 work packages total.
-2. Keep descriptions brief and actionable (1-2 sentences maximum), appending SOW references if applicable (e.g. 'Stories: HS-4781', 'Deliverable 1.2').
-3. Every work package MUST reference an existing parent deliverable ID from the deliverables list below, and its associated linked milestone IDs.
+INSTRUCTIONS FOR SOW WORK ITEMS:
+1. Extract all individual SOW work items (stories, deliverable numbers, work output row items, or contracted scope items) listed in the SOW (e.g. from Section 4 Work Output table, or from Section 2 Activities when there is no Work Output table).
+2. For each work item:
+   - reference: SOW reference identifier (e.g. 'SOW-01', 'Story 1', 'Deliverable 1.1', or 'Section 3.1').
+   - reference_kind: 'Story ID', 'Deliverable number', 'Task or WBS code', 'Section', or 'Synthetic'.
+   - title: The EXACT descriptive title or heading as written in the SOW's Work Output table, or from its activity text when the SOW has no Work Output table. If no title is found, leave it empty.
+   - phase: Delivery phase code (e.g. 'P1', 'P2a', 'P2b', 'P3') if stated or grouped under a phase.
+   - owner: 'Toptal' or 'Client' (default 'Toptal' unless explicitly client-owned).
+   - type: 'Build', 'Test', 'Integration', 'Certification', 'Analysis', or 'Documentation'.
+   - deliverable_id: Matching parent deliverable ID from the deliverables list below if applicable.
 
-DELIVERABLES LIST:
-{deliverables_text}
-
-For each work package:
+INSTRUCTIONS FOR WORK PACKAGES:
+Decompose the deliverables into preliminary backlog work packages (e.g. WP-01, WP-02...).
 - id: e.g. WP-01, WP-02
-- parent_deliverable_id: e.g. DEL-01 (MUST match one of the deliverable IDs listed above)
-- title: Concise work package title
-- description: Brief description of tasks (1-2 sentences, with 'Stories: <ID>' or 'Ref: <Section>' suffix if SOW references apply)
+- parent_deliverable_id: matching deliverable ID from the deliverables list below
+- title: Concise work package title (e.g. '{reference}: {title}')
+- description: Brief description of tasks (1-2 sentences)
 - preliminary_sequence: Integer sequence order (1, 2, 3...)
 - owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'
-- dependency_references: List of IDs or descriptions of prerequisites
+- dependency_references: List of prerequisite IDs or descriptions
 - linked_milestones: Associated milestone IDs (e.g. M1)
 - linked_acceptance_items: Associated acceptance criteria references
 - uncertain_scope: Boolean flag indicating if scope is unconfirmed
+- sow_reference: SOW work item reference(s)
+
+DELIVERABLES LIST:
+{deliverables_text}
 
 DOCUMENTS CONTENT:
 {documents_text}

@@ -41,62 +41,6 @@ PLACEHOLDER_REGEX = re.compile(
     re.IGNORECASE
 )
 
-# Known phase mapping for standard ARC SOW references (VAL-09)
-ARC_KNOWN_REF_PHASES = {
-    "HS-4762": "P1", "HS-4763": "P1", "HS-4765": "P1", "HS-4938": "P1", "HS-4770": "P1", "HS-4782": "P1", "HS-4941": "P1",
-    "HS-4777": "P2a", "HS-4778": "P2a", "HS-4779": "P2a", "HS-4942": "P2a", "HS-4803": "P2a", "HS-4804": "P2a", "HS-4797": "P2a", "HS-4785": "P2a", "HS-4807": "P2a", "HS-4801": "P2a", "HS-4791": "P2a",
-    "HS-4772": "P2b", "HS-4773": "P2b", "HS-4809": "P2b", "HS-4810": "P2b", "HS-4813": "P2b", "HS-4793": "P2b", "HS-4775": "P2b", "HS-4815": "P2b", "HS-4794": "P2b", "HS-4811": "P2b",
-    "HS-4825": "P3", "HS-4826": "P3", "HS-4828": "P3", "HS-4943": "P3", "HS-4832": "P3", "HS-4788": "P3", "HS-4829": "P3",
-    "HS-4781": "P1", "HS-4827": "P3", "HS-4824": "P3"
-}
-
-# Known descriptive titles for standard ARC SOW references (REF-05)
-ARC_KNOWN_REF_TITLES = {
-    # P1 Foundation
-    "HS-4762": "Micro-frontend shell with global navigation, routing, built with Client's design system and sharing it with remotes",
-    "HS-4763": "Azure AD / MSAL authentication integration, propagated to remotes",
-    "HS-4765": "Shell and authentication-flow E2E test harness",
-    "HS-4938": "Authentication negative-test suite and security scan results",
-    "HS-4770": "Pipeline quality-gate and deployment smoke-check automation",
-    "HS-4782": "Data model validation scripts, results, and defect report",
-    "HS-4941": "Data governance validation scripts, audit results, and gap log",
-    # P2a Services and Data
-    "HS-4777": "Faceted search and detail endpoints",
-    "HS-4778": "Asynchronous long-running query processing with health checks",
-    "HS-4779": "Backend integration and load test suites and results",
-    "HS-4942": "Performance spike output: benchmarks, query observability, p95 definitions, and tuning backlog",
-    "HS-4803": "OneGWAS direct-write integration with retryable error handling",
-    "HS-4804": "OneGWAS E2E and failure/retry test suite and results",
-    "HS-4797": "GWAS Atlas ETL validation scripts, results, and defect report",
-    "HS-4785": "MTA Store migration validation, data-quality issue log, and sign-off support",
-    "HS-4807": "PHG/GATSBY ingestion validation scripts, results, and defect report",
-    "HS-4801": "PubMed/literature extraction validation scripts, results, and defect report",
-    "HS-4791": "Trait taxonomy validation scripts, results, and defect report",
-    # P2b Application Surface
-    "HS-4772": "Faceted search and results table",
-    "HS-4773": "Result detail view and interval-based visualization",
-    "HS-4809": "Haplotype filter, indicator, interval visualization, and variant-versus-pangenome comparison",
-    "HS-4810": "Haplotype search/filter endpoints",
-    "HS-4813": "Haplotype API and data access",
-    "HS-4793": "Nomenclature service",
-    "HS-4775": "Frontend unit, integration, accessibility, and performance test suites",
-    "HS-4815": "Haplotype endpoint integration tests and results",
-    "HS-4794": "Nomenclature test suite and results",
-    "HS-4811": "Haplotype search and visualization tests and results",
-    # P3 Launch
-    "HS-4825": "Integration, performance, security, and cross-browser test suites and results",
-    "HS-4826": "Test data and fixtures",
-    "HS-4828": "UAT execution records and defect log",
-    "HS-4943": "Hardening iteration results, including full regression run",
-    "HS-4832": "Production smoke test results and 48-hour defect watch report",
-    "HS-4788": "MTA Store parity and usage-zero confirmation report",
-    "HS-4829": "Training materials and user documentation",
-    # Client-owned
-    "HS-4781": "Snowflake data model design and provisioning",
-    "HS-4827": "Client scientist UAT group participation",
-    "HS-4824": "MTA Store legacy system decommission",
-}
-
 
 def determine_sow_gate_count(baseline: StartupKitBaseline) -> Optional[int]:
     """Determine the expected SOW gate count following VAL-01 precedence rules."""
@@ -205,16 +149,16 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
     
     # VAL-09, REF-05: Assign title and phase to catalogue items from grouping or references
     for item in catalogue:
-        if not item.title and item.reference in ARC_KNOWN_REF_TITLES:
-            item.title = ARC_KNOWN_REF_TITLES[item.reference]
         if not item.phase:
-            # Check known reference map
-            if item.reference in ARC_KNOWN_REF_PHASES:
-                item.phase = ARC_KNOWN_REF_PHASES[item.reference]
-            else:
-                pm = PHASE_CODE_REGEX.search(f"{item.reference} {item.title}")
-                if pm:
-                    item.phase = pm.group(1).upper()
+            pm = PHASE_CODE_REGEX.search(f"{item.reference} {item.title}")
+            if pm:
+                item.phase = pm.group(1).upper()
+            elif item.deliverable_id:
+                parent_d = next((d for d in baseline.deliverables if d.id == item.deliverable_id), None)
+                if parent_d:
+                    pm_d = PHASE_CODE_REGEX.search(f"{parent_d.name} {parent_d.description}")
+                    if pm_d:
+                        item.phase = pm_d.group(1).upper()
 
         if not item.phase:
             findings.append(ValidationFinding(
@@ -259,8 +203,8 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
         assigned = False
         if item.phase:
             for d in baseline.deliverables:
-                d_refs = extract_sow_references(f"{d.sow_reference or ''}")
-                if any(ARC_KNOWN_REF_PHASES.get(r, "").upper() == item.phase.upper() for r in d_refs):
+                d_phase_m = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
+                if d_phase_m and d_phase_m.group(1).upper() == item.phase.upper():
                     deliv_to_items[d.id].append(item)
                     assigned = True
                     break
@@ -335,17 +279,9 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
             clean_refs = extract_sow_references(d.sow_reference or "")
             sow_ref_val = ", ".join(clean_refs) if clean_refs else ""
             
-            # Determine phase from deliverable refs or name
-            d_phase = ""
-            for r in clean_refs:
-                if r in ARC_KNOWN_REF_PHASES:
-                    d_phase = ARC_KNOWN_REF_PHASES[r].upper()
-                    break
-            if not d_phase:
-                pm = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
-                if pm:
-                    d_phase = pm.group(1).upper()
-
+            # Determine phase from deliverable name/description
+            pm = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
+            d_phase = pm.group(1).upper() if pm else ""
             linked_ms = [phase_to_gate[d_phase]] if d_phase in phase_to_gate else []
 
             wp_title = f"{d.name}"
@@ -465,17 +401,11 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
     # Build phase lookup for deliverables
     deliv_phase_map: Dict[str, str] = {}
     for d in baseline.deliverables:
-        refs = extract_sow_references(f"{d.sow_reference or ''}")
-        for r in refs:
-            if r in ARC_KNOWN_REF_PHASES:
-                deliv_phase_map[d.id] = ARC_KNOWN_REF_PHASES[r]
-                break
-        if d.id not in deliv_phase_map:
-            pm = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
-            if pm:
-                deliv_phase_map[d.id] = pm.group(1)
-            else:
-                deliv_phase_map[d.id] = "P1 Foundation"
+        pm = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
+        if pm:
+            deliv_phase_map[d.id] = pm.group(1).upper()
+        else:
+            deliv_phase_map[d.id] = "P1 Foundation"
 
     # Map shared evidence
     evidence_sharing: Dict[str, List[str]] = {}

@@ -295,23 +295,11 @@ def detect_backlog_phase_order(
     return True, distinct_parents
 
 
-# Known phase mapping for standard ARC SOW references (VAL-09, MAP-04)
-ARC_KNOWN_REF_PHASES: Dict[str, str] = {
-    "HS-4762": "P1", "HS-4763": "P1", "HS-4765": "P1", "HS-4938": "P1", "HS-4770": "P1", "HS-4782": "P1", "HS-4941": "P1",
-    "HS-4777": "P2a", "HS-4778": "P2a", "HS-4779": "P2a", "HS-4942": "P2a", "HS-4803": "P2a", "HS-4804": "P2a", "HS-4797": "P2a", "HS-4785": "P2a", "HS-4807": "P2a", "HS-4801": "P2a", "HS-4791": "P2a",
-    "HS-4772": "P2b", "HS-4773": "P2b", "HS-4809": "P2b", "HS-4810": "P2b", "HS-4813": "P2b", "HS-4793": "P2b", "HS-4775": "P2b", "HS-4815": "P2b", "HS-4794": "P2b", "HS-4811": "P2b",
-    "HS-4825": "P3", "HS-4826": "P3", "HS-4828": "P3", "HS-4943": "P3", "HS-4832": "P3", "HS-4788": "P3", "HS-4829": "P3",
-    "HS-4781": "P1", "HS-4827": "P3", "HS-4824": "P3"
-}
-
-
 def get_reference_phase(ref: str) -> Optional[str]:
     """Helper to detect phase code for a SOW reference."""
     if not ref:
         return None
     ref_clean = ref.strip()
-    if ref_clean in ARC_KNOWN_REF_PHASES:
-        return ARC_KNOWN_REF_PHASES[ref_clean]
     # Check numbered deliverable e.g. Deliverable 1.2 -> P1, Deliverable 2.1 -> P2
     num_m = re.search(r'Deliverable\s+(\d+)\.', ref_clean, re.IGNORECASE)
     if num_m:
@@ -664,7 +652,7 @@ def map_work_packages_to_deliverables(
         deliv_item_refs[d.id] = refs
 
     unassigned_wps: List[WorkPackageSeed] = []
-    # Pass 0: Match by unique work item ID (e.g. HS-4762)
+    # Pass 0: Match by unique work item ID (e.g. SOW-01)
     for wp in work_packages:
         wp_item_refs = set(r for r in extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}") if detect_sow_reference_kind(r) != "Section")
         matched_deliv_id = None

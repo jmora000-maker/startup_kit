@@ -346,7 +346,7 @@ class WorkPackageSeed(BaseModel):
 
 class SOWWorkItem(BaseModel):
     """SOW work item catalogued for delivery backlog and traceability (v6 Section 1.1)."""
-    reference: str = ""  # SOW identifier or synthetic e.g. "HS-4762", "SOW-P1-01"
+    reference: str = ""  # SOW identifier or synthetic e.g. "SOW-01", "SOW-P1-01"
     reference_kind: str = "Story ID"  # "Story ID", "Deliverable number", "Task or WBS code", "Section", "Synthetic"
     title: str = ""
     phase: str = ""  # e.g. "P1", "M1"
@@ -760,6 +760,7 @@ class SOWInterpretationExtraction(BaseModel):
 
 class ScopeDecompositionExtraction(BaseModel):
     work_packages: List[WorkPackageSeed] = Field(default_factory=list)
+    work_items: List[SOWWorkItem] = Field(default_factory=list)
 
 
 class AcceptanceProcessExtraction(BaseModel):
