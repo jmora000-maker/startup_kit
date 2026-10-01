@@ -301,13 +301,13 @@
         [
           "DEC-01",
           "Adopt Terraform for all AWS cloud infrastructure provisioning.",
-          "PMO Lead",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-02",
           "Set project governance tier to Partnered with weekly PSR reporting.",
-          "PMO Lead",
+          "Toptal",
           "Approved"
         ]
       ]
@@ -656,7 +656,7 @@
           "Sarah Connor",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "3 validation points logged for mobilization confirmation."
+          "No open questions flagged for mobilization."
         ]
       ]
     },
@@ -767,7 +767,7 @@
         [
           "CONF-01",
           "Date Conflict",
-          "Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+          "SOW_Document.pdf, Section 3.1: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
           "2-week schedule discrepancy between commercial proposal and signed SOW baseline.",
           "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
           "Open"
@@ -2467,8 +2467,8 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
-        "schedule commits",
+        "Date Conflict: SOW_Document.pdf, Section 3.1: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+        "SOW_Document.pdf | Sections: 3.1",
         "Contract Clarification",
         "Deployment & Release",
         "M2",

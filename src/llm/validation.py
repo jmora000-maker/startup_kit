@@ -364,9 +364,34 @@ def validate_award_date(baseline: StartupKitBaseline, findings: List[ValidationF
             for item in baseline.readiness_checklist:
                 if item.item_id == "G01-01":
                     item.evidence = "Award date not stated in SOW [CONFIRMATION REQUIRED]."
-                    item.status = "Complete"
+                    item.status = "Confirmation Required"
                     item.exception_required = False
                     item.exception_details = None
+
+
+def validate_contract_ambiguities(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
+    """VAL-10: Every contract ambiguity carries a citation or [CITATION MISSING]."""
+    for amb in baseline.contract_ambiguities:
+        clause_text = (amb.conflicting_clauses or "").strip()
+        has_ext = bool(re.search(r'\.[a-zA-Z0-9]{2,4}\b', clause_text))
+        has_exhibit = bool(re.search(r'\b(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)', clause_text, re.IGNORECASE))
+        has_sow_ref = bool(re.search(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', clause_text, re.IGNORECASE))
+        has_section = bool(re.search(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', clause_text, re.IGNORECASE))
+
+        if not (has_ext or has_exhibit or has_sow_ref or has_section):
+            # Try to populate from source_reference
+            if amb.source_reference and (amb.source_reference.document_name or amb.source_reference.clause_or_slide):
+                doc_name = amb.source_reference.document_name or "Exhibit A"
+                clause_ref = amb.source_reference.clause_or_slide or ""
+                pfx = f"{doc_name}, {clause_ref}: " if clause_ref else f"{doc_name}: "
+                amb.conflicting_clauses = f"{pfx}{clause_text}"
+            else:
+                findings.append(ValidationFinding(
+                    invariant_id="INV-23",
+                    severity="warning",
+                    message=f"Contract ambiguity {amb.anomaly_id} lacks citation."
+                ))
+                amb.conflicting_clauses = f"[CITATION MISSING] {clause_text}"
 
 
 def validate_one_numbering_system(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
@@ -441,38 +466,67 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
 
 
 def validate_talent_and_leadership(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
-    """KIT-10: Restore PMO Lead leadership and populated delivery talent roster."""
-    pmo_lead_name = getattr(config, "pmo_lead", None) or "James Mora"
-    
+    """KIT-10: Names come only from CLI/config. With none supplied, [UNASSIGNED - TO BE CONFIRMED] is correct."""
+    pmo_lead_name = getattr(config, "pmo_lead", None)
+    dm_name = getattr(config, "delivery_manager", None)
+    tpm_name = getattr(config, "talent_pm", None)
+
     if baseline.charter:
-        if not baseline.charter.pmo_lead or "UNASSIGNED" in baseline.charter.pmo_lead.upper() or PLACEHOLDER_REGEX.search(baseline.charter.pmo_lead):
+        if pmo_lead_name:
             baseline.charter.pmo_lead = pmo_lead_name
+        elif not baseline.charter.pmo_lead or "UNASSIGNED" in baseline.charter.pmo_lead.upper() or PLACEHOLDER_REGEX.search(baseline.charter.pmo_lead):
+            baseline.charter.pmo_lead = "[UNASSIGNED - TO BE CONFIRMED]"
+
+        if dm_name:
+            baseline.charter.delivery_manager = dm_name
+        elif not baseline.charter.delivery_manager or "UNASSIGNED" in baseline.charter.delivery_manager.upper() or PLACEHOLDER_REGEX.search(baseline.charter.delivery_manager):
+            baseline.charter.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+
+        if tpm_name:
+            baseline.charter.talent_pm = tpm_name
+        elif not baseline.charter.talent_pm or "UNASSIGNED" in baseline.charter.talent_pm.upper() or PLACEHOLDER_REGEX.search(baseline.charter.talent_pm):
+            baseline.charter.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
 
     if not baseline.talent_onboarding:
         baseline.talent_onboarding = TalentOnboardingRecord(
-            pmo_lead=pmo_lead_name,
-            delivery_manager="Toptal Delivery Manager",
-            talent_pm="Toptal Talent PM",
-            required_roles=["Cloud Infrastructure Architect", "Backend FastAPI Developer", "Frontend React Developer", "Data QA Engineer", "DevOps Engineer"],
+            pmo_lead=pmo_lead_name or "[UNASSIGNED - TO BE CONFIRMED]",
+            delivery_manager=dm_name or "[UNASSIGNED - TO BE CONFIRMED]",
+            talent_pm=tpm_name or "[UNASSIGNED - TO BE CONFIRMED]",
+            required_roles=["Cloud Infrastructure Architect", "Backend FastAPI Developer", "Frontend React Developer", "Data QA Engineer"],
             required_skills=["AWS", "Terraform", "Python", "FastAPI", "React", "PostgreSQL"],
             source_reference=baseline.charter.source_reference if baseline.charter else None
         )
     else:
-        if not baseline.talent_onboarding.pmo_lead or "UNASSIGNED" in baseline.talent_onboarding.pmo_lead.upper():
+        if pmo_lead_name:
             baseline.talent_onboarding.pmo_lead = pmo_lead_name
+        elif not baseline.talent_onboarding.pmo_lead:
+            baseline.talent_onboarding.pmo_lead = "[UNASSIGNED - TO BE CONFIRMED]"
 
-    # Ensure roster has talent members
+        if dm_name:
+            baseline.talent_onboarding.delivery_manager = dm_name
+        elif not baseline.talent_onboarding.delivery_manager:
+            baseline.talent_onboarding.delivery_manager = "[UNASSIGNED - TO BE CONFIRMED]"
+
+        if tpm_name:
+            baseline.talent_onboarding.talent_pm = tpm_name
+        elif not baseline.talent_onboarding.talent_pm:
+            baseline.talent_onboarding.talent_pm = "[UNASSIGNED - TO BE CONFIRMED]"
+
+    # Ensure roster has 4 core delivery talent members
     t_rec = baseline.talent_onboarding
     if not t_rec.delivery_talent_roster:
-        roles = t_rec.required_roles or ["Cloud Infrastructure Architect", "Backend FastAPI Developer", "Frontend React Developer", "Data QA Engineer", "DevOps Engineer"]
-        skills = t_rec.required_skills or ["AWS", "Terraform", "Python", "FastAPI", "React", "PostgreSQL"]
+        roles = [
+            ("Cloud Infrastructure Architect", "AWS, Terraform"),
+            ("Backend FastAPI Developer", "Python, FastAPI"),
+            ("Frontend React Developer", "React, TypeScript"),
+            ("Data QA Engineer", "Pytest, Data Validation")
+        ]
         roster: List[TalentMember] = []
-        for idx, r in enumerate(roles):
-            req_skill = skills[idx % len(skills)] if skills else "Technical Domain"
+        for r_name, r_skills in roles:
             roster.append(TalentMember(
-                role=r,
+                role=r_name,
                 name="Toptal Delivery Talent",
-                required_skills=req_skill,
+                required_skills=r_skills,
                 status="Staffing Required"
             ))
         t_rec.delivery_talent_roster = roster
@@ -482,29 +536,29 @@ def validate_decision_owners(baseline: StartupKitBaseline, findings: List[Valida
     """KIT-11: Map decision owners to stakeholder roles, 'Client', or 'Toptal'."""
     valid_roles = {
         "PMO Lead", "Director, PMO", "Delivery Manager", "Talent PM",
-        "Technical Lead", "Client Approver", "Client Sponsor", "Client", "Toptal"
+        "Client Approver", "Client Sponsor", "Client", "Toptal"
     }
     role_mapping = {
-        "QA Lead": "Technical Lead",
-        "Engagement Manager": "Delivery Manager",
+        "Technical Lead": "Toptal",
+        "Tech Lead": "Toptal",
+        "QA Lead": "Toptal",
         "Delivery Lead": "Delivery Manager",
-        "Tech Lead": "Technical Lead",
-        "Architect": "Technical Lead",
+        "Architect": "Toptal",
         "Product Owner": "Client Approver",
         "Sponsor": "Client Sponsor",
     }
 
     for dec in baseline.decisions:
         owner = dec.decision_owner.strip() if dec.decision_owner else ""
-        if owner not in valid_roles:
-            if owner in role_mapping:
-                dec.decision_owner = role_mapping[owner]
-            elif "client" in owner.lower():
+        if owner in role_mapping:
+            dec.decision_owner = role_mapping[owner]
+        elif owner not in valid_roles:
+            if "client" in owner.lower():
                 dec.decision_owner = "Client"
             elif "toptal" in owner.lower():
                 dec.decision_owner = "Toptal"
             else:
-                dec.decision_owner = "PMO Lead"
+                dec.decision_owner = "Toptal"
 
 
 def validate_commercial_guardrails(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
@@ -548,19 +602,26 @@ def validate_and_repair_baseline(baseline: StartupKitBaseline) -> ValidationRepo
     # 5. VAL-06: One numbering system
     validate_one_numbering_system(baseline, findings)
 
-    # 6. KIT-03: Evidence coverage & review windows
+    # 6. VAL-10: Contract ambiguities citation
+    validate_contract_ambiguities(baseline, findings)
+
+    # 7. KIT-03: Evidence coverage & review windows
     validate_evidence_and_review_windows(baseline, findings)
 
-    # 7. KIT-10: Talent roster and leadership
+    # 8. KIT-10: Talent roster and leadership
     validate_talent_and_leadership(baseline, findings)
 
-    # 8. KIT-11: Decision owner mapping
+    # 9. KIT-11: Decision owner mapping
     validate_decision_owners(baseline, findings)
 
-    # 9. CHK-06: Commercial guardrails cleaning
+    # 10. CHK-06: Commercial guardrails cleaning
     validate_commercial_guardrails(baseline, findings)
 
-    # 10. VAL-07: Construct validation report and attach to baseline
+    # 11. Synchronize checklist with repaired baseline state
+    from src.scoring.readiness_engine import ReadinessScoringEngine
+    ReadinessScoringEngine.synchronize_checklist_with_artifacts(baseline)
+
+    # 12. VAL-07: Construct validation report and attach to baseline
     report = ValidationReport(findings=findings)
     baseline.validation_report = report
     return report

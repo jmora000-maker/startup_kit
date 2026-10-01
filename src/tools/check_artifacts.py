@@ -1,4 +1,4 @@
-"""Comprehensive invariant checker for generated PMO artifacts (QA-04, INV-01 to INV-25)."""
+"""Comprehensive invariant checker for generated PMO artifacts (QA-04, QA-08, INV-01 to INV-25)."""
 
 import sys
 import re
@@ -26,8 +26,8 @@ PLACEHOLDER_REGEX = re.compile(r'\[(?:CONFIRMATION REQUIRED|TBD|UNASSIGNED|TO BE
 BANNED_WORKSTREAM_NAMES = ["Project Management", "Kickoff", "Reporting and Control", "Ongoing"]
 
 VALID_CONTRACT_REF_EXT_REGEX = re.compile(r'\.[a-zA-Z0-9]{2,4}\b', re.IGNORECASE)
-EXHIBIT_WORD_REGEX = re.compile(r'\b(Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?!(?:is|are|was|were|the|and|in|on|at|to|for|of)\b)[A-Za-z0-9]+', re.IGNORECASE)
-SECTION_WORD_REGEX = re.compile(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+', re.IGNORECASE)
+EXHIBIT_WORD_REGEX = re.compile(r'\b(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)', re.IGNORECASE)
+SECTION_WORD_REGEX = re.compile(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', re.IGNORECASE)
 SOW_REF_REGEX = re.compile(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', re.IGNORECASE)
 
 
@@ -78,8 +78,8 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
     kit_deliverables: List[List[str]] = []
     kit_work_packages: List[List[str]] = []
     kit_raid_items: List[List[str]] = []
+    kit_dep_asm_items: List[List[str]] = []
     kit_decisions: List[List[str]] = []
-    kit_questions: List[str] = []
     kit_charter: Dict[str, str] = {}
 
     if kit_doc:
@@ -120,32 +120,70 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                         kit_deliverables.append(cells)
 
             # Scope Decomposition / Work packages
-            elif "parent deliv" in hdr_txt or "work package" in hdr_txt or ("wp-" in "".join([c.text for r in table.rows for c in r.cells])):
+            elif "parent deliv" in hdr_txt or "work package" in hdr_txt or any(c.text.strip().startswith("WP-") for r in table.rows for c in r.cells):
                 for r in table.rows[1:]:
                     cells = [c.text.strip() for c in r.cells]
                     if len(cells) >= 2 and cells[0]:
                         kit_work_packages.append(cells)
 
-            # RAID
-            elif "raid id" in hdr_txt or ("rsk-" in "".join([c.text for r in table.rows for c in r.cells])):
+            # Dependencies & Assumptions
+            elif any(c.text.strip().startswith("DEP-") or c.text.strip().startswith("ASM-") for r in table.rows for c in r.cells):
+                for r in table.rows[1:]:
+                    cells = [c.text.strip() for c in r.cells]
+                    if len(cells) >= 2 and cells[0]:
+                        kit_dep_asm_items.append(cells)
+
+            # RAID (Risks & Issues)
+            elif "raid id" in hdr_txt or any(c.text.strip().startswith("RSK-") or c.text.strip().startswith("ISS-") for r in table.rows for c in r.cells):
                 for r in table.rows[1:]:
                     cells = [c.text.strip() for c in r.cells]
                     if len(cells) >= 2 and cells[0]:
                         kit_raid_items.append(cells)
 
             # Decisions
-            elif "decision id" in hdr_txt or "dec-" in hdr_txt:
+            elif "decision id" in hdr_txt or any(c.text.strip().startswith("DEC-") for r in table.rows for c in r.cells):
                 for r in table.rows[1:]:
                     cells = [c.text.strip() for c in r.cells]
                     if len(cells) >= 2 and cells[0]:
                         kit_decisions.append(cells)
 
-            # Questions
-            elif "question" in hdr_txt or "open questions" in hdr_txt:
+    # Parse Checklist tables
+    chk_items: Dict[str, Dict[str, str]] = {}
+    chk_ambiguities: List[List[str]] = []
+    chk_questions: List[List[str]] = []
+
+    if chk_doc:
+        for table in chk_doc.tables:
+            if not table.rows:
+                continue
+            hdr = [c.text.strip().lower() for c in table.rows[0].cells]
+            hdr_txt = " | ".join(hdr)
+
+            if ("gate id" in hdr_txt or "item id" in hdr_txt) and "gate criterion" in hdr_txt:
                 for r in table.rows[1:]:
                     cells = [c.text.strip() for c in r.cells]
-                    if cells:
-                        kit_questions.append(cells[0])
+                    if len(cells) >= 6 and cells[0].startswith("G01-"):
+                        evidence_str = cells[7] if len(cells) > 7 else cells[-1]
+                        chk_items[cells[0]] = {
+                            "item_id": cells[0],
+                            "criterion": cells[1],
+                            "artifact": cells[2],
+                            "status": cells[3] if len(cells) > 3 else "",
+                            "owner": cells[4] if len(cells) > 4 else "",
+                            "evidence": evidence_str
+                        }
+
+            elif "anomaly id" in hdr_txt or "conflicting clauses" in hdr_txt:
+                for r in table.rows[1:]:
+                    cells = [c.text.strip() for c in r.cells]
+                    if cells and cells[0].startswith("AMB-"):
+                        chk_ambiguities.append(cells)
+
+            elif "question id" in hdr_txt or "actionable clarification question" in hdr_txt:
+                for r in table.rows[1:]:
+                    cells = [c.text.strip() for c in r.cells]
+                    if cells and cells[0].startswith("Q-"):
+                        chk_questions.append(cells)
 
     proj_name = kit_charter.get("project name", "")
     oracle = oracle_override or load_oracle_for_folder(folder, proj_name)
@@ -216,7 +254,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
         for wp in kit_work_packages:
             wp_id = wp[0]
             desc = wp[2] if len(wp) > 2 else ""
-            # Title is first sentence or up to colon/newline
             title_match = re.split(r':\s+|\.\s+|\n', desc)
             wp_title = title_match[0].strip() if title_match else desc.strip()
             
@@ -249,9 +286,7 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 if is_valid:
                     valid_evidence_count += 1
                 
-                # Check for shared evidence note
                 if is_valid:
-                    # Normalize text for sharing comparison
                     norm_ev = re.sub(r'\s+', ' ', ev.lower()).strip()
                     evidence_by_text.setdefault(norm_ev, []).append(d_id)
 
@@ -267,7 +302,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
 
             for norm_ev, sharing_delivs in evidence_by_text.items():
                 if len(sharing_delivs) > 1:
-                    # Must contain shared-item note
                     if "shared evidence" not in norm_ev:
                         violations.append(InvariantViolation(
                             "INV-22",
@@ -278,7 +312,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
         # INV-24: Review window is KIT-03 default or SOW text. Never 'NOT SPECIFIED - TO BE CONFIRMED' or ends with '...'.
         for d in kit_deliverables:
             d_id = d[0]
-            # Column 7 is Review Window in 10-col matrix (or col 6 in 9-col)
             rw = ""
             for idx in [7, 6, 5]:
                 if len(d) > idx and ("day" in d[idx].lower() or "review" in d[idx].lower() or "not specified" in d[idx].lower() or "business" in d[idx].lower()):
@@ -291,14 +324,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     violations.append(InvariantViolation("INV-24", f"Deliverable {d_id} review window contains placeholder '{rw}'", "Kit"))
                 if rw.endswith("...") or rw.endswith("…"):
                     violations.append(InvariantViolation("INV-24", f"Deliverable {d_id} review window is truncated with ellipsis: '{rw}'", "Kit"))
-
-        # INV-20: SOW references in Schedule and WBS match oracle phase
-        # (Kit Table 6 displays SOW References in column 5 and Status in column 6)
-        if oracle and "sow_reference_phase" in oracle:
-            ref_to_phase: Dict[str, str] = {}
-            for phase_code, r_list in oracle["sow_reference_phase"].items():
-                for r in r_list:
-                    ref_to_phase[r] = phase_code
 
     # Checklist Checks
     if chk_doc:
@@ -318,6 +343,7 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 violations.append(InvariantViolation("INV-04", f"Sheet name '{sheet_name}' contains readiness terms", "Workbook"))
 
         # Inspect Project Schedule
+        sched_gate_count = 0
         if "Project Schedule" in wb.sheetnames:
             sched = wb["Project Schedule"]
             l1_rows = []
@@ -346,7 +372,7 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     l1_rows.append((wbs_code, ws_name))
 
                 if row_type == "Milestone" and m_id:
-                    # Count SOW references on this gate
+                    sched_gate_count += 1
                     refs = [r.strip() for r in sow_refs.split(",") if r.strip()]
                     schedule_gate_items[m_id] = len(refs)
 
@@ -373,7 +399,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
 
             # INV-20: No gate holds more than its oracle share of work items
             if oracle and "sow_reference_phase" in oracle:
-                # E.g. P1 has 7 items, P2a has 11, P2b has 10, P3 has 7
                 oracle_counts = {
                     "M1": len(oracle["sow_reference_phase"].get("P1", [])),
                     "M2": len(oracle["sow_reference_phase"].get("P2a", [])),
@@ -382,7 +407,7 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 }
                 for g_id, exp_cnt in oracle_counts.items():
                     act_cnt = schedule_gate_items.get(g_id, 0)
-                    if act_cnt > exp_cnt + 5:  # significantly overloaded
+                    if act_cnt > exp_cnt + 5:
                         violations.append(InvariantViolation(
                             "INV-20",
                             f"Gate {g_id} holds {act_cnt} SOW references, expected {exp_cnt}",
@@ -399,15 +424,16 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                         violations.append(InvariantViolation("INV-05", f"Forward or self predecessor: {code} depends on later row {p}", "Project Schedule"))
 
         # Inspect WBS
+        wbs_deliv_ids: List[str] = []
+        wbs_sow_refs: Set[str] = set()
+        wbs_tasks_by_wp_id: Set[str] = set()
+        wbs_gate_packages: Dict[str, List[str]] = {}
+
         if "WBS" in wb.sheetnames:
             wbs_sheet = wb["WBS"]
             current_workstream = ""
             current_gate_id = ""
             current_pkg_name = ""
-
-            # Track deliverable to gate mapping in WBS
-            deliv_mapped_gate: Dict[str, str] = {}
-            deliv_mapped_ws: Dict[str, str] = {}
 
             for row_idx, row in enumerate(wbs_sheet.iter_rows(min_row=5, values_only=True), start=5):
                 level = row[1]
@@ -419,16 +445,38 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 s_id = str(row[7] or "").strip()
                 sow_refs_str = str(row[8] or "").strip()
                 owner = str(row[9] or "").strip() if len(row) > 9 else ""
+                source_val = str(row[19] or "").strip() if len(row) > 19 else ""
+                notes_val = str(row[21] or "").strip() if len(row) > 21 else ""
                 
                 if elem_type == "Workstream":
                     current_workstream = name
                 elif elem_type in ("Milestone", "Gate"):
                     current_gate_id = m_id
-                elif elem_type in ("Deliverable", "Package"):
+                    wbs_gate_packages.setdefault(m_id, [])
+                elif elem_type in ("Deliverable", "Package", "Work Package"):
                     current_pkg_name = name
-                    if d_id:
-                        deliv_mapped_gate[d_id] = current_gate_id or m_id
-                        deliv_mapped_ws[d_id] = current_workstream or ws_name
+                    if current_gate_id:
+                        wbs_gate_packages.setdefault(current_gate_id, []).append(name)
+                    if d_id and d_id.startswith("DEL-"):
+                        wbs_deliv_ids.append(d_id)
+
+                if s_id:
+                    for wp_match in re.findall(r'WP-\d+', s_id):
+                        wbs_tasks_by_wp_id.add(wp_match)
+                if notes_val:
+                    for wp_match in re.findall(r'WP-\d+', notes_val):
+                        wbs_tasks_by_wp_id.add(wp_match)
+
+                if sow_refs_str:
+                    for r in SOW_REF_REGEX.findall(sow_refs_str):
+                        wbs_sow_refs.add(r)
+                if s_id and SOW_REF_REGEX.match(s_id):
+                    wbs_sow_refs.add(s_id)
+
+                # INV-03: No level 1 or 2 row with PM Best Practice
+                if level in (1, 2, "1", "2") and "PM Best Practice" in source_val:
+                    if "MS-TBC" not in name:
+                        violations.append(InvariantViolation("INV-03", f"Level {level} row '{name}' has Source 'PM Best Practice'", "WBS"))
 
                 # INV-10: No task name > 120 chars, starts with 'Work Package:', or contains action placeholder
                 if level == 4 or level == "4":
@@ -444,12 +492,55 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     if PLACEHOLDER_REGEX.search(owner) or owner.upper() in ["UNASSIGNED", "TBD", "[UNASSIGNED - TO BE CONFIRMED]"]:
                         violations.append(InvariantViolation("INV-11", f"Task '{name}' has placeholder owner '{owner}' at row {row_idx}", "WBS"))
 
-                # INV-25: Nothing sits in 'Other {workstream} work' when parent deliverable exists in another gate
-                if "other " in current_pkg_name.lower() and "work" in current_pkg_name.lower():
-                    # Check task's parent deliverable or references
-                    if s_id.startswith("WP-"):
-                        # If WP is associated with a deliverable mapped to another gate
-                        pass
+                # INV-14: Evidence flag check
+                if "may belong to" in notes_val.lower() or "evidence" in notes_val.lower():
+                    flag_m = re.search(r'belong to (DEL-\d+)', notes_val, re.IGNORECASE)
+                    if flag_m:
+                        target_d = flag_m.group(1).upper()
+                        if target_d == d_id.upper():
+                            violations.append(InvariantViolation("INV-14", f"Evidence flag on {d_id} names itself: '{notes_val}'", "WBS"))
+
+            # INV-06: Every Kit deliverable appears exactly once at WBS level 3 under a gate. Every gate has a Milestone Acceptance package.
+            if kit_deliverables:
+                kit_deliv_ids = [d[0] for d in kit_deliverables if d and d[0].startswith("DEL-")]
+                for d_id in kit_deliv_ids:
+                    count_in_wbs = wbs_deliv_ids.count(d_id)
+                    if count_in_wbs != 1:
+                        violations.append(InvariantViolation(
+                            "INV-06",
+                            f"Deliverable {d_id} appears {count_in_wbs} times at WBS level 3 (expected exactly 1)",
+                            "WBS"
+                        ))
+
+            for g_id, pkgs in wbs_gate_packages.items():
+                if not any("Milestone Acceptance" in p or "Acceptance" in p for p in pkgs):
+                    violations.append(InvariantViolation(
+                        "INV-06",
+                        f"Gate {g_id} lacks Milestone Acceptance package",
+                        "WBS"
+                    ))
+
+            # INV-07 check: Work packages appear in WBS as task or degenerate Source ID
+            if kit_work_packages:
+                for wp in kit_work_packages:
+                    wp_id = wp[0]
+                    if wp_id not in wbs_tasks_by_wp_id:
+                        violations.append(InvariantViolation(
+                            "INV-07",
+                            f"Work package {wp_id} does not appear as task or Source ID in WBS",
+                            "WBS"
+                        ))
+
+            # INV-08: Every SOW reference in catalogue appears in WBS SOW References
+            if oracle and "sow_reference_phase" in oracle:
+                all_oracle_refs = [r for r_list in oracle["sow_reference_phase"].values() for r in r_list]
+                for r in all_oracle_refs:
+                    if r not in wbs_sow_refs:
+                        violations.append(InvariantViolation(
+                            "INV-08",
+                            f"SOW reference '{r}' missing from WBS SOW references",
+                            "WBS"
+                        ))
 
             # INV-19: Deliverables placed in oracle phase
             if oracle and "sow_reference_phase" in oracle:
@@ -458,7 +549,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     for r in r_list:
                         ref_to_phase[r] = phase_code
 
-                # Check each deliverable row in WBS
                 for row_idx, row in enumerate(wbs_sheet.iter_rows(min_row=5, values_only=True), start=5):
                     elem_type = str(row[2] or "").strip()
                     d_id = str(row[6] or "").strip()
@@ -470,7 +560,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                         phases_for_refs = {ref_to_phase[r] for r in refs if r in ref_to_phase}
                         if len(phases_for_refs) == 1:
                             expected_phase = list(phases_for_refs)[0]
-                            # Check if ws_name matches expected_phase (e.g. "P2a" in "P2a Services and Data")
                             if expected_phase.lower() not in ws_name.lower():
                                 violations.append(InvariantViolation(
                                     "INV-19",
@@ -486,9 +575,7 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 s_id = str(row[7] or "").strip()
                 sow_refs_str = str(row[8] or "").strip()
                 
-                # If row is inside an Other work package or level 4 task under Other work
                 if "other " in ws_name.lower() or "other " in name.lower():
-                    # Check for cross-phase names in task title e.g. 'P2a ...' in P1 Foundation
                     for phase_pfx in ["P1", "P2a", "P2A", "P2b", "P2B", "P3"]:
                         if phase_pfx.lower() in name.lower() and phase_pfx.lower() not in ws_name.lower():
                             violations.append(InvariantViolation(
@@ -509,20 +596,43 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                                     "WBS"
                                 ))
 
-        # Inspect RAID Log for INV-23
+        # Inspect RAID Log for INV-09, INV-13, INV-23
+        raid_source_ids: List[str] = []
+        wb_open_q_count = 0
+
         if "RAID Log" in wb.sheetnames:
             raid_sheet = wb["RAID Log"]
             for row_idx, row in enumerate(raid_sheet.iter_rows(min_row=5, values_only=True), start=5):
                 raid_id = str(row[0] or "").strip()
-                cat = str(row[4] or "").strip()
+                r_type = str(row[1] or "").strip()
+                desc = str(row[2] or "").strip()
                 contract_ref = str(row[3] or "").strip()
+                cat = str(row[4] or "").strip()
+                source_id = str(row[23] or "").strip() if len(row) > 23 else ""
                 
                 if not raid_id or raid_id == "RAID ID":
                     continue
 
+                if source_id:
+                    raid_source_ids.append(source_id)
+
+                if cat == "Open Question" or source_id.startswith("Q-"):
+                    wb_open_q_count += 1
+
+                # INV-13: Description begins with citation prefix or Contract Reference has empty parts
+                if CITATION_PREFIX_REGEX.search(desc):
+                    violations.append(InvariantViolation("INV-13", f"RAID description begins with citation prefix: '{desc[:40]}...'", "RAID Log"))
+                
+                if contract_ref:
+                    parts = [p.strip() for p in contract_ref.split("|")]
+                    if any(p == "" or p == "Stories:" or p == "Sections:" for p in parts) or contract_ref.endswith("|") or contract_ref.startswith("|"):
+                        violations.append(InvariantViolation("INV-13", f"RAID row {raid_id} Contract Reference has empty part: '{contract_ref}'", "RAID Log"))
+
+                # INV-23: Every Contract Reference is 'Not cited', blank (on non-clarification rows), or valid citation
                 if cat in ("Contract Clarification", "Open Question") or contract_ref:
-                    if contract_ref and contract_ref not in ("Not cited", "-", "None"):
-                        # Must contain file ext, Exhibit word, SOW ref, or section number
+                    if cat not in ("Contract Clarification", "Open Question") and contract_ref not in ("", "-", "None"):
+                        violations.append(InvariantViolation("INV-23", f"Non-clarification RAID row {raid_id} ({cat}) has non-blank Contract Reference: '{contract_ref}'", "RAID Log"))
+                    elif contract_ref and contract_ref not in ("Not cited", "-", "None"):
                         has_ext = bool(VALID_CONTRACT_REF_EXT_REGEX.search(contract_ref))
                         has_exhibit = bool(EXHIBIT_WORD_REGEX.search(contract_ref))
                         has_sow_ref = bool(SOW_REF_REGEX.search(contract_ref))
@@ -534,6 +644,120 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                                 f"RAID row {raid_id} Contract Reference '{contract_ref}' is invalid (lacks file ext, Exhibit word, SOW ref, or section)",
                                 "RAID Log"
                             ))
+
+            # INV-09: Every Kit and Checklist register ID appears exactly once as RAID Source ID
+            kit_register_ids = []
+            for r in kit_raid_items:
+                if r and r[0]:
+                    kit_register_ids.append(r[0])
+            for dep in kit_dep_asm_items:
+                if dep and dep[0]:
+                    kit_register_ids.append(dep[0])
+            for amb in chk_ambiguities:
+                if amb and amb[0]:
+                    kit_register_ids.append(amb[0])
+            for q in chk_questions:
+                if q and q[0]:
+                    q_text = q[1] if len(q) > 1 else ""
+                    # Role questions matching readiness / unassigned are excluded
+                    if not (READINESS_REGEX.search(q_text) or re.search(r'\brole is unassigned\b', q_text, re.IGNORECASE)):
+                        kit_register_ids.append(q[0])
+
+            for reg_id in kit_register_ids:
+                count_in_raid = raid_source_ids.count(reg_id)
+                if count_in_raid != 1:
+                    violations.append(InvariantViolation(
+                        "INV-09",
+                        f"Register item {reg_id} appears {count_in_raid} times as RAID Source ID (expected exactly 1)",
+                        "RAID Log"
+                    ))
+
+        # INV-12: Cross-artifact counts agree (TR-02)
+        if chk_items and "G01-15" in chk_items:
+            g15_ev = chk_items["G01-15"]["evidence"]
+            g15_m = re.search(r'(\d+)\s+validation\s+points', g15_ev, re.IGNORECASE)
+            
+            actual_chk_questions = [
+                q for q in chk_questions
+                if len(q) > 1 and "No open clarification questions" not in q[1]
+            ]
+            
+            if "no open questions" in g15_ev.lower() or (g15_m and int(g15_m.group(1)) == 0):
+                if len(actual_chk_questions) != 0:
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"G01-15 indicates 0 questions but Checklist questions table has {len(actual_chk_questions)}",
+                        "Checklist"
+                    ))
+            elif g15_m:
+                g15_count = int(g15_m.group(1))
+                chk_q_count = len(actual_chk_questions)
+                if g15_count != chk_q_count:
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"G01-15 count ({g15_count}) does not match Checklist Actionable Questions count ({chk_q_count})",
+                        "Checklist"
+                    ))
+                
+                # Excluded role questions
+                excluded_q_count = 0
+                for q in actual_chk_questions:
+                    q_text = q[1] if len(q) > 1 else ""
+                    if READINESS_REGEX.search(q_text) or re.search(r'\brole is unassigned\b', q_text, re.IGNORECASE):
+                        excluded_q_count += 1
+                
+                expected_wb_q_count = chk_q_count - excluded_q_count
+                if wb_open_q_count != expected_wb_q_count:
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"Workbook Open Question count ({wb_open_q_count}) does not match Checklist questions ({chk_q_count}) minus excluded ({excluded_q_count}) = {expected_wb_q_count}",
+                        "RAID Log"
+                    ))
+
+        if chk_items and "G01-03" in chk_items and kit_deliverables:
+            g3_ev = chk_items["G01-03"]["evidence"]
+            g3_m = re.search(r'(\d+)\s+deliverables', g3_ev, re.IGNORECASE)
+            if g3_m:
+                g3_count = int(g3_m.group(1))
+                if g3_count != len(kit_deliverables) or (wbs_deliv_ids and len(wbs_deliv_ids) != g3_count):
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"Deliverable counts disagree across artifacts: Kit={len(kit_deliverables)}, Checklist G01-03={g3_count}, WBS={len(wbs_deliv_ids)}",
+                        "Cross-Artifact"
+                    ))
+
+        if chk_items and "G01-04" in chk_items and kit_milestones:
+            g4_ev = chk_items["G01-04"]["evidence"]
+            g4_m = re.search(r'(\d+)\s+milestones', g4_ev, re.IGNORECASE)
+            if g4_m:
+                g4_count = int(g4_m.group(1))
+                if g4_count != len(kit_milestones):
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"Milestone counts disagree: Kit={len(kit_milestones)}, Checklist G01-04={g4_count}",
+                        "Cross-Artifact"
+                    ))
+
+        if chk_items and "G01-05" in chk_items:
+            g5_ev = chk_items["G01-05"]["evidence"]
+            g5_raid_m = re.search(r'(\d+)\s+RAID', g5_ev, re.IGNORECASE)
+            g5_dep_m = re.search(r'(\d+)\s+dependencies', g5_ev, re.IGNORECASE)
+            if g5_raid_m and kit_raid_items:
+                g5_r_count = int(g5_raid_m.group(1))
+                if g5_r_count != len(kit_raid_items):
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"RAID items count disagrees: Kit={len(kit_raid_items)}, Checklist G01-05={g5_r_count}",
+                        "Cross-Artifact"
+                    ))
+            if g5_dep_m and kit_dep_asm_items:
+                g5_d_count = int(g5_dep_m.group(1))
+                if g5_d_count != len(kit_dep_asm_items):
+                    violations.append(InvariantViolation(
+                        "INV-12",
+                        f"Dependencies/Assumptions count disagrees: Kit={len(kit_dep_asm_items)}, Checklist G01-05={g5_d_count}",
+                        "Cross-Artifact"
+                    ))
 
         # Global cell scan for INV-04, INV-15, INV-16
         for sname in wb.sheetnames:

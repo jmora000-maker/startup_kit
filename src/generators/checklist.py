@@ -152,7 +152,10 @@ class G01ChecklistRenderer:
         reviewers_str = ", ".join(baseline.reviewer_names or (gate_dec.reviewer_names if gate_dec else ["Delivery Manager", "Technical Lead"]))
         approver_str = baseline.approver_name or (gate_dec.approver_name if gate_dec else "PMO Lead")
         concurring_str = f" | Concurring Approver: {baseline.concurring_approver_name}" if baseline.concurring_approver_name else ""
-        sla_str = "Met (Drafted within 1 business day)" if baseline.sla_met else "Breached (Exception Logged)"
+        if baseline.sow_awarded_date:
+            sla_str = "Met (Drafted within 1 business day)" if baseline.sla_met else "Breached (Exception Logged)"
+        else:
+            sla_str = "Not determinable - award date not stated"
         seg_str = "Verified (Author, Reviewers, Approver segregated)" if baseline.segregation_of_duties_verified else "Segregation Warning"
         exceptions_count = len([i for i in items if i.exception_required or i.status == "Exception Required"])
 

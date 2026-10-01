@@ -818,10 +818,14 @@ class BaselineAggregator:
             awarded_dt = sow_awarded_date
             sla_met = (drafted_dt - awarded_dt).days <= 1
             g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (Project awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
+            g01_01_status = "Complete" if sla_met else "Exception Required"
+            g01_01_approval = "Approved" if sla_met else "Exception Required"
         else:
             awarded_dt = None
-            sla_met = True
+            sla_met = False
             g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
+            g01_01_status = "Confirmation Required"
+            g01_01_approval = "Pending Confirmation"
 
         author_name = pmo_lead_name
         dm_name = charter.delivery_manager or "Delivery Manager"
@@ -843,11 +847,11 @@ class BaselineAggregator:
                 gate_criterion="Startup Kit created within 1 day of delivery handoff (SLA)",
                 related_section4_artifact="Project Startup Charter",
                 owner=author_name,
-                status="Complete" if sla_met else "Exception Required",
+                status=g01_01_status,
                 evidence=g01_01_evidence,
-                exception_required=not sla_met,
-                exception_details="Startup Kit creation exceeded 1 business day SLA." if not sla_met else None,
-                approval_status="Approved" if sla_met else "Exception Required"
+                exception_required=(g01_01_status == "Exception Required"),
+                exception_details="Startup Kit creation exceeded 1 business day SLA." if g01_01_status == "Exception Required" else None,
+                approval_status=g01_01_approval
             ),
             ReadinessChecklistItem(
                 item_id="G01-02",

@@ -643,7 +643,7 @@
     },
     {
       "table_index": 12,
-      "rows_count": 8,
+      "rows_count": 5,
       "rows": [
         [
           "Role",
@@ -652,45 +652,27 @@
           "Staffing Status"
         ],
         [
-          "Cloud/DevOps Engineer (AWS, Terraform, CI/CD, container orchestration)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Cloud/DevOps Engineer (AWS, Terraform, CI/CD, container orchestration) (+2.0% Recovery)]",
-          "AWS",
+          "Cloud Infrastructure Architect",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Cloud Infrastructure Architect (+2.0% Recovery)]",
+          "AWS, Terraform",
           "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
         ],
         [
-          "Backend Engineer (Python FastAPI, PostgreSQL microservices)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Backend Engineer (Python FastAPI, PostgreSQL microservices) (+2.0% Recovery)]",
-          "Terraform (IaC)",
+          "Backend FastAPI Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Backend FastAPI Developer (+2.0% Recovery)]",
+          "Python, FastAPI",
           "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
         ],
         [
-          "Identity/Security Engineer (IAM, SSO, role-based access control)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Identity/Security Engineer (IAM, SSO, role-based access control) (+2.0% Recovery)]",
-          "Python FastAPI",
+          "Frontend React Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Frontend React Developer (+2.0% Recovery)]",
+          "React, TypeScript",
           "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
         ],
         [
-          "Search/Data Engineer (catalog search API and indexing pipeline)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Search/Data Engineer (catalog search API and indexing pipeline) (+2.0% Recovery)]",
-          "PostgreSQL",
-          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
-        ],
-        [
-          "Integration Engineer (payment gateway, legacy ERP catalog feeds)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Integration Engineer (payment gateway, legacy ERP catalog feeds) (+2.0% Recovery)]",
-          "Microservices architecture",
-          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
-        ],
-        [
-          "Frontend Engineer (responsive web store and mobile web interface)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Frontend Engineer (responsive web store and mobile web interface) (+2.0% Recovery)]",
-          "Container orchestration",
-          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
-        ],
-        [
-          "QA/Test Automation Engineer (end-to-end regression suite)",
-          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for QA/Test Automation Engineer (end-to-end regression suite) (+2.0% Recovery)]",
-          "CI/CD pipelines",
+          "Data QA Engineer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Data QA Engineer (+2.0% Recovery)]",
+          "Pytest, Data Validation",
           "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
         ]
       ]
@@ -798,7 +780,7 @@
           "Talent PM",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "0 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
+          "4 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
         ],
         [
           "G01-09",
@@ -1169,7 +1151,7 @@
         [
           "AMB-01",
           "Date Conflict",
-          "Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+          "sow.txt, Sections 2 and 4: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
           "Phases are expressed only in relative weeks, so the timeline has no fixed anchor. Late ERP access would block Phase 2 catalog work with no stated schedule or commercial relief.",
           "What is the confirmed project start date, and by what calendar date will the client deliver ERP catalog feed access? Will Phase 2 dates move day-for-day if access is late?",
           "Open"
@@ -1177,7 +1159,7 @@
         [
           "AMB-02",
           "Ambiguous Acceptance",
-          "Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+          "sow.txt, Section 2: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
           "Without testable criteria, milestone sign-off is subjective. This risks disputed acceptance, delayed milestone completion, and unbilled or contested effort.",
           "What objective acceptance criteria apply to each phase deliverable? Who signs off, and within how many business days is a deemed-acceptance applied if no response is given?",
           "Open"
@@ -1185,7 +1167,7 @@
         [
           "AMB-03",
           "Scope Contradiction",
-          "Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+          "sow.txt, Sections 2 and 3: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
           "The pricing engine is a milestone item but not a listed deliverable. This creates a risk of unplanned effort or a scope dispute.",
           "Is the pricing engine in contracted scope? If so, what functionality is required (rules, promotions, tax), and should it be added to the deliverables list?",
           "Open"
@@ -1193,7 +1175,7 @@
         [
           "AMB-04",
           "Scope Contradiction",
-          "Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+          "sow.txt, Sections 1, 2 and 3: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
           "It is unclear whether a separate mobile web interface is expected or whether a responsive web store satisfies it. This risks front-end scope and testing effort being under- or over-estimated.",
           "Is the responsive web store the only front-end deliverable, or is a separate mobile web interface also required? Which devices and browsers must be supported?",
           "Open"
@@ -1201,7 +1183,7 @@
         [
           "AMB-05",
           "Scope Contradiction",
-          "Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+          "sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
           "Training, UAT support, and production rollout are milestone activities without defined deliverables. This creates uncertainty on effort, format, and completion evidence.",
           "What training materials are required (format, audience, volume)? What is Toptal's role in UAT and production rollout, and what outputs are expected?",
           "Open"
@@ -1209,7 +1191,7 @@
         [
           "AMB-06",
           "Unclear SLA",
-          "Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+          "sow.txt, Section 4: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
           "Compliance review delays could stall phase completion and go-live. The plan has no defined review windows, and there is no remedy for a missed turnaround.",
           "At which points will compliance reviews be submitted, and what happens to the schedule and fees if the 5-business-day turnaround is missed?",
           "Open"
@@ -1217,7 +1199,7 @@
         [
           "AMB-07",
           "Ambiguous Acceptance",
-          "Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+          "sow.txt, Section 4: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
           "Performance expectations are undefined, so the result cannot be objectively accepted. Sandbox latency outside Toptal's control could cause a failed or disputed acceptance.",
           "What performance and load targets must the platform meet, and how will acceptance account for third-party sandbox latency?",
           "Open"
@@ -1225,7 +1207,7 @@
         [
           "AMB-08",
           "Scope Contradiction",
-          "Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+          "sow.txt, Header and Section 2: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
           "Fixed-duration, acceptance-gated phases under Time and Materials blur commercial expectations. The client may expect fixed-price outcomes, which risks margin erosion and billing disputes.",
           "Is the 18-week plan an estimate or a commitment? What is the budget ceiling or not-to-exceed amount, and how are changes handled?",
           "Open"
@@ -1233,7 +1215,7 @@
         [
           "AMB-09",
           "Date Conflict",
-          "Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+          "sow.txt, Sections 2, 3 and 4: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
           "Strict sequencing leaves no room for parallel front-end and test automation work. Any slip in an earlier phase pushes the 18-week end date.",
           "May front-end and test automation work start before the prior phase is accepted? In which phase is the regression suite due?",
           "Open"
@@ -1241,7 +1223,7 @@
         [
           "AMB-10",
           "Ownership Gap",
-          "Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+          "sow.txt, Section 4: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
           "Unassigned owners for external access and environments can delay Phases 1-2. Toptal may be held accountable for dependencies it does not control.",
           "Who are the named client owners for ERP feed access, payment provider sandbox credentials, and AWS account provisioning, and by what dates will each be ready?",
           "Open"
@@ -1249,7 +1231,7 @@
         [
           "AMB-11",
           "Ownership Gap",
-          "Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+          "sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
           "Unclear UAT resourcing and post-launch ownership may delay go-live or create unplanned support obligations after the final phase.",
           "Who performs UAT and gives go-live approval, and who owns production support after rollout? Is any hypercare period expected?",
           "Open"
@@ -4946,7 +4928,7 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+        "Date Conflict: sow.txt, Sections 2 and 4: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -4973,8 +4955,8 @@
       [
         "RAID-06",
         "Issue",
-        "Ambiguous Acceptance: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 2: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+        "Sections: 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4995,12 +4977,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-02",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-07",
         "Issue",
-        "Scope Contradiction: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5027,7 +5009,7 @@
       [
         "RAID-08",
         "Issue",
-        "Scope Contradiction: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+        "Scope Contradiction: sow.txt, Sections 1, 2 and 3: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5054,7 +5036,7 @@
       [
         "RAID-09",
         "Issue",
-        "Scope Contradiction: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5081,8 +5063,8 @@
       [
         "RAID-10",
         "Issue",
-        "Unclear SLA: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
-        "Not cited",
+        "Unclear SLA: sow.txt, Section 4: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5103,13 +5085,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-06",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-11",
         "Issue",
-        "Ambiguous Acceptance: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 4: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5130,13 +5112,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-07",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-12",
         "Issue",
-        "Scope Contradiction: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
-        "Not cited",
+        "Scope Contradiction: sow.txt, Header and Section 2: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+        "Sections: 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5157,12 +5139,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-08",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-13",
         "Issue",
-        "Date Conflict: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+        "Date Conflict: sow.txt, Sections 2, 3 and 4: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5189,8 +5171,8 @@
       [
         "RAID-14",
         "Issue",
-        "Ownership Gap: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
-        "Not cited",
+        "Ownership Gap: sow.txt, Section 4: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5211,12 +5193,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-10",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-15",
         "Issue",
-        "Ownership Gap: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+        "Ownership Gap: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",

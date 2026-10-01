@@ -379,7 +379,10 @@ class DocxGenerator(IDocumentWriter):
 
         # Metadata Header Table
         meta_table = doc.add_table(rows=5, cols=4)
-        sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
+        if baseline.sow_awarded_date:
+            sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
+        else:
+            sla_status_str = "Not determinable - award date not stated"
         dm_meta = (ctx.delivery_manager if ctx and ctx.delivery_manager else None) or (charter.delivery_manager if charter and charter.delivery_manager else None) or (talent_rec.delivery_manager if talent_rec and talent_rec.delivery_manager else None) or "[UNASSIGNED - TO BE CONFIRMED]"
         tpm_meta = (ctx.talent_pm if ctx and ctx.talent_pm else None) or (charter.talent_pm if charter and charter.talent_pm else None) or (talent_rec.talent_pm if talent_rec and talent_rec.talent_pm else None) or "[UNASSIGNED - TO BE CONFIRMED]"
         pmo_meta = (ctx.pmo_lead if ctx and ctx.pmo_lead else None) or (charter.pmo_lead if charter and charter.pmo_lead else None) or (talent_rec.pmo_lead if talent_rec and talent_rec.pmo_lead else None) or (baseline.author_name if baseline.author_name else None) or "[UNASSIGNED - TO BE CONFIRMED]"
@@ -437,7 +440,7 @@ class DocxGenerator(IDocumentWriter):
             if baseline.sow_awarded_date:
                 sla_val = f"SLA Met ({'Yes' if baseline.sla_met else 'No - Retroactive PMO Waiver Required'})"
             else:
-                sla_val = "Award date not stated [CONFIRMATION REQUIRED]"
+                sla_val = "Not determinable - award date not stated [CONFIRMATION REQUIRED]"
             model_val = f"Delivery: {charter.delivery_model} | Governance: {charter.governance_model}"
 
             charter_rows = [

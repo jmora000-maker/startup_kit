@@ -30,7 +30,7 @@
         ],
         [
           "1-Day SLA Status",
-          "Met (Drafted <= 1 day)",
+          "Not determinable - award date not stated",
           "Workflow State",
           "Clarification Pending"
         ]
@@ -54,7 +54,7 @@
         ],
         [
           "Turnaround SLA & PMO Authorization",
-          "Award date not stated [ACT-REQ-01: Log retroactive PMO waiver for SLA (+2.0% Recovery)]"
+          "Not determinable - award date not stated [ACT-REQ-01: Log retroactive PMO waiver for SLA (+2.0% Recovery)]"
         ],
         [
           "Escalation Path & Decision Hierarchy",
@@ -933,7 +933,7 @@
         [
           "DEC-03",
           "Toptal owns ARC application development (micro-frontend shell, ARC micro-frontend, FastAPI services, nomenclature service) and QA test automation; Client owns the platform layer and data tier.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
@@ -945,43 +945,43 @@
         [
           "DEC-05",
           "QA is delivered as automated test scripts, their execution, and defect reports rather than manual QA passes, and testing covers the full platform including SSO and external integrations.",
-          "Technical Lead",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-06",
           "For Client-built components marked 'Certification', Toptal delivers test scripts, execution, and a defect report; achieving the target and remediating failures is Client's responsibility.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-07",
           "If telemetry shows a missed latency target is caused by a Client-owned platform component, the criterion is treated as met for Toptal's work and logged in the defect report for Client remediation.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-08",
           "UAT runs after each milestone and is limited to two runs per milestone within the fixed price; additional runs are handled by Change Order.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-09",
           "Re-testing after Client remediation of failed Certification targets is included once; additional re-runs and rework from upstream changes (e.g., Snowflake schema or taxonomy shifts) are handled by Change Order.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-10",
           "Toptal will use Client's existing design system for all user-facing screens; creating, extending, or maintaining it is excluded, and additional components or changes are handled by Change Order.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-11",
           "The Cogen API is assumed to be about 95% available and stable; test failures and re-tests from lower availability are handled by Change Order.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ],
         [
@@ -1005,7 +1005,7 @@
         [
           "DEC-15",
           "Hypercare beyond the 48-hour post-deployment defect watch and any post-launch maintenance or test-script maintenance phase are out of scope.",
-          "Delivery Manager",
+          "Toptal",
           "Approved"
         ]
       ]
@@ -1288,7 +1288,7 @@
       "rows_count": 1,
       "rows": [
         [
-          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 58.0% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 65.3% | Acceptance Rigor: 100.0% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Met (Drafted within 1 business day)\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 5 | Open Clarifications: 20\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 5 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
+          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 58.0% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 65.3% | Acceptance Rigor: 100.0% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Not determinable - award date not stated\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 5 | Open Clarifications: 20\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 5 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
         ]
       ]
     },
@@ -1310,11 +1310,11 @@
           "G01-01",
           "Startup Kit created within 1 day of delivery handoff (SLA)",
           "Project Startup Charter",
-          "Complete",
+          "Confirmation Required",
           "[UNASSIGNED - TO BE CONFIRMED]",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "Award date not stated in SOW [CONFIRMATION REQUIRED]. [ACT-17]"
+          "Startup Kit drafted on 2026-10-01. Award date not stated in SOW [CONFIRMATION REQUIRED]. [ACT-17]"
         ],
         [
           "G01-02",
@@ -1454,7 +1454,7 @@
           "[UNASSIGNED - TO BE CONFIRMED]",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "19 validation points logged for mobilization confirmation. [ACT-08]"
+          "20 validation points logged for mobilization confirmation. [ACT-08]"
         ]
       ]
     },
@@ -1679,7 +1679,7 @@
         [
           "AMB-02",
           "Scope Contradiction",
-          "Assumptions: 'Estimates include integrating it and building up to [N] ARC-specific components... Further components or changes are addressed by Change Order.'",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions & Dependencies); Page 9: Assumptions: 'Estimates include integrating it and building up to [N] ARC-specific components... Further components or changes are addressed by Change Order.'",
           "The component cap is an unfilled placeholder, so the Change Order trigger for design-system components cannot be enforced. This creates margin and scope-creep risk on the P2b UI build.",
           "What is the agreed number [N] of ARC-specific components, and which components (e.g., interval visualization, facet panel) are included?",
           "Open"
@@ -1687,7 +1687,7 @@
         [
           "AMB-03",
           "Unclear SLA",
-          "Assumptions: 'The Cogen API is assumed to be available and stable at approximately 95%, as assessed by Syngenta. Test failures and re-test cycles arising from Cogen availability below that level will be addressed by Change Order.'",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions & Dependencies); Page 8: Assumptions: 'The Cogen API is assumed to be available and stable at approximately 95%, as assessed by Syngenta. Test failures and re-test cycles arising from Cogen availability below that level will be addressed by Change Order.'",
           "'Approximately 95%' has no measurement window or method, and the assessor is not defined as a role or process. Disputes over what triggers a Change Order could cause unfunded re-testing.",
           "Please define the Cogen availability metric (measurement period, method, tool) and who records the measurement that triggers a Change Order.",
           "Open"
@@ -1695,7 +1695,7 @@
         [
           "AMB-04",
           "Scope Contradiction",
-          "Assumptions: 'The external API integrations within scope are Cogen and Tagasys.' Third Party Items: 'Cogen and Tagasys APIs... Provided by Client during the engagement. [confirm]'. The Work Output table has no story for Cogen or Tagasys.",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions), Section 8 (Third Party Items), Section 4 (Work Output); Pages 4-9: Assumptions: 'The external API integrations within scope are Cogen and Tagasys.' Third Party Items: 'Cogen and Tagasys APIs... Provided by Client during the engagement. [confirm]'. The Work Output table has no story for Cogen or Tagasys.",
           "The integrations are called in scope, but no build or test deliverable, acceptance criteria or confirmed provider exists. This leaves the scope boundary and test effort undefined.",
           "Please confirm whether Cogen and Tagasys integration build is in Toptal's scope or only testing, which stories cover them, and who provides the API access and credentials.",
           "Open"
@@ -1751,7 +1751,7 @@
         [
           "AMB-11",
           "Unclear SLA",
-          "QA principles: 'Toptal will re-execute the applicable test scripts in accordance with the Assumptions outlined in this contract. Additional re-runs will be addressed by Change Order.' The Assumptions do not state how many re-runs are included.",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 3 (QA and Test Automation - Re-testing), Section 7 (Assumptions); Pages 3, 8-9: QA principles: 'Toptal will re-execute the applicable test scripts in accordance with the Assumptions outlined in this contract. Additional re-runs will be addressed by Change Order.' The Assumptions do not state how many re-runs are included.",
           "The included number of re-test cycles is undefined. Re-testing after Client remediation could be treated as chargeable at any point.",
           "How many re-test cycles per Certification target are included in the fixed price, and what is the time window for re-execution after Client remediation?",
           "Open"
@@ -1759,7 +1759,7 @@
         [
           "AMB-12",
           "Scope Contradiction",
-          "QA principles: 'Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope.' Assumptions: 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 3 (QA and Test Automation - Test scope), Section 7 (Assumptions); Pages 3, 9: QA principles: 'Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope.' Assumptions: 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
           "'Full platform' testing conflicts with the limit to listed Toptal-built and Certification items. This invites scope expansion without a Change Order.",
           "Please confirm that test scope is limited to the stories listed in the Work Output table, and list the platform components included in 'full platform' testing.",
           "Open"
@@ -1767,7 +1767,7 @@
         [
           "AMB-13",
           "Date Conflict",
-          "Assumptions: schedule is 'measured from the Start Date' (P1 weeks 1-6 to P3 weeks 22-26). 'The schedule and cost were created considering that no breaks or stoppages due to holidays will occur.' Client standards are required 'on or before the start date'. No Start Date is stated.",
+          "[V1] Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions), Section 6 (Client Responsibilities); Pages 7-8: Assumptions: schedule is 'measured from the Start Date' (P1 weeks 1-6 to P3 weeks 22-26). 'The schedule and cost were created considering that no breaks or stoppages due to holidays will occur.' Client standards are required 'on or before the start date'. No Start Date is stated.",
           "With no confirmed Start Date and a no-holiday assumption across a 26-week plan, week-based milestone dates cannot be fixed. Any holiday or late prerequisite becomes an unfunded delay risk.",
           "Please confirm the Start Date and the holiday calendar, and whether holiday stoppages extend the schedule without penalty.",
           "Open"
@@ -8157,7 +8157,7 @@
         "RAID-21",
         "Issue",
         "Scope Contradiction: Assumptions: 'Estimates include integrating it and building up to [N] ARC-specific components... Further components or changes are addressed by Change Order.'",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions & Dependencies); Page 9",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -8178,13 +8178,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-02",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-22",
         "Issue",
         "Unclear SLA: Assumptions: 'The Cogen API is assumed to be available and stable at approximately 95%, as assessed by Syngenta. Test failures and re-test cycles arising from Cogen availability below that level will be addressed by Change Order.'",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions & Dependencies); Page 8",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -8205,13 +8205,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-03",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-23",
         "Issue",
         "Scope Contradiction: Assumptions: 'The external API integrations within scope are Cogen and Tagasys.' Third Party Items: 'Cogen and Tagasys APIs... Provided by Client during the engagement. [confirm]'. The Work Output table has no story for Cogen or Tagasys.",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions), Section 8 (Third Party Items), Section 4 (Work Output); Pages 4-9",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -8232,7 +8232,7 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-04",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-24",
@@ -8400,7 +8400,7 @@
         "RAID-30",
         "Issue",
         "Unclear SLA: QA principles: 'Toptal will re-execute the applicable test scripts in accordance with the Assumptions outlined in this contract. Additional re-runs will be addressed by Change Order.' The Assumptions do not state how many re-runs are included.",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 3 (QA and Test Automation - Re-testing), Section 7 (Assumptions); Pages 3, 8-9",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -8421,13 +8421,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-11",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-31",
         "Issue",
         "Scope Contradiction: QA principles: 'Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope.' Assumptions: 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 3 (QA and Test Automation - Test scope), Section 7 (Assumptions); Pages 3, 9",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -8448,13 +8448,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-12",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-32",
         "Issue",
         "Date Conflict: Assumptions: schedule is 'measured from the Start Date' (P1 weeks 1-6 to P3 weeks 22-26). 'The schedule and cost were created considering that no breaks or stoppages due to holidays will occur.' Client standards are required 'on or before the start date'. No Start Date is stated.",
-        "Not cited",
+        "Exhibit A - Arc Genomics Platform.pdf, Section 7 (Assumptions), Section 6 (Client Responsibilities); Pages 7-8",
         "Contract Clarification",
         "Multiple phases",
         "M1, M4",
@@ -8475,7 +8475,7 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-13",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-33",
@@ -8939,7 +8939,7 @@
       [
         "RAID-50",
         "Issue",
-        "What is the formal project baseline contract award and execution date?",
+        "What is the formal SOW contract award and execution date?",
         "Not cited",
         "Open Question",
         "Cross-phase",

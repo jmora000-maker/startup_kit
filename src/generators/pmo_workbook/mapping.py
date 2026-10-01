@@ -924,8 +924,14 @@ def score_evidence_consistency(
                 best_idx = i
 
         if own_score < 0.10 and best_score >= 0.35 and best_idx != idx:
-            best_d = deliverables[best_idx]
-            note = f"Evidence may belong to {best_d.id} - verify against the SOW"
-            flagged[d.id] = (best_d.id, note)
+            # WBS-09: Require best-matching deliverable to share at least one distinctive token (IDF >= ln 2)
+            shared_distinctive = [
+                t for t in set(ev_tokens).intersection(target_tokens_list[best_idx])
+                if idf_dict.get(t, 0.0) >= math.log(2.0)
+            ]
+            if shared_distinctive:
+                best_d = deliverables[best_idx]
+                note = f"Evidence may belong to {best_d.id} - verify against the SOW"
+                flagged[d.id] = (best_d.id, note)
 
     return flagged

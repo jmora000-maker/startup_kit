@@ -92,7 +92,7 @@ CONTRACT_REF_REGEX = CITATION_FMT1_REGEX
 
 # Citation pattern 2: Exhibit A, ... / Attachment ... (v6 A28, Rev 2 RAID-03)
 EXHIBIT_REGEX = re.compile(
-    r"\b((?:Exhibit|Attachment|Appendix|Schedule)\s+(?:[0-9]+|[A-Z]\b|(?!(?:is|are|the|and|in|on|at|to|for|of|from|by|with|will|estimated|assumed)\b)[A-Za-z0-9]+)(?:,\s*[^,:\n]+)?)\b",
+    r"\b((?:Exhibit|Attachment|Appendix|Schedule|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)(?:,\s*[^,:\n]+)?)\b",
     re.IGNORECASE
 )
 DOC_FILE_REGEX = re.compile(
@@ -102,9 +102,9 @@ DOC_FILE_REGEX = re.compile(
 
 
 def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]:
-    r"""Extract contract reference from text per v4 A16, v6 A28.
+    r"""Extract contract reference from text per v4 A16, v6 A28, RAID-03.
     
-    Tries 3 formats in order, combined with SOW reference and section extraction:
+    Tries formats in order, combined with SOW reference and section extraction:
       1. [V1] DocName.pdf, ref: text
       2. Exhibit / Attachment / Document file citations
       3. SOW references and Section numbers
@@ -151,7 +151,15 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
         parts.append(f"Sections: {', '.join(sections)}")
 
     if parts:
-        return " | ".join(parts), None
+        candidate = " | ".join(parts)
+        # Final validation check per RAID-03: must contain file ext, Exhibit word, SOW ref, or section number
+        has_ext = bool(re.search(r'\.[a-zA-Z0-9]{2,4}\b', candidate))
+        has_exhibit = bool(EXHIBIT_REGEX.search(candidate))
+        has_sow_ref = bool(re.search(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', candidate, re.IGNORECASE))
+        has_section = bool(re.search(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', candidate, re.IGNORECASE))
+        if has_ext or has_exhibit or has_sow_ref or has_section:
+            return candidate, None
+
     return "Not cited", "No clause reference in baseline"
 
 
@@ -598,7 +606,11 @@ def build_workbook_model(
         for m in filtered_milestones:
             for text in (m.critical_path_assumptions or []) + (m.key_dependencies or []):
                 if SEQUENTIAL_GATE_REGEX.search(text):
-                    sequential_gate_source_id = m.id
+                    id_match = re.search(r'\b(ASM-\d+|DEP-\d+|RSK-\d+|ISS-\d+)\b', text)
+                    if id_match:
+                        sequential_gate_source_id = id_match.group(1)
+                    else:
+                        sequential_gate_source_id = "SOW"
                     break
             if sequential_gate_source_id:
                 break
@@ -1694,12 +1706,12 @@ def build_workbook_model(
             notes=all_r_notes,
         ))
 
-    # Group 4: Open Questions (v3 A8, v4 A16)
+    # Group 4: Open Questions (v3 A8, v4 A16, TXT-01)
     valid_open_questions: List[Tuple[int, str]] = []
     for q_idx, q_text in enumerate(baseline.open_questions or [], 1):
         if not q_text or not q_text.strip():
             continue
-        clean_q = clean_text_v2(q_text)
+        clean_q = clean_contract_text(q_text)
         if is_defensive_excluded(clean_q) or re.search(r"\brole is unassigned\b", clean_q, re.IGNORECASE):
             continue
         valid_open_questions.append((q_idx, clean_q))

@@ -646,19 +646,20 @@ class ReadinessScoringEngine:
             if baseline.sow_awarded_date:
                 sla_met = baseline.sla_met
                 item.evidence = f"Startup Kit drafted on {draft_str} (Project awarded {baseline.sow_awarded_date.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
+                if sla_met:
+                    item.status = "Complete"
+                    item.exception_required = False
+                    item.exception_details = None
+                else:
+                    item.status = "Exception Required"
+                    item.exception_required = True
+                    if not item.exception_details:
+                        item.exception_details = "Startup Kit creation exceeded 1 business day SLA."
             else:
-                sla_met = True
                 item.evidence = f"Startup Kit drafted on {draft_str}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
-
-            if sla_met:
-                item.status = "Complete"
+                item.status = "Confirmation Required"
                 item.exception_required = False
                 item.exception_details = None
-            else:
-                item.status = "Exception Required"
-                item.exception_required = True
-                if not item.exception_details:
-                    item.exception_details = "Startup Kit creation exceeded 1 business day SLA."
 
         # G01-02: Governance Tier & Cadence
         if "G01-02" in chk_map:
@@ -918,6 +919,7 @@ class ReadinessScoringEngine:
             item = chk_map["G01-15"]
             if not baseline.open_questions:
                 item.status = "Complete"
+                item.evidence = "No open questions flagged for mobilization."
                 item.exception_required = False
                 item.exception_details = None
             else:

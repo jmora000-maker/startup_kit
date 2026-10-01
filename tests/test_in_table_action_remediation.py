@@ -196,6 +196,7 @@ def baseline_with_all_action_types(mock_source_ref: SourceReference) -> StartupK
         reviewer_names=["Delivery Manager", "Talent PM"],
         concurring_approver_name="PMO Director",
         sla_met=True,
+        sow_awarded_date=date(2026, 9, 30),
         readiness_checklist=checklist,
         deliverables=deliverables,
         milestones=milestones,
