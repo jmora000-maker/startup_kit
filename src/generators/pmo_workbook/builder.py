@@ -711,7 +711,7 @@ def build_workbook_model(
     for m in sorted_milestones:
         m_delivs = delivs_by_ms[m.id]
         m_wps = wps_by_ms[m.id]
-        deliv_wps, other_wps = map_work_packages_to_deliverables(m_wps, m_delivs)
+        deliv_wps, other_wps = map_work_packages_to_deliverables(m_wps, m_delivs, ignore_parent_links=is_backlog_phase_order_detected)
         matched_wps_by_deliv.update(deliv_wps)
         other_wps_by_ms[m.id] = other_wps
 
