@@ -1288,7 +1288,7 @@
       "rows_count": 1,
       "rows": [
         [
-          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 58.0% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 65.3% | Acceptance Rigor: 100.0% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Not determinable - award date not stated\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 5 | Open Clarifications: 20\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 5 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
+          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 58.0% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 65.3% | Acceptance Rigor: 100.0% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Not determinable - award date not stated\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 6 | Open Clarifications: 20\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 5 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
         ]
       ]
     },
@@ -1330,11 +1330,11 @@
           "G01-03",
           "Deliverables mapped to owners with explicit acceptance routes",
           "Deliverables and Acceptance Matrix",
-          "Complete",
+          "Review Required",
           "Talent PM",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "20 deliverables mapped to acceptance routes and evidence expectations."
+          "20 deliverables mapped to acceptance routes and evidence expectations.\n[EXCEPTION: Deliverables pending acceptance criteria confirmation, owner assignment, or client approver.]"
         ],
         [
           "G01-04",
