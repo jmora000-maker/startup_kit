@@ -145,7 +145,7 @@ INSTRUCTIONS FOR WORK PACKAGES:
 Decompose the deliverables into preliminary backlog work packages (e.g. WP-01, WP-02...).
 - id: e.g. WP-01, WP-02
 - parent_deliverable_id: matching deliverable ID from the deliverables list below
-- title: Concise work package title (e.g. '{reference}: {title}')
+- title: Concise work package title (e.g. '{{reference}}: {{title}}')
 - description: Brief description of tasks (1-2 sentences)
 - preliminary_sequence: Integer sequence order (1, 2, 3...)
 - owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'

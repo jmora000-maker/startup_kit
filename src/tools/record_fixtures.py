@@ -16,25 +16,25 @@ logger = logging.getLogger(__name__)
 FIXTURES_TO_RECORD = [
     {
         "name": "arc_genomics",
-        "input_dir": Path("inputs/SOWs/Syngenta"),
+        "input_dir": Path("tests/fixtures/sow/arc_genomics/inputs"),
         "is_mock": False,
         "is_synthetic": False,
     },
     {
         "name": "mock_sow",
-        "input_dir": Path("inputs/SOWs/Test"),
+        "input_dir": Path("tests/fixtures/sow/mock_sow/inputs"),
         "is_mock": True,
         "is_synthetic": False,
     },
     {
         "name": "no_story_ids",
-        "input_dir": Path("inputs/SOWs/no_story_ids"),
+        "input_dir": Path("tests/fixtures/sow/no_story_ids/inputs"),
         "is_mock": False,
         "is_synthetic": True,
     },
     {
         "name": "numbered_deliverables",
-        "input_dir": Path("inputs/SOWs/numbered_deliverables"),
+        "input_dir": Path("tests/fixtures/sow/numbered_deliverables/inputs"),
         "is_mock": False,
         "is_synthetic": True,
     },
@@ -52,13 +52,14 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
     
     # 1. Copy inputs
     fixture_inputs = fixture_dir / "inputs"
-    if fixture_inputs.exists():
-        shutil.rmtree(fixture_inputs)
-    shutil.copytree(input_dir, fixture_inputs)
+    if input_dir.resolve() != fixture_inputs.resolve():
+        if fixture_inputs.exists():
+            shutil.rmtree(fixture_inputs)
+        shutil.copytree(input_dir, fixture_inputs)
     
     # 2. Ingest
     ingestion = IngestionService()
-    docs = ingestion.ingest_directory(input_dir)
+    docs = ingestion.ingest_directory(fixture_inputs)
     logger.info(f"Ingested {len(docs)} documents for {name}")
     
     # 3. Setup client in record mode (writing to fixture_dir / 'llm_cache' AND global_cache_dir)
