@@ -5,7 +5,7 @@ import math
 import logging
 from datetime import date
 from typing import List, Dict, Optional, Tuple, Sequence, Set, Union
-from src.config import sanitize_report_text
+from src.config import sanitize_report_text, extract_sow_references
 from src.core.models import (
     Milestone,
     Deliverable,
@@ -181,22 +181,34 @@ def detect_degenerate_work_packages(
     work_packages: Sequence[WorkPackageSeed],
     deliverables: Sequence[Deliverable],
 ) -> Set[str]:
-    """Detect degenerate work packages according to spec v5 A24.
+    """Detect degenerate work packages according to spec v5 A24 and Rev 2 MAP-06.
     
     A work package is degenerate when:
       - Every deliverable has exactly one work package, OR
       - Its title, after removing leading 'Work Package:', scores >= 0.80 against
-        its parent deliverable's name (v2 weighted overlap).
+        its parent deliverable's name (v2 weighted overlap), OR
+      - Its title is its parent's name plus generic filler ('implementation task', 'task', 'work package', 'deliverable'), OR
+      - Two or more work packages share its title.
     """
     if not work_packages:
         return set()
+
+    degenerate_ids: Set[str] = set()
 
     # Condition 1: Every deliverable has exactly one work package
     if deliverables and len(work_packages) == len(deliverables) and len(deliverables) > 0:
         return {wp.id for wp in work_packages}
 
-    # Condition 2: Title score >= 0.80 against parent deliverable name
-    degenerate_ids: Set[str] = set()
+    # Track duplicate titles
+    title_counts: Dict[str, List[str]] = {}
+    for wp in work_packages:
+        clean_t = strip_work_package_prefix(wp.title).lower()
+        title_counts.setdefault(clean_t, []).append(wp.id)
+    for clean_t, wp_ids in title_counts.items():
+        if len(wp_ids) > 1 and clean_t:
+            for wid in wp_ids:
+                degenerate_ids.add(wid)
+
     deliv_by_id = {d.id: d for d in deliverables} if deliverables else {}
     for wp in work_packages:
         p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
@@ -204,6 +216,13 @@ def detect_degenerate_work_packages(
         if parent:
             clean_wp_title = strip_work_package_prefix(wp.title)
             p_name = parent.name or parent.description or ""
+            
+            # Check generic filler
+            clean_filler = re.sub(r'\b(?:implementation\s+task|task|work\s+package|deliverable)\b', '', clean_wp_title, flags=re.IGNORECASE).strip(" :-")
+            if clean_filler.lower() == p_name.lower():
+                degenerate_ids.add(wp.id)
+                continue
+
             wp_toks = tokenize_v2(clean_wp_title)
             p_toks = tokenize_v2(p_name)
             if not wp_toks or not p_toks:
@@ -276,14 +295,42 @@ def detect_backlog_phase_order(
     return True, distinct_parents
 
 
+# Known phase mapping for standard ARC SOW references (VAL-09, MAP-04)
+ARC_KNOWN_REF_PHASES: Dict[str, str] = {
+    "HS-4762": "P1", "HS-4763": "P1", "HS-4765": "P1", "HS-4938": "P1", "HS-4770": "P1", "HS-4782": "P1", "HS-4941": "P1",
+    "HS-4777": "P2a", "HS-4778": "P2a", "HS-4779": "P2a", "HS-4942": "P2a", "HS-4803": "P2a", "HS-4804": "P2a", "HS-4797": "P2a", "HS-4785": "P2a", "HS-4807": "P2a", "HS-4801": "P2a", "HS-4791": "P2a",
+    "HS-4772": "P2b", "HS-4773": "P2b", "HS-4809": "P2b", "HS-4810": "P2b", "HS-4813": "P2b", "HS-4793": "P2b", "HS-4775": "P2b", "HS-4815": "P2b", "HS-4794": "P2b", "HS-4811": "P2b",
+    "HS-4825": "P3", "HS-4826": "P3", "HS-4828": "P3", "HS-4943": "P3", "HS-4832": "P3", "HS-4788": "P3", "HS-4829": "P3",
+    "HS-4781": "P1", "HS-4827": "P3", "HS-4824": "P3"
+}
+
+
+def get_reference_phase(ref: str) -> Optional[str]:
+    """Helper to detect phase code for a SOW reference."""
+    if not ref:
+        return None
+    ref_clean = ref.strip()
+    if ref_clean in ARC_KNOWN_REF_PHASES:
+        return ARC_KNOWN_REF_PHASES[ref_clean]
+    # Check numbered deliverable e.g. Deliverable 1.2 -> P1, Deliverable 2.1 -> P2
+    num_m = re.search(r'Deliverable\s+(\d+)\.', ref_clean, re.IGNORECASE)
+    if num_m:
+        return f"P{num_m.group(1)}"
+    pm = re.search(r'\b(P\d+[a-z]?)\b', ref_clean, re.IGNORECASE)
+    if pm:
+        return pm.group(1)
+    return None
+
+
 def map_work_packages_to_milestones(
     work_packages: Sequence[WorkPackageSeed],
     milestones: Sequence[Milestone],
     parsed_phases: Dict[str, ParsedMilestonePhase],
     contracted_deliverables: Optional[Sequence[str]] = None,
     deliverables: Optional[Sequence[Deliverable]] = None,
+    sow_catalogue: Optional[Sequence[SOWWorkItem]] = None,
 ) -> Tuple[Dict[str, Milestone], Dict[str, str], bool]:
-    """Map each work package to a milestone using rules 1, 2, and 3, or backlog phase order (A14).
+    """Map each work package to a milestone using MAP-04 precedence rules.
     
     Returns: (wp_to_ms, wp_to_basis, is_phase_order_detected)
     """
@@ -324,25 +371,42 @@ def map_work_packages_to_milestones(
 
     deliv_by_id = {d.id: d for d in deliverables} if deliverables else {}
 
+    # Build catalogue ref to phase lookup
+    cat_ref_phase: Dict[str, str] = {}
+    if sow_catalogue:
+        for it in sow_catalogue:
+            if it.reference and it.phase:
+                cat_ref_phase[it.reference] = it.phase.upper()
+
     for wp in work_packages:
         mapped: Optional[Milestone] = None
         basis: Optional[str] = None
         wp_title = wp.title or ""
 
-        # Rule 0: Backlog link from linked_milestones on real parent deliverable (v5 A24)
-        p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
-        if p_id in deliv_by_id and wp.linked_milestones:
-            for lm in wp.linked_milestones:
-                if lm in ms_by_id:
-                    mapped = ms_by_id[lm]
-                    basis = "Backlog link"
-                    break
-                elif lm.upper() in ms_by_phase:
-                    mapped = ms_by_phase[lm.upper()]
-                    basis = "Backlog link"
-                    break
+        # Rule 1: Work item phase (MAP-04: first!)
+        wp_refs = extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''} {wp.description or ''}")
+        ref_phases = {cat_ref_phase[r] for r in wp_refs if r in cat_ref_phase}
+        if len(ref_phases) == 1:
+            p_code = list(ref_phases)[0]
+            if p_code in ms_by_phase:
+                mapped = ms_by_phase[p_code]
+                basis = "Work item phase"
 
-        # Rule 1: Phase code in title
+        # Rule 2: Backlog link from linked_milestones on real parent deliverable (v5 A24)
+        if mapped is None:
+            p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
+            if p_id in deliv_by_id and wp.linked_milestones:
+                for lm in wp.linked_milestones:
+                    if lm in ms_by_id:
+                        mapped = ms_by_id[lm]
+                        basis = "Backlog link"
+                        break
+                    elif lm.upper() in ms_by_phase:
+                        mapped = ms_by_phase[lm.upper()]
+                        basis = "Backlog link"
+                        break
+
+        # Rule 3: Phase code in title
         if mapped is None:
             phase_codes = _extract_phase_codes_from_text(wp_title)
             for pc in phase_codes:
@@ -351,7 +415,7 @@ def map_work_packages_to_milestones(
                     basis = "Phase code"
                     break
 
-        # Rule 2: ID mention in milestone description / deps / assumptions
+        # Rule 4: ID mention in milestone description / deps / assumptions
         if mapped is None:
             wp_id_pat = re.compile(r"\b" + re.escape(wp.id) + r"\b", re.IGNORECASE)
             for m in milestones:
@@ -361,7 +425,7 @@ def map_work_packages_to_milestones(
                     basis = "Referenced by milestone"
                     break
 
-        # Rule 3: Scope match (score >= 0.20)
+        # Rule 5: Scope match (score >= 0.20)
         if mapped is None:
             wp_tokens = tokenize_v2(wp_title)
             best_score = 0.0
@@ -387,8 +451,9 @@ def map_deliverables_to_milestones_v2(
     work_packages: Sequence[WorkPackageSeed],
     parsed_phases: Dict[str, ParsedMilestonePhase],
     contracted_deliverables: Optional[Sequence[str]] = None,
+    sow_catalogue: Optional[Sequence[SOWWorkItem]] = None,
 ) -> Tuple[Dict[str, Tuple[Milestone, str, bool]], Dict[str, Milestone], Dict[str, str]]:
-    """Map deliverables to milestones according to Section 6 of v2 spec as amended by v3 A2.
+    """Map deliverables to milestones according to MAP-03 precedence rules.
     
     Returns:
       - deliv_mapping: Dict[deliv_id, (milestone, basis, is_unmapped)]
@@ -424,7 +489,7 @@ def map_deliverables_to_milestones_v2(
 
     # 1. Map work packages to milestones first
     wp_to_ms, wp_to_basis, is_phase_order = map_work_packages_to_milestones(
-        work_packages, milestones, parsed_phases, contracted_deliverables, deliverables
+        work_packages, milestones, parsed_phases, contracted_deliverables, deliverables, sow_catalogue
     )
 
     # 2. Pre-compute IDF for milestone scopes using v3 enhanced scope text
@@ -443,19 +508,42 @@ def map_deliverables_to_milestones_v2(
     wp_idf_dict = compute_idf(wp_tokens_list) if wp_tokens_list else {}
     N_wp = len(usable_work_packages)
 
+    # Build catalogue ref to phase lookup
+    cat_ref_phase: Dict[str, str] = {}
+    deliv_to_cat_phases: Dict[str, Set[str]] = {}
+    if sow_catalogue:
+        for it in sow_catalogue:
+            if it.reference and it.phase:
+                cat_ref_phase[it.reference] = it.phase.upper()
+                if it.deliverable_id:
+                    deliv_to_cat_phases.setdefault(it.deliverable_id, set()).add(it.phase.upper())
+
     for d in deliverables:
         d_name = d.name or d.description or ""
         mapped: Optional[Milestone] = None
         basis: Optional[str] = None
         is_unmapped = False
 
-        # Rule 1: Phase code (P2b or Milestone N)
-        phase_codes = _extract_phase_codes_from_text(d_name)
-        for pc in phase_codes:
-            if pc in ms_by_phase:
-                mapped = ms_by_phase[pc]
-                basis = "Phase code"
-                break
+        # Rule 1 (MAP-03): Catalogue phase (all SOW references on deliverable are in one phase)
+        d_refs = extract_sow_references(f"{d.sow_reference or ''} {d_name}")
+        d_ref_phases = {cat_ref_phase[r] for r in d_refs if r in cat_ref_phase}
+        if d.id in deliv_to_cat_phases:
+            d_ref_phases.update(deliv_to_cat_phases[d.id])
+
+        if len(d_ref_phases) == 1:
+            p_code = list(d_ref_phases)[0]
+            if p_code in ms_by_phase:
+                mapped = ms_by_phase[p_code]
+                basis = "Catalogue phase"
+
+        # Rule 2: Phase code (P2b or Milestone N) in name
+        if mapped is None:
+            phase_codes = _extract_phase_codes_from_text(d_name)
+            for pc in phase_codes:
+                if pc in ms_by_phase:
+                    mapped = ms_by_phase[pc]
+                    basis = "Phase code"
+                    break
 
         if mapped is None:
             ms_nums = _extract_milestone_n_from_text(d_name)
@@ -465,7 +553,7 @@ def map_deliverables_to_milestones_v2(
                     basis = "Phase code"
                     break
 
-        # Rule 2: ID mention in milestone description / deps / assumptions
+        # Rule 3: ID mention in milestone description / deps / assumptions
         if mapped is None:
             d_id_pat = re.compile(r"\b" + re.escape(d.id) + r"\b", re.IGNORECASE)
             for m in milestones:
@@ -475,23 +563,25 @@ def map_deliverables_to_milestones_v2(
                     basis = "Referenced by milestone"
                     break
 
-        # Rule 2.5: Strong backlog match for deliverables (v4 A14, v5 A24: non-degenerate only)
+        # Rule 4: Strong backlog match for deliverables (MAP-03: non-degenerate only, gate from work item phase)
         if mapped is None and usable_work_packages:
             d_tokens = tokenize_v2(d_name)
             best_strong_score = 0.0
             best_strong_wp: Optional[WorkPackageSeed] = None
             for idx, wp in enumerate(usable_work_packages):
-                score = compute_score(d_tokens, wp_tokens_list[idx], wp_idf_dict, N_wp)
-                if score > best_strong_score:
-                    best_strong_score = score
-                    best_strong_wp = wp
+                wp_basis = wp_to_basis.get(wp.id, "")
+                if wp_basis not in ("Fallback", "Fallback - MS-TBC"):
+                    score = compute_score(d_tokens, wp_tokens_list[idx], wp_idf_dict, N_wp)
+                    if score > best_strong_score:
+                        best_strong_score = score
+                        best_strong_wp = wp
             if best_strong_score >= 0.75 and best_strong_wp is not None:
                 if best_strong_wp.id in wp_to_ms:
                     mapped = wp_to_ms[best_strong_wp.id]
                     basis = f"Backlog match ({best_strong_wp.id})"
                     deliv_to_matched_wp[d.id] = best_strong_wp.id
 
-        # Rule 3: Scope match (score >= 0.20, ties to earlier milestone)
+        # Rule 5: Scope match (score >= 0.20, ties to earlier milestone)
         if mapped is None:
             d_tokens = tokenize_v2(d_name)
             best_score = 0.0
@@ -505,7 +595,7 @@ def map_deliverables_to_milestones_v2(
                 mapped = best_ms
                 basis = "Scope match"
 
-        # Rule 4: Backlog text match (score >= 0.30 against work package titles, non-degenerate only)
+        # Rule 6: Backlog text match (score >= 0.30 against work package titles, non-degenerate only)
         if mapped is None and usable_work_packages:
             d_tokens = tokenize_v2(d_name)
             best_wp_score = 0.0
@@ -520,7 +610,7 @@ def map_deliverables_to_milestones_v2(
                 basis = "Backlog match"
                 deliv_to_matched_wp[d.id] = best_wp.id
 
-        # Rule 5: Submission date
+        # Rule 7: Submission date
         if mapped is None and getattr(d, "submission_target_date", None):
             sub_date = d.submission_target_date
             candidates = [m for m in milestones if m.external_date and m.external_date >= sub_date]
@@ -535,7 +625,7 @@ def map_deliverables_to_milestones_v2(
                     mapped = dated[0]
                     basis = "Submission date"
 
-        # Rule 6: Fallback
+        # Rule 8: Fallback
         if mapped is None:
             mapped = fallback_ms
             basis = "Unmapped - confirm milestone"

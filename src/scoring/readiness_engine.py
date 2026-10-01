@@ -642,7 +642,15 @@ class ReadinessScoringEngine:
         # G01-01: Turnaround SLA & Charter Authorization
         if "G01-01" in chk_map:
             item = chk_map["G01-01"]
-            if baseline.sla_met:
+            draft_str = baseline.kit_drafted_date.strftime('%Y-%m-%d') if baseline.kit_drafted_date else date.today().strftime('%Y-%m-%d')
+            if baseline.sow_awarded_date:
+                sla_met = baseline.sla_met
+                item.evidence = f"Startup Kit drafted on {draft_str} (Project awarded {baseline.sow_awarded_date.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
+            else:
+                sla_met = True
+                item.evidence = f"Startup Kit drafted on {draft_str}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
+
+            if sla_met:
                 item.status = "Complete"
                 item.exception_required = False
                 item.exception_details = None

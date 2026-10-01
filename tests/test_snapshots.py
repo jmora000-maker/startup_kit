@@ -32,6 +32,13 @@ def test_artifact_snapshots(name, tmp_path, update_snapshots):
 
     current_normalized = normalize_artifacts(kit_path, chk_path, wb_path)
 
+    # QA-03 (Rev 2): Always write proposed snapshots to tests/snapshots_proposed/
+    proposed_dir = Path("tests/snapshots_proposed") / name
+    proposed_dir.mkdir(parents=True, exist_ok=True)
+    proposed_file = proposed_dir / "snapshot.json"
+    with open(proposed_file, "w", encoding="utf-8") as f:
+        json.dump(current_normalized, f, indent=2, ensure_ascii=False)
+
     snapshot_dir = Path("tests/snapshots") / name
     snapshot_dir.mkdir(parents=True, exist_ok=True)
     snapshot_file = snapshot_dir / "snapshot.json"
@@ -46,6 +53,6 @@ def test_artifact_snapshots(name, tmp_path, update_snapshots):
 
     assert current_normalized == expected_normalized, (
         f"Artifact snapshot mismatch for fixture '{name}'. "
-        "If this behavior change is intended and justified by a spec requirement, "
-        "re-run pytest with --update-snapshots."
+        f"Proposed snapshot written to '{proposed_file}'. "
+        "A human must review proposed snapshots and promote them with --update-snapshots."
     )

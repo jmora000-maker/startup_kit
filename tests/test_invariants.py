@@ -1,4 +1,4 @@
-"""Invariant suite test cases (QA-04, INV-01 to INV-18)."""
+"""Invariant suite test cases (QA-04, QA-08, INV-01 to INV-25)."""
 
 import json
 from pathlib import Path
@@ -8,6 +8,7 @@ from src.generators.docx_generator import DocxGenerator
 from src.generators.pmo_workbook import export_pmo_workbook
 from src.tools.check_artifacts import check_artifacts_directory
 from src.llm.validation import validate_and_repair_baseline
+from tests.test_oracles import load_oracle
 
 FIXTURE_NAMES = ["arc_genomics", "mock_sow", "no_story_ids", "numbered_deliverables"]
 
@@ -28,9 +29,6 @@ def test_invariants_on_fixtures(name, tmp_path):
     writer.write_checklist_docx(baseline, tmp_path)
     export_pmo_workbook(baseline, tmp_path)
 
-    violations = check_artifacts_directory(tmp_path)
-    # Collect violations by invariant ID for structured reporting
-    violation_ids = [v.inv_id for v in violations]
-    
-    # We assert no violations, or report the exact failures
+    oracle = load_oracle(name)
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
     assert not violations, f"Invariant violations found for fixture '{name}': {[str(v) for v in violations]}"

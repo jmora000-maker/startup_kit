@@ -813,9 +813,15 @@ class BaselineAggregator:
             )
 
         # 14. 1-Day Creation SLA Tracking & Segregation of Duties
-        awarded_dt = sow_awarded_date or (date.today() - timedelta(days=1))
         drafted_dt = kit_drafted_date or date.today()
-        sla_met = (drafted_dt - awarded_dt).days <= 1
+        if sow_awarded_date:
+            awarded_dt = sow_awarded_date
+            sla_met = (drafted_dt - awarded_dt).days <= 1
+            g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (Project awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
+        else:
+            awarded_dt = None
+            sla_met = True
+            g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
 
         author_name = pmo_lead_name
         dm_name = charter.delivery_manager or "Delivery Manager"
@@ -838,7 +844,7 @@ class BaselineAggregator:
                 related_section4_artifact="Project Startup Charter",
                 owner=author_name,
                 status="Complete" if sla_met else "Exception Required",
-                evidence=f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (Project awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}.",
+                evidence=g01_01_evidence,
                 exception_required=not sla_met,
                 exception_details="Startup Kit creation exceeded 1 business day SLA." if not sla_met else None,
                 approval_status="Approved" if sla_met else "Exception Required"

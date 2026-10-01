@@ -90,9 +90,9 @@ CITATION_FMT1_REGEX = re.compile(
 )
 CONTRACT_REF_REGEX = CITATION_FMT1_REGEX
 
-# Citation pattern 2: Exhibit A, ... / Attachment ... (v6 A28)
+# Citation pattern 2: Exhibit A, ... / Attachment ... (v6 A28, Rev 2 RAID-03)
 EXHIBIT_REGEX = re.compile(
-    r"\b((?:Exhibit|Attachment|Appendix|Schedule)\s+[A-Z0-9]+(?:,\s*[^,:\n]+)?)\b",
+    r"\b((?:Exhibit|Attachment|Appendix|Schedule)\s+(?:[0-9]+|[A-Z]\b|(?!(?:is|are|the|and|in|on|at|to|for|of|from|by|with|will|estimated|assumed)\b)[A-Za-z0-9]+)(?:,\s*[^,:\n]+)?)\b",
     re.IGNORECASE
 )
 DOC_FILE_REGEX = re.compile(
@@ -649,9 +649,10 @@ def build_workbook_model(
             workstream_groups.append((ws_name, seen_workstreams[ws_name]))
         seen_workstreams[ws_name].append(m)
 
-    # 4. Map deliverables to milestones & work packages to deliverables (v3 A2, v4 A14)
+    # 4. Map deliverables to milestones & work packages to deliverables (v3 A2, v4 A14, MAP-03)
+    sow_catalogue = getattr(baseline, "sow_stories_catalogue", None)
     deliv_mapping, wp_to_ms, deliv_to_matched_wp = map_deliverables_to_milestones_v2(
-        filtered_deliverables, sorted_milestones, filtered_backlog, parsed_phases, contracted_deliverables
+        filtered_deliverables, sorted_milestones, filtered_backlog, parsed_phases, contracted_deliverables, sow_catalogue
     )
     unmapped_count = sum(1 for _, (_, _, is_unmapped) in deliv_mapping.items() if is_unmapped)
     is_backlog_phase_order_detected, _ = detect_backlog_phase_order(filtered_backlog, sorted_milestones, filtered_deliverables)
@@ -1144,12 +1145,12 @@ def build_workbook_model(
                                 wp_note = " | ".join(wp_note_parts) if wp_note_parts else None
                                 task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
                         elif d_story_ids:
-                            # Option 2: SOW stories
+                            # Option 2: SOW work items (TXT-04)
                             verb = get_work_type_verb(work_type)
                             for s_id in d_story_ids:
                                 s_title = story_catalogue_titles.get(s_id, "")
                                 t_name = f"{verb} {s_id}: {s_title}" if s_title else f"{verb} {s_id}"
-                                task_rows_to_add.append((t_name, "Toptal Delivery Team", "Baseline - SOW Stories", s_id, "", "", None, s_id))
+                                task_rows_to_add.append((t_name, "Toptal Delivery Team", "Baseline - SOW Work Items", s_id, "", "", None, s_id))
                         else:
                             # Option 3: Template core task
                             tmpl_owner = tmpl.owner_role

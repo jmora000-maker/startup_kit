@@ -1,0 +1,15 @@
+{
+  "fixture": "numbered_deliverables",
+  "gate_count": 3,
+  "phases": ["P1 Ingestion Setup", "P2 Data Pipeline and Transformation", "P3 Reconciliation and Final Cutover"],
+  "week_ranges": {"P1": [1, 4], "P2": [5, 10], "P3": [11, 14]},
+  "sow_reference_phase": {
+    "P1": ["Deliverable 1.1", "Deliverable 1.2"],
+    "P2": ["Deliverable 2.1", "Deliverable 2.2"],
+    "P3": ["Deliverable 3.1", "Deliverable 3.2"]
+  },
+  "client_owned_references": [],
+  "award_date_stated_in_sow": false,
+  "min_evidence_coverage": 0.50,
+  "acceptance_mode": "per_deliverable"
+}

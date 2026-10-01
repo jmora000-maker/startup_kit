@@ -434,7 +434,10 @@ class DocxGenerator(IDocumentWriter):
             g01_01_act = find_cell_action(baseline, "Project Startup Charter", "Turnaround SLA & PMO Authorization", used_actions=used_actions) if (not baseline.sla_met or any(a.checklist_id == "G01-01" for a in baseline.action_required_items)) else None
             g01_02_act = find_cell_action(baseline, "Project Startup Charter", "Delivery Model & Governance Tier", used_actions=used_actions)
 
-            sla_val = f"SLA Met ({'Yes' if baseline.sla_met else 'No - Retroactive PMO Waiver Required'})"
+            if baseline.sow_awarded_date:
+                sla_val = f"SLA Met ({'Yes' if baseline.sla_met else 'No - Retroactive PMO Waiver Required'})"
+            else:
+                sla_val = "Award date not stated [CONFIRMATION REQUIRED]"
             model_val = f"Delivery: {charter.delivery_model} | Governance: {charter.governance_model}"
 
             charter_rows = [

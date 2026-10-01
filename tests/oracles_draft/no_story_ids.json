@@ -1,0 +1,11 @@
+{
+  "fixture": "no_story_ids",
+  "gate_count": 3,
+  "phases": ["P1 Architecture and Core Foundation", "P2 Service Implementation", "P3 User Experience and Launch"],
+  "week_ranges": {"P1": [1, 4], "P2": [5, 12], "P3": [13, 18]},
+  "sow_reference_phase": {},
+  "client_owned_references": [],
+  "award_date_stated_in_sow": false,
+  "min_evidence_coverage": 0.50,
+  "acceptance_mode": "per_deliverable"
+}

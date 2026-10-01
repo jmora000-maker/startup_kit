@@ -16,8 +16,8 @@ def test_story_tasks_under_degenerate_backlog(arc_run3):
     for t in tasks:
         assert not t.name.lower().startswith("work package:"), f"Task name starts with 'Work Package:': {t.name}"
 
-    # Story tasks are sourced from 'Baseline - SOW Stories'
-    story_tasks = [t for t in tasks if t.source == "Baseline - SOW Stories"]
+    # Story tasks are sourced from 'Baseline - SOW Work Items' (TXT-04)
+    story_tasks = [t for t in tasks if t.source in ("Baseline - SOW Stories", "Baseline - SOW Work Items")]
     assert len(story_tasks) == 35
 
     # Story task naming verification: '{verb} {HS-ID}'

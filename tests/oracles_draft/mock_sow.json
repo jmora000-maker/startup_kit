@@ -1,0 +1,11 @@
+{
+  "fixture": "mock_sow",
+  "gate_count": 2,
+  "phases": ["Project Kickoff & Architecture Baseline", "Data Pipeline Production Go-Live"],
+  "week_ranges": {},
+  "sow_reference_phase": {},
+  "client_owned_references": [],
+  "award_date_stated_in_sow": false,
+  "min_evidence_coverage": 0.50,
+  "acceptance_mode": "per_deliverable"
+}
