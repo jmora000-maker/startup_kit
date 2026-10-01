@@ -2441,7 +2441,7 @@
         "RAID-04",
         "Issue",
         "Ambiguous Acceptance: Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated pytest validation suite.",
-        "Sections: 4.2, 2.1",
+        "SOW_Document.pdf | Sections: 3.1, 4.2, 2.1",
         "Contract Clarification",
         "Cross-phase",
         "",

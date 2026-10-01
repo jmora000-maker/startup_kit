@@ -8,9 +8,12 @@ $files = @{
     "arc_proposed.json"  = "tests\snapshots_proposed\arc_genomics\snapshot.json"
     "mock_approved.json" = "tests\snapshots\mock_sow\snapshot.json"
     "mock_proposed.json" = "tests\snapshots_proposed\mock_sow\snapshot.json"
-    "rev4_final_report.md" = "reports\rev4_final_report.md"
     "numbered_approved.json" = "tests\snapshots\numbered_deliverables\snapshot.json"
     "numbered_proposed.json" = "tests\snapshots_proposed\numbered_deliverables\snapshot.json"
+    "nostory_approved.json"  = "tests\snapshots\no_story_ids\snapshot.json"
+    "nostory_proposed.json"  = "tests\snapshots_proposed\no_story_ids\snapshot.json"
+    "rev6_final_report.md" = "reports\rev6_final_report.md"
+    "overext_proposed.json"  = "tests\snapshots_proposed\arc_overextracted\snapshot.json"
 }
 
 foreach ($name in $files.Keys) {

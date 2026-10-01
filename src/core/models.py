@@ -257,6 +257,10 @@ class Milestone(BaseModel):
         default=None,
         description="Associated Action ID if date unconfirmed (e.g. 'ACT-04')"
     )
+    merged_milestone_ids: List[str] = Field(
+        default_factory=list,
+        description="IDs of restatement milestones merged into this gate (e.g. ['M2'])"
+    )
 
 
 class RiskAssumption(BaseModel):

@@ -164,6 +164,28 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
             seen.add(val.upper())
             results.append((val, "Synthetic"))
 
+    # Plural deliverable patterns: e.g. "Deliverables 2.2 and 3.1", "Deliverables 1.1, 2.2 and 3.3"
+    plural_deliv_pattern = r"\bDeliverables\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
+    for m in re.finditer(plural_deliv_pattern, text, re.IGNORECASE):
+        num_str = m.group(1)
+        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+        for num in nums:
+            deliv_id = f"Deliverable {num}"
+            if deliv_id.upper() not in seen:
+                seen.add(deliv_id.upper())
+                results.append((deliv_id, "Deliverable number"))
+
+    # Plural task patterns: e.g. "Tasks 1.1 and 1.2"
+    plural_task_pattern = r"\b(?:Tasks|WBS)\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
+    for m in re.finditer(plural_task_pattern, text, re.IGNORECASE):
+        num_str = m.group(1)
+        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+        for num in nums:
+            task_id = f"Task {num}"
+            if task_id.upper() not in seen:
+                seen.add(task_id.upper())
+                results.append((task_id, "Task or WBS code"))
+
     for kind, pattern in SOW_REFERENCE_PATTERNS:
         for m in re.finditer(pattern, text, re.IGNORECASE):
             val = m.group(0).strip()
@@ -176,6 +198,11 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
     # Sort by appearance position in text
     def _pos(item: tuple[str, str]) -> int:
         idx = text.find(item[0])
+        if idx < 0:
+            # Check if number part appears
+            num_match = re.search(r"\d+(?:\.\d+)*", item[0])
+            if num_match:
+                idx = text.find(num_match.group(0))
         return idx if idx >= 0 else 999999
 
     results.sort(key=_pos)

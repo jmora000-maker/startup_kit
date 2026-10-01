@@ -87,23 +87,72 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
     if not baseline.milestones:
         return
 
+    # Assign phase to each milestone in Kit order
+    has_phase_codes = any(PHASE_CODE_REGEX.search(ms.description or "") for ms in baseline.milestones)
+    phase_groups: Dict[str, List[Milestone]] = {}
+    if not has_phase_codes:
+        for idx, ms in enumerate(baseline.milestones, start=1):
+            phase_groups[f"G_{idx}"] = [ms]
+    else:
+        last_phase = "P1"
+        for ms in baseline.milestones:
+            m_desc = ms.description or ""
+            phase_m = PHASE_CODE_REGEX.search(m_desc)
+            if phase_m:
+                phase_code = phase_m.group(1).upper()
+                last_phase = phase_code
+            else:
+                phase_code = last_phase
+            if phase_code not in phase_groups:
+                phase_groups[phase_code] = []
+            phase_groups[phase_code].append(ms)
+
     gates: List[Milestone] = []
     checkpoints: List[Milestone] = []
 
-    seen_phases: Set[str] = set()
-    for ms in baseline.milestones:
-        m_desc = ms.description or ""
-        phase_m = PHASE_CODE_REGEX.search(m_desc)
-        phase_code = phase_m.group(1).upper() if phase_m else ""
-        is_restatement = bool(PHASE_RESTATEMENT_REGEX.search(m_desc))
-        
-        if phase_code and phase_code not in seen_phases and not is_restatement:
-            seen_phases.add(phase_code)
-            gates.append(ms)
-        elif not phase_code and len(gates) < (expected_gate_count or 4):
-            gates.append(ms)
-        else:
-            checkpoints.append(ms)
+    gate_trigger_regex = re.compile(
+        r'^\s*P\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b',
+        re.IGNORECASE
+    )
+
+    for phase_code, ms_list in phase_groups.items():
+        # MS-03: Identify phase gate (overarching phase acceptance takes precedence over intermediate completion)
+        gate_candidate: Optional[Milestone] = None
+        for ms in ms_list:
+            m_desc = ms.description or ""
+            if re.search(r'^\s*P\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
+                gate_candidate = ms
+                break
+        if not gate_candidate:
+            for ms in ms_list:
+                m_desc = ms.description or ""
+                if gate_trigger_regex.search(m_desc) and not re.search(r'\b(testing|uat|smoke\s+tests?)\s+completed\b', m_desc, re.IGNORECASE):
+                    gate_candidate = ms
+                    break
+        if not gate_candidate:
+            gate_candidate = ms_list[-1]
+
+        # Merge restatements and extract checkpoints
+        for ms in ms_list:
+            if ms.id == gate_candidate.id:
+                continue
+            m_desc = ms.description or ""
+            is_restatement = bool(PHASE_RESTATEMENT_REGEX.search(m_desc))
+            if is_restatement:
+                # MS-04: Merge restatement into gate
+                if ms.id not in gate_candidate.merged_milestone_ids:
+                    gate_candidate.merged_milestone_ids.append(ms.id)
+                for dep in ms.key_dependencies:
+                    if dep not in gate_candidate.key_dependencies:
+                        gate_candidate.key_dependencies.append(dep)
+                for cpa in ms.critical_path_assumptions:
+                    if cpa not in gate_candidate.critical_path_assumptions:
+                        gate_candidate.critical_path_assumptions.append(cpa)
+            else:
+                # MS-05: Move non-gate milestone to interim checkpoints
+                checkpoints.append(ms)
+
+        gates.append(gate_candidate)
 
     if expected_gate_count and len(gates) < expected_gate_count:
         findings.append(ValidationFinding(
@@ -116,8 +165,7 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
                 f"SOW specifies {expected_gate_count} sequential gates, but only {len(gates)} were mapped. Please confirm missing milestone scope."
             )
 
-    for idx, g in enumerate(gates, start=1):
-        g.id = f"M{idx}"
+    # Gates retain their extracted IDs to preserve merged tracking and citation references (MS-04, RAID-08)
 
     for idx, cp in enumerate(checkpoints, start=1):
         cp.id = f"CP-{idx:02d}"

@@ -23,7 +23,8 @@ def test_val_01_gate_reconciliation():
         Milestone(id="M2", description="P1 Shell and auth acceptance sign-off"),  # Restatement
         Milestone(id="M3", description="P2a Services accepted: API and ingestion"),
         Milestone(id="M4", description="P2b Application Surface accepted: frontend"),
-        Milestone(id="M5", description="P3 Launch accepted: rollout and testing"),
+        Milestone(id="M5", description="P3 Integration testing completed"),  # Checkpoint
+        Milestone(id="M6", description="P3 Launch accepted: rollout and testing"),
     ]
     decisions = [
         DecisionItem(id="DEC-01", decision_text="Project delivers four sequential acceptance gates across P1 to P3.")
@@ -36,7 +37,7 @@ def test_val_01_gate_reconciliation():
     report = validate_and_repair_baseline(baseline)
 
     assert len(baseline.milestones) == 4
-    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
+    assert [m.id for m in baseline.milestones] == ["M1", "M3", "M4", "M6"]
     assert len(baseline.interim_checkpoints) == 1
     assert baseline.interim_checkpoints[0].id == "CP-01"
 

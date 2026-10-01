@@ -12,7 +12,7 @@ from src.tools.check_artifacts import check_artifacts_directory, InvariantViolat
 from src.llm.validation import validate_and_repair_baseline
 from tests.test_oracles import load_oracle
 
-FIXTURE_NAMES = ["arc_genomics", "mock_sow", "no_story_ids", "numbered_deliverables"]
+FIXTURE_NAMES = ["arc_genomics", "arc_overextracted", "mock_sow", "no_story_ids", "numbered_deliverables"]
 
 
 @pytest.fixture(scope="module")

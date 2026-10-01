@@ -79,6 +79,10 @@ SCHEDULE_TRIGGER_REGEX = re.compile(
     re.IGNORECASE
 )
 
+# Phase regexes for milestone reconciliation
+PHASE_CODE_REGEX = re.compile(r"\b(P\d+[a-z]?)\b", re.IGNORECASE)
+PHASE_RESTATEMENT_REGEX = re.compile(r"acceptance\s+review|sign-?off|gating\s+the\s+start", re.IGNORECASE)
+
 # Sequential-gate predecessor regex (v4 A15)
 SEQUENTIAL_GATE_REGEX = re.compile(
     r"run[s]?\s+(?:sequentially|in\s+sequence)|sequential\s+(?:acceptance\s+)?gates?|each\s+milestone\s+(?:is\s+an\s+acceptance\s+gate|depends\s+on\s+(?:the\s+)?acceptance\s+of\s+the\s+previous)|after\s+the\s+prior\s+milestone\s+is\s+accepted",
@@ -103,20 +107,70 @@ DOC_FILE_REGEX = re.compile(
 )
 
 
-def strip_citation_from_clause(clause_text: str, category: Optional[str] = None) -> str:
-    """Remove citation from clause text per RAID-03 wherever it appears after category prefix."""
+def strip_citation_from_clause(clause_text: str, category: Optional[str] = None, contract_ref: Optional[str] = None) -> str:
+    """Remove citation from clause text per RAID-03 only when no information is lost."""
     text = clause_text.strip()
     if category and text.lower().startswith(f"{category.lower()}:"):
         text = text[len(category) + 1:].strip()
 
-    # Citation Format 1: [V#] doc.ext, ref:
-    text = re.sub(r'^\s*\[V\d+\]\s*[^,:\n]+(?:\.[a-zA-Z0-9]{2,4})?(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
-    # Citation Format 2: Exhibit|Schedule|Appendix|Attachment|Annex <id>[, <section words>]:
-    text = re.sub(r'^\s*(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
-    # Citation Format 3: <document>.<ext>[, <ref>]:
-    text = re.sub(r'^\s*[A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md)(?:,[^:\n]*)?:\s*', '', text, flags=re.IGNORECASE)
+    # Find candidate citation prefix
+    m1 = re.match(r'^\s*\[V\d+\]\s*[^,:\n]+(?:\.[a-zA-Z0-9]{2,4})?(?:,[^:\n]*)?:\s*', text, flags=re.IGNORECASE)
+    m2 = re.match(r'^\s*(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)(?:,[^:\n]*)?:\s*', text, flags=re.IGNORECASE)
+    m3 = re.match(r'^\s*[A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md)(?:,[^:\n]*)?:\s*', text, flags=re.IGNORECASE)
+
+    matched = m1 or m2 or m3
+    if matched:
+        prefix = matched.group(0)
+        # Check no information loss rule (RAID-03): every section and SOW reference in prefix must be in contract_ref
+        if contract_ref:
+            prefix_sections = extract_section_citations(prefix)
+            raw_prefix_stories = extract_sow_references(prefix)
+            prefix_stories = [s for s in raw_prefix_stories if not re.match(r"^(?:Sections?|Clauses?|§)\s*\d", s, re.IGNORECASE)]
+
+            all_in_ref = True
+            for s in prefix_sections:
+                if s not in contract_ref:
+                    all_in_ref = False
+                    break
+            for r in prefix_stories:
+                if r not in contract_ref:
+                    all_in_ref = False
+                    break
+            if all_in_ref:
+                text = text[len(prefix):].strip()
+        else:
+            text = text[len(prefix):].strip()
 
     return text.strip()
+
+
+def extract_section_citations(text: str) -> List[str]:
+    """Parse singular and plural section citations per RAID-03 (e.g. 'Sections 2 and 4' -> ['2', '4'])."""
+    sections: List[str] = []
+
+    # Plural section patterns: e.g. "Sections 2 and 4", "Sections 1, 2 and 3", "Section 2 and Section 3", "Header and Section 2"
+    plural_sec_pattern = r"\b(?:Sections?|Clauses?|§§?)\s+((?:(?:Header|[0-9]+(?:\.[0-9]+)*)\s*(?:,|and|&)\s*)+(?:Header|[0-9]+(?:\.[0-9]+)*))\b"
+    for m in re.finditer(plural_sec_pattern, text, re.IGNORECASE):
+        group_str = m.group(1)
+        tokens = re.findall(r"\b(?:Header|[0-9]+(?:\.[0-9]+)*)\b", group_str, re.IGNORECASE)
+        for tok in tokens:
+            val = tok.capitalize() if tok.lower() == "header" else tok
+            if val not in sections:
+                sections.append(val)
+
+    # Singular section patterns if not already captured
+    single_sec_pattern = r"\b(?:Section|Clause|§)\s*(\d+(?:\.\d+)*)\b"
+    for m in re.finditer(single_sec_pattern, text, re.IGNORECASE):
+        s = m.group(1)
+        if s not in sections:
+            sections.append(s)
+
+    # Check for "Header and Section"
+    if re.search(r"\bHeader\b", text, re.IGNORECASE) and "Header" not in sections:
+        if re.search(r"\b(?:Header\s+(?:and|&)\s*Section|Section\s+[^,]+(?:\s+and\s+Header))\b", text, re.IGNORECASE):
+            sections.insert(0, "Header")
+
+    return sections
 
 
 def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]:
@@ -153,12 +207,8 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
     raw_stories = extract_sow_references(text)
     stories: List[str] = [s for s in raw_stories if not re.match(r"^(?:Section|Clause|§)\s*\d", s, re.IGNORECASE)]
 
-    # Section numbers
-    raw_sections = re.findall(r"\b(?:Section|Clause|§)\s*(\d+(?:\.\d+)*)\b", text, re.IGNORECASE)
-    sections: List[str] = []
-    for s in raw_sections:
-        if s not in sections:
-            sections.append(s)
+    # Section numbers (singular and plural per RAID-03)
+    sections = extract_section_citations(text)
 
     parts: List[str] = []
     if exhibit_or_doc:
@@ -174,7 +224,7 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
         has_ext = bool(re.search(r'\.[a-zA-Z0-9]{2,4}\b', candidate))
         has_exhibit = bool(EXHIBIT_REGEX.search(candidate))
         has_sow_ref = bool(re.search(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', candidate, re.IGNORECASE))
-        has_section = bool(re.search(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', candidate, re.IGNORECASE))
+        has_section = bool(re.search(r'\b(?:Sections?|Clause|§)\s*:?\s*(?:Header|\d+(?:\.\d+)*)\b', candidate, re.IGNORECASE))
         if has_ext or has_exhibit or has_sow_ref or has_section:
             return candidate, None
 
@@ -461,6 +511,63 @@ def build_workbook_model(
         else:
             filtered_milestones.append(m)
 
+    filtered_checkpoints: List[Milestone] = []
+    for cp in (baseline.interim_checkpoints or []):
+        cp_text = f"{cp.id} {cp.description or ''}"
+        if is_defensive_excluded(cp_text):
+            logger.warning("Defensive filter dropped checkpoint: %s (%s)", cp.id, cp.description)
+            excluded_items += 1
+        else:
+            filtered_checkpoints.append(cp)
+
+    # Defensive separation if milestones > 4 and checkpoints not yet extracted (e.g. un-reconciled baseline)
+    if len(filtered_milestones) > 4 and not filtered_checkpoints:
+        def_gates: List[Milestone] = []
+        def_cps: List[Milestone] = []
+        phase_groups_raw: Dict[str, List[Milestone]] = {}
+        last_p = "P1"
+        for ms in filtered_milestones:
+            pm = PHASE_CODE_REGEX.search(ms.description or "")
+            p_code = pm.group(1).upper() if pm else last_p
+            last_p = p_code
+            phase_groups_raw.setdefault(p_code, []).append(ms)
+
+        for p_code, ms_list in phase_groups_raw.items():
+            g_cand: Optional[Milestone] = None
+            for ms in ms_list:
+                m_desc = ms.description or ""
+                if re.search(r'^\s*P\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
+                    g_cand = ms
+                    break
+            if not g_cand:
+                for ms in ms_list:
+                    m_desc = ms.description or ""
+                    if re.search(r'^\s*P\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b', m_desc, re.IGNORECASE) and not re.search(r'\b(testing|uat|smoke\s+tests?)\s+completed\b', m_desc, re.IGNORECASE):
+                        g_cand = ms
+                        break
+            if not g_cand:
+                g_cand = ms_list[-1]
+            for ms in ms_list:
+                if ms.id == g_cand.id:
+                    continue
+                if bool(PHASE_RESTATEMENT_REGEX.search(ms.description or "")):
+                    if ms.id not in g_cand.merged_milestone_ids:
+                        g_cand.merged_milestone_ids.append(ms.id)
+                    for dep in ms.key_dependencies:
+                        if dep not in g_cand.key_dependencies:
+                            g_cand.key_dependencies.append(dep)
+                    for cpa in ms.critical_path_assumptions:
+                        if cpa not in g_cand.critical_path_assumptions:
+                            g_cand.critical_path_assumptions.append(cpa)
+                else:
+                    def_cps.append(ms)
+            def_gates.append(g_cand)
+
+        filtered_milestones = def_gates
+        for idx, cp in enumerate(def_cps, 1):
+            cp.id = f"CP-{idx:02d}"
+        filtered_checkpoints = def_cps
+
     filtered_deliverables: List[Deliverable] = []
     for d in (baseline.deliverables or []):
         d_text = f"{d.id} {d.name or ''} {d.description or ''} {d.acceptance_criteria or ''}"
@@ -572,6 +679,8 @@ def build_workbook_model(
         p = parsed_phases.get(m.id)
         if p and p.note:
             ms_notes[m.id].append(p.note)
+        if getattr(m, "merged_milestone_ids", None):
+            ms_notes[m.id].append(f"Includes {', '.join(m.merged_milestone_ids)}: acceptance review and sign-off")
 
         # Check week range
         week_range = parse_week_range(m.description or "")
@@ -839,12 +948,30 @@ def build_workbook_model(
             per_ms_comm_item = c
             break
 
+    # Map checkpoints to phases
+    checkpoints_by_phase: Dict[str, List[Milestone]] = {}
+    for cp in filtered_checkpoints:
+        pm = PHASE_CODE_REGEX.search(cp.description or "")
+        p_code = pm.group(1).upper() if pm else "P3"
+        checkpoints_by_phase.setdefault(p_code, []).append(cp)
+
     # Calculate WBS numbers
     current_ws_idx = 0
 
     for ws_name, ms_list in workstream_groups:
         current_ws_idx += 1
         ws_wbs_code = str(current_ws_idx)
+
+        ws_phase_code = ""
+        for m in ms_list:
+            p = parsed_phases.get(m.id)
+            if p and p.phase_code:
+                ws_phase_code = p.phase_code.upper()
+                break
+        if not ws_phase_code:
+            ws_phase_code = f"P{current_ws_idx}"
+
+        ws_cps = checkpoints_by_phase.get(ws_phase_code, [])
 
         # Workstream Level 1 row in WBS (v3 A1: exactly one per SOW phase)
         wbs_rows.append(WBSRow(
@@ -903,10 +1030,83 @@ def build_workbook_model(
             outline_level=0,
         ))
 
+        ws_child_idx = 0
+
+        # MS-05, FMT-03: Add Checkpoint rows in phase before the gate
+        for cp in ws_cps:
+            ws_child_idx += 1
+            cp_wbs_code = f"{ws_wbs_code}.{ws_child_idx}"
+            ms_wbs_code_map[cp.id] = cp_wbs_code
+
+            cp_desc_clean = sanitize_report_text(clean_contract_text(cp.description or ""))
+            cp_week_range = parse_week_range(cp.description or "")
+            if cp_week_range:
+                w_a, w_b = cp_week_range
+                cp_date_basis = f"SOW estimate, weeks {w_a}–{w_b}" if w_a != w_b else f"SOW estimate, week {w_a}"
+            elif ms_list and ms_date_basis.get(ms_list[0].id) and ms_date_basis.get(ms_list[0].id) != "To be confirmed":
+                cp_date_basis = f"Within {ws_phase_code} {ms_date_basis.get(ms_list[0].id).replace('SOW estimate, ', '')}"
+            else:
+                cp_date_basis = "To be confirmed"
+
+            cp_owner = normalize_owner_v2(cp.owner or "Delivery Manager")[0]
+
+            schedule_rows.append(ScheduleRow(
+                wbs_code=cp_wbs_code,
+                row_type="Checkpoint",
+                workstream=ws_name,
+                milestone_id=cp.id,
+                name=cp_desc_clean,
+                scope=cp_desc_clean,
+                owner=cp_owner,
+                planned_start=None,
+                planned_finish=None,
+                internal_buffer_date=None,
+                external_date=None,
+                date_basis=cp_date_basis,
+                status="Not Started",
+                predecessor="",
+                client_prerequisites="",
+                critical_path_assumptions="",
+                linked_deliverables="",
+                sow_stories="",
+                linked_raid_ids="",
+                source="Baseline - Milestone Plan",
+                notes="Interim checkpoint tracking component completion before phase gate",
+                outline_level=1,
+            ))
+
+            wbs_rows.append(WBSRow(
+                wbs_code=cp_wbs_code,
+                level=2,
+                element_type="Checkpoint",
+                name=cp_desc_clean,
+                workstream=ws_name,
+                milestone_id=cp.id,
+                deliverable_id="",
+                source_id="",
+                sow_stories="",
+                owner=cp_owner,
+                planned_start=None,
+                planned_finish=None,
+                milestone_date=None,
+                status="Not Started",
+                cadence="",
+                predecessors="",
+                acceptance_criteria="",
+                linked_raid_ids="",
+                source="Baseline - Milestone Plan",
+                mapping_basis="",
+                notes="Interim checkpoint tracking component completion before phase gate",
+                outline_level=1,
+            ))
+
         # Milestones under this workstream
-        for ms_idx_in_ws, m in enumerate(ms_list, 1):
-            ms_wbs_code = f"{ws_wbs_code}.{ms_idx_in_ws}"
+        for m in ms_list:
+            ws_child_idx += 1
+            ms_wbs_code = f"{ws_wbs_code}.{ws_child_idx}"
             ms_wbs_code_map[m.id] = ms_wbs_code
+            for mid in getattr(m, "merged_milestone_ids", []):
+                ms_wbs_code_map[mid] = ms_wbs_code
 
             p = parsed_phases.get(m.id)
             ms_name = p.milestone_name if p else (m.description or "")
@@ -925,7 +1125,11 @@ def build_workbook_model(
             ms_sow_stories_str = ", ".join(ms_stories)
 
             # Filter out schedule links from client prerequisites (v3 A3)
-            raw_deps = m.key_dependencies or []
+            raw_deps = list(m.key_dependencies or [])
+            for cp in ws_cps:
+                for cp_dep in (cp.key_dependencies or []):
+                    if cp_dep not in raw_deps:
+                        raw_deps.append(cp_dep)
             sched_links = ms_schedule_links.get(m.id, set())
             client_prereq_deps = [clean_text_v2(dep) for dep in raw_deps if dep not in sched_links and clean_text_v2(dep)]
             client_prereqs_str = "; ".join(client_prereq_deps)
@@ -938,12 +1142,14 @@ def build_workbook_model(
             preds_list = ms_predecessors.get(m.id, [])
             preds_str = ", ".join(preds_list)
 
+            ms_display_id = f"{m.id} (+{', +'.join(m.merged_milestone_ids)})" if getattr(m, "merged_milestone_ids", None) else m.id
+
             # Schedule Milestone row
             schedule_rows.append(ScheduleRow(
                 wbs_code=ms_wbs_code,
                 row_type="Milestone",
                 workstream=ws_name,
-                milestone_id=m.id,
+                milestone_id=ms_display_id,
                 name=ms_name,
                 scope=ms_scope_clean,
                 owner=ms_owner,
@@ -1561,7 +1767,8 @@ def build_workbook_model(
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             r_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
-            default_fill_ms, default_fill_deliv
+            default_fill_ms, default_fill_deliv,
+            checkpoints=filtered_checkpoints,
         )
 
         linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
@@ -1625,7 +1832,8 @@ def build_workbook_model(
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             dep_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
-            default_fill_ms, default_fill_deliv
+            default_fill_ms, default_fill_deliv,
+            checkpoints=filtered_checkpoints,
         )
 
         linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
@@ -1685,8 +1893,19 @@ def build_workbook_model(
             clean_clause_text = text_str
             ref_note = None
         else:
-            contract_ref, ref_note = extract_contract_reference(conf_clauses)
-            clean_clause_text = strip_citation_from_clause(conf_clauses, amb_item.category)
+            raw_for_ref = conf_clauses
+            if getattr(amb_item, "source_reference", None):
+                sr = amb_item.source_reference
+                doc_name = getattr(sr, "document_name", "") or ""
+                clause_slide = getattr(sr, "clause_or_slide", "") or ""
+                if doc_name and not (DOC_FILE_REGEX.search(conf_clauses) or EXHIBIT_REGEX.search(conf_clauses) or CITATION_FMT1_REGEX.match(conf_clauses)):
+                    if clause_slide:
+                        raw_for_ref = f"{doc_name}, {clause_slide}: {conf_clauses}"
+                    else:
+                        raw_for_ref = f"{doc_name}: {conf_clauses}"
+
+            contract_ref, ref_note = extract_contract_reference(raw_for_ref)
+            clean_clause_text = strip_citation_from_clause(conf_clauses, amb_item.category, contract_ref)
 
         desc_text = f"{amb_item.category}: {clean_clause_text}" if amb_item.category else clean_clause_text
 
@@ -1705,7 +1924,8 @@ def build_workbook_model(
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             amb_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
-            default_fill_ms, default_fill_deliv
+            default_fill_ms, default_fill_deliv,
+            checkpoints=filtered_checkpoints,
         )
 
         linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
@@ -1790,7 +2010,8 @@ def build_workbook_model(
 
         ws_label, linked_ms_str, linked_wbs_str, link_note = link_raid_item_v2(
             dummy_q_item, sorted_milestones, deliv_mapping, parsed_phases, ms_wbs_code_map,
-            default_fill_ms, default_fill_deliv
+            default_fill_ms, default_fill_deliv,
+            checkpoints=filtered_checkpoints,
         )
 
         linked_deliv_str, linked_ms_str, linked_wbs_str, ws_label = link_deliverables_and_stories(
@@ -1929,7 +2150,15 @@ def build_workbook_model(
         cur_week += timedelta(days=7)
 
     # 8. Traceability self-check (v3 A13, v5 A22)
-    wb_ms_ids = {s.milestone_id for s in updated_schedule_rows if s.row_type == "Milestone" and s.milestone_id}
+    wb_ms_ids: Set[str] = set()
+    for s in updated_schedule_rows:
+        if s.row_type == "Milestone" and s.milestone_id:
+            for mid in re.findall(r'\bM\d+\b', s.milestone_id):
+                wb_ms_ids.add(mid)
+    for w in updated_wbs_rows:
+        if w.element_type == "Milestone" and w.milestone_id:
+            for mid in re.findall(r'\bM\d+\b', w.milestone_id):
+                wb_ms_ids.add(mid)
     base_ms_ids = {m.id for m in filtered_milestones}
     missing_ms = sorted(base_ms_ids - wb_ms_ids, key=natural_sort_key)
 

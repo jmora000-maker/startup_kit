@@ -2097,6 +2097,11 @@ def arc_run4():
     )
 
 @pytest.fixture
-def arc_run5(arc_run4):
-    """ARC Genomics Platform fixture for run 5."""
-    return arc_run4.model_copy(deep=True)
+def arc_overextracted() -> StartupKitBaseline:
+    """ARC Genomics Platform fixture with 10 milestones (M1 to M10) for QA-09 over-extraction testing."""
+    import json
+    from pathlib import Path
+    baseline_path = Path(__file__).parent / "fixtures" / "sow" / "arc_overextracted" / "baseline.json"
+    with open(baseline_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return StartupKitBaseline.model_validate(data)

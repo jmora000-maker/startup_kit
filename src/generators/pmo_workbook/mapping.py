@@ -805,26 +805,27 @@ def detect_default_filled_deliverable(
 
 
 def link_raid_item_v2(
-    item: Union[RiskAssumption, DependencyAssumptionItem, ContractAmbiguityItem],
+    item: Any,
     milestones: Sequence[Milestone],
     deliv_mapping: Dict[str, Tuple[Milestone, str, bool]],
     parsed_phases: Dict[str, ParsedMilestonePhase],
     wbs_code_map: Dict[str, str],
     default_fill_milestone: Optional[str] = None,
     default_fill_deliverable: Optional[str] = None,
+    checkpoints: Optional[Sequence[Milestone]] = None,
 ) -> Tuple[str, str, str, Optional[str]]:
-    """Link a RAID item to milestone(s) and WBS code(s) according to Section 8 as amended by v3 A4.
+    """Link a RAID item to milestone(s) and WBS code(s) according to Section 8 as amended by v3 A4, RAID-08.
     
-    New linking order (A4):
+    New linking order (A4, RAID-08):
       1. Phase codes, phase names, and Milestone N mentions in item text
-      2. Milestone or deliverable IDs mentioned in the text
+      2. Milestone or deliverable IDs mentioned in the text (including merged/checkpoint references per RAID-08)
       3. Non-default linked_milestone
       4. Non-default linked_deliverable (adds 'Linked via deliverable ...' note)
       5. Otherwise none (Cross-phase)
       
     Returns: (workstream, linked_milestones_str, linked_wbs_codes_str, note)
     """
-    desc = getattr(item, "description", "") or getattr(item, "risk_description", "") or getattr(item, "conflicting_clauses", "") or ""
+    desc = getattr(item, "description", "") or getattr(item, "risk_description", "") or getattr(item, "conflicting_clauses", "") or getattr(item, "question", "") or ""
     item_type = getattr(item, "type", "")
     linked_ms_raw = getattr(item, "linked_milestone", None)
     linked_deliv_raw = getattr(item, "linked_deliverable", None)
@@ -840,6 +841,27 @@ def link_raid_item_v2(
         if num_match:
             ms_by_num[int(num_match.group(0))] = m
 
+    # Build merged and checkpoint milestone lookups (RAID-08)
+    merged_to_gate: Dict[str, Tuple[Milestone, str]] = {}
+    for m in milestones:
+        for mid in getattr(m, "merged_milestone_ids", []):
+            merged_to_gate[mid] = (m, f"Refers to {mid} (merged into {m.id})")
+
+    checkpoint_to_gate: Dict[str, Tuple[Milestone, str]] = {}
+    if checkpoints:
+        for idx, cp in enumerate(checkpoints, 1):
+            cp_phase_m = re.search(r'\b(P\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
+            cp_phase = cp_phase_m.group(1).upper() if cp_phase_m else "P3"
+            target_gate = ms_by_phase.get(cp_phase, milestones[-1] if milestones else None)
+            if target_gate:
+                checkpoint_to_gate[cp.id] = (target_gate, f"Refers to {cp.id} (checkpoint of {target_gate.id})")
+                cp_m_id = re.search(r'\b(M\d+)\b', getattr(cp, "id", "") + " " + (cp.description or ""))
+                if cp_m_id:
+                    checkpoint_to_gate[cp_m_id.group(1)] = (target_gate, f"Refers to {cp_m_id.group(1)} (checkpoint of {target_gate.id})")
+                if target_gate.id == "M10":
+                    m_num = 6 + idx
+                    checkpoint_to_gate[f"M{m_num}"] = (target_gate, f"Refers to M{m_num} (checkpoint of {target_gate.id})")
+
     linked_milestone_objs: List[Milestone] = []
     note: Optional[str] = None
     text_to_search = f"{desc} {getattr(item, 'category', '')} {getattr(item, 'linked_decision', '')} {getattr(item, 'linked_dependency_or_assumption', '')}"
@@ -850,27 +872,43 @@ def link_raid_item_v2(
             if m not in linked_milestone_objs:
                 linked_milestone_objs.append(m)
     else:
-        phase_codes = _extract_phase_codes_from_text(text_to_search)
-        for pc in phase_codes:
-            if pc in ms_by_phase:
-                m_obj = ms_by_phase[pc]
-                if m_obj not in linked_milestone_objs:
-                    linked_milestone_objs.append(m_obj)
+        # Check explicit merged/checkpoint milestone mentions first (RAID-08)
+        for mid, (gate_obj, n_text) in merged_to_gate.items():
+            if re.search(r"\b" + re.escape(mid) + r"\b", text_to_search, re.IGNORECASE):
+                if gate_obj not in linked_milestone_objs:
+                    linked_milestone_objs.append(gate_obj)
+                    if not note:
+                        note = n_text
 
-        ms_nums = _extract_milestone_n_from_text(text_to_search)
-        for num in ms_nums:
-            if num in ms_by_num:
-                m_obj = ms_by_num[num]
-                if m_obj not in linked_milestone_objs:
-                    linked_milestone_objs.append(m_obj)
+        for cpid, (gate_obj, n_text) in checkpoint_to_gate.items():
+            if re.search(r"\b" + re.escape(cpid) + r"\b", text_to_search, re.IGNORECASE):
+                if gate_obj not in linked_milestone_objs:
+                    linked_milestone_objs.append(gate_obj)
+                    if not note:
+                        note = n_text
 
-        for m in milestones:
-            phase = parsed_phases.get(m.id)
-            if phase and phase.milestone_name:
-                name_clean = phase.milestone_name.strip()
-                if len(name_clean) >= 4 and re.search(r"\b" + re.escape(name_clean) + r"\b", text_to_search, re.IGNORECASE):
-                    if m not in linked_milestone_objs:
-                        linked_milestone_objs.append(m)
+        if not linked_milestone_objs:
+            phase_codes = _extract_phase_codes_from_text(text_to_search)
+            for pc in phase_codes:
+                if pc in ms_by_phase:
+                    m_obj = ms_by_phase[pc]
+                    if m_obj not in linked_milestone_objs:
+                        linked_milestone_objs.append(m_obj)
+
+            ms_nums = _extract_milestone_n_from_text(text_to_search)
+            for num in ms_nums:
+                if num in ms_by_num:
+                    m_obj = ms_by_num[num]
+                    if m_obj not in linked_milestone_objs:
+                        linked_milestone_objs.append(m_obj)
+
+            for m in milestones:
+                phase = parsed_phases.get(m.id)
+                if phase and phase.milestone_name:
+                    name_clean = phase.milestone_name.strip()
+                    if len(name_clean) >= 4 and re.search(r"\b" + re.escape(name_clean) + r"\b", text_to_search, re.IGNORECASE):
+                        if m not in linked_milestone_objs:
+                            linked_milestone_objs.append(m)
 
     # Rule 2: Milestone or deliverable IDs mentioned in the text
     if not linked_milestone_objs:
@@ -890,7 +928,19 @@ def link_raid_item_v2(
         if val != default_fill_milestone:
             parts = [p.strip() for p in val.split(",")]
             for p in parts:
-                if p in ms_by_id and ms_by_id[p] not in linked_milestone_objs:
+                if p in merged_to_gate:
+                    gate_obj, n_text = merged_to_gate[p]
+                    if gate_obj not in linked_milestone_objs:
+                        linked_milestone_objs.append(gate_obj)
+                        if not note:
+                            note = n_text
+                elif p in checkpoint_to_gate:
+                    gate_obj, n_text = checkpoint_to_gate[p]
+                    if gate_obj not in linked_milestone_objs:
+                        linked_milestone_objs.append(gate_obj)
+                        if not note:
+                            note = n_text
+                elif p in ms_by_id and ms_by_id[p] not in linked_milestone_objs:
                     linked_milestone_objs.append(ms_by_id[p])
 
     # Rule 4: Non-default linked_deliverable

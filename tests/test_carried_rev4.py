@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import date
-from tests.conftest import arc_run4, arc_run5
+from tests.conftest import arc_run4, arc_overextracted
 from src.core.models import (
     StartupKitBaseline,
     Milestone,
@@ -16,9 +16,9 @@ from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.llm.validation import validate_and_repair_baseline
 
 
-def test_carried_ms02_ms05_and_fmt03_on_10_milestones(arc_run5):
-    """MS-02 to MS-05, FMT-03: arc_run5 baseline builds into 4 phase workstreams and backward-only predecessors."""
-    baseline = arc_run5
+def test_carried_ms02_ms05_and_fmt03_on_10_milestones(arc_overextracted):
+    """MS-02 to MS-05, FMT-03: arc_overextracted baseline builds into 4 phase workstreams and backward-only predecessors."""
+    baseline = arc_overextracted
 
     # 1. Validation & Reconciliation
     report = validate_and_repair_baseline(baseline)
@@ -44,7 +44,7 @@ def test_carried_ms02_ms05_and_fmt03_on_10_milestones(arc_run5):
             preds = [p.strip() for p in s.predecessor.split(",") if p.strip()]
             curr_idx = wbs_to_idx[s.wbs_code]
             for p in preds:
-                p_ms = next((m for m in model.schedule_rows if m.milestone_id == p), None)
+                p_ms = next((m for m in model.schedule_rows if m.milestone_id == p or m.milestone_id.startswith(f"{p} (") or m.milestone_id.startswith(f"{p} (+") or m.wbs_code == p), None)
                 p_idx = wbs_to_idx[p_ms.wbs_code] if p_ms else wbs_to_idx.get(p)
                 assert p_idx is not None
                 assert p_idx < curr_idx, f"Forward predecessor link: {s.wbs_code} -> {p}"

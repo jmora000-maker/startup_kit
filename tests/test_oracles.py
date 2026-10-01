@@ -18,7 +18,7 @@ def load_oracle(name: str) -> Optional[Dict[str, Any]]:
         "arc_run2": "arc.json",
         "arc_run3": "arc.json",
         "arc_run4": "arc.json",
-        "arc_run5": "arc.json",
+        "arc_overextracted": "arc.json",
     }
     filename = alias_map.get(name, f"{name}.json")
     oracle_path = ORACLES_DIR / filename

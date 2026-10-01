@@ -9,7 +9,7 @@ from src.generators.pmo_workbook import export_pmo_workbook
 from src.tools.normalizers import normalize_artifacts
 from src.llm.validation import validate_and_repair_baseline
 
-FIXTURE_NAMES = ["arc_genomics", "mock_sow", "no_story_ids", "numbered_deliverables"]
+FIXTURE_NAMES = ["arc_genomics", "arc_overextracted", "mock_sow", "no_story_ids", "numbered_deliverables"]
 
 
 @pytest.mark.parametrize("name", FIXTURE_NAMES)
@@ -40,13 +40,19 @@ def test_artifact_snapshots(name, tmp_path, update_snapshots):
         json.dump(current_normalized, f, indent=2, ensure_ascii=False)
 
     snapshot_dir = Path("tests/snapshots") / name
-    snapshot_dir.mkdir(parents=True, exist_ok=True)
     snapshot_file = snapshot_dir / "snapshot.json"
 
-    if update_snapshots or not snapshot_file.exists():
+    if update_snapshots:
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
         with open(snapshot_file, "w", encoding="utf-8") as f:
             json.dump(current_normalized, f, indent=2, ensure_ascii=False)
         return
+
+    if not snapshot_file.exists():
+        pytest.fail(
+            f"Approved snapshot missing for fixture '{name}'. "
+            f"Proposed snapshot written to '{proposed_file}' for human review."
+        )
 
     with open(snapshot_file, "r", encoding="utf-8") as f:
         expected_normalized = json.load(f)
