@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import timedelta, date
 from typing import List, Optional, Set
-from src.config import sanitize_report_text
+from src.config import sanitize_report_text, extract_sow_references, detect_sow_reference_kind
 from src.generators.pmo_workbook.mapping import tokenize_v2, natural_sort_key, strip_work_package_prefix
 from src.generators.pmo_workbook.builder import extract_story_ids_for_deliverable
 from src.core.models import (
@@ -32,6 +32,7 @@ from src.core.models import (
     DecisionItem,
     WorkPackageSeed,
     SOWStoryItem,
+    SOWWorkItem,
     CommunicationsPlanItem,
     Stakeholder,
     RACIItem,
@@ -89,42 +90,84 @@ class BaselineAggregator:
         if acceptance_ext:
             acc_items = getattr(acceptance_ext, "acceptance_matrix_items", None) or getattr(acceptance_ext, "acceptance_items", None) or []
 
-        # Default review window from SOW approval expectations (v5 B12)
-        default_review_window = "Not specified [CONFIRMATION REQUIRED]"
+        # Default review window from SOW approval expectations (v5 B12, v6 B3)
+        default_review_window = "Not specified; reviewed at the end-of-milestone Acceptance Review"
         if sow_interpretation_ext and sow_interpretation_ext.approval_expectations:
             app_exp = sow_interpretation_ext.approval_expectations.strip()
             if app_exp and "[CONFIRMATION REQUIRED]" not in app_exp:
-                default_review_window = sanitize_report_text(app_exp)
+                first_sent = app_exp.split(".")[0].strip()
+                if first_sent:
+                    first_sent = f"{first_sent}."
+                if len(first_sent) > 120:
+                    first_sent = first_sent[:117] + "..."
+                default_review_window = sanitize_report_text(first_sent)
 
         if acc_items:
-            candidate_pairs = []
+            # First pass: shared SOW work item references (v6 B2)
+            matched_acc_indices: Set[int] = set()
             for a_idx, acc_item in enumerate(acc_items):
                 acc_name = getattr(acc_item, "name", "") or getattr(acc_item, "deliverable_name", "") or getattr(acc_item, "description", "") or ""
-                acc_tokens = tokenize_v2(acc_name)
-                acc_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{acc_name} {getattr(acc_item, 'description', '') or ''} {getattr(acc_item, 'sow_reference', '') or ''}"))
+                acc_stories = set(s for s in extract_sow_references(f"{acc_name} {getattr(acc_item, 'description', '') or ''} {getattr(acc_item, 'sow_reference', '') or ''}") if detect_sow_reference_kind(s) != "Section")
+                if not acc_stories:
+                    continue
 
-                for d_idx, d in enumerate(deliverables):
+                target_delivs = []
+                for d in deliverables:
+                    d_stories = set(s for s in extract_sow_references(f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}") if detect_sow_reference_kind(s) != "Section")
+                    if acc_stories & d_stories:
+                        target_delivs.append(d)
+
+                if target_delivs:
+                    matched_acc_indices.add(a_idx)
+                    for d in target_delivs:
+                        ev_text = getattr(acc_item, "evidence_required", "") or getattr(acc_item, "acceptance_criteria", "") or ""
+                        if ev_text and "[CONFIRMATION REQUIRED]" not in ev_text:
+                            if len(target_delivs) > 1:
+                                shared_note = f"Shared evidence item covering {', '.join(sorted(acc_stories))}"
+                                if not d.evidence_required or "[CONFIRMATION REQUIRED]" in d.evidence_required:
+                                    d.evidence_required = sanitize_report_text(f"{ev_text} ({shared_note})")
+                                elif shared_note not in d.evidence_required:
+                                    d.evidence_required = sanitize_report_text(f"{d.evidence_required}; {ev_text} ({shared_note})")
+                            else:
+                                if not d.evidence_required or "[CONFIRMATION REQUIRED]" in d.evidence_required:
+                                    d.evidence_required = sanitize_report_text(ev_text)
+
+                        if getattr(acc_item, "client_approver", None) and (not d.client_approver or d.client_approver in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]", "[CONFIRMATION REQUIRED]")):
+                            d.client_approver = getattr(acc_item, "client_approver")
+                        if getattr(acc_item, "acceptance_criteria", None) and not d.acceptance_criteria:
+                            d.acceptance_criteria = getattr(acc_item, "acceptance_criteria")
+                        if getattr(acc_item, "owner", None) and (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")):
+                            d.owner = getattr(acc_item, "owner")
+                        if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
+                            d.sow_reference = getattr(acc_item, "sow_reference")
+                        if getattr(acc_item, "rejection_rework_path", None) and not d.rejection_rework_path:
+                            d.rejection_rework_path = getattr(acc_item, "rejection_rework_path")
+                        rw_val = getattr(acc_item, "review_window", None)
+                        if rw_val and "[CONFIRMATION REQUIRED]" not in rw_val and rw_val.strip().lower() != "5 business days":
+                            d.review_window = sanitize_report_text(rw_val)
+
+            # Second pass: greedy one-to-one name similarity for unmatched acceptance items
+            unmatched_acc_items = [(idx, item) for idx, item in enumerate(acc_items) if idx not in matched_acc_indices]
+            unmatched_delivs = [d for d in deliverables if not d.evidence_required or "[CONFIRMATION REQUIRED]" in d.evidence_required or not d.acceptance_criteria]
+
+            candidate_pairs = []
+            for a_idx, acc_item in unmatched_acc_items:
+                acc_name = getattr(acc_item, "name", "") or getattr(acc_item, "deliverable_name", "") or getattr(acc_item, "description", "") or ""
+                acc_tokens = tokenize_v2(acc_name)
+                for d_idx, d in enumerate(unmatched_delivs):
                     d_name = d.name or d.description or ""
                     d_tokens = tokenize_v2(d_name)
-                    d_stories = set(re.findall(r"\bHS-\d{3,5}\b", f"{d_name} {d.description or ''} {d.sow_reference or ''}"))
-
-                    shared_stories = acc_stories & d_stories
-                    if shared_stories:
-                        # Story-ID join takes precedence
-                        pair_score = 2.0 + (len(shared_stories) / max(len(acc_stories | d_stories), 1))
-                        candidate_pairs.append((pair_score, a_idx, d_idx, acc_item, d))
-                    else:
+                    if acc_tokens and d_tokens:
                         s1, s2 = set(acc_tokens), set(d_tokens)
                         jaccard = (len(s1 & s2) / len(s1 | s2)) if (s1 or s2) else 0.0
                         if jaccard >= 0.35:
                             candidate_pairs.append((jaccard, a_idx, d_idx, acc_item, d))
 
-            # Greedy one-to-one assignment (v5 B11)
-            candidate_pairs.sort(key=lambda c: (-c[0], -(1 if c[3].id == c[4].id else 0), natural_sort_key(c[3].id), natural_sort_key(c[4].id)))
+            candidate_pairs.sort(key=lambda c: (-c[0], natural_sort_key(getattr(c[3], "id", "")), natural_sort_key(c[4].id)))
             assigned_acc: Set[int] = set()
             assigned_deliv: Set[str] = set()
 
-            for pair_score, a_idx, d_idx, acc_item, d in candidate_pairs:
+            for score, a_idx, d_idx, acc_item, d in candidate_pairs:
                 if a_idx not in assigned_acc and d.id not in assigned_deliv:
                     assigned_acc.add(a_idx)
                     assigned_deliv.add(d.id)
@@ -137,25 +180,16 @@ class BaselineAggregator:
                         d.acceptance_criteria = acc_item.acceptance_criteria
                     if acc_item.review_window and acc_item.review_window.strip() and acc_item.review_window.strip().lower() != "5 business days":
                         d.review_window = acc_item.review_window
-                    elif default_review_window:
-                        d.review_window = default_review_window
                     if acc_item.rejection_rework_path:
                         d.rejection_rework_path = acc_item.rejection_rework_path
                     if (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
                         d.owner = acc_item.owner
                     if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
-                        d.sow_reference = acc_item.sow_reference
-
-            # Log unmatched items and deliverables
-            for a_idx, acc_item in enumerate(acc_items):
-                if a_idx not in assigned_acc:
-                    logger.warning("Acceptance item '%s' (%s) was not matched to any deliverable", getattr(acc_item, "id", ""), getattr(acc_item, "name", ""))
+                        d.sow_reference = getattr(acc_item, "sow_reference")
 
             for d in deliverables:
-                if d.id not in assigned_deliv:
-                    logger.info("Deliverable '%s' (%s) had no matched acceptance item - using SOW review window default", d.id, d.name)
-                    if not d.review_window or d.review_window.strip().lower() == "5 business days":
-                        d.review_window = default_review_window
+                if not d.review_window or d.review_window.strip().lower() == "5 business days" or "[CONFIRMATION REQUIRED]" in d.review_window:
+                    d.review_window = default_review_window
         else:
             for d in deliverables:
                 if not d.review_window or d.review_window.strip().lower() == "5 business days":
@@ -164,7 +198,7 @@ class BaselineAggregator:
         # Granularity check (v5 B16)
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
-            d_stories = set(re.findall(r"\bHS-\d{3,5}\b", text_block))
+            d_stories = set(extract_sow_references(text_block))
             if len(d_stories) > 5:
                 logger.warning("Deliverable '%s' carries %d stories (> 5 stories threshold) - review grouping", d.id, len(d_stories))
 
@@ -172,14 +206,14 @@ class BaselineAggregator:
         covered_stories: Set[str] = set()
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
-            for s in re.findall(r"\bHS-\d{3,5}\b", text_block):
+            for s in extract_sow_references(text_block):
                 covered_stories.add(s)
 
         if conflicts_ext and conflicts_ext.ambiguities:
             for ca in conflicts_ext.ambiguities:
-                for s in re.findall(r"\bHS-\d{3,5}\b", ca.conflicting_clauses or ""):
+                for s in extract_sow_references(ca.conflicting_clauses or ""):
                     if s not in covered_stories:
-                        add_question(f"SOW story '{s}' cited in contract ambiguity {ca.anomaly_id} is not mapped to any baseline deliverable. [CONFIRMATION REQUIRED]")
+                        add_question(f"SOW work item '{s}' cited in contract ambiguity {ca.anomaly_id} is not mapped to any baseline deliverable. [CONFIRMATION REQUIRED]")
 
         for deliv in deliverables:
             deliv.description = sanitize_report_text(deliv.description)
@@ -213,7 +247,7 @@ class BaselineAggregator:
             ms.description = sanitize_report_text(ms.description)
             if ms.external_date is None:
                 add_question(
-                    f"Milestone '{ms.id}: {ms.description}' has no committed external delivery date. [CONFIRMATION REQUIRED]"
+                    f"Confirm committed external completion date for {ms.id}. [CONFIRMATION REQUIRED]"
                 )
             elif ms.internal_buffer_date is None:
                 ms.internal_buffer_date = ms.external_date - timedelta(days=buffer_days)
@@ -441,17 +475,18 @@ class BaselineAggregator:
                 source_reference=charter.source_reference
             )
 
-        # 9. Build SOW Story Catalogue & Scope Decomposition Backlog Seed (Layer 2, v4 B4, v5 B13)
-        sow_stories_catalogue: List[SOWStoryItem] = []
+        # 9. Build SOW Story / Work Item Catalogue & Scope Decomposition Backlog Seed (Layer 2, v4 B4, v5 B13, v6 Section 1.1)
+        sow_stories_catalogue: List[SOWWorkItem] = []
         seen_catalogue_stories: Set[str] = set()
 
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
-            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+            for s_id in extract_sow_references(text_block):
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
-                    sow_stories_catalogue.append(SOWStoryItem(
-                        id=s_id,
+                    sow_stories_catalogue.append(SOWWorkItem(
+                        reference=s_id,
+                        reference_kind=detect_sow_reference_kind(s_id) or "Story ID",
                         title="",
                         phase="",
                         owner="Toptal",
@@ -484,7 +519,7 @@ class BaselineAggregator:
                             title=f"Build {s_id}",
                             description=f"Implementation story {s_id} for {deliv.id}.",
                             preliminary_sequence=wp_counter,
-                            owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
+                            owner="Toptal Delivery Team",
                             dependency_references=[da.id for da in dependencies_assumptions[:2]],
                             linked_milestones=[],
                             linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
@@ -501,7 +536,7 @@ class BaselineAggregator:
                         title=f"{deliv.name or deliv.description}",
                         description=f"Decomposition and implementation tasks for {deliv.id}.",
                         preliminary_sequence=wp_counter,
-                        owner=deliv.owner if deliv.owner != "Unassigned" else "[UNASSIGNED - TO BE CONFIRMED]",
+                        owner="Toptal Delivery Team",
                         dependency_references=[da.id for da in dependencies_assumptions[:2]],
                         linked_milestones=[],
                         linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
@@ -664,19 +699,19 @@ class BaselineAggregator:
             commercial_guardrails = commercial_ext.commercial_guardrails
         elif charter.contract_type == "Fixed Bid":
             commercial_guardrails = CommercialGuardrail(
-                contract_type_implication="Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin.",
-                billing_consumption_assumption="Invoicing tied strictly to formal client milestone acceptance sign-offs.",
-                staffing_assumption="Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment.",
+                contract_type_implication="Fixed Bid contract: Fixed Price engagement with milestone-linked delivery gates.",
+                billing_consumption_assumption="Fixed Price milestone billing upon formal client gate sign-off.",
+                staffing_assumption="Delivery team staffed by Toptal across scheduled milestone windows.",
                 commercial_exposure_note="Delivery delays directly erode project margin. Scope creep without Change Order is prohibited.",
-                approved_work_rule="Only authorized project deliverables and approved Change Orders are authorized for execution.",
+                approved_work_rule="Approved work is strictly defined by SOW deliverables. Any out-of-scope tasks require formal Change Order.",
                 non_approved_work_rule="Zero execution of out-of-scope requests without executed Change Order.",
                 work_at_risk_rule="Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
                 change_control_trigger="Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.",
                 change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order.",
                 budget_baseline="[CONFIRMATION REQUIRED - CONTRACT FIXED PRICE]",
-                variance_indicator="Green (<5% variance)",
+                variance_indicator="Green (<5% scope variance)",
                 margin_risk_indicator="Medium" if charter.governance_tier == "Elevated" else "Low",
-                escalation_threshold="Milestone slip > 3 days or rework effort > 10% of deliverable budget."
+                escalation_threshold="Milestone slip > 3 days or client acceptance rejection."
             )
         else:
             commercial_guardrails = CommercialGuardrail(
@@ -696,8 +731,17 @@ class BaselineAggregator:
             )
 
         # 13. Build Talent Onboarding Record (Layer 3)
-        if talent_ext and talent_ext.talent_onboarding:
-            talent_onboarding = talent_ext.talent_onboarding
+        ext_roster = getattr(talent_ext, "delivery_talent_roster", None) if talent_ext else None
+        ext_onboarding = talent_ext.talent_onboarding if talent_ext else None
+        if ext_onboarding or ext_roster:
+            talent_onboarding = ext_onboarding or TalentOnboardingRecord(
+                talent_pm=charter.talent_pm or "[UNASSIGNED - TO BE CONFIRMED]",
+                delivery_manager=charter.delivery_manager or "[UNASSIGNED - TO BE CONFIRMED]",
+                pmo_lead=pmo_lead_name,
+                delivery_talent_roster=list(ext_roster) if ext_roster else [],
+            )
+            if ext_roster and not talent_onboarding.delivery_talent_roster:
+                talent_onboarding.delivery_talent_roster = list(ext_roster)
             if charter.delivery_manager:
                 talent_onboarding.delivery_manager = charter.delivery_manager
             if charter.talent_pm:
@@ -869,7 +913,7 @@ class BaselineAggregator:
                 related_section4_artifact="Talent Onboarding Record",
                 owner=charter.talent_pm or "Talent PM",
                 status="In Progress" if has_unassigned_roles else "Complete",
-                evidence=f"{len(talent_onboarding.delivery_talent_roster)} delivery talent roles identified and staffed.",
+                evidence=f"{len(talent_onboarding.delivery_talent_roster)} delivery talent roles listed; {sum(1 for tm in talent_onboarding.delivery_talent_roster if tm.name and 'UNASSIGNED' not in tm.name.upper() and tm.name != 'Unassigned' and tm.status.lower() not in ('pending', 'needs alignment', 'unassigned', 'staffing required'))} named",
                 exception_required=has_unassigned_roles,
                 exception_details="Talent roster staffing in progress." if has_unassigned_roles else None,
                 approval_status="Pending Review" if has_unassigned_roles else "Approved"

@@ -51,7 +51,7 @@ For each deliverable:
 - description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.
 - owner: Named owner or role if stated, else 'Unassigned'.
 - acceptance_criteria: Exact explicit acceptance criteria if provided in the text (state concisely and directly without referencing the SOW or documents). If NOT explicitly stated, you MUST set this to null.
-- sow_reference: SOW story IDs covered (e.g. 'HS-4828, HS-4943') or section references if mentioned, else null.
+- sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or section references) if mentioned, else null.
 - source_reference: The source document name, section/clause, and confidence score.
 
 DOCUMENTS CONTENT:
@@ -132,7 +132,7 @@ SCOPE_DECOMPOSITION_PROMPT = """Analyze the provided project deliverables and de
 
 CONSTRAINTS:
 1. Maximum 15 work packages total.
-2. Keep descriptions brief and actionable (1-2 sentences maximum), appending SOW story IDs if applicable (e.g. 'Stories: HS-4781').
+2. Keep descriptions brief and actionable (1-2 sentences maximum), appending SOW references if applicable (e.g. 'Stories: HS-4781', 'Deliverable 1.2').
 3. Every work package MUST reference an existing parent deliverable ID from the deliverables list below, and its associated linked milestone IDs.
 
 DELIVERABLES LIST:
@@ -142,7 +142,7 @@ For each work package:
 - id: e.g. WP-01, WP-02
 - parent_deliverable_id: e.g. DEL-01 (MUST match one of the deliverable IDs listed above)
 - title: Concise work package title
-- description: Brief description of tasks (1-2 sentences, with 'Stories: HS-...' suffix if story IDs apply)
+- description: Brief description of tasks (1-2 sentences, with 'Stories: <ID>' or 'Ref: <Section>' suffix if SOW references apply)
 - preliminary_sequence: Integer sequence order (1, 2, 3...)
 - owner: Role or named owner if known, else '[UNASSIGNED - TO BE CONFIRMED]'
 - dependency_references: List of IDs or descriptions of prerequisites
@@ -289,7 +289,7 @@ CRITICAL CONSTRAINTS:
 2. Keep descriptions, quotes, and recommendations concise and direct (1-2 sentences per field).
 3. Do not duplicate similar items.
 
-For each detecgit add .ted ambiguity or conflict:
+For each detected ambiguity or conflict:
 - anomaly_id: Sequential identifier (e.g., AMB-01, AMB-02...)
 - category: One of 'Date Conflict', 'Scope Contradiction', 'Ambiguous Acceptance', 'Unclear SLA', 'Ownership Gap'
 - conflicting_clauses: Concise quotes or citations from source documents with document name and section/page reference

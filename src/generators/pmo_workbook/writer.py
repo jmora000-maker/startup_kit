@@ -179,7 +179,10 @@ def _add_title_block(ws: Worksheet, model: WorkbookModel, tab_name: str, has_sch
 
     # Row 4: Schedule note if applicable
     if has_schedule_note:
-        ws["A4"] = "Planned dates are estimated from the SOW week ranges and the Start Date. External Commitment Date is shown only where the SOW states a date."
+        note_text = "Planned dates are estimated from the SOW week ranges and the Start Date. External Commitment Date is shown only where the SOW states a date."
+        if model.has_synthetic_sow_references:
+            note_text = f"{note_text} | Synthetic reference - SOW has no item IDs"
+        ws["A4"] = note_text
         ws["A4"].font = FONT_MUTED
     else:
         ws["A4"] = ""
@@ -255,7 +258,7 @@ def _write_schedule_sheet(wb: Workbook, model: WorkbookModel):
         "Internal Buffer Date", "External Commitment Date", "Date Basis",
         "Duration (working days)", "Days to Finish", "Status", "Health",
         "Predecessor", "Client Prerequisites", "Critical Path Assumptions",
-        "Linked Deliverables", "SOW Stories", "Linked RAID IDs", "Source", "Notes"
+        "Linked Deliverables", "SOW References", "Linked RAID IDs", "Source", "Notes"
     ]
 
     # Row 5: Column headers
@@ -490,7 +493,7 @@ def _write_wbs_sheet(wb: Workbook, model: WorkbookModel):
 
     headers = [
         "WBS Code", "Level", "Element Type", "Name", "Workstream",
-        "Milestone ID", "Deliverable ID", "Source ID", "SOW Stories", "Owner", "Planned Start",
+        "Milestone ID", "Deliverable ID", "Source ID", "SOW References", "Owner", "Planned Start",
         "Planned Finish", "Milestone Finish", "Status", "% Complete", "Cadence",
         "Predecessors", "Acceptance / Completion Criteria", "Linked RAID IDs",
         "Source", "Mapping Basis", "Notes"

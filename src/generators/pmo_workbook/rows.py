@@ -31,6 +31,10 @@ class ScheduleRow:
     outline_level: int = 0
     child_row_range: Optional[Tuple[int, int]] = None  # 1-based row indices (start_row, end_row) in Excel
 
+    @property
+    def sow_references(self) -> str:
+        return self.sow_stories
+
 
 @dataclass(frozen=True)
 class WBSRow:
@@ -57,6 +61,10 @@ class WBSRow:
     notes: str
     outline_level: int = 0
     child_row_range: Optional[Tuple[int, int]] = None  # 1-based row indices (start_row, end_row) in Excel
+
+    @property
+    def sow_references(self) -> str:
+        return self.sow_stories
 
 
 @dataclass(frozen=True)
@@ -101,6 +109,7 @@ class WorkbookModel:
     wbs_rows: List[WBSRow] = field(default_factory=list)
     raid_rows: List[RAIDRow] = field(default_factory=list)
     unmapped_deliverables_count: int = 0
+    has_synthetic_sow_references: bool = False
     timeline_weeks: List[date] = field(default_factory=list)
     timeline_truncated: bool = False
     excluded_items_count: int = 0

@@ -245,19 +245,19 @@ class G01ChecklistRenderer:
         if not cg:
             if contract_type == "Fixed Bid":
                 cg = CommercialGuardrail(
-                    contract_type_implication="Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin.",
-                    billing_consumption_assumption="Invoicing tied strictly to formal client milestone acceptance sign-offs.",
-                    staffing_assumption="Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment.",
+                    contract_type_implication="Fixed Price engagement with milestone-linked delivery gates.",
+                    billing_consumption_assumption="Fixed Price milestone billing upon formal client gate sign-off.",
+                    staffing_assumption="Delivery team staffed by Toptal across scheduled milestone windows.",
                     commercial_exposure_note="Delivery delays directly erode project margin. Scope creep without Change Order is prohibited.",
-                    approved_work_rule="Only authorized project deliverables and approved Change Orders are authorized for execution.",
+                    approved_work_rule="Approved work is strictly defined by SOW deliverables. Any out-of-scope tasks require formal Change Order.",
                     non_approved_work_rule="Zero execution of out-of-scope requests without executed Change Order.",
                     work_at_risk_rule="Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
                     change_control_trigger="Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.",
                     change_order_route="PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
                     budget_baseline="[CONFIRMATION REQUIRED - CONTRACT FIXED PRICE]",
-                    variance_indicator="Green (<5% variance)",
+                    variance_indicator="Green (<5% scope variance)",
                     margin_risk_indicator="Medium" if baseline.governance_tier == "Elevated" else "Low",
-                    escalation_threshold="Milestone slip > 3 days or rework effort > 10% of deliverable budget."
+                    escalation_threshold="Milestone slip > 3 days or client acceptance rejection."
                 )
             else:
                 cg = CommercialGuardrail(

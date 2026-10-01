@@ -5,7 +5,12 @@ import logging
 from datetime import date, timedelta
 from typing import List, Dict, Optional, Tuple, Set, Sequence, Union, Any
 
-from src.config import sanitize_report_text, normalize_person_name
+from src.config import (
+    sanitize_report_text,
+    normalize_person_name,
+    extract_sow_references,
+    detect_sow_reference_kind,
+)
 from src.generators.formatting import ACTION_TAG_REGEX
 from src.core.models import (
     StartupKitBaseline,
@@ -16,6 +21,7 @@ from src.core.models import (
     DependencyAssumptionItem,
     ContractAmbiguityItem,
     CommunicationsPlanItem,
+    SOWWorkItem,
 )
 from src.generators.pmo_workbook.workstreams import (
     TAXONOMY,
@@ -76,48 +82,68 @@ SEQUENTIAL_GATE_REGEX = re.compile(
     re.IGNORECASE
 )
 
-# Contract clarification clause parser (v3 A7)
-CONTRACT_REF_REGEX = re.compile(
+# Citation pattern 1: [V1] doc_name, ref: text (v3 A7)
+CITATION_FMT1_REGEX = re.compile(
     r"^\s*\[V\d+\]\s*(?P<doc>[^,]+?\.(?:pdf|docx|pptx))\s*,?\s*(?P<ref>[^:]*?)\s*:\s*(?P<text>.+)$",
+    re.IGNORECASE
+)
+CONTRACT_REF_REGEX = CITATION_FMT1_REGEX
+
+# Citation pattern 2: Exhibit A, ... / Attachment ... (v6 A28)
+EXHIBIT_REGEX = re.compile(
+    r"\b((?:Exhibit|Attachment|Appendix|Schedule)\s+[A-Z0-9]+(?:,\s*[^,:\n]+)?)\b",
+    re.IGNORECASE
+)
+DOC_FILE_REGEX = re.compile(
+    r"\b([A-Za-z0-9_\-]+\.(?:pdf|docx|pptx))\b",
     re.IGNORECASE
 )
 
 
 def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]:
-    r"""Extract contract reference from text per v4 A16.
+    r"""Extract contract reference from text per v4 A16, v6 A28.
     
-    Checks for:
-      - SOW story IDs: matching \bHS-\d{3,5}\b
-      - Section references: matching \bSection\s+(\d+(?:\.\d+)*)\b
+    Tries 3 formats in order, combined with SOW reference and section extraction:
+      1. [V1] DocName.pdf, ref: text
+      2. Exhibit / Attachment / Document file citations
+      3. SOW references and Section numbers
       
     Returns: (contract_reference, note_if_none)
     """
     if not text:
         return "Not cited", "No clause reference in baseline"
 
-    # First check v3 bracket citation
-    m = CONTRACT_REF_REGEX.match(text)
+    # Format 1: [V1] bracket citation
+    m = CITATION_FMT1_REGEX.match(text)
     if m:
         doc_str = m.group("doc").strip()
         ref_str = m.group("ref").strip()
         ref = f"{doc_str}, {ref_str}" if ref_str else doc_str
         return ref, None
 
-    # Story IDs
-    raw_stories = re.findall(r"\b(HS-\d{3,5})\b", text)
-    stories: List[str] = []
-    for s in raw_stories:
-        if s not in stories:
-            stories.append(s)
+    # Check for Exhibit or document file citation
+    exhibit_match = EXHIBIT_REGEX.search(text)
+    doc_match = DOC_FILE_REGEX.search(text)
+    exhibit_or_doc = ""
+    if exhibit_match:
+        exhibit_or_doc = exhibit_match.group(1).strip()
+    elif doc_match:
+        exhibit_or_doc = doc_match.group(1).strip()
+
+    # Extract SOW story IDs / SOW references
+    raw_stories = extract_sow_references(text)
+    stories: List[str] = [s for s in raw_stories if not re.match(r"^(?:Section|Clause|§)\s*\d", s, re.IGNORECASE)]
 
     # Section numbers
-    raw_sections = re.findall(r"\bSection\s+(\d+(?:\.\d+)*)\b", text, re.IGNORECASE)
+    raw_sections = re.findall(r"\b(?:Section|Clause|§)\s*(\d+(?:\.\d+)*)\b", text, re.IGNORECASE)
     sections: List[str] = []
     for s in raw_sections:
         if s not in sections:
             sections.append(s)
 
-    parts = []
+    parts: List[str] = []
+    if exhibit_or_doc:
+        parts.append(exhibit_or_doc)
     if stories:
         parts.append(f"Stories: {', '.join(stories)}")
     if sections:
@@ -129,19 +155,66 @@ def extract_contract_reference(text: Optional[str]) -> Tuple[str, Optional[str]]
 
 
 def extract_story_ids_for_deliverable(d: Deliverable) -> List[str]:
-    """Extract SOW story IDs (HS-####) for a deliverable in order (v5 A21, A22)."""
+    """Extract SOW references (Story IDs, Deliverable numbers, Task codes, Sections, Synthetic) for a deliverable in order (v5 A21, A22, v6 Section 1.1)."""
     stories: List[str] = []
     # 1. From sow_reference
     if getattr(d, "sow_reference", None):
-        for s in re.findall(r"\bHS-\d{3,5}\b", d.sow_reference):
+        for s in extract_sow_references(d.sow_reference):
             if s not in stories:
                 stories.append(s)
     # 2. From name or description if any
     text = f"{d.name or ''} {d.description or ''}"
-    for s in re.findall(r"\bHS-\d{3,5}\b", text):
+    for s in extract_sow_references(text):
         if s not in stories:
             stories.append(s)
     return stories
+
+
+def build_synthetic_work_items(baseline: StartupKitBaseline) -> List[SOWWorkItem]:
+    """Build synthetic SOW work items from contracted deliverables list when SOW has no identifiers (v6 Section 1.1)."""
+    scope_items: List[str] = []
+    if baseline.sow_interpretation and baseline.sow_interpretation.contracted_deliverables:
+        scope_items = baseline.sow_interpretation.contracted_deliverables
+    elif baseline.charter and baseline.charter.high_level_scope:
+        scope_items = baseline.charter.high_level_scope
+
+    if not scope_items:
+        return []
+
+    from src.generators.pmo_workbook.mapping import _extract_phase_codes_from_text
+    phase_counters: Dict[str, int] = {}
+    global_counter = 0
+    work_items: List[SOWWorkItem] = []
+
+    for item in scope_items:
+        item_clean = clean_text_v2(item)
+        if not item_clean:
+            continue
+        pcs = _extract_phase_codes_from_text(item_clean)
+        phase_str = pcs[0].upper() if pcs else ""
+
+        if phase_str:
+            phase_counters[phase_str] = phase_counters.get(phase_str, 0) + 1
+            idx = phase_counters[phase_str]
+            ref = f"SOW-{phase_str}-{idx:02d}"
+        else:
+            global_counter += 1
+            ref = f"SOW-{global_counter:02d}"
+
+        toks = tokenize_v2(item_clean)
+        fingerprint = sorted(set(toks))
+
+        work_items.append(SOWWorkItem(
+            reference=ref,
+            reference_kind="Synthetic",
+            title=item_clean,
+            phase=phase_str,
+            owner="Toptal Delivery Team",
+            type="Build",
+            fingerprint=fingerprint,
+        ))
+
+    return work_items
 
 
 # Per-milestone communications cadence/name pattern (v3 A6)
@@ -594,16 +667,16 @@ def build_workbook_model(
         matched_wps_by_deliv.update(deliv_wps)
         other_wps_by_ms[m.id] = other_wps
 
-    # Build Story Index (v4 A17)
+    # Build Story Index (v4 A17, v6 Section 1.1)
     story_to_deliv_ids: Dict[str, Set[str]] = {}
     for d in filtered_deliverables:
-        text = f"{d.name or ''} {d.description or ''} {d.acceptance_criteria or ''} {d.sow_reference or ''} {d.source_reference.clause_or_slide if d.source_reference else ''}"
-        for s in re.findall(r"\bHS-\d{3,5}\b", text):
+        text = f"{d.name or ''} {d.description or ''} {d.acceptance_criteria or ''} {d.sow_reference or ''}"
+        for s in extract_sow_references(text):
             story_to_deliv_ids.setdefault(s, set()).add(d.id)
 
     for wp in filtered_backlog:
-        text = f"{wp.title or ''} {wp.description or ''}"
-        for s in re.findall(r"\bHS-\d{3,5}\b", text):
+        text = f"{wp.title or ''} {wp.description or ''} {wp.sow_reference or ''}"
+        for s in extract_sow_references(text):
             wp_deliv_id = None
             for d_id, wps in matched_wps_by_deliv.items():
                 if any(w.id == wp.id for w in wps):
@@ -624,11 +697,67 @@ def build_workbook_model(
     wbs_rows: List[WBSRow] = []
     schedule_rows: List[ScheduleRow] = []
 
-    story_catalogue_titles: Dict[str, str] = {
-        st.id: st.title for st in getattr(baseline, "sow_stories_catalogue", [])
-        if getattr(st, "id", None) and getattr(st, "title", None)
-    }
+    story_catalogue_titles: Dict[str, str] = {}
+    if hasattr(baseline, "sow_stories_catalogue") and baseline.sow_stories_catalogue:
+        for st in baseline.sow_stories_catalogue:
+            ref_val = getattr(st, "reference", None) or getattr(st, "id", None)
+            if ref_val and getattr(st, "title", None):
+                story_catalogue_titles[ref_val] = st.title
+
+    # If no story/work item IDs exist anywhere in deliverables or catalogue, build synthetic work items (v6 Section 1.1)
+    has_any_sow_refs = any(extract_story_ids_for_deliverable(d) for d in filtered_deliverables)
+    if not has_any_sow_refs:
+        synthetic_items = build_synthetic_work_items(baseline)
+        if synthetic_items:
+            for item in synthetic_items:
+                story_catalogue_titles[item.reference] = item.title
+
+            # Match synthetic items to deliverables
+            deliv_tokens_map = {d.id: tokenize_v2(f"{d.name or ''} {d.description or ''}") for d in filtered_deliverables}
+            for s_item in synthetic_items:
+                best_d = None
+                best_score = -1.0
+                for d in filtered_deliverables:
+                    d_ms, _, _ = deliv_mapping.get(d.id, (None, "", False))
+                    d_phase = ""
+                    if d_ms:
+                        d_phase = d_ms.id.replace("M", "P")
+                    score = 0.0
+                    if s_item.phase and d_phase and (s_item.phase in d_phase or d_phase in s_item.phase):
+                        score += 1.0
+                    d_toks = deliv_tokens_map.get(d.id, [])
+                    if d_toks and s_item.fingerprint:
+                        overlap = len(set(s_item.fingerprint) & set(d_toks))
+                        score += overlap / max(len(s_item.fingerprint), 1)
+                    if score > best_score:
+                        best_score = score
+                        best_d = d
+                if best_d is not None:
+                    existing_refs = extract_sow_references(best_d.sow_reference or "")
+                    if s_item.reference not in existing_refs:
+                        best_d.sow_reference = f"{best_d.sow_reference or ''}, {s_item.reference}".strip(", ")
     degenerate_wp_ids = detect_degenerate_work_packages(filtered_backlog, filtered_deliverables)
+
+    # Multi-deliverable work package scoring (v6 A30)
+    wp_also_covers: Dict[str, List[str]] = {}
+    deliv_covered_by: Dict[str, List[str]] = {}
+    all_deliv_names = [d_item.name or d_item.description or "" for d_item in filtered_deliverables]
+    all_deliv_toks = [tokenize_v2(name) for name in all_deliv_names]
+
+    for d_item in filtered_deliverables:
+        assigned_wps = matched_wps_by_deliv.get(d_item.id, [])
+        non_deg_wps = [w for w in assigned_wps if w.id not in degenerate_wp_ids]
+        for wp in non_deg_wps:
+            wp_toks = tokenize_v2(wp.title or "")
+            corpus = all_deliv_toks + [wp_toks]
+            idf_dict = compute_idf(corpus)
+            N = len(corpus)
+            for other_idx, other_d in enumerate(filtered_deliverables):
+                if other_d.id != d_item.id:
+                    score = compute_score(wp_toks, all_deliv_toks[other_idx], idf_dict, N)
+                    if score >= 0.299:
+                        wp_also_covers.setdefault(wp.id, []).append(other_d.id)
+                        deliv_covered_by.setdefault(other_d.id, []).append(f"{wp.id} ({d_item.id})")
 
     # Map milestone ID to its Schedule WBS Code (e.g. "1.1", "2.1")
     ms_wbs_code_map: Dict[str, str] = {}
@@ -937,6 +1066,10 @@ def build_workbook_model(
                 if is_missing_ev:
                     deliv_notes.append("Evidence not defined in baseline - agree with the client")
 
+                # Multi-deliverable coverage on deliverable row (v6 A30)
+                if d.id in deliv_covered_by:
+                    deliv_notes.append(f"Covered by {', '.join(deliv_covered_by[d.id])}")
+
                 # Deliverable Level 3 row in WBS
                 wbs_rows.append(WBSRow(
                     wbs_code=deliv_wbs_code,
@@ -979,10 +1112,13 @@ def build_workbook_model(
                                 else:
                                     wp_owner = "Toptal Delivery Team"
                                 wp_title = strip_work_package_prefix(clean_text_v2(wp.title))
-                                wp_note = None
+                                wp_note_parts = []
                                 if not is_backlog_phase_order_detected:
                                     if wp.parent_deliverable_id and wp.parent_deliverable_id != d.id:
-                                        wp_note = f"Baseline backlog lists parent {wp.parent_deliverable_id}"
+                                        wp_note_parts.append(f"Baseline backlog lists parent {wp.parent_deliverable_id}")
+                                if wp.id in wp_also_covers:
+                                    wp_note_parts.append(f"Also covers {', '.join(wp_also_covers[wp.id])}")
+                                wp_note = " | ".join(wp_note_parts) if wp_note_parts else None
                                 task_rows_to_add.append((wp_title, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
                         elif d_story_ids:
                             # Option 2: SOW stories
@@ -1464,7 +1600,7 @@ def build_workbook_model(
         
         # Parse conflicting_clauses with extract_contract_reference
         conf_clauses = amb_item.conflicting_clauses or ""
-        match = CONTRACT_REF_REGEX.match(conf_clauses)
+        match = CITATION_FMT1_REGEX.match(conf_clauses)
         if match:
             doc_str = match.group("doc").strip()
             ref_str = match.group("ref").strip()
@@ -1746,15 +1882,21 @@ def build_workbook_model(
             base_story_ids.add(s)
     if hasattr(baseline, "sow_stories_catalogue") and baseline.sow_stories_catalogue:
         for st in baseline.sow_stories_catalogue:
-            if getattr(st, "id", None):
-                base_story_ids.add(st.id)
+            ref_val = getattr(st, "reference", None) or getattr(st, "id", None)
+            if ref_val:
+                base_story_ids.add(ref_val)
 
     wb_story_ids: Set[str] = set()
     for w in updated_wbs_rows:
         if w.sow_stories:
-            for s in re.findall(r"\bHS-\d{3,5}\b", w.sow_stories):
+            for s in extract_sow_references(w.sow_stories):
                 wb_story_ids.add(s)
     missing_stories = sorted(base_story_ids - wb_story_ids, key=natural_sort_key)
+
+    has_synthetic = any(
+        detect_sow_reference_kind(s) == "Synthetic" or s.startswith("SOW-")
+        for s in (base_story_ids | wb_story_ids)
+    )
 
     if missing_ms:
         logger.warning("Traceability check: Missing Milestones in workbook: %s", missing_ms)
@@ -1765,7 +1907,9 @@ def build_workbook_model(
     if missing_raid:
         logger.warning("Traceability check: Missing RAID items in workbook: %s", missing_raid)
     if missing_stories:
-        logger.warning("Traceability check: Missing SOW Stories in workbook: %s", missing_stories)
+        logger.warning("Traceability check: Missing SOW References in workbook: %s", missing_stories)
+    if not base_story_ids and not wb_story_ids:
+        logger.warning("No SOW work items identified in baseline.")
 
     traceability_dict: Dict[str, Dict[str, Any]] = {
         "Milestones": {
@@ -1788,12 +1932,15 @@ def build_workbook_model(
             "in_workbook": len(raid_rows),
             "missing_ids": missing_raid,
         },
-        "SOW Stories": {
+        "SOW References": {
             "in_baseline": len(base_story_ids),
             "in_workbook": len(wb_story_ids),
             "missing_ids": missing_stories,
+            "synthetic": has_synthetic,
+            "empty": len(base_story_ids) == 0,
         },
     }
+    traceability_dict["SOW Stories"] = traceability_dict["SOW References"]
 
     evidence_flags_list = sorted(list(flagged_deliv_ids), key=natural_sort_key)
 
@@ -1810,6 +1957,7 @@ def build_workbook_model(
         wbs_rows=updated_wbs_rows,
         raid_rows=raid_rows,
         unmapped_deliverables_count=unmapped_count,
+        has_synthetic_sow_references=has_synthetic,
         timeline_weeks=timeline_weeks,
         timeline_truncated=timeline_truncated,
         excluded_items_count=excluded_items,

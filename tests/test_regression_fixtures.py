@@ -214,3 +214,67 @@ def test_arc_run3_matches_v5_appendix(arc_run3):
     # Traceability: 0 missing IDs across all categories including SOW Stories
     for cat, data in model.traceability.items():
         assert len(data["missing_ids"]) == 0
+
+
+def test_arc_run4_matches_v6_appendix(arc_run4):
+    """Assert arc_run4 matches v6 Appendix exact expected structure."""
+    model = build_workbook_model(arc_run4, start_date=date(2026, 10, 5))
+
+    # Schedule workstreams & milestones
+    ms_rows = [s for s in model.schedule_rows if s.row_type == "Milestone"]
+    assert len(ms_rows) == 4
+    ws_rows = [s for s in model.schedule_rows if s.row_type == "Workstream"]
+    assert len(ws_rows) == 4
+
+    # Predecessors
+    sched_map = {s.milestone_id: s for s in ms_rows}
+    assert sched_map["M1"].predecessor == ""
+    assert sched_map["M2"].predecessor == "M1"
+    assert sched_map["M3"].predecessor == "M2"
+    assert sched_map["M4"].predecessor == "M3"
+
+    # Schedule SOW References column counts
+    m1_stories = [s.strip() for s in sched_map["M1"].sow_stories.split(",") if s.strip()]
+    m2_stories = [s.strip() for s in sched_map["M2"].sow_stories.split(",") if s.strip()]
+    m3_stories = [s.strip() for s in sched_map["M3"].sow_stories.split(",") if s.strip()]
+    m4_stories = [s.strip() for s in sched_map["M4"].sow_stories.split(",") if s.strip()]
+    assert len(m1_stories) == 7
+    assert len(m2_stories) == 11
+    assert len(m3_stories) == 10
+    assert len(m4_stories) == 7
+
+    # Deliverables: 19 deliverables (0 unmapped)
+    assert model.unmapped_deliverables_count == 0
+    deliv_map = {w.deliverable_id: w for w in model.wbs_rows if w.element_type == "Deliverable"}
+    assert len(deliv_map) == 19
+
+    # WP-10 under DEL-12
+    deliv_12_tasks = [w for w in model.wbs_rows if w.deliverable_id == "DEL-12" and w.level == 4]
+    wp10_task = next((t for t in deliv_12_tasks if t.source_id == "WP-10"), None)
+    assert wp10_task is not None
+
+    # No Other-work package in WBS
+    other_work_tasks = [w for w in model.wbs_rows if "Other" in w.workstream and "work" in w.name.lower()]
+    assert len(other_work_tasks) == 0
+
+    # Tasks count: 150 tasks
+    tasks = [w for w in model.wbs_rows if w.level == 4]
+    assert len(tasks) == 150
+
+    # RAID: 51 rows
+    assert len(model.raid_rows) == 51
+
+    # All 15 contract clarifications have a citation-based Contract Reference (no 'Not cited')
+    amb_rows = [r for r in model.raid_rows if r.category == "Contract Clarification"]
+    assert len(amb_rows) == 15
+    for r in amb_rows:
+        assert r.contract_reference != "Not cited"
+        assert "Exhibit A" in r.contract_reference
+
+    # Evidence notes: 6 missing-evidence notes
+    missing_ev_count = sum(1 for w in deliv_map.values() if "Evidence not defined in baseline" in w.notes)
+    assert missing_ev_count == 6
+
+    # Traceability: 0 missing IDs across all categories
+    for cat, data in model.traceability.items():
+        assert len(data["missing_ids"]) == 0

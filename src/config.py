@@ -103,4 +103,86 @@ class AppConfig:
     max_tokens: int = int(os.getenv("MAX_TOKENS", "16384"))
 
 
+# Tool reserved prefixes that must never be classified as SOW identifiers (v6 Section 1.1)
+TOOL_RESERVED_PREFIXES: set[str] = {
+    "DEL", "WP", "RSK", "ISS", "DEP", "ASM", "AMB", "Q", "M", "MS", "COM", "DEC", "ACT", "ACT-REQ", "RAID", "G01", "G"
+}
+
+# Configurable, ordered list of (Kind, Pattern) tuples for SOW reference detection (v6 Section 1.1)
+SOW_REFERENCE_PATTERNS: list[tuple[str, str]] = [
+    ("Story ID", r"\b[A-Z][A-Z0-9]{1,9}-\d{2,6}\b"),
+    ("Deliverable number", r"\b(?:Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*)\b"),
+    ("Task or WBS code", r"\b(?:Task|WBS)\s+\d+(?:\.\d+)*\b"),
+    ("Section", r"\b(?:Section|Clause|§)\s*\d+(?:\.\d+)*\b"),
+]
+
+
+def is_tool_reserved_id(identifier: str) -> bool:
+    """Check if identifier uses one of the internal tool-reserved prefixes (v6 Section 1.1)."""
+    if not identifier:
+        return False
+    ident_upper = identifier.strip().upper()
+    parts = ident_upper.split("-")
+    if len(parts) >= 2:
+        prefix1 = parts[0]
+        prefix_full = "-".join(parts[:-1])
+        if prefix1 in TOOL_RESERVED_PREFIXES or prefix_full in TOOL_RESERVED_PREFIXES:
+            return True
+    return False
+
+
+def detect_sow_reference_kind(ref: str) -> Optional[str]:
+    """Detect reference kind for an identifier string using SOW_REFERENCE_PATTERNS (v6 Section 1.1)."""
+    if not ref:
+        return None
+    ref_clean = ref.strip()
+    if ref_clean.upper().startswith("SOW-"):
+        return "Synthetic"
+    for kind, pattern in SOW_REFERENCE_PATTERNS:
+        m = re.search(pattern, ref_clean, re.IGNORECASE)
+        if m:
+            if kind == "Story ID" and is_tool_reserved_id(ref_clean):
+                continue
+            return kind
+    return None
+
+
+def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
+    """Extract all SOW references and their kinds from text in appearance order (v6 Section 1.1)."""
+    if not text:
+        return []
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    # Synthetic references pattern: SOW-{phase code or milestone ID}-{nn} or SOW-{nn}
+    synthetic_pattern = r"\bSOW-(?:[A-Za-z0-9]+-)?\d{2,4}\b"
+    for m in re.finditer(synthetic_pattern, text, re.IGNORECASE):
+        val = m.group(0).strip()
+        if val.upper() not in seen:
+            seen.add(val.upper())
+            results.append((val, "Synthetic"))
+
+    for kind, pattern in SOW_REFERENCE_PATTERNS:
+        for m in re.finditer(pattern, text, re.IGNORECASE):
+            val = m.group(0).strip()
+            if kind == "Story ID" and is_tool_reserved_id(val):
+                continue
+            if val.upper() not in seen:
+                seen.add(val.upper())
+                results.append((val, kind))
+
+    # Sort by appearance position in text
+    def _pos(item: tuple[str, str]) -> int:
+        idx = text.find(item[0])
+        return idx if idx >= 0 else 999999
+
+    results.sort(key=_pos)
+    return results
+
+
+def extract_sow_references(text: str) -> list[str]:
+    """Extract unique SOW references from text in appearance order (v6 Section 1.1)."""
+    return [ref for ref, _ in extract_sow_references_with_kind(text)]
+
+
 config = AppConfig()

@@ -20,6 +20,7 @@ from src.core.models import (
     DecisionItem,
     WorkPackageSeed,
     SOWStoryItem,
+    SOWWorkItem,
     Stakeholder,
     RACIItem,
     CommunicationsPlanItem,
@@ -33,6 +34,7 @@ from src.core.models import (
     SOWInterpretationSummary,
     ContractAmbiguityItem,
 )
+from src.config import extract_sow_references, detect_sow_reference_kind
 from src.generators.pmo_workbook.mapping import strip_work_package_prefix
 from src.scoring.readiness_engine import ReadinessScoringEngine
 
@@ -344,16 +346,17 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             author_name=resolved_pmo
         )
 
-        # Extract SOW story catalogue (v5 B13)
-        sow_stories_catalogue: List[SOWStoryItem] = []
+        # Extract SOW story / work item catalogue (v5 B13, v6 Section 1.1)
+        sow_stories_catalogue: List[SOWWorkItem] = []
         seen_catalogue_stories: Set[str] = set()
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
-            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+            for s_id in extract_sow_references(text_block):
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
-                    sow_stories_catalogue.append(SOWStoryItem(
-                        id=s_id,
+                    sow_stories_catalogue.append(SOWWorkItem(
+                        reference=s_id,
+                        reference_kind=detect_sow_reference_kind(s_id) or "Story ID",
                         title="",
                         phase="",
                         owner="Toptal",
@@ -363,11 +366,12 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                     ))
         for wp in backlog_seed:
             text_block = f"{wp.title or ''} {wp.description or ''} {wp.sow_reference or ''}"
-            for s_id in re.findall(r"\bHS-\d{3,5}\b", text_block):
+            for s_id in extract_sow_references(text_block):
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
-                    sow_stories_catalogue.append(SOWStoryItem(
-                        id=s_id,
+                    sow_stories_catalogue.append(SOWWorkItem(
+                        reference=s_id,
+                        reference_kind=detect_sow_reference_kind(s_id) or "Story ID",
                         title=strip_work_package_prefix(wp.title),
                         phase="",
                         owner=wp.owner or "Toptal",
@@ -965,16 +969,26 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         if not tbl:
             return backlog
 
+        header_cells = [c.text.strip().lower() for c in tbl.rows[0].cells] if tbl.rows else []
+        id_idx = next((i for i, h in enumerate(header_cells) if "wp id" in h or "id" in h), 0)
+        parent_idx = next((i for i, h in enumerate(header_cells) if "parent" in h), 1)
+        title_idx = next((i for i, h in enumerate(header_cells) if "title" in h or "work package" in h or "desc" in h), 2)
+        seq_idx = next((i for i, h in enumerate(header_cells) if "seq" in h), 3)
+        owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 4)
+        sow_idx = next((i for i, h in enumerate(header_cells) if "sow" in h or "ref" in h or "story" in h or "stories" in h), 5)
+        status_idx = next((i for i, h in enumerate(header_cells) if "status" in h), 6)
+
         for row in tbl.rows[1:]:
             cells = [clean_text(c.text) for c in row.cells]
             if len(cells) >= 3:
-                wp_id = cells[0]
-                parent_id = cells[1]
-                title = cells[2]
-                seq = int(cells[3]) if len(cells) > 3 and cells[3].isdigit() else 1
-                owner = cells[4] if len(cells) > 4 else "[UNASSIGNED - TO BE CONFIRMED]"
-                sow_ref = cells[5] if len(cells) >= 7 else None
-                status = cells[6] if len(cells) >= 7 else (cells[5] if len(cells) > 5 else "Draft")
+                wp_id = cells[id_idx] if id_idx < len(cells) else f"WP-{len(backlog)+1:02d}"
+                parent_id = cells[parent_idx] if parent_idx < len(cells) else ""
+                title = cells[title_idx] if title_idx < len(cells) else ""
+                seq_val = cells[seq_idx] if seq_idx < len(cells) else "1"
+                seq = int(seq_val) if seq_val.isdigit() else 1
+                owner = cells[owner_idx] if owner_idx < len(cells) else "[UNASSIGNED - TO BE CONFIRMED]"
+                sow_ref = cells[sow_idx] if (sow_idx < len(cells) and sow_idx != -1) else None
+                status = cells[status_idx] if (status_idx < len(cells) and status_idx != -1) else "Draft"
 
                 backlog.append(WorkPackageSeed(
                     id=wp_id,
@@ -1010,7 +1024,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         ev_idx = next((i for i, h in enumerate(header_cells) if "evidence" in h), 3)
         app_idx = next((i for i, h in enumerate(header_cells) if "approver" in h or "client" in h), 4)
         owner_idx = next((i for i, h in enumerate(header_cells) if "owner" in h), 5)
-        sow_idx = next((i for i, h in enumerate(header_cells) if "sow" in h or "story" in h or "stories" in h), -1)
+        sow_idx = next((i for i, h in enumerate(header_cells) if "sow" in h or "ref" in h or "story" in h or "stories" in h), -1)
         signoff_idx = next((i for i, h in enumerate(header_cells) if "sign-off" in h or "mechanism" in h or "review" in h), -1)
 
         for row in tbl.rows[1:]:

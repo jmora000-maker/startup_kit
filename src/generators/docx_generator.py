@@ -30,9 +30,9 @@ from src.generators.checklist import G01ChecklistRenderer
 logger = logging.getLogger(__name__)
 
 
-# Bracketed placeholder tokens only (e.g. [TBD], (TO BE CONFIRMED), [CONFIRMATION REQUIRED]) (v4 B6)
+# Bracketed placeholder tokens only (e.g. [TBD], [TO BE CONFIRMED], [CONFIRMATION REQUIRED]) (v4 B6)
 BRACKETED_PLACEHOLDER_REGEX = re.compile(
-    r'(?:\[|\()\s*(?:CONFIRMATION\s*REQUIRED|CONFIRMATION_REQUIRED|UNDEFINED|UNASSIGNED(?:\s*-\s*TO\s*BE\s*CONFIRMED)?|TO\s*BE\s*CONFIRMED|TO\s*BE\s*DETERMINED|TBD|NOT\s*STATED|PENDING|NEEDS\s*ALIGNMENT|STAFFING\s*REQUIRED)(?:\s*:[^\]\)\n]*)?\s*(?:\]|\))',
+    r'\[\s*(?:CONFIRMATION\s*REQUIRED|CONFIRMATION_REQUIRED|UNDEFINED|UNASSIGNED(?:\s*-\s*TO\s*BE\s*CONFIRMED)?|TO\s*BE\s*CONFIRMED|TO\s*BE\s*DETERMINED|TBD|NOT\s*STATED|PENDING|NEEDS\s*ALIGNMENT|STAFFING\s*REQUIRED)(?:\s*:[^\]\n]*)?\s*\]',
     re.IGNORECASE
 )
 
@@ -127,10 +127,7 @@ def format_cell_with_action(
         if WHOLE_CELL_PLACEHOLDER_REGEX.match(bare_line):
             c_line = ""
         else:
-            if target_actions or is_warning or is_bare_placeholder:
-                c_line = BRACKETED_PLACEHOLDER_REGEX.sub('', bare_line).strip()
-            else:
-                c_line = bare_line.strip()
+            c_line = BRACKETED_PLACEHOLDER_REGEX.sub('', bare_line).strip()
         # Clean leading colons/dashes
         c_line = re.sub(r'^[\s\:\—\(\)\[\]]+', '', c_line).strip()
         c_line = strip_trailing_unbalanced_brackets(c_line)
@@ -564,11 +561,11 @@ class DocxGenerator(IDocumentWriter):
         # =========================================================================
         add_section_heading(doc, "Layer 2: Delivery Control Pack", level=1)
 
-        # 2.1 Scope Decomposition / Backlog Seed (v4 B9: SOW Stories column)
+        # 2.1 Scope Decomposition / Backlog Seed (v4 B9, v6 Section 1.1: SOW References column)
         add_section_heading(doc, "Scope Decomposition / Backlog Seed", level=2)
         if baseline.backlog_seed:
             wp_table = doc.add_table(rows=1, cols=7)
-            wp_headers = ["WP ID", "Parent Deliv", "Work Package Title", "Seq", "Owner", "SOW Stories", "Status"]
+            wp_headers = ["WP ID", "Parent Deliv", "Work Package Title", "Seq", "Owner", "SOW References", "Status"]
             for idx, h in enumerate(wp_headers):
                 wp_table.cell(0, idx).text = h
 
@@ -589,10 +586,10 @@ class DocxGenerator(IDocumentWriter):
             style_table(wp_table, col_widths=[0.7, 0.9, 2.8, 0.5, 1.0, 1.0, 0.7])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-        # 2.2 Deliverables and Acceptance Matrix (v4 B9: SOW Stories column)
+        # 2.2 Deliverables and Acceptance Matrix (v4 B9, v6 Section 1.1: SOW References column)
         add_section_heading(doc, "Deliverables and Acceptance Matrix", level=2)
         deliv_table = doc.add_table(rows=1, cols=8)
-        deliv_headers = ["ID", "Deliverable Name", "Acceptance Criteria", "Evidence Required", "Client Approver", "Owner", "SOW Stories", "Review Window"]
+        deliv_headers = ["ID", "Deliverable Name", "Acceptance Criteria", "Evidence Required", "Client Approver", "Owner", "SOW References", "Review Window"]
         for idx, h in enumerate(deliv_headers):
             deliv_table.cell(0, idx).text = h
 

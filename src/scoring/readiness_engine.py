@@ -802,41 +802,27 @@ class ReadinessScoringEngine:
                     if not item.exception_details:
                         item.exception_details = "Customer prerequisites and environment access pending confirmation."
 
-        # G01-08: Delivery Talent Roster staffed
+        # G01-08: Delivery Talent Roster staffed (v6 B7)
         if "G01-08" in chk_map:
             item = chk_map["G01-08"]
-            has_roster_defects = False
-            charter = baseline.charter
             t_rec = baseline.talent_onboarding
-            dm = (charter.delivery_manager if charter else None) or (t_rec.delivery_manager if t_rec else None)
-            tpm = (charter.talent_pm if charter else None) or (t_rec.talent_pm if t_rec else None)
-            if (
-                not dm
-                or "UNASSIGNED" in str(dm).upper()
-                or not tpm
-                or "UNASSIGNED" in str(tpm).upper()
-            ):
-                has_roster_defects = True
-            elif t_rec and t_rec.delivery_talent_roster:
-                for tm in t_rec.delivery_talent_roster:
-                    if (
-                        not tm.name
-                        or "UNASSIGNED" in tm.name.upper()
-                        or tm.name == "Unassigned"
-                        or not tm.status
-                        or tm.status.lower() in ("pending", "needs alignment", "unassigned", "staffing required")
-                    ):
-                        has_roster_defects = True
-                        break
-            if not has_roster_defects:
-                item.status = "Complete"
-                item.exception_required = False
-                item.exception_details = None
-            else:
+            roster = t_rec.delivery_talent_roster if t_rec else []
+            n_roles = len(roster)
+            m_named = sum(
+                1 for tm in roster
+                if tm.name and "UNASSIGNED" not in tm.name.upper() and tm.name != "Unassigned" and tm.status.lower() not in ("pending", "needs alignment", "unassigned", "staffing required")
+            )
+            if n_roles > 0:
+                item.evidence = f"{n_roles} delivery talent roles listed; {m_named} named"
+            if m_named < n_roles or n_roles == 0:
                 item.status = "In Progress"
                 item.exception_required = True
                 if not item.exception_details:
                     item.exception_details = "Talent roster staffing in progress."
+            else:
+                item.status = "Complete"
+                item.exception_required = False
+                item.exception_details = None
 
         # G01-09: Client Sponsor & escalation authority
         if "G01-09" in chk_map:
@@ -1181,14 +1167,18 @@ class ReadinessScoringEngine:
                 req_action = "Confirm weekly status report distribution list."
 
             elif mapped_gate_id == "G01-07":
+                clean_q = re.sub(r'\[\s*(?:CONFIRMATION\s*REQUIRED|CONFIRMATION_REQUIRED|UNDEFINED|UNASSIGNED|UNASSIGNED\s*-\s*TO\s*BE\s*CONFIRMED|TBD)\s*\]', '', q, flags=re.IGNORECASE).strip()
+                clean_q = re.sub(r'\s{2,}', ' ', clean_q).strip()
                 target_table = "SOW Interpretation Summary"
                 target_col = "Customer Obligations & Prerequisites"
-                req_action = f"Issue access prerequisites list to client sponsor: {q}"
+                req_action = f"Issue access prerequisites list to client sponsor: {clean_q or q}"
 
             else:
+                clean_q = re.sub(r'\[\s*(?:CONFIRMATION\s*REQUIRED|CONFIRMATION_REQUIRED|UNDEFINED|UNASSIGNED|UNASSIGNED\s*-\s*TO\s*BE\s*CONFIRMED|TBD)\s*\]', '', q, flags=re.IGNORECASE).strip()
+                clean_q = re.sub(r'\s{2,}', ' ', clean_q).strip()
                 target_table = "SOW Interpretation Summary"
                 target_col = "Ambiguities & Clarification Notes"
-                req_action = f"Review and clarify during mobilization kickoff: {q}"
+                req_action = f"Review and clarify during mobilization kickoff: {clean_q or q}"
 
             clean_q = re.sub(r'\[?(?:CONFIRMATION REQUIRED|UNDEFINED|UNASSIGNED|UNASSIGNED\s*-\s*TO BE CONFIRMED)\]?', '', q, flags=re.IGNORECASE).strip()
             clean_q = re.sub(r'\s{2,}', ' ', clean_q).strip()

@@ -197,16 +197,29 @@ def format_workbook_export_summary(
             unmapped_str = f"{COLOR_AMBER}{unmapped_str}{COLOR_RESET}"
         lines.append(unmapped_str)
 
-    # Traceability Self-Check (v3 A13)
+    # Traceability Self-Check (v3 A13, v5 A22, v6 Section 1.1)
     if result.traceability:
         lines.append(sep_single)
         lines.append(f"   {COLOR_BOLD}TRACEABILITY SELF-CHECK (v3 A13):{COLOR_RESET}")
         for elem, data in result.traceability.items():
-            base_n = data.get("in_baseline", 0)
-            wb_n = data.get("in_workbook", 0)
-            missing = data.get("missing_ids", [])
-            missing_str = ", ".join(missing) if missing else "None"
-            lines.append(f"   • {elem:<20}: {base_n} in baseline -> {wb_n} in workbook (Missing: {missing_str})")
+            if elem == "SOW Stories" and "SOW References" in result.traceability:
+                continue
+            if elem in ("SOW References", "SOW Stories"):
+                if data.get("empty"):
+                    lines.append(f"   • {elem:<20}: No SOW work items identified")
+                    continue
+                base_n = data.get("in_baseline", 0)
+                wb_n = data.get("in_workbook", 0)
+                missing = data.get("missing_ids", [])
+                missing_str = ", ".join(missing) if missing else "None"
+                syn_note = " (SOW has no item IDs; synthetic references used)" if data.get("synthetic") else ""
+                lines.append(f"   • {elem:<20}: {base_n} in baseline -> {wb_n} in workbook (Missing: {missing_str}){syn_note}")
+            else:
+                base_n = data.get("in_baseline", 0)
+                wb_n = data.get("in_workbook", 0)
+                missing = data.get("missing_ids", [])
+                missing_str = ", ".join(missing) if missing else "None"
+                lines.append(f"   • {elem:<20}: {base_n} in baseline -> {wb_n} in workbook (Missing: {missing_str})")
 
     res_path = result.file_path.resolve() if hasattr(result.file_path, "resolve") else result.file_path
     lines.append(sep_single)

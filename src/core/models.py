@@ -344,15 +344,38 @@ class WorkPackageSeed(BaseModel):
     )
 
 
-class SOWStoryItem(BaseModel):
-    """SOW story item catalogued for delivery backlog and traceability (v5 B13)."""
-    id: str  # e.g. "HS-4762"
+class SOWWorkItem(BaseModel):
+    """SOW work item catalogued for delivery backlog and traceability (v6 Section 1.1)."""
+    reference: str = ""  # SOW identifier or synthetic e.g. "HS-4762", "SOW-P1-01"
+    reference_kind: str = "Story ID"  # "Story ID", "Deliverable number", "Task or WBS code", "Section", "Synthetic"
     title: str = ""
     phase: str = ""  # e.g. "P1", "M1"
     owner: str = "Toptal"  # "Toptal" or "Client"
-    type: str = "Build"  # "Build", "Test", "Certification"
+    type: str = "Build"  # "Build", "Integration", "Test", "Certification", "Analysis", "Documentation"
+    fingerprint: List[str] = Field(default_factory=list)  # sorted unique tokens from A2 tokenizer
     deliverable_id: Optional[str] = None
     source_reference: Optional[SourceReference] = None
+
+    @property
+    def id(self) -> str:
+        return self.reference
+
+    @id.setter
+    def id(self, value: str) -> None:
+        self.reference = value
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_id_alias(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "id" in data and "reference" not in data:
+                data["reference"] = data["id"]
+            elif "reference" in data and "id" not in data:
+                data["id"] = data["reference"]
+        return data
+
+
+SOWStoryItem = SOWWorkItem
 
 
 class ProjectStartupCharter(BaseModel):
@@ -638,8 +661,16 @@ class StartupKitBaseline(BaseModel):
     action_required_items: List[ActionRequiredItem] = Field(default_factory=list)
     open_questions: List[str] = Field(default_factory=list)
     contract_ambiguities: List[ContractAmbiguityItem] = Field(default_factory=list)
-    sow_stories_catalogue: List[SOWStoryItem] = Field(default_factory=list)
+    sow_stories_catalogue: List[SOWWorkItem] = Field(default_factory=list)
     readiness_score: float = 0.0
+
+    @property
+    def sow_work_items_catalogue(self) -> List[SOWWorkItem]:
+        return self.sow_stories_catalogue
+
+    @sow_work_items_catalogue.setter
+    def sow_work_items_catalogue(self, value: List[SOWWorkItem]) -> None:
+        self.sow_stories_catalogue = value
     readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
     workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
     sow_awarded_date: FlexibleDate = None

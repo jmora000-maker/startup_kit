@@ -550,11 +550,13 @@ def map_work_packages_to_deliverables(
     work_packages: Sequence[WorkPackageSeed],
     deliverables_in_milestone: Sequence[Deliverable],
 ) -> Tuple[Dict[str, List[WorkPackageSeed]], List[WorkPackageSeed]]:
-    """Map work packages within a milestone to its mapped deliverables.
+    """Map work packages within a milestone to its mapped deliverables (v2, v6 A29).
     
-    Corpus = deliverable names in this milestone + this work package title.
-    If best score >= 0.25, assigns to that deliverable (ties go to lower deliverable ID).
-    Otherwise, returns as other_work_packages.
+    Pass 1: Corpus = deliverable names in this milestone + this work package title.
+    If best score >= 0.20, assigns to that deliverable (ties go to lower deliverable ID).
+    
+    Pass 2 (v6 A29): For remaining unassigned work packages, if an unassigned deliverable in this milestone
+    shares a distinctive token with IDF >= ln(2) (~0.69315), assign WP to that deliverable.
     """
     matched_by_deliv: Dict[str, List[WorkPackageSeed]] = {d.id: [] for d in deliverables_in_milestone}
     other_wps: List[WorkPackageSeed] = []
@@ -564,6 +566,7 @@ def map_work_packages_to_deliverables(
 
     deliv_names = [d.name or d.description or "" for d in deliverables_in_milestone]
 
+    unassigned_wps: List[WorkPackageSeed] = []
     for wp in work_packages:
         wp_title = wp.title or ""
         wp_tokens = tokenize_v2(wp_title)
@@ -590,6 +593,31 @@ def map_work_packages_to_deliverables(
 
         if best_deliv is not None:
             matched_by_deliv[best_deliv.id].append(wp)
+        else:
+            unassigned_wps.append(wp)
+
+    # Pass 2 (v6 A29): Distinctive shared token with IDF >= ln(2) against empty deliverables in same milestone
+    import math
+    min_idf = math.log(2.0)  # ~0.693147
+
+    # Milestone corpus IDF across all deliverables + work packages in this milestone
+    ms_corpus = [tokenize_v2(name) for name in deliv_names] + [tokenize_v2(wp.title or "") for wp in work_packages]
+    ms_idf = compute_idf(ms_corpus)
+
+    for wp in unassigned_wps:
+        wp_tokens = set(tokenize_v2(wp.title or ""))
+        assigned_deliv = None
+
+        for d in deliverables_in_milestone:
+            if not matched_by_deliv[d.id]:
+                d_tokens = set(tokenize_v2(d.name or d.description or ""))
+                shared = wp_tokens & d_tokens
+                if any(ms_idf.get(t, 0.0) >= (min_idf - 1e-6) for t in shared):
+                    assigned_deliv = d
+                    break
+
+        if assigned_deliv is not None:
+            matched_by_deliv[assigned_deliv.id].append(wp)
         else:
             other_wps.append(wp)
 
