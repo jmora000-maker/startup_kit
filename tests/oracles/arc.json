@@ -1,0 +1,16 @@
+{
+  "fixture": "arc",
+  "gate_count": 4,
+  "phases": ["P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"],
+  "week_ranges": {"P1": [1, 6], "P2a": [7, 16], "P2b": [17, 21], "P3": [22, 26]},
+  "sow_reference_phase": {
+    "P1":  ["HS-4762", "HS-4763", "HS-4765", "HS-4938", "HS-4770", "HS-4782", "HS-4941"],
+    "P2a": ["HS-4777", "HS-4778", "HS-4779", "HS-4942", "HS-4803", "HS-4804", "HS-4797", "HS-4785", "HS-4807", "HS-4801", "HS-4791"],
+    "P2b": ["HS-4772", "HS-4773", "HS-4809", "HS-4810", "HS-4813", "HS-4793", "HS-4775", "HS-4815", "HS-4794", "HS-4811"],
+    "P3":  ["HS-4825", "HS-4826", "HS-4828", "HS-4943", "HS-4832", "HS-4788", "HS-4829"]
+  },
+  "client_owned_references": ["HS-4781", "HS-4827", "HS-4824"],
+  "award_date_stated_in_sow": false,
+  "min_evidence_coverage": 0.90,
+  "acceptance_mode": "milestone"
+}
