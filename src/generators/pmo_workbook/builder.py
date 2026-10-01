@@ -679,7 +679,16 @@ def build_workbook_model(
         p = parsed_phases.get(m.id)
         if p and p.note:
             ms_notes[m.id].append(p.note)
-        if getattr(m, "merged_milestone_ids", None):
+        if getattr(m, "extracted_ids", None):
+            orig_eid = m.extracted_ids[0]
+            merged_eids = m.extracted_ids[1:]
+            if orig_eid != m.id and merged_eids:
+                ms_notes[m.id].append(f"Extracted as {orig_eid}; includes {', '.join(merged_eids)} (acceptance review and sign-off)")
+            elif orig_eid == m.id and merged_eids:
+                ms_notes[m.id].append(f"Extracted as {orig_eid}; includes {', '.join(merged_eids)} (acceptance review and sign-off)")
+            elif orig_eid != m.id and not merged_eids:
+                ms_notes[m.id].append(f"Extracted as {orig_eid}")
+        elif getattr(m, "merged_milestone_ids", None):
             ms_notes[m.id].append(f"Includes {', '.join(m.merged_milestone_ids)}: acceptance review and sign-off")
 
         # Check week range
@@ -1142,7 +1151,12 @@ def build_workbook_model(
             preds_list = ms_predecessors.get(m.id, [])
             preds_str = ", ".join(preds_list)
 
-            ms_display_id = f"{m.id} (+{', +'.join(m.merged_milestone_ids)})" if getattr(m, "merged_milestone_ids", None) else m.id
+            if getattr(m, "extracted_ids", None):
+                ms_display_id = m.id
+            elif getattr(m, "merged_milestone_ids", None):
+                ms_display_id = f"{m.id} (+{', +'.join(m.merged_milestone_ids)})"
+            else:
+                ms_display_id = m.id
 
             # Schedule Milestone row
             schedule_rows.append(ScheduleRow(

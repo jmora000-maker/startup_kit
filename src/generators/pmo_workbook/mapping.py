@@ -841,26 +841,33 @@ def link_raid_item_v2(
         if num_match:
             ms_by_num[int(num_match.group(0))] = m
 
-    # Build merged and checkpoint milestone lookups (RAID-08)
+    # Build merged and checkpoint milestone lookups (RAID-08, VAL-01)
     merged_to_gate: Dict[str, Tuple[Milestone, str]] = {}
     for m in milestones:
+        for eid in getattr(m, "extracted_ids", []):
+            if eid != m.id:
+                merged_to_gate[eid] = (m, f"Refers to extracted {eid} (now {m.id})")
         for mid in getattr(m, "merged_milestone_ids", []):
-            merged_to_gate[mid] = (m, f"Refers to {mid} (merged into {m.id})")
+            if mid not in merged_to_gate:
+                if getattr(m, "extracted_ids", None):
+                    merged_to_gate[mid] = (m, f"Refers to extracted {mid} (now {m.id})")
+                else:
+                    merged_to_gate[mid] = (m, f"Refers to {mid} (merged into {m.id})")
 
     checkpoint_to_gate: Dict[str, Tuple[Milestone, str]] = {}
     if checkpoints:
         for idx, cp in enumerate(checkpoints, 1):
             cp_phase_m = re.search(r'\b(P\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
-            cp_phase = cp_phase_m.group(1).upper() if cp_phase_m else "P3"
+            cp_phase = cp.phase or (cp_phase_m.group(1).upper() if cp_phase_m else "P3")
             target_gate = ms_by_phase.get(cp_phase, milestones[-1] if milestones else None)
             if target_gate:
                 checkpoint_to_gate[cp.id] = (target_gate, f"Refers to {cp.id} (checkpoint of {target_gate.id})")
                 cp_m_id = re.search(r'\b(M\d+)\b', getattr(cp, "id", "") + " " + (cp.description or ""))
                 if cp_m_id:
-                    checkpoint_to_gate[cp_m_id.group(1)] = (target_gate, f"Refers to {cp_m_id.group(1)} (checkpoint of {target_gate.id})")
-                if target_gate.id == "M10":
+                    checkpoint_to_gate[cp_m_id.group(1)] = (target_gate, f"Refers to extracted {cp_m_id.group(1)} (checkpoint of {target_gate.id})")
+                if target_gate.id in ("M4", "M10"):
                     m_num = 6 + idx
-                    checkpoint_to_gate[f"M{m_num}"] = (target_gate, f"Refers to M{m_num} (checkpoint of {target_gate.id})")
+                    checkpoint_to_gate[f"M{m_num}"] = (target_gate, f"Refers to extracted M{m_num} (checkpoint of {target_gate.id})")
 
     linked_milestone_objs: List[Milestone] = []
     note: Optional[str] = None

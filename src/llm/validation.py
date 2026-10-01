@@ -150,8 +150,10 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
                         gate_candidate.critical_path_assumptions.append(cpa)
             else:
                 # MS-05: Move non-gate milestone to interim checkpoints
+                ms.phase = phase_code
                 checkpoints.append(ms)
 
+        gate_candidate.phase = phase_code
         gates.append(gate_candidate)
 
     if expected_gate_count and len(gates) < expected_gate_count:
@@ -165,10 +167,17 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
                 f"SOW specifies {expected_gate_count} sequential gates, but only {len(gates)} were mapped. Please confirm missing milestone scope."
             )
 
-    # Gates retain their extracted IDs to preserve merged tracking and citation references (MS-04, RAID-08)
+    # VAL-01, MS-04: Renumber reconciled gates M1 to MN in delivery order, saving extracted ID and merged IDs as provenance
+    for idx, gate in enumerate(gates, start=1):
+        orig_id = gate.id
+        gate.extracted_ids = [orig_id] + list(gate.merged_milestone_ids)
+        gate.id = f"M{idx}"
 
     for idx, cp in enumerate(checkpoints, start=1):
         cp.id = f"CP-{idx:02d}"
+        if not cp.phase or cp.phase.strip() == "" or cp.phase.upper() == "N/A":
+            phase_m = PHASE_CODE_REGEX.search(cp.description or "")
+            cp.phase = phase_m.group(1).upper() if phase_m else "P3"
 
     baseline.milestones = gates
     baseline.interim_checkpoints = checkpoints

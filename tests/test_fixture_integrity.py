@@ -23,21 +23,25 @@ def test_arc_overextracted_validation_and_workbook_expectations(arc_overextracte
     # 1. Validation Layer (VAL-01, KIT-01, KIT-02)
     report = validate_and_repair_baseline(baseline)
 
-    # VAL-01: 4 gates; M2 merged into M1, M4 into M3, and M6 into M5; exactly 3 checkpoints, CP-01 to CP-03 (from M7, M8, and M9).
+    # VAL-01: 4 gates renumbered M1 to M4; M2 merged into M1 (extracted M1), M4 into M2 (extracted M3), and M6 into M3 (extracted M5); M4 (extracted M10); exactly 3 checkpoints, CP-01 to CP-03.
     assert len(baseline.milestones) == 4
     gate_ids = [m.id for m in baseline.milestones]
-    assert gate_ids == ["M1", "M3", "M5", "M10"]
+    assert gate_ids == ["M1", "M2", "M3", "M4"]
 
-    # Check merged milestone tracking on gates
+    # Check merged milestone tracking and provenance on gates
     m1 = next(m for m in baseline.milestones if m.id == "M1")
+    m2 = next(m for m in baseline.milestones if m.id == "M2")
     m3 = next(m for m in baseline.milestones if m.id == "M3")
-    m5 = next(m for m in baseline.milestones if m.id == "M5")
-    m10 = next(m for m in baseline.milestones if m.id == "M10")
+    m4 = next(m for m in baseline.milestones if m.id == "M4")
 
+    assert m1.extracted_ids == ["M1", "M2"]
     assert m1.merged_milestone_ids == ["M2"]
-    assert m3.merged_milestone_ids == ["M4"]
-    assert m5.merged_milestone_ids == ["M6"]
-    assert m10.merged_milestone_ids == []
+    assert m2.extracted_ids == ["M3", "M4"]
+    assert m2.merged_milestone_ids == ["M4"]
+    assert m3.extracted_ids == ["M5", "M6"]
+    assert m3.merged_milestone_ids == ["M6"]
+    assert m4.extracted_ids == ["M10"]
+    assert m4.merged_milestone_ids == []
 
     # KIT-01, KIT-02: Interim Checkpoints table holds CP-01 to CP-03
     assert len(baseline.interim_checkpoints) == 3
@@ -50,11 +54,17 @@ def test_arc_overextracted_validation_and_workbook_expectations(arc_overextracte
     # 2. PMO Workbook Builder (MS-04, MS-05, FMT-03, RAID-08)
     model = build_workbook_model(baseline, start_date=date(2026, 10, 5))
 
-    # MS-04: The gate Milestone ID cells read "M1 (+M2)", "M3 (+M4)", "M5 (+M6)", and "M10"
+    # MS-04: The gate Milestone ID cells read "M1", "M2", "M3", and "M4", with provenance in Notes
     ms_schedule_rows = [r for r in model.schedule_rows if r.row_type == "Milestone"]
     assert len(ms_schedule_rows) == 4
     actual_gate_ids = [r.milestone_id for r in ms_schedule_rows]
-    assert actual_gate_ids == ["M1 (+M2)", "M3 (+M4)", "M5 (+M6)", "M10"]
+    assert actual_gate_ids == ["M1", "M2", "M3", "M4"]
+
+    sched_notes_dict = {r.milestone_id: r.notes for r in ms_schedule_rows}
+    assert "Extracted as M1; includes M2 (acceptance review and sign-off)" in sched_notes_dict["M1"]
+    assert "Extracted as M3; includes M4 (acceptance review and sign-off)" in sched_notes_dict["M2"]
+    assert "Extracted as M5; includes M6 (acceptance review and sign-off)" in sched_notes_dict["M3"]
+    assert "Extracted as M10" in sched_notes_dict["M4"]
 
     # MS-05 and FMT-03: 3 Checkpoint rows in P3, before the P3 gate
     cp_schedule_rows = [r for r in model.schedule_rows if r.row_type == "Checkpoint"]
@@ -86,24 +96,24 @@ def test_arc_overextracted_validation_and_workbook_expectations(arc_overextracte
     raid_dict = {r.description: r for r in test_model.raid_rows}
     r1 = raid_dict["Risk regarding M2 sign-off turnaround"]
     assert r1.linked_milestone == "M1"
-    assert "Refers to M2 (merged into M1)" in r1.notes
+    assert "Refers to extracted M2 (now M1)" in r1.notes
 
     r2 = raid_dict["Dependency on M4 client approval"]
-    assert r2.linked_milestone == "M3"
-    assert "Refers to M4 (merged into M3)" in r2.notes
+    assert r2.linked_milestone == "M2"
+    assert "Refers to extracted M4 (now M2)" in r2.notes
 
     r3 = raid_dict["Issue with M6 acceptance review"]
-    assert r3.linked_milestone == "M5"
-    assert "Refers to M6 (merged into M5)" in r3.notes
+    assert r3.linked_milestone == "M3"
+    assert "Refers to extracted M6 (now M3)" in r3.notes
 
     r4 = raid_dict["Risk during M7 cross-browser testing"]
-    assert r4.linked_milestone == "M10"
-    assert "Refers to M7 (checkpoint of M10)" in r4.notes
+    assert r4.linked_milestone == "M4"
+    assert "Refers to extracted M7 (checkpoint of M4)" in r4.notes
 
     r5 = raid_dict["Dependency on M8 UAT scientist group"]
-    assert r5.linked_milestone == "M10"
-    assert "Refers to M8 (checkpoint of M10)" in r5.notes
+    assert r5.linked_milestone == "M4"
+    assert "Refers to extracted M8 (checkpoint of M4)" in r5.notes
 
     r6 = raid_dict["Issue during M9 production smoke test"]
-    assert r6.linked_milestone == "M10"
-    assert "Refers to M9 (checkpoint of M10)" in r6.notes
+    assert r6.linked_milestone == "M4"
+    assert "Refers to extracted M9 (checkpoint of M4)" in r6.notes

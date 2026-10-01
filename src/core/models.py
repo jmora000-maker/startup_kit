@@ -261,6 +261,14 @@ class Milestone(BaseModel):
         default_factory=list,
         description="IDs of restatement milestones merged into this gate (e.g. ['M2'])"
     )
+    extracted_ids: List[str] = Field(
+        default_factory=list,
+        description="Original extracted milestone ID(s) and any merged IDs as provenance (e.g. ['M3', 'M4'])"
+    )
+    phase: Optional[str] = Field(
+        default=None,
+        description="Delivery phase code for checkpoint/milestone (e.g. 'P3')"
+    )
 
 
 class RiskAssumption(BaseModel):
