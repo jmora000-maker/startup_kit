@@ -166,7 +166,7 @@
         [
           "WP-01",
           "DEL-01",
-          "Cloud Data Landing Zone Architecture and Terraform Configuration implementation task",
+          "Deliverable 1.1: Cloud Data Landing Zone Architecture and Terraform Configuration",
           "1",
           "Toptal Delivery Team",
           "Deliverable 1.1",
@@ -175,7 +175,7 @@
         [
           "WP-02",
           "DEL-02",
-          "Security and Encryption Controls implementation task",
+          "Deliverable 1.2: Security and Encryption Controls",
           "2",
           "Toptal Delivery Team",
           "Deliverable 1.2",
@@ -184,7 +184,7 @@
         [
           "WP-03",
           "DEL-03",
-          "Kafka Ingestion Pipelines and Transformation Workers implementation task",
+          "Deliverable 2.1: Kafka Ingestion Pipelines and Transformation Workers",
           "3",
           "Toptal Delivery Team",
           "Deliverable 2.1",
@@ -193,7 +193,7 @@
         [
           "WP-04",
           "DEL-04",
-          "Historical Ledger Data Cleansing and Migration Scripts implementation task",
+          "Deliverable 2.2: Historical Ledger Data Cleansing and Migration Scripts",
           "4",
           "Toptal Delivery Team",
           "Deliverable 2.2",
@@ -202,7 +202,7 @@
         [
           "WP-05",
           "DEL-05",
-          "Dual-Run Automated Ledger Balance Reconciliation Tool implementation task",
+          "Deliverable 3.1: Dual-Run Automated Ledger Balance Reconciliation Tool",
           "5",
           "Toptal Delivery Team",
           "Deliverable 3.1",
@@ -211,7 +211,7 @@
         [
           "WP-06",
           "DEL-06",
-          "Production Cutover Runbook and Operator Handoff Documentation implementation task",
+          "Deliverable 3.2: Production Cutover Runbook and Operator Handoff Documentation",
           "6",
           "Toptal Delivery Team",
           "Deliverable 3.2",
@@ -237,41 +237,41 @@
           "DEL-01",
           "Cloud Data Landing Zone Architecture and Terraform Configuration",
           "[ACT-01: Define objective UAT pass criteria and sign-off metrics for DEL-01. (+3.2% Recovery)]",
-          "Client acceptance of the deliverable, which is required to close phase P1.",
+          "Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-02).",
           "[ACT-21: Confirm client sign-off approver for DEL-01. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-01 (+2.0% Recovery)]",
           "Deliverable 1.1",
-          "NOT SPECIFIED - TO BE CONFIRMED"
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-02",
           "Security and Encryption Controls",
           "[ACT-18: Clarify and confirm acceptance criteria for DEL-02. (+1.5% Recovery)]",
-          "Client acceptance of the deliverable, which is required to close phase P1.",
+          "Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-01).",
           "[ACT-23: Confirm client sign-off approver for DEL-02. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-02 (+2.0% Recovery)]",
           "Deliverable 1.2",
-          "NOT SPECIFIED - TO BE CONFIRMED"
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-03",
           "Kafka Ingestion Pipelines and Transformation Workers",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-03 (+2.0% Recovery)]",
-          "Client acceptance of the deliverable, which is required to close phase P2.",
+          "Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-04).",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-03 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-03 (+2.0% Recovery)]",
           "Deliverable 2.1",
-          "NOT SPECIFIED - TO BE CONFIRMED"
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-04",
           "Historical Ledger Data Cleansing and Migration Scripts",
           "[ACT-29: Clarify and confirm acceptance criteria for DEL-04. (+1.5% Recovery)]",
-          "Client acceptance of the deliverable, which is required to close phase P2.",
+          "Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-03).",
           "[ACT-30: Confirm client sign-off approver for DEL-04. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-04 (+2.0% Recovery)]",
           "Deliverable 2.2",
-          "NOT SPECIFIED - TO BE CONFIRMED"
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-05",
@@ -291,7 +291,7 @@
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-06 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-06 (+2.0% Recovery)]",
           "Deliverable 3.2",
-          "NOT SPECIFIED - TO BE CONFIRMED"
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ]
       ]
     },
@@ -432,13 +432,13 @@
         [
           "DEC-12",
           "The client will provide legacy DB2 schema specifications by week 2.",
-          "Horizon Financial Services",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-13",
           "The client audit committee will sign off Deliverable 3.1 within 5 business days.",
-          "Horizon Financial Services",
+          "Toptal",
           "Approved"
         ]
       ]
@@ -579,6 +579,42 @@
           "I"
         ]
       ]
+    },
+    {
+      "table_index": 12,
+      "rows_count": 5,
+      "rows": [
+        [
+          "Role",
+          "Named Talent",
+          "Required Skills",
+          "Staffing Status"
+        ],
+        [
+          "Cloud Infrastructure Architect",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Cloud Infrastructure Architect (+2.0% Recovery)]",
+          "AWS, Terraform",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Backend FastAPI Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Backend FastAPI Developer (+2.0% Recovery)]",
+          "Python, FastAPI",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Frontend React Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Frontend React Developer (+2.0% Recovery)]",
+          "React, TypeScript",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Data QA Engineer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Data QA Engineer (+2.0% Recovery)]",
+          "Pytest, Data Validation",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ]
+      ]
     }
   ],
   "checklist_tables": [
@@ -587,7 +623,7 @@
       "rows_count": 1,
       "rows": [
         [
-          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 32.3% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 60.0% | Acceptance Rigor: 5.0% | Staffing: 20.0% | Commercial/Risk: 20.0%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED] | Concurring Approver: Director, PMO\n• 1-Day Creation SLA Status: Met (Drafted within 1 business day)\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 6 | Open Clarifications: 32\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
+          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 32.3% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 60.0% | Acceptance Rigor: 5.0% | Staffing: 20.0% | Commercial/Risk: 20.0%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED] | Concurring Approver: Director, PMO\n• 1-Day Creation SLA Status: Met (Drafted within 1 business day)\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 6 | Open Clarifications: 31\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
         ]
       ]
     },
@@ -683,7 +719,7 @@
           "Talent PM",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "0 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
+          "4 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
         ],
         [
           "G01-09",
@@ -753,7 +789,7 @@
           "[UNASSIGNED - TO BE CONFIRMED]",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "32 validation points logged for mobilization confirmation. [ACT-08]"
+          "31 validation points logged for mobilization confirmation. [ACT-08]"
         ]
       ]
     },
@@ -769,55 +805,55 @@
         ],
         [
           "Contract Type Implications",
-          "Fixed Bid: price and scope are fixed across the 3 phases and 6 deliverables, so any additional work must go through a change order to protect margin.",
+          "Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin [Standard PMO guardrail - confirm].",
           "PMO Lead",
           "Contract Model: Fixed Bid"
         ],
         [
           "Billing or Consumption Assumptions",
-          "Billing and timesheet rules are not specified; confirmation required. Invoicing is expected to follow phase milestones, with each phase complete once its deliverables are accepted.",
+          "Invoicing tied strictly to formal client milestone acceptance sign-offs [Standard PMO guardrail - confirm].",
           "Delivery Manager / Talent PM",
           "Milestone-acceptance invoicing"
         ],
         [
           "Staffing Assumptions & Commercial Exposure",
-          "Team size and allocation are not specified; confirmation required. Staffing must cover a 14-week, 3-phase plan.\n• Commercial Exposure: Month-end reconciliation may need dedicated compute capacity, which could add unplanned cost. Late client schema specifications (due week 2) or audit sign-off beyond 5 business days could delay delivery and erode margin.",
+          "Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment [Standard PMO guardrail - confirm].\n• Commercial Exposure: Delivery delays directly erode project margin. Scope creep without Change Order is prohibited [Standard PMO guardrail - confirm].",
           "Talent PM / Delivery Manager",
           "Fixed scope; changes by Change Order"
         ],
         [
           "Approved & Non-Approved Work Rules",
-          "• Approved Work: Only the six defined deliverables and approved Change Orders are authorized for execution.\n• Non-Approved Work: No out-of-scope tasks shall be performed without a written Change Order.",
+          "• Approved Work: Approved work is strictly defined by SOW deliverables. Any out-of-scope tasks require formal Change Order.\n• Non-Approved Work: Zero execution of out-of-scope requests without executed Change Order.",
           "Delivery Manager / PMO Lead",
           "Zero Out-of-Scope Execution"
         ],
         [
           "Work-at-Risk Rules (PMO Lead owned)",
-          "Work-at-risk requires written PMO Lead approval and executive exception sign-off.",
+          "Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
           "PMO Lead (Exclusive Sign-off Authority)",
           "Pre-Approval / Exception Required"
         ],
         [
           "Change Control Triggers & Change Order Route",
-          "• Triggers: Material scope shift, timeline variance > 5 days, or budget variance > 10%.\n• Route: PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
+          "• Triggers: Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.\n• Route: PMO Lead leads -> DM aligns client -> Client approves -> Contracting issues change order",
           "PMO Lead leads → DM aligns client → Client approves → Contracting issues change order",
           "Schedule slip > 3 days or acceptance rejection"
         ],
         [
           "Budget vs. Actuals & Variance Baseline",
-          "• Baseline Target: [CONFIRMATION REQUIRED]\n• Variance Baseline: Green (<5% variance)",
+          "• Baseline Target: Fixed Bid commercial ceiling: milestone-based invoicing [Standard PMO guardrail - confirm].\n• Variance Baseline: Milestone acceptance gating without unapproved change orders.",
           "PMO Lead / Delivery Manager",
           "Milestone acceptance and Change Order log review"
         ],
         [
           "Margin Risk Indicators",
-          "Margin Risk Level: Medium — Scope containment, acceptance precision, and milestone contingency buffers tracked continuously [Standard PMO guardrail - confirm].",
+          "Margin Risk Level: Low — Scope containment, acceptance precision, and milestone contingency buffers tracked continuously [Standard PMO guardrail - confirm].",
           "PMO Lead / Commercial Lead",
           "Active Margin Protection"
         ],
         [
           "Internal Escalation Thresholds",
-          "Budget burn rate exceeding weekly cap by >10%",
+          "Milestone slip > 3 days or client acceptance rejection [Standard PMO guardrail - confirm].",
           "Delivery Manager → PMO Lead → Director, PMO → VP, Delivery",
           "Immediate Escalation (<24h SLA)"
         ]
@@ -825,7 +861,7 @@
     },
     {
       "table_index": 3,
-      "rows_count": 33,
+      "rows_count": 32,
       "rows": [
         [
           "Question ID",
@@ -889,138 +925,132 @@
         ],
         [
           "Q-10",
-          "Who funds and provisions the dedicated compute capacity needed for month-end batch reconciliation, and what are the sizing requirements?",
-          "Client Sponsor / Delivery Team",
-          "Open"
-        ],
-        [
-          "Q-11",
           "What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
           "Delivery Manager / Client Sponsor",
           "Open"
         ],
         [
-          "Q-12",
+          "Q-11",
           "What are the client's security and compliance requirements (e.g., regulatory standards, encryption key management) for Deliverable 1.2?",
           "Client Sponsor / Delivery Team",
           "Open"
         ],
         [
-          "Q-13",
+          "Q-12",
           "What are the cutover go/no-go criteria and rollback requirements, and who makes the final decision?",
           "Client Approver / Talent PM",
           "Open"
         ],
         [
-          "Q-14",
+          "Q-13",
           "What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
           "Delivery Manager / Client Sponsor",
           "Open"
         ],
         [
-          "Q-15",
+          "Q-14",
           "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-16",
+          "Q-15",
           "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Tech Lead",
           "Open - Confirmation Required"
         ],
         [
-          "Q-17",
+          "Q-16",
           "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-18",
+          "Q-17",
           "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Delivery Team",
           "Open - Confirmation Required"
         ],
         [
-          "Q-19",
+          "Q-18",
           "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-20",
+          "Q-19",
           "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Tech Lead",
           "Open - Confirmation Required"
         ],
         [
-          "Q-21",
+          "Q-20",
           "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-22",
+          "Q-21",
           "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Tech Lead",
           "Open - Confirmation Required"
         ],
         [
-          "Q-23",
+          "Q-22",
           "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-24",
+          "Q-23",
           "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Delivery Team",
           "Open - Confirmation Required"
         ],
         [
-          "Q-25",
+          "Q-24",
           "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
           "Client Approver / Talent PM",
           "Open - Confirmation Required"
         ],
         [
-          "Q-26",
+          "Q-25",
           "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
           "Client Sponsor / Delivery Team",
           "Open - Confirmation Required"
         ],
         [
-          "Q-27",
+          "Q-26",
           "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
           "Delivery Manager / Client Sponsor",
           "Open - Confirmation Required"
         ],
         [
-          "Q-28",
+          "Q-27",
           "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
           "Delivery Manager / Client Sponsor",
           "Open - Confirmation Required"
         ],
         [
-          "Q-29",
+          "Q-28",
           "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
           "Delivery Manager / Client Sponsor",
           "Open - Confirmation Required"
         ],
         [
-          "Q-30",
+          "Q-29",
           "Delivery Manager role is unassigned. [CONFIRMATION REQUIRED]",
           "Talent PM / Delivery Manager",
           "Open - Confirmation Required"
         ],
         [
-          "Q-31",
+          "Q-30",
           "Talent PM role is unassigned. [CONFIRMATION REQUIRED]",
           "Talent PM / Delivery Manager",
           "Open - Confirmation Required"
         ],
         [
-          "Q-32",
+          "Q-31",
           "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]",
           "Talent PM / Delivery Manager",
           "Open - Confirmation Required"
@@ -1042,7 +1072,7 @@
         [
           "AMB-01",
           "Ambiguous Acceptance",
-          "Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
+          "sow.txt, Section 2 and Section 3: Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
           "Phase completion and payment depend on acceptance that cannot be objectively tested. This risks disputes and delays on a Fixed Bid contract.",
           "Can the Client confirm written acceptance criteria, the named approver, and the review turnaround time for each deliverable?",
           "Open"
@@ -1058,7 +1088,7 @@
         [
           "AMB-03",
           "Date Conflict",
-          "Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
+          "sow.txt, Section 4 and Section 2: Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
           "Late or incomplete schemas compress P1 and P2, and the schedule has no relief mechanism. Under a Fixed Bid, Toptal could absorb the delay cost.",
           "Will the Client confirm the schema delivery date and completeness standard, and agree that late delivery extends the timeline and adjusts cost?",
           "Open"
@@ -1066,7 +1096,7 @@
         [
           "AMB-04",
           "Date Conflict",
-          "Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
+          "sow.txt, Section 2 and Section 4: Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
           "Without a start date, it is unclear whether weeks 11-14 coincide with a month-end close. This could change reconciliation timing and the cutover window.",
           "What are the project start date and target cutover date, and which month-end close is planned for dual-run reconciliation?",
           "Open"
@@ -1074,7 +1104,7 @@
         [
           "AMB-05",
           "Ownership Gap",
-          "Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
+          "sow.txt, Section 4: Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
           "Unplanned AWS compute cost or provisioning delays could erode margin or block reconciliation on a Fixed Bid.",
           "Will the Client provision and fund the dedicated compute capacity, and what volume and performance level should it be sized for?",
           "Open"
@@ -1082,7 +1112,7 @@
         [
           "AMB-06",
           "Scope Contradiction",
-          "Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
+          "sow.txt, Section 2 and Section 3 (Deliverable 3.2): Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
           "It is unclear whether Toptal must execute the production cutover or only document it. A mismatch in expectations could add unfunded effort.",
           "Is Toptal responsible for executing the production cutover, or only for delivering the runbook and handoff to Client operators?",
           "Open"
@@ -1090,7 +1120,7 @@
         [
           "AMB-07",
           "Scope Contradiction",
-          "Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
+          "sow.txt, Section 1 and Section 4: Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
           "Other legacy database types, if any, would be out of the stated dependency and could expand scope and effort.",
           "Is the migration scope limited to DB2 databases, and if not, which other sources are included and when will their schemas be provided?",
           "Open"
@@ -1098,7 +1128,7 @@
         [
           "AMB-08",
           "Ambiguous Acceptance",
-          "Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
+          "sow.txt, Section 3 (Deliverables 2.2 and 3.1): Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
           "Subjective data quality and balance-match standards could lead to repeated rework or rejection of the migration and reconciliation outputs.",
           "What cleansing rules, data volumes, reconciliation match tolerances and dual-run duration define a successful migration and reconciliation?",
           "Open"
@@ -1106,7 +1136,7 @@
         [
           "AMB-09",
           "Ambiguous Acceptance",
-          "Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
+          "sow.txt, Section 3 (Deliverable 1.2): Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
           "Without defined standards, the Client could reject the controls as insufficient, causing rework or schedule slip in P1.",
           "Which security and compliance standards must the controls meet, and who validates them?",
           "Open"
@@ -1114,7 +1144,7 @@
         [
           "AMB-10",
           "Unclear SLA",
-          "Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
+          "sow.txt, Section 3 (Deliverable 2.1): Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
           "Performance expectations are undefined, so the Client may later claim the pipelines under-perform. This creates an acceptance dispute and possible unfunded tuning work.",
           "What throughput, latency and availability targets must the pipelines meet for acceptance?",
           "Open"
@@ -1122,7 +1152,7 @@
         [
           "AMB-11",
           "Ownership Gap",
-          "Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
+          "sow.txt, Section 1 and Section 3: Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
           "It is unclear who builds or owns the target ledger and the AWS environments. A gap could block pipeline integration and cutover.",
           "Who is responsible for designing, building and operating the target cloud ledger and AWS accounts, and by when will they be available?",
           "Open"
@@ -1394,7 +1424,7 @@
         "",
         "DEL-01, DEL-02",
         "Deliverable 1.1, Deliverable 1.2",
-        "RAID-29, RAID-30, RAID-31, RAID-32, RAID-41",
+        "RAID-28, RAID-29, RAID-30, RAID-31, RAID-40",
         "Baseline - Milestone Plan",
         "Workstream inferred from keywords - confirm",
         "",
@@ -1474,7 +1504,7 @@
         "",
         "DEL-03, DEL-04",
         "Deliverable 2.1, Deliverable 2.2",
-        "RAID-33, RAID-34, RAID-35, RAID-36, RAID-42",
+        "RAID-32, RAID-33, RAID-34, RAID-35, RAID-41",
         "Baseline - Milestone Plan",
         "Workstream inferred from keywords - confirm",
         "",
@@ -1554,7 +1584,7 @@
         "Client audit committee provides sign-off within 5 business days for the reconciliation tool.; Dedicated compute capacity may be needed for high-volume batch reconciliation during month-end close.",
         "DEL-05, DEL-06",
         "Deliverable 3.1, Deliverable 3.2",
-        "RAID-37, RAID-38, RAID-39, RAID-40, RAID-43",
+        "RAID-36, RAID-37, RAID-38, RAID-39, RAID-42",
         "Baseline - Milestone Plan",
         "Workstream inferred from keywords - confirm",
         "",
@@ -1784,7 +1814,7 @@
         "0",
         "",
         "",
-        "Evidence: Client acceptance of the deliverable, which is required to close phase P1.",
+        "Evidence: Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-02).",
         "",
         "Baseline - Deliverables",
         "Scope match",
@@ -1834,7 +1864,7 @@
         "1.1.2.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -1904,7 +1934,7 @@
         "0",
         "",
         "1.1.2.4",
-        "Client acceptance of the deliverable, which is required to close phase P1.",
+        "Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-02).",
         "",
         "PM Best Practice",
         "",
@@ -1952,7 +1982,7 @@
         "0",
         "",
         "",
-        "Evidence: Client acceptance of the deliverable, which is required to close phase P1.",
+        "Evidence: Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-01).",
         "",
         "Baseline - Deliverables",
         "Scope match",
@@ -2002,7 +2032,7 @@
         "1.1.3.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -2072,7 +2102,7 @@
         "0",
         "",
         "1.1.3.4",
-        "Client acceptance of the deliverable, which is required to close phase P1.",
+        "Client acceptance of the deliverable, which is required to close phase P1. (Shared evidence item with DEL-01).",
         "",
         "PM Best Practice",
         "",
@@ -2106,126 +2136,6 @@
         "1.1.4",
         "3",
         "Work Package",
-        "Other Build & Configuration work",
-        "Build & Configuration",
-        "M1",
-        "",
-        "",
-        "",
-        "Talent PM",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        ""
-      ],
-      [
-        "1.1.4.1",
-        "4",
-        "Task",
-        "Kafka Ingestion Pipelines and Transformation Workers implementation task",
-        "Build & Configuration",
-        "M1",
-        "",
-        "WP-03",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.1.1",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-03"
-      ],
-      [
-        "1.1.4.2",
-        "4",
-        "Task",
-        "Historical Ledger Data Cleansing and Migration Scripts implementation task",
-        "Build & Configuration",
-        "M1",
-        "",
-        "WP-04",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.4.1",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-04"
-      ],
-      [
-        "1.1.4.3",
-        "4",
-        "Task",
-        "Dual-Run Automated Ledger Balance Reconciliation Tool implementation task",
-        "Build & Configuration",
-        "M1",
-        "",
-        "WP-05",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.4.2",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-05"
-      ],
-      [
-        "1.1.4.4",
-        "4",
-        "Task",
-        "Production Cutover Runbook and Operator Handoff Documentation implementation task",
-        "Build & Configuration",
-        "M1",
-        "",
-        "WP-06",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.4.3",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-06"
-      ],
-      [
-        "1.1.5",
-        "3",
-        "Work Package",
         "M1 Milestone Acceptance",
         "Build & Configuration",
         "M1",
@@ -2247,7 +2157,7 @@
         ""
       ],
       [
-        "1.1.5.1",
+        "1.1.4.1",
         "4",
         "Task",
         "Prepare milestone acceptance package and evidence",
@@ -2271,7 +2181,7 @@
         ""
       ],
       [
-        "1.1.5.2",
+        "1.1.4.2",
         "4",
         "Task",
         "Support client user acceptance testing",
@@ -2287,7 +2197,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.5.1",
+        "1.1.4.1",
         "",
         "",
         "PM Best Practice",
@@ -2295,7 +2205,7 @@
         ""
       ],
       [
-        "1.1.5.3",
+        "1.1.4.3",
         "4",
         "Task",
         "Hold milestone acceptance review with client approvers",
@@ -2311,7 +2221,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.5.2",
+        "1.1.4.2",
         "",
         "",
         "PM Best Practice",
@@ -2319,7 +2229,7 @@
         ""
       ],
       [
-        "1.1.5.4",
+        "1.1.4.4",
         "4",
         "Task",
         "Triage and address client review feedback",
@@ -2335,7 +2245,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.5.3",
+        "1.1.4.3",
         "",
         "",
         "PM Best Practice",
@@ -2343,7 +2253,7 @@
         ""
       ],
       [
-        "1.1.5.5",
+        "1.1.4.5",
         "4",
         "Task",
         "Obtain formal milestone acceptance and sign-off",
@@ -2359,7 +2269,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.5.4",
+        "1.1.4.4",
         "",
         "",
         "PM Best Practice",
@@ -2367,7 +2277,7 @@
         ""
       ],
       [
-        "1.1.5.6",
+        "1.1.4.6",
         "4",
         "Task",
         "Update schedule and RAID Log after acceptance",
@@ -2383,7 +2293,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.5.5",
+        "1.1.4.5",
         "",
         "",
         "PM Best Practice",
@@ -2518,7 +2428,7 @@
         "Data & Integration",
         "M2",
         "DEL-03",
-        "",
+        "WP-03",
         "Deliverable 2.1",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -2528,7 +2438,7 @@
         "0",
         "",
         "",
-        "Evidence: Client acceptance of the deliverable, which is required to close phase P2.",
+        "Evidence: Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-04).",
         "",
         "Baseline - Deliverables",
         "Scope match",
@@ -2578,7 +2488,7 @@
         "2.1.2.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -2648,7 +2558,7 @@
         "0",
         "",
         "2.1.2.4",
-        "Client acceptance of the deliverable, which is required to close phase P2.",
+        "Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-04).",
         "",
         "PM Best Practice",
         "",
@@ -2686,7 +2596,7 @@
         "Data & Integration",
         "M2",
         "DEL-04",
-        "",
+        "WP-04",
         "Deliverable 2.2",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -2696,7 +2606,7 @@
         "0",
         "",
         "",
-        "Evidence: Client acceptance of the deliverable, which is required to close phase P2.",
+        "Evidence: Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-03).",
         "",
         "Baseline - Deliverables",
         "Scope match",
@@ -2746,7 +2656,7 @@
         "2.1.3.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -2816,7 +2726,7 @@
         "0",
         "",
         "2.1.3.4",
-        "Client acceptance of the deliverable, which is required to close phase P2.",
+        "Client acceptance of the deliverable, which is required to close phase P2. (Shared evidence item with DEL-03).",
         "",
         "PM Best Practice",
         "",
@@ -3142,7 +3052,7 @@
         "Deployment & Release",
         "M3",
         "DEL-05",
-        "",
+        "WP-05",
         "Deliverable 3.1",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3202,7 +3112,7 @@
         "3.1.2.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -3310,7 +3220,7 @@
         "Deployment & Release",
         "M3",
         "DEL-06",
-        "",
+        "WP-06",
         "Deliverable 3.2",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3370,7 +3280,7 @@
         "3.1.3.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -3832,8 +3742,8 @@
       [
         "RAID-04",
         "Issue",
-        "Ambiguous Acceptance: Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 2 and Section 3: Phases and Milestones: each phase requires deliverables \"completed and accepted\". Contracted Deliverables: no acceptance criteria, test method, reviewer or review timeframe is given for Deliverables 1.1-3.2 (only 3.1 mentions a sign-off assumption).",
+        "Sections: 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -3854,7 +3764,7 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-01",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-05",
@@ -3886,8 +3796,8 @@
       [
         "RAID-06",
         "Issue",
-        "Date Conflict: Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
-        "Not cited",
+        "Date Conflict: sow.txt, Section 4 and Section 2: Risks and Dependencies: \"Client provides schema specifications for legacy DB2 databases by week 2.\" Phases and Milestones: P1 runs weeks 1-4 and P2 weeks 5-10, with no dates or consequence if the schemas arrive late.",
+        "Sections: 4, 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -3908,13 +3818,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-03",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-07",
         "Issue",
-        "Date Conflict: Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
-        "Not cited",
+        "Date Conflict: sow.txt, Section 2 and Section 4: Phases and Milestones: phases are given only as relative weeks (1-4, 5-10, 11-14), with no start date. Risks and Dependencies: reconciliation occurs \"during month-end close\".",
+        "Sections: 2, 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -3935,13 +3845,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-04",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-08",
         "Issue",
-        "Ownership Gap: Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
-        "Not cited",
+        "Ownership Gap: sow.txt, Section 4: Risks and Dependencies: \"High volume batch reconciliation during month-end close may require dedicated compute capacity.\" No clause says who provisions or pays for this capacity.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -3962,13 +3872,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-05",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-09",
         "Issue",
-        "Scope Contradiction: Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
-        "Not cited",
+        "Scope Contradiction: sow.txt, Section 2 and Section 3 (Deliverable 3.2): Phases and Milestones: P3 is named \"Reconciliation and Final Cutover\". Contracted Deliverables: 3.2 is only a \"Production cutover runbook and operator handoff documentation\".",
+        "Stories: Deliverable 3.2 | Sections: 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -3989,13 +3899,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-06",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-10",
         "Issue",
-        "Scope Contradiction: Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
-        "Not cited",
+        "Scope Contradiction: sow.txt, Section 1 and Section 4: Executive Summary: migrate \"legacy ledger databases\" (plural) into a cloud ledger. Risks and Dependencies: schema specifications are required only for \"legacy DB2 databases\".",
+        "Sections: 1, 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4016,13 +3926,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-07",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-11",
         "Issue",
-        "Ambiguous Acceptance: Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 3 (Deliverables 2.2 and 3.1): Contracted Deliverables: 2.2 is \"Historical ledger data cleansing and migration execution scripts\"; 3.1 is a \"Dual-run automated ledger balance reconciliation tool\". Neither defines cleansing rules, data volumes, reconciliation tolerance or dual-run duration.",
+        "Sections: 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4043,13 +3953,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-08",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-12",
         "Issue",
-        "Ambiguous Acceptance: Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 3 (Deliverable 1.2): Contracted Deliverables: 1.2 is \"Security and Encryption Controls for financial data in transit and at rest\", with no named standards, compliance framework or validation method.",
+        "Stories: Deliverable 1.2 | Sections: 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4070,13 +3980,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-09",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-13",
         "Issue",
-        "Unclear SLA: Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
-        "Not cited",
+        "Unclear SLA: sow.txt, Section 3 (Deliverable 2.1): Contracted Deliverables: 2.1 is \"Event-driven Kafka ingestion pipelines and transformation workers\", with no throughput, latency or availability targets.",
+        "Stories: Deliverable 2.1 | Sections: 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4093,17 +4003,17 @@
         "Open",
         "<DATE>",
         "<DATE>",
-        "DEC-08",
+        "",
         "",
         "Baseline - Contract Clarifications",
         "AMB-10",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-14",
         "Issue",
-        "Ownership Gap: Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
-        "Not cited",
+        "Ownership Gap: sow.txt, Section 1 and Section 3: Executive Summary: migrate into a \"modern event-driven cloud ledger on AWS\". Contracted Deliverables: only the landing zone, pipelines, scripts, reconciliation tool and runbook are listed, with no deliverable for the target ledger itself.",
+        "Sections: 1, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4124,7 +4034,7 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-11",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-15",
@@ -4372,7 +4282,7 @@
       [
         "RAID-24",
         "Issue",
-        "Who funds and provisions the dedicated compute capacity needed for month-end batch reconciliation, and what are the sizing requirements?",
+        "What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
         "Not cited",
         "Open Question",
         "Cross-phase",
@@ -4399,8 +4309,8 @@
       [
         "RAID-25",
         "Issue",
-        "What is the target cutover date or window, and how does it align with the client's month-end close calendar?",
-        "Not cited",
+        "What are the client's security and compliance requirements (e.g., regulatory standards, encryption key management) for Deliverable 1.2?",
+        "Stories: Deliverable 1.2",
         "Open Question",
         "Cross-phase",
         "",
@@ -4426,8 +4336,8 @@
       [
         "RAID-26",
         "Issue",
-        "What are the client's security and compliance requirements (e.g., regulatory standards, encryption key management) for Deliverable 1.2?",
-        "Stories: Deliverable 1.2",
+        "What are the cutover go/no-go criteria and rollback requirements, and who makes the final decision?",
+        "Not cited",
         "Open Question",
         "Cross-phase",
         "",
@@ -4453,7 +4363,7 @@
       [
         "RAID-27",
         "Issue",
-        "What are the cutover go/no-go criteria and rollback requirements, and who makes the final decision?",
+        "What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
         "Not cited",
         "Open Question",
         "Cross-phase",
@@ -4480,12 +4390,12 @@
       [
         "RAID-28",
         "Issue",
-        "What are the data cleansing rules for historical ledger data, and who validates the cleansed output?",
+        "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Cross-phase",
-        "",
-        "",
+        "Build & Configuration",
+        "M1",
+        "1.1",
         "",
         "Talent PM",
         "",
@@ -4507,7 +4417,7 @@
       [
         "RAID-29",
         "Issue",
-        "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Build & Configuration",
@@ -4534,7 +4444,7 @@
       [
         "RAID-30",
         "Issue",
-        "Deliverable 'DEL-01: Architecture design and Terraform configuration for the cloud data landing zone that will host the migrated ledger data on AWS.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Build & Configuration",
@@ -4552,7 +4462,7 @@
         "Open",
         "<DATE>",
         "<DATE>",
-        "",
+        "DEC-07",
         "",
         "Baseline - Open Questions",
         "Q-16",
@@ -4561,7 +4471,7 @@
       [
         "RAID-31",
         "Issue",
-        "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Build & Configuration",
@@ -4588,12 +4498,12 @@
       [
         "RAID-32",
         "Issue",
-        "Deliverable 'DEL-02: Security and encryption controls that protect financial data in transit and at rest.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Build & Configuration",
-        "M1",
-        "1.1",
+        "Data & Integration",
+        "M2",
+        "2.1",
         "",
         "Talent PM",
         "",
@@ -4606,7 +4516,7 @@
         "Open",
         "<DATE>",
         "<DATE>",
-        "DEC-07",
+        "",
         "",
         "Baseline - Open Questions",
         "Q-18",
@@ -4615,7 +4525,7 @@
       [
         "RAID-33",
         "Issue",
-        "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Data & Integration",
@@ -4642,7 +4552,7 @@
       [
         "RAID-34",
         "Issue",
-        "Deliverable 'DEL-03: Event-driven Kafka ingestion pipelines and transformation workers that move legacy ledger data into the cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Data & Integration",
@@ -4669,7 +4579,7 @@
       [
         "RAID-35",
         "Issue",
-        "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Data & Integration",
@@ -4696,12 +4606,12 @@
       [
         "RAID-36",
         "Issue",
-        "Deliverable 'DEL-04: Scripts to cleanse historical ledger data and execute its migration to the new cloud ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Data & Integration",
-        "M2",
-        "2.1",
+        "Deployment & Release",
+        "M3",
+        "3.1",
         "",
         "Talent PM",
         "",
@@ -4723,7 +4633,7 @@
       [
         "RAID-37",
         "Issue",
-        "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Deployment & Release",
@@ -4750,7 +4660,7 @@
       [
         "RAID-38",
         "Issue",
-        "Deliverable 'DEL-05: Automated tool that reconciles ledger balances between the legacy and new ledgers during a dual-run period.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Deployment & Release",
@@ -4777,7 +4687,7 @@
       [
         "RAID-39",
         "Issue",
-        "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]",
+        "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
         "Deployment & Release",
@@ -4804,12 +4714,12 @@
       [
         "RAID-40",
         "Issue",
-        "Deliverable 'DEL-06: Runbook for the production cutover and handoff documentation for the operators of the new ledger.' owner is unassigned. [CONFIRMATION REQUIRED]",
+        "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Deployment & Release",
-        "M3",
-        "3.1",
+        "Build & Configuration",
+        "M1",
+        "1.1",
         "",
         "Talent PM",
         "",
@@ -4831,12 +4741,12 @@
       [
         "RAID-41",
         "Issue",
-        "Confirm committed external completion date for M1. [CONFIRMATION REQUIRED]",
+        "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Build & Configuration",
-        "M1",
-        "1.1",
+        "Data & Integration",
+        "M2",
+        "2.1",
         "",
         "Talent PM",
         "",
@@ -4858,12 +4768,12 @@
       [
         "RAID-42",
         "Issue",
-        "Confirm committed external completion date for M2. [CONFIRMATION REQUIRED]",
+        "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
         "Not cited",
         "Open Question",
-        "Data & Integration",
-        "M2",
-        "2.1",
+        "Deployment & Release",
+        "M3",
+        "3.1",
         "",
         "Talent PM",
         "",
@@ -4880,33 +4790,6 @@
         "",
         "Baseline - Open Questions",
         "Q-28",
-        ""
-      ],
-      [
-        "RAID-43",
-        "Issue",
-        "Confirm committed external completion date for M3. [CONFIRMATION REQUIRED]",
-        "Not cited",
-        "Open Question",
-        "Deployment & Release",
-        "M3",
-        "3.1",
-        "",
-        "Talent PM",
-        "",
-        "",
-        "=IF(OR(K48=\"\",L48=\"\"),\"\",IF(OR(AND(K48=\"High\",L48=\"High\"),AND(K48=\"High\",L48=\"Medium\"),AND(K48=\"Medium\",L48=\"High\")),\"High\",IF(AND(K48=\"Low\",L48=\"Low\"),\"Low\",\"Medium\")))",
-        "=IF(OR(K48=\"\",L48=\"\"),\"\",(IF(K48=\"High\",3,IF(K48=\"Medium\",2,1)))*(IF(L48=\"High\",3,IF(L48=\"Medium\",2,1))))",
-        "",
-        "",
-        "",
-        "Open",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "",
-        "Baseline - Open Questions",
-        "Q-29",
         ""
       ]
     ]

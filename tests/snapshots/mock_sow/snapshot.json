@@ -158,7 +158,7 @@
         [
           "WP-01",
           "DEL-01",
-          "Cloud Architecture & Security Design implementation task",
+          "Section 3.1: Cloud Architecture & Security Design",
           "1",
           "Toptal Delivery Team",
           "Section 3.1",
@@ -167,7 +167,7 @@
         [
           "WP-02",
           "DEL-02",
-          "Automated CI/CD Data Ingestion Pipeline implementation package",
+          "Automated CI/CD Data Ingestion Pipeline",
           "2",
           "Toptal Delivery Team",
           "Section 3.1",
@@ -176,7 +176,7 @@
         [
           "WP-03",
           "DEL-03",
-          "Validation and Compliance Documentation implementation package",
+          "Validation and Compliance Documentation",
           "3",
           "Toptal Delivery Team",
           "Section 3.1",
@@ -301,13 +301,13 @@
         [
           "DEC-01",
           "Adopt Terraform for all AWS cloud infrastructure provisioning.",
-          "Sarah Connor (PMO Lead)",
+          "Toptal",
           "Approved"
         ],
         [
           "DEC-02",
           "Set project governance tier to Partnered with weekly PSR reporting.",
-          "Jane Doe (Delivery Manager)",
+          "Toptal",
           "Approved"
         ]
       ]
@@ -656,7 +656,7 @@
           "Sarah Connor",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "3 validation points logged for mobilization confirmation."
+          "No open questions flagged for mobilization."
         ]
       ]
     },
@@ -767,7 +767,7 @@
         [
           "CONF-01",
           "Date Conflict",
-          "Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+          "SOW_Document.pdf, Section 3.1: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
           "2-week schedule discrepancy between commercial proposal and signed SOW baseline.",
           "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
           "Open"
@@ -1354,7 +1354,7 @@
         "1.1.2.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -1530,78 +1530,6 @@
         "1.1.3",
         "3",
         "Work Package",
-        "Other Design & Architecture work",
-        "Design & Architecture",
-        "M1",
-        "",
-        "",
-        "",
-        "Talent PM",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        ""
-      ],
-      [
-        "1.1.3.1",
-        "4",
-        "Task",
-        "Automated CI/CD Data Ingestion Pipeline implementation package",
-        "Design & Architecture",
-        "M1",
-        "",
-        "WP-02",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.1.1",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-02"
-      ],
-      [
-        "1.1.3.2",
-        "4",
-        "Task",
-        "Validation and Compliance Documentation implementation package",
-        "Design & Architecture",
-        "M1",
-        "",
-        "WP-03",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.3.1",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-03"
-      ],
-      [
-        "1.1.4",
-        "3",
-        "Work Package",
         "M1 Milestone Acceptance",
         "Design & Architecture",
         "M1",
@@ -1623,7 +1551,7 @@
         ""
       ],
       [
-        "1.1.4.1",
+        "1.1.3.1",
         "4",
         "Task",
         "Confirm all M1 deliverables are accepted",
@@ -1647,7 +1575,7 @@
         ""
       ],
       [
-        "1.1.4.2",
+        "1.1.3.2",
         "4",
         "Task",
         "Update schedule and RAID Log after acceptance",
@@ -1663,7 +1591,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.4.1",
+        "1.1.3.1",
         "",
         "",
         "PM Best Practice",
@@ -1774,7 +1702,7 @@
         "Deployment & Release",
         "M2",
         "DEL-02",
-        "",
+        "WP-02",
         "Section 3.1",
         "Talent PM",
         "<DATE>",
@@ -1834,7 +1762,7 @@
         "2.1.2.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -2014,7 +1942,7 @@
         "Deployment & Release",
         "M2",
         "DEL-03",
-        "",
+        "WP-03",
         "Section 3.1",
         "Talent PM",
         "<DATE>",
@@ -2074,7 +2002,7 @@
         "2.1.3.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -2539,8 +2467,8 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
-        "schedule commits",
+        "Date Conflict: SOW_Document.pdf, Section 3.1: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+        "SOW_Document.pdf | Sections: 3.1",
         "Contract Clarification",
         "Deployment & Release",
         "M2",

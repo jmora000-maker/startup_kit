@@ -166,7 +166,7 @@
         [
           "WP-01",
           "DEL-01",
-          "Core Cloud Infrastructure and Container Orchestration Platform implementation package",
+          "Core Cloud Infrastructure and Container Orchestration Platform",
           "1",
           "Toptal Delivery Team",
           "",
@@ -175,7 +175,7 @@
         [
           "WP-02",
           "DEL-02",
-          "Identity, SSO and Role-Based Access Control Integration implementation package",
+          "Identity, SSO and Role-Based Access Control Integration",
           "2",
           "Toptal Delivery Team",
           "",
@@ -184,7 +184,7 @@
         [
           "WP-03",
           "DEL-03",
-          "Product Catalogue Search API and Indexing Pipeline implementation package",
+          "Product Catalogue Search API and Indexing Pipeline",
           "3",
           "Toptal Delivery Team",
           "",
@@ -193,7 +193,7 @@
         [
           "WP-04",
           "DEL-04",
-          "Basket and Checkout Orchestration Service implementation package",
+          "Basket and Checkout Orchestration Service",
           "4",
           "Toptal Delivery Team",
           "",
@@ -202,7 +202,7 @@
         [
           "WP-05",
           "DEL-05",
-          "Payment Gateway Integration and Secure Transaction Logging implementation package",
+          "Payment Gateway Integration and Secure Transaction Logging",
           "5",
           "Toptal Delivery Team",
           "",
@@ -211,7 +211,7 @@
         [
           "WP-06",
           "DEL-06",
-          "Responsive Web Customer Store Application implementation package",
+          "Responsive Web Customer Store Application",
           "6",
           "Toptal Delivery Team",
           "",
@@ -220,7 +220,7 @@
         [
           "WP-07",
           "DEL-07",
-          "Automated End-to-End Regression Test Suite implementation package",
+          "Automated End-to-End Regression Test Suite",
           "7",
           "Toptal Delivery Team",
           "",
@@ -229,7 +229,7 @@
         [
           "WP-08",
           "DEL-08",
-          "Platform Deployment Runbook and Operational Documentation implementation task",
+          "Section 3: Platform Deployment Runbook and Operational Documentation",
           "8",
           "Toptal Delivery Team",
           "Section 3",
@@ -238,7 +238,7 @@
         [
           "WP-09",
           "DEL-09",
-          "User Acceptance Testing and Production Rollout implementation package",
+          "User Acceptance Testing and Production Rollout",
           "9",
           "Toptal Delivery Team",
           "",
@@ -247,7 +247,7 @@
         [
           "WP-10",
           "DEL-10",
-          "Training Materials implementation package",
+          "Training Materials",
           "10",
           "Toptal Delivery Team",
           "",
@@ -273,17 +273,17 @@
           "DEL-01",
           "Core Cloud Infrastructure and Container Orchestration Platform",
           "[ACT-01: Define objective UAT pass criteria and sign-off metrics for DEL-01. (+2.5% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-01 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Core Cloud Infrastructure and Container Orchestration Platform.",
           "[ACT-19: Confirm client sign-off approver for DEL-01. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-01 (+2.0% Recovery)]",
           "P1",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-02",
           "Identity, SSO and Role-Based Access Control Integration",
           "[ACT-23: Clarify and confirm acceptance criteria for DEL-02. (+1.5% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-02 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Identity, SSO and Role-Based Access Control Integration.",
           "[ACT-24: Confirm client sign-off approver for DEL-02. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-02 (+2.0% Recovery)]",
           "P1",
@@ -293,27 +293,27 @@
           "DEL-03",
           "Product Catalogue Search API and Indexing Pipeline",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-03 (+2.0% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-03 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Product Catalogue Search API and Indexing Pipeline.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-03 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-03 (+2.0% Recovery)]",
           "P2",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-04",
           "Basket and Checkout Orchestration Service",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-04 (+2.0% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-04 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Basket and Checkout Orchestration Service.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-04 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-04 (+2.0% Recovery)]",
           "P2",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-05",
           "Payment Gateway Integration and Secure Transaction Logging",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-05 (+2.0% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-05 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Payment Gateway Integration and Secure Transaction Logging.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-05 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-05 (+2.0% Recovery)]",
           "P2",
@@ -323,51 +323,51 @@
           "DEL-06",
           "Responsive Web Customer Store Application",
           "[ACT-16: Clarify and confirm acceptance criteria for DEL-06. (+1.5% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-06 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Responsive Web Customer Store Application.",
           "[ACT-25: Confirm client sign-off approver for DEL-06. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-06 (+2.0% Recovery)]",
           "P3",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-07",
           "Automated End-to-End Regression Test Suite",
           "[ACT-13: Clarify and confirm acceptance criteria for DEL-07. (+1.5% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-07 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Automated End-to-End Regression Test Suite.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-07 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-07 (+2.0% Recovery)]",
           "P3",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-08",
           "Platform Deployment Runbook and Operational Documentation",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-08 (+2.0% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-08 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Platform Deployment Runbook and Operational Documentation.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-08 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-08 (+2.0% Recovery)]",
           "Section 3",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-09",
           "User Acceptance Testing and Production Rollout",
           "[ACT-REQ-03: Finalize acceptance test criteria and evidence expectations for DEL-09 (+2.0% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-09 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for User Acceptance Testing and Production Rollout.",
           "[ACT-REQ-03: Confirm client sign-off approver for DEL-09 (+2.0% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-09 (+2.0% Recovery)]",
           "P3",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ],
         [
           "DEL-10",
           "Training Materials",
           "[ACT-33: Clarify and confirm acceptance criteria for DEL-10. (+1.5% Recovery)]",
-          "[ACT-REQ-03: Finalize deliverable evidence expectations for DEL-10 (+2.0% Recovery)]",
+          "Demonstration, technical test report, and repository verification for Training Materials.",
           "[ACT-34: Confirm client sign-off approver for DEL-10. (+1.5% Recovery)]",
           "[ACT-REQ-03: Assign named delivery owner for DEL-10 (+2.0% Recovery)]",
           "P3",
-          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on co..."
+          "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
         ]
       ]
     },
@@ -640,6 +640,42 @@
           "I"
         ]
       ]
+    },
+    {
+      "table_index": 12,
+      "rows_count": 5,
+      "rows": [
+        [
+          "Role",
+          "Named Talent",
+          "Required Skills",
+          "Staffing Status"
+        ],
+        [
+          "Cloud Infrastructure Architect",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Cloud Infrastructure Architect (+2.0% Recovery)]",
+          "AWS, Terraform",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Backend FastAPI Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Backend FastAPI Developer (+2.0% Recovery)]",
+          "Python, FastAPI",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Frontend React Developer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Frontend React Developer (+2.0% Recovery)]",
+          "React, TypeScript",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ],
+        [
+          "Data QA Engineer",
+          "Toptal Delivery Talent [ACT-REQ-08: Complete candidate selection and lock staffing for Data QA Engineer (+2.0% Recovery)]",
+          "Pytest, Data Validation",
+          "[ACT-REQ-08: Update staffing status to Confirmed (+2.0% Recovery)]"
+        ]
+      ]
     }
   ],
   "checklist_tables": [
@@ -744,7 +780,7 @@
           "Talent PM",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "0 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
+          "4 delivery talent roles listed; 0 named\n[EXCEPTION: Talent roster staffing in progress.] [ACT-05]"
         ],
         [
           "G01-09",
@@ -1115,7 +1151,7 @@
         [
           "AMB-01",
           "Date Conflict",
-          "Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+          "sow.txt, Sections 2 and 4: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
           "Phases are expressed only in relative weeks, so the timeline has no fixed anchor. Late ERP access would block Phase 2 catalog work with no stated schedule or commercial relief.",
           "What is the confirmed project start date, and by what calendar date will the client deliver ERP catalog feed access? Will Phase 2 dates move day-for-day if access is late?",
           "Open"
@@ -1123,7 +1159,7 @@
         [
           "AMB-02",
           "Ambiguous Acceptance",
-          "Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+          "sow.txt, Section 2: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
           "Without testable criteria, milestone sign-off is subjective. This risks disputed acceptance, delayed milestone completion, and unbilled or contested effort.",
           "What objective acceptance criteria apply to each phase deliverable? Who signs off, and within how many business days is a deemed-acceptance applied if no response is given?",
           "Open"
@@ -1131,7 +1167,7 @@
         [
           "AMB-03",
           "Scope Contradiction",
-          "Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+          "sow.txt, Sections 2 and 3: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
           "The pricing engine is a milestone item but not a listed deliverable. This creates a risk of unplanned effort or a scope dispute.",
           "Is the pricing engine in contracted scope? If so, what functionality is required (rules, promotions, tax), and should it be added to the deliverables list?",
           "Open"
@@ -1139,7 +1175,7 @@
         [
           "AMB-04",
           "Scope Contradiction",
-          "Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+          "sow.txt, Sections 1, 2 and 3: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
           "It is unclear whether a separate mobile web interface is expected or whether a responsive web store satisfies it. This risks front-end scope and testing effort being under- or over-estimated.",
           "Is the responsive web store the only front-end deliverable, or is a separate mobile web interface also required? Which devices and browsers must be supported?",
           "Open"
@@ -1147,7 +1183,7 @@
         [
           "AMB-05",
           "Scope Contradiction",
-          "Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+          "sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
           "Training, UAT support, and production rollout are milestone activities without defined deliverables. This creates uncertainty on effort, format, and completion evidence.",
           "What training materials are required (format, audience, volume)? What is Toptal's role in UAT and production rollout, and what outputs are expected?",
           "Open"
@@ -1155,7 +1191,7 @@
         [
           "AMB-06",
           "Unclear SLA",
-          "Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+          "sow.txt, Section 4: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
           "Compliance review delays could stall phase completion and go-live. The plan has no defined review windows, and there is no remedy for a missed turnaround.",
           "At which points will compliance reviews be submitted, and what happens to the schedule and fees if the 5-business-day turnaround is missed?",
           "Open"
@@ -1163,7 +1199,7 @@
         [
           "AMB-07",
           "Ambiguous Acceptance",
-          "Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+          "sow.txt, Section 4: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
           "Performance expectations are undefined, so the result cannot be objectively accepted. Sandbox latency outside Toptal's control could cause a failed or disputed acceptance.",
           "What performance and load targets must the platform meet, and how will acceptance account for third-party sandbox latency?",
           "Open"
@@ -1171,7 +1207,7 @@
         [
           "AMB-08",
           "Scope Contradiction",
-          "Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+          "sow.txt, Header and Section 2: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
           "Fixed-duration, acceptance-gated phases under Time and Materials blur commercial expectations. The client may expect fixed-price outcomes, which risks margin erosion and billing disputes.",
           "Is the 18-week plan an estimate or a commitment? What is the budget ceiling or not-to-exceed amount, and how are changes handled?",
           "Open"
@@ -1179,7 +1215,7 @@
         [
           "AMB-09",
           "Date Conflict",
-          "Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+          "sow.txt, Sections 2, 3 and 4: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
           "Strict sequencing leaves no room for parallel front-end and test automation work. Any slip in an earlier phase pushes the 18-week end date.",
           "May front-end and test automation work start before the prior phase is accepted? In which phase is the regression suite due?",
           "Open"
@@ -1187,7 +1223,7 @@
         [
           "AMB-10",
           "Ownership Gap",
-          "Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+          "sow.txt, Section 4: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
           "Unassigned owners for external access and environments can delay Phases 1-2. Toptal may be held accountable for dependencies it does not control.",
           "Who are the named client owners for ERP feed access, payment provider sandbox credentials, and AWS account provisioning, and by what dates will each be ready?",
           "Open"
@@ -1195,7 +1231,7 @@
         [
           "AMB-11",
           "Ownership Gap",
-          "Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+          "sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
           "Unclear UAT resourcing and post-launch ownership may delay go-live or create unplanned support obligations after the final phase.",
           "Who performs UAT and gives go-live approval, and who owns production support after rollout? Is any hypercare period expected?",
           "Open"
@@ -1809,11 +1845,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Core Cloud Infrastructure and Container Orchestration Platform.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Build; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Build; Owner unassigned"
       ],
       [
         "1.1.1.1",
@@ -1929,11 +1965,11 @@
         "0",
         "",
         "1.1.1.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Core Cloud Infrastructure and Container Orchestration Platform.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "1.1.1.6",
@@ -2035,246 +2071,6 @@
         "1.1.2",
         "3",
         "Work Package",
-        "Other Data & Integration work",
-        "Data & Integration",
-        "M1",
-        "",
-        "",
-        "",
-        "Talent PM",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        ""
-      ],
-      [
-        "1.1.2.1",
-        "4",
-        "Task",
-        "Identity, SSO and Role-Based Access Control Integration implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-02",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-02"
-      ],
-      [
-        "1.1.2.2",
-        "4",
-        "Task",
-        "Product Catalogue Search API and Indexing Pipeline implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-03",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.1",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-03"
-      ],
-      [
-        "1.1.2.3",
-        "4",
-        "Task",
-        "Basket and Checkout Orchestration Service implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-04",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.2",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-04"
-      ],
-      [
-        "1.1.2.4",
-        "4",
-        "Task",
-        "Payment Gateway Integration and Secure Transaction Logging implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-05",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.3",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-05"
-      ],
-      [
-        "1.1.2.5",
-        "4",
-        "Task",
-        "Responsive Web Customer Store Application implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-06",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.4",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-06"
-      ],
-      [
-        "1.1.2.6",
-        "4",
-        "Task",
-        "Automated End-to-End Regression Test Suite implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-07",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.5",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-07"
-      ],
-      [
-        "1.1.2.7",
-        "4",
-        "Task",
-        "Platform Deployment Runbook and Operational Documentation implementation task",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-08",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.6",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-08"
-      ],
-      [
-        "1.1.2.8",
-        "4",
-        "Task",
-        "User Acceptance Testing and Production Rollout implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-09",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.7",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-09"
-      ],
-      [
-        "1.1.2.9",
-        "4",
-        "Task",
-        "Training Materials implementation package",
-        "Data & Integration",
-        "M1",
-        "",
-        "WP-10",
-        "",
-        "Toptal Delivery Team",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "Not Started",
-        "0",
-        "",
-        "1.1.2.8",
-        "",
-        "",
-        "Baseline - Backlog",
-        "",
-        "Baseline backlog lists parent DEL-10"
-      ],
-      [
-        "1.1.3",
-        "3",
-        "Work Package",
         "M1 Milestone Acceptance",
         "Data & Integration",
         "M1",
@@ -2296,7 +2092,7 @@
         ""
       ],
       [
-        "1.1.3.1",
+        "1.1.2.1",
         "4",
         "Task",
         "Support client UAT for M1",
@@ -2320,7 +2116,7 @@
         ""
       ],
       [
-        "1.1.3.2",
+        "1.1.2.2",
         "4",
         "Task",
         "Confirm all M1 deliverables are accepted",
@@ -2336,7 +2132,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.3.1",
+        "1.1.2.1",
         "",
         "",
         "PM Best Practice",
@@ -2344,7 +2140,7 @@
         ""
       ],
       [
-        "1.1.3.3",
+        "1.1.2.3",
         "4",
         "Task",
         "Update schedule and RAID Log after acceptance",
@@ -2360,7 +2156,7 @@
         "Not Started",
         "0",
         "",
-        "1.1.3.2",
+        "1.1.2.2",
         "",
         "",
         "PM Best Practice",
@@ -2471,7 +2267,7 @@
         "Data & Integration",
         "M2",
         "DEL-04",
-        "",
+        "WP-04",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -2481,11 +2277,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Basket and Checkout Orchestration Service.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Build; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Build; Owner unassigned"
       ],
       [
         "1.2.2.1",
@@ -2601,11 +2397,11 @@
         "0",
         "",
         "1.2.2.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Basket and Checkout Orchestration Service.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "1.2.2.6",
@@ -2711,7 +2507,7 @@
         "Data & Integration",
         "M2",
         "DEL-05",
-        "",
+        "WP-05",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -2721,11 +2517,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Payment Gateway Integration and Secure Transaction Logging.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Integration; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Integration; Owner unassigned"
       ],
       [
         "1.2.3.1",
@@ -2841,11 +2637,11 @@
         "0",
         "",
         "1.2.3.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Payment Gateway Integration and Secure Transaction Logging.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "1.2.3.6",
@@ -3143,7 +2939,7 @@
         "Deployment & Release",
         "M3",
         "DEL-02",
-        "",
+        "WP-02",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3153,11 +2949,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Identity, SSO and Role-Based Access Control Integration.",
         "",
         "Baseline - Deliverables",
         "Unmapped - confirm milestone",
-        "Work type: Integration; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Integration; Owner unassigned"
       ],
       [
         "2.1.2.1",
@@ -3273,11 +3069,11 @@
         "0",
         "",
         "2.1.2.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Identity, SSO and Role-Based Access Control Integration.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.2.6",
@@ -3383,7 +3179,7 @@
         "Deployment & Release",
         "M3",
         "DEL-03",
-        "",
+        "WP-03",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3393,11 +3189,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Product Catalogue Search API and Indexing Pipeline.",
         "",
         "Baseline - Deliverables",
         "Unmapped - confirm milestone",
-        "Work type: Integration; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Integration; Owner unassigned"
       ],
       [
         "2.1.3.1",
@@ -3513,11 +3309,11 @@
         "0",
         "",
         "2.1.3.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Product Catalogue Search API and Indexing Pipeline.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.3.6",
@@ -3623,7 +3419,7 @@
         "Deployment & Release",
         "M3",
         "DEL-06",
-        "",
+        "WP-06",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3633,11 +3429,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Responsive Web Customer Store Application.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Build; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Build; Owner unassigned"
       ],
       [
         "2.1.4.1",
@@ -3753,11 +3549,11 @@
         "0",
         "",
         "2.1.4.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Responsive Web Customer Store Application.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.4.6",
@@ -3863,7 +3659,7 @@
         "Deployment & Release",
         "M3",
         "DEL-07",
-        "",
+        "WP-07",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -3873,11 +3669,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Automated End-to-End Regression Test Suite.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Test; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Test; Owner unassigned"
       ],
       [
         "2.1.5.1",
@@ -3993,11 +3789,11 @@
         "0",
         "",
         "2.1.5.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Automated End-to-End Regression Test Suite.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.5.6",
@@ -4103,7 +3899,7 @@
         "Deployment & Release",
         "M3",
         "DEL-08",
-        "",
+        "WP-08",
         "Section 3",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -4113,11 +3909,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Platform Deployment Runbook and Operational Documentation.",
         "",
         "Baseline - Deliverables",
         "Unmapped - confirm milestone",
-        "Work type: Documentation; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Documentation; Owner unassigned"
       ],
       [
         "2.1.6.1",
@@ -4163,7 +3959,7 @@
         "2.1.6.1",
         "",
         "",
-        "Baseline - SOW Stories",
+        "Baseline - SOW Work Items",
         "",
         ""
       ],
@@ -4233,11 +4029,11 @@
         "0",
         "",
         "2.1.6.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Platform Deployment Runbook and Operational Documentation.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.6.6",
@@ -4343,7 +4139,7 @@
         "Deployment & Release",
         "M3",
         "DEL-09",
-        "",
+        "WP-09",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -4353,11 +4149,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for User Acceptance Testing and Production Rollout.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Test; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Test; Owner unassigned"
       ],
       [
         "2.1.7.1",
@@ -4473,11 +4269,11 @@
         "0",
         "",
         "2.1.7.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for User Acceptance Testing and Production Rollout.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.7.6",
@@ -4583,7 +4379,7 @@
         "Deployment & Release",
         "M3",
         "DEL-10",
-        "",
+        "WP-10",
         "",
         "[UNASSIGNED - TO BE CONFIRMED]",
         "<DATE>",
@@ -4593,11 +4389,11 @@
         "0",
         "",
         "",
-        "Evidence: [CONFIRMATION REQUIRED]",
+        "Evidence: Demonstration, technical test report, and repository verification for Training Materials.",
         "",
         "Baseline - Deliverables",
         "Scope match",
-        "Work type: Documentation; Owner unassigned; Evidence not defined in baseline - agree with the client"
+        "Work type: Documentation; Owner unassigned"
       ],
       [
         "2.1.8.1",
@@ -4713,11 +4509,11 @@
         "0",
         "",
         "2.1.8.4",
-        "[CONFIRMATION REQUIRED]",
+        "Demonstration, technical test report, and repository verification for Training Materials.",
         "",
         "PM Best Practice",
         "",
-        "Evidence not defined in baseline - agree with the client"
+        ""
       ],
       [
         "2.1.8.6",
@@ -5132,7 +4928,7 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+        "Date Conflict: sow.txt, Sections 2 and 4: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5159,8 +4955,8 @@
       [
         "RAID-06",
         "Issue",
-        "Ambiguous Acceptance: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 2: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+        "Sections: 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5181,12 +4977,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-02",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-07",
         "Issue",
-        "Scope Contradiction: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5213,7 +5009,7 @@
       [
         "RAID-08",
         "Issue",
-        "Scope Contradiction: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+        "Scope Contradiction: sow.txt, Sections 1, 2 and 3: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5240,7 +5036,7 @@
       [
         "RAID-09",
         "Issue",
-        "Scope Contradiction: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5267,8 +5063,8 @@
       [
         "RAID-10",
         "Issue",
-        "Unclear SLA: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
-        "Not cited",
+        "Unclear SLA: sow.txt, Section 4: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5289,13 +5085,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-06",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-11",
         "Issue",
-        "Ambiguous Acceptance: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
-        "Not cited",
+        "Ambiguous Acceptance: sow.txt, Section 4: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5316,13 +5112,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-07",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-12",
         "Issue",
-        "Scope Contradiction: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
-        "Not cited",
+        "Scope Contradiction: sow.txt, Header and Section 2: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+        "Sections: 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5343,12 +5139,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-08",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-13",
         "Issue",
-        "Date Conflict: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+        "Date Conflict: sow.txt, Sections 2, 3 and 4: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
@@ -5375,8 +5171,8 @@
       [
         "RAID-14",
         "Issue",
-        "Ownership Gap: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
-        "Not cited",
+        "Ownership Gap: sow.txt, Section 4: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+        "Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5397,12 +5193,12 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-10",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-15",
         "Issue",
-        "Ownership Gap: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+        "Ownership Gap: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
         "Not cited",
         "Contract Clarification",
         "Cross-phase",
