@@ -596,6 +596,20 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                                     "WBS"
                                 ))
 
+                # Invariant: Every work-item task has a non-empty SOW References cell when its work item has a reference
+                t_src = str(row[19] or "").strip() if len(row) > 19 else ""
+                if elem_type == "Task" and (t_src in ("Baseline - Backlog", "Baseline - SOW Work Items") or s_id.startswith("WP-") or s_id.startswith("HS-")):
+                    has_ref = bool(SOW_REF_REGEX.search(name) or SOW_REF_REGEX.search(s_id))
+                    matching_wp = next((wp for wp in kit_work_packages if wp[0] == s_id), None)
+                    if matching_wp and len(matching_wp) > 5 and matching_wp[5]:
+                        has_ref = True
+                    if has_ref and not sow_refs_str:
+                        violations.append(InvariantViolation(
+                            "INV-08",
+                            f"Work-item task '{name}' (source {s_id}) has empty SOW References cell",
+                            "WBS"
+                        ))
+
         # Oracle sample work item titles verification (REF-05)
         if oracle and oracle.get("work_item_titles_in_sow") and oracle.get("sample_work_item_titles"):
             sample_titles = oracle["sample_work_item_titles"]
@@ -608,8 +622,6 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
             # 1. Check Kit work packages
             for s_id, sample in sample_titles.items():
                 norm_sample = _norm_s(sample)
-                sample_words = norm_sample.split()
-                sample_prefix = " ".join(sample_words[:min(4, len(sample_words))])
                 
                 matching_wp = None
                 for wp in kit_work_packages:
@@ -626,10 +638,10 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     ))
                 else:
                     norm_wp_title = _norm_s(matching_wp[2])
-                    if sample_prefix not in norm_wp_title:
+                    if norm_sample not in norm_wp_title:
                         violations.append(InvariantViolation(
                             "INV-20",
-                            f"Kit work package for {s_id} ('{matching_wp[2]}') does not contain sample title '{sample}'",
+                            f"Kit work package for {s_id} ('{matching_wp[2]}') does not contain exact sample title '{sample}'",
                             "Startup Kit"
                         ))
 
@@ -638,23 +650,22 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 wbs_sheet = wb["WBS"]
                 for s_id, sample in sample_titles.items():
                     norm_sample = _norm_s(sample)
-                    sample_words = norm_sample.split()
-                    sample_prefix = " ".join(sample_words[:min(4, len(sample_words))])
                     
                     found_wbs = False
                     for row in wbs_sheet.iter_rows(min_row=5, values_only=True):
                         t_name = str(row[3] or "")
                         t_src_id = str(row[7] or "")
                         t_sow_refs = str(row[8] or "")
-                        if s_id in t_name or s_id == t_src_id or s_id in t_sow_refs:
-                            norm_t_name = _norm_s(t_name)
-                            if sample_prefix in norm_t_name:
+                        t_notes = str(row[21] or "") if len(row) > 21 else ""
+                        if s_id in t_name or s_id == t_src_id or s_id in t_sow_refs or s_id in t_notes:
+                            norm_t_text = _norm_s(f"{t_name} {t_notes}")
+                            if norm_sample in norm_t_text:
                                 found_wbs = True
                                 break
                     if not found_wbs:
                         violations.append(InvariantViolation(
                             "INV-20",
-                            f"WBS task name for {s_id} does not contain sample title '{sample}'",
+                            f"WBS task name for {s_id} does not contain exact sample title '{sample}'",
                             "WBS"
                         ))
 
@@ -861,7 +872,9 @@ def main():
         oracle_path = Path("tests/oracles") / f"{args.oracle}.json"
         if oracle_path.exists():
             with open(oracle_path, "r", encoding="utf-8") as f:
-                oracle_data = json.load(f)
+                content = f.read()
+                cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                oracle_data = json.loads(cleaned)
 
     violations = check_artifacts_directory(folder, oracle_override=oracle_data)
     if violations:

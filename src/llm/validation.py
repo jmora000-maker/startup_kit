@@ -306,9 +306,6 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
                     ))
                     wp_title = f"{ref_str}: {d.name}" if ref_str else d.name
 
-                if len(wp_title) > 120:
-                    wp_title = wp_title[:117] + "..."
-
                 # Ensure unique titles
                 if wp_title in seen_titles:
                     seen_titles[wp_title] += 1

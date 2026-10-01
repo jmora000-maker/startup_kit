@@ -1,6 +1,7 @@
 """Tests and helper loaders for QA-08 oracles."""
 
 import json
+import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -24,7 +25,9 @@ def load_oracle(name: str) -> Optional[Dict[str, Any]]:
     if not oracle_path.exists():
         return None
     with open(oracle_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        content = f.read()
+        cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+        return json.loads(cleaned)
 
 
 def test_arc_oracle_structure():

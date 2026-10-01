@@ -778,7 +778,11 @@ def build_workbook_model(
         assigned_wps = matched_wps_by_deliv.get(d_item.id, [])
         non_deg_wps = [w for w in assigned_wps if w.id not in degenerate_wp_ids]
         d_gate, _, _ = deliv_mapping.get(d_item.id, (None, "", False))
+        d_work_type, _ = classify_deliverable_work_type(d_item.name or d_item.description or "")
         for wp in non_deg_wps:
+            wp_work_type, _ = classify_deliverable_work_type(wp.title or "")
+            if wp_work_type != "Test" and d_work_type == "Test":
+                wp_work_type = "Test"
             wp_toks = tokenize_v2(wp.title or "")
             corpus = all_deliv_toks + [wp_toks]
             idf_dict = compute_idf(corpus)
@@ -786,6 +790,12 @@ def build_workbook_model(
             for other_idx, other_d in enumerate(filtered_deliverables):
                 if other_d.id != d_item.id:
                     other_gate, _, _ = deliv_mapping.get(other_d.id, (None, "", False))
+                    other_work_type, _ = classify_deliverable_work_type(other_d.name or other_d.description or "")
+                    
+                    # MAP-07: Do not add Covered by / Also covers between Test-type WP and Build/Integration deliverable (or vice versa)
+                    if (wp_work_type == "Test" and other_work_type in ("Build", "Integration")) or (other_work_type == "Test" and wp_work_type in ("Build", "Integration")):
+                        continue
+
                     # MAP-07: Only within the same gate
                     if d_gate and other_gate and d_gate.id == other_gate.id:
                         score = compute_score(wp_toks, all_deliv_toks[other_idx], idf_dict, N)
@@ -1167,7 +1177,9 @@ def build_workbook_model(
                                 if wp.id in wp_also_covers:
                                     wp_note_parts.append(f"Also covers {', '.join(wp_also_covers[wp.id])}")
                                 wp_note = " | ".join(wp_note_parts) if wp_note_parts else None
-                                task_rows_to_add.append((t_name, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, ""))
+                                wp_refs = extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}")
+                                wp_sow_str = ", ".join(wp_refs) if wp_refs else (wp.sow_reference or "")
+                                task_rows_to_add.append((t_name, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, wp_sow_str))
                         elif d_story_ids:
                             # Option 2: SOW work items (TXT-04)
                             verb = get_work_type_verb(work_type)
@@ -1281,6 +1293,9 @@ def build_workbook_model(
 
                     task_pred = (last_prereq_wbs_code or "") if owp_idx == 1 else prev_task_wbs
 
+                    owp_refs = extract_sow_references(f"{owp.sow_reference or ''} {owp.title or ''}")
+                    owp_sow_str = ", ".join(owp_refs) if owp_refs else (owp.sow_reference or "")
+
                     wbs_rows.append(WBSRow(
                         wbs_code=owp_wbs,
                         level=4,
@@ -1290,7 +1305,7 @@ def build_workbook_model(
                         milestone_id=m.id,
                         deliverable_id="",
                         source_id=owp.id,
-                        sow_stories="",
+                        sow_stories=owp_sow_str,
                         owner=owp_owner,
                         planned_start=deliv_start,
                         planned_finish=deliv_finish,

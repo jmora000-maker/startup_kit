@@ -160,6 +160,21 @@ def test_inv_08_fails_on_missing_sow_reference(base_artifacts, tmp_path):
     assert any(v.inv_id == "INV-08" for v in violations)
 
 
+def test_inv_08_fails_on_empty_task_sow_reference(base_artifacts, tmp_path):
+    oracle = _copy_artifacts(base_artifacts, tmp_path)
+    wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]
+    wb = openpyxl.load_workbook(wb_file)
+    ws = wb["WBS"]
+    # Clear sow_stories (column 9 / index 8) on a task with WP source
+    for r in range(5, 50):
+        if ws.cell(row=r, column=2).value in (4, "4") and str(ws.cell(row=r, column=8).value or "").startswith("WP-"):
+            ws.cell(row=r, column=9, value="")
+            break
+    wb.save(wb_file)
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
+    assert any(v.inv_id == "INV-08" and "empty SOW References cell" in v.message for v in violations)
+
+
 def test_inv_09_fails_on_missing_raid_source_id(base_artifacts, tmp_path):
     oracle = _copy_artifacts(base_artifacts, tmp_path)
     wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]

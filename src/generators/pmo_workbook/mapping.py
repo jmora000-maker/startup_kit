@@ -5,7 +5,7 @@ import math
 import logging
 from datetime import date
 from typing import List, Dict, Optional, Tuple, Sequence, Set, Union
-from src.config import sanitize_report_text, extract_sow_references
+from src.config import sanitize_report_text, extract_sow_references, detect_sow_reference_kind
 from src.core.models import (
     Milestone,
     Deliverable,
@@ -640,13 +640,13 @@ def map_work_packages_to_deliverables(
     work_packages: Sequence[WorkPackageSeed],
     deliverables_in_milestone: Sequence[Deliverable],
 ) -> Tuple[Dict[str, List[WorkPackageSeed]], List[WorkPackageSeed]]:
-    """Map work packages within a milestone to its mapped deliverables (v2, v6 A29).
+    """Map work packages within a milestone to its mapped deliverables (MAP-05).
     
-    Pass 1: Corpus = deliverable names in this milestone + this work package title.
-    If best score >= 0.20, assigns to that deliverable (ties go to lower deliverable ID).
-    
-    Pass 2 (v6 A29): For remaining unassigned work packages, if an unassigned deliverable in this milestone
-    shares a distinctive token with IDF >= ln(2) (~0.69315), assign WP to that deliverable.
+    1. Pass 0: Unique work item ID match (excluding non-unique references like Sections).
+    2. Pass 1: Best text score >= 0.20 within milestone (ties to lower deliverable ID).
+    3. Pass 1.5: Parent link match (if wp.parent_deliverable_id matches a deliverable in this milestone).
+    4. Pass 2 (v6 A29): Distinctive token with IDF >= ln(2) against unassigned deliverables in milestone.
+    5. Remaining work packages go to other_wps.
     """
     matched_by_deliv: Dict[str, List[WorkPackageSeed]] = {d.id: [] for d in deliverables_in_milestone}
     other_wps: List[WorkPackageSeed] = []
@@ -657,28 +657,33 @@ def map_work_packages_to_deliverables(
     deliv_ids_in_ms = {d.id: d for d in deliverables_in_milestone}
     deliv_names = [d.name or d.description or "" for d in deliverables_in_milestone]
 
+    # Pre-extract unique work item references per deliverable (exclude Section references)
+    deliv_item_refs: Dict[str, Set[str]] = {}
+    for d in deliverables_in_milestone:
+        refs = set(r for r in extract_sow_references(f"{d.sow_reference or ''}") if detect_sow_reference_kind(r) != "Section")
+        deliv_item_refs[d.id] = refs
+
     unassigned_wps: List[WorkPackageSeed] = []
-    # Pass 0 (MAP-05): Match by SOW reference on deliverable
+    # Pass 0: Match by unique work item ID (e.g. HS-4762)
     for wp in work_packages:
-        wp_refs = extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}")
-        matched_d = None
-        if wp_refs:
-            for d in deliverables_in_milestone:
-                d_refs = extract_sow_references(f"{d.sow_reference or ''}")
-                if any(r in d_refs for r in wp_refs):
-                    matched_d = d
-                    break
-        if matched_d is not None:
-            matched_by_deliv[matched_d.id].append(wp)
+        wp_item_refs = set(r for r in extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}") if detect_sow_reference_kind(r) != "Section")
+        matched_deliv_id = None
+        if wp_item_refs:
+            matching_delivs = [d_id for d_id, d_refs in deliv_item_refs.items() if wp_item_refs & d_refs]
+            if len(matching_delivs) == 1:
+                matched_deliv_id = matching_delivs[0]
+
+        if matched_deliv_id:
+            matched_by_deliv[matched_deliv_id].append(wp)
         else:
             unassigned_wps.append(wp)
 
+    # Pass 1: Text overlap score >= 0.20
     remaining_unassigned: List[WorkPackageSeed] = []
     for wp in unassigned_wps:
         wp_title = wp.title or ""
         wp_tokens = tokenize_v2(wp_title)
 
-        # Corpus = deliverable names + this WP title
         corpus = [tokenize_v2(name) for name in deliv_names] + [wp_tokens]
         idf_dict = compute_idf(corpus)
         N = len(corpus)
@@ -694,7 +699,6 @@ def map_work_packages_to_deliverables(
                     best_score = score
                     best_deliv = d
                 elif score == best_score and best_deliv is not None:
-                    # Tie break by natural sort of deliverable ID
                     if natural_sort_key(d.id) < natural_sort_key(best_deliv.id):
                         best_deliv = d
 
@@ -703,15 +707,22 @@ def map_work_packages_to_deliverables(
         else:
             remaining_unassigned.append(wp)
 
+    # Pass 1.5: Parent link match for remaining unassigned
+    still_unassigned: List[WorkPackageSeed] = []
+    for wp in remaining_unassigned:
+        p_id = wp.parent_deliverable_id.strip() if wp.parent_deliverable_id else ""
+        if p_id in deliv_ids_in_ms:
+            matched_by_deliv[p_id].append(wp)
+        else:
+            still_unassigned.append(wp)
+
     # Pass 2 (v6 A29): Distinctive shared token with IDF >= ln(2) against empty deliverables in same milestone
-    import math
     min_idf = math.log(2.0)  # ~0.693147
 
-    # Milestone corpus IDF across all deliverables + work packages in this milestone
     ms_corpus = [tokenize_v2(name) for name in deliv_names] + [tokenize_v2(wp.title or "") for wp in work_packages]
     ms_idf = compute_idf(ms_corpus)
 
-    for wp in remaining_unassigned:
+    for wp in still_unassigned:
         wp_tokens = set(tokenize_v2(wp.title or ""))
         assigned_deliv = None
 
