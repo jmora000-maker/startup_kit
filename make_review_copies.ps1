@@ -12,7 +12,7 @@ $files = @{
     "numbered_proposed.json" = "tests\snapshots_proposed\numbered_deliverables\snapshot.json"
     "nostory_approved.json"  = "tests\snapshots\no_story_ids\snapshot.json"
     "nostory_proposed.json"  = "tests\snapshots_proposed\no_story_ids\snapshot.json"
-    "rev6_final_report.md" = "reports\rev6_final_report.md"
+    "rev7_final_report.md" = "reports\rev7_final_report.md"
     "overext_proposed.json"  = "tests\snapshots_proposed\arc_overextracted\snapshot.json"
 }
 
