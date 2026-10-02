@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 8 · October 2, 2026
+Revision 9 · October 2, 2026
 
 ## 0. Document control
 
@@ -217,22 +217,22 @@ A single module, `src/llm/validation.py`, runs after `BaselineAggregator` and be
 
 ## 15A. Talent Team Onboarding Deck
 
-**Purpose.** A five-slide PowerPoint deck, built on the Toptal presentation template, used to onboard the Talent PM and the whole Talent Project Team. Each slide carries talking points in its speaker notes, for later reference. Every fact in the deck traces to the Startup Kit or the Project Delivery Workbook, which are the only sources of truth. Appendix K gives the slide-by-slide design.
+**Purpose.** A six-slide PowerPoint deck (a cover slide and five content slides), built on the Toptal presentation template, used to onboard the Talent PM and the whole Talent Project Team. Each slide carries talking points in its speaker notes, for later reference. Every fact in the deck traces to the Startup Kit or the Project Delivery Workbook, which are the only sources of truth. Appendix K gives the slide-by-slide design.
 
 | ID | Requirement | Status | Test |
 | --- | --- | --- | --- |
-| DECK-01 | **Output.** The deck is written to `{sanitize_filename(project)}_Talent_Onboarding_Deck.pptx`, in the same folder as the Kit and Workbook. It has exactly 5 slides, in this order: (1) Project Charter; (2) Workstreams, Milestones, Deliverables and Dates; (3) Acceptance Criteria; (4) High-Risk Items; (5) Client Collaboration. There is no cover or closing slide. | New | `test_deck_structure.py` |
+| DECK-01 | **Output.** The deck is written to `{sanitize_filename(project)}_Talent_Onboarding_Deck.pptx`, in the same folder as the Kit and Workbook. It has exactly 6 slides, in this order: (1) Cover; (2) Project Charter; (3) Workstreams, Milestones, Deliverables and Dates; (4) Acceptance Criteria; (5) High-Risk Items; (6) Client Collaboration. There is no closing slide. | New | `test_deck_structure.py` |
 | DECK-02 | **Flags.** `--slides` writes the deck. Because the deck must trace to its sources, `--slides` also writes the Startup Kit and the Project Delivery Workbook in the same run, and the log says so: `Deck sources: Startup Kit and Project Delivery Workbook also written`. `--all` writes all four outputs (Kit, Checklist, Workbook, deck). With `--reingest-docx`, the input Kit is the Kit source; it is rewritten only if `--kit` or `--all` is given. `OutputSelection` gains `slides: bool`, and `from_flags` gains `slides`. `RunResult` gains `slides_path`. | New | `test_orchestrator_export.py` |
 | DECK-03 | **One model, two sources.** The deck is built from a `DeckModel` assembled from (a) the validated `StartupKitBaseline` used to write (or read) the Kit, and (b) the `WorkbookModel` returned by `build_workbook_model` for the same run, with the same `start_date`. The deck never re-extracts, never calls the LLM, and never reads the SOW. Building the `DeckModel` is pure (no file I/O), in `src\generators\onboarding_deck\builder.py`. | New | `test_deck_builder.py` |
 | DECK-04 | **Trace references.** Every content element on a slide (each table cell value, bullet, fact, and talking-point fact) carries one or more `TraceRef(artifact, locator, key, field)`. `artifact` is `Kit` or `Workbook`. `locator` is the Kit section heading (for example `Project Startup Charter`, `Deliverables and Acceptance Matrix`, `RAID Log`, `Communications and Reporting Plan`, `Stakeholder and Responsibility Model`) or the Workbook sheet name (`Project Schedule`, `WBS`, `RAID Log`). `key` is the row ID (for example `M2`, `DEL-07`, `RAID-14`, `COM-03`) or the field label for single-value facts. `field` is the column or field name. Fixed labels written by the tool (slide titles, column headers, the kicker) are the only text without a `TraceRef`. | New | `test_deck_traceability.py` |
 | DECK-05 | **Strict 100% traceability.** (1) Every content element has at least one `TraceRef`. (2) Every `TraceRef` resolves to a cell or table row in the written Kit `.docx` or Workbook `.xlsx`. (3) The displayed text equals the source text after normalization (TXT-01 cleanup, whitespace collapsed, action tags removed), or is a prefix of it that ends at a sentence or clause boundary (`.`, `;`, `:`, or ` - `). Paraphrasing, summarizing, and LLM rewording are never allowed. (4) Dates are shown as `YYYY-MM-DD`, exactly as in the Workbook. The check reads the written files back, not the in-memory model. | New | `test_deck_traceability.py`, INV-26 |
 | DECK-06 | **Trace manifest.** The generator writes `{project}_Talent_Onboarding_Deck.trace.json` beside the deck. For each slide it lists every element: its slide number, shape name, displayed text, and `TraceRef` list. `check_artifacts` uses it to run DECK-05 against any output folder. | New | `test_deck_traceability.py` |
-| DECK-07 | **Completeness.** Slide 2 shows every gate, every checkpoint, and every deliverable ID in the Workbook Project Schedule. Slide 3 shows every deliverable ID. Where a table exceeds its row capacity (Appendix K), the last row reads `+N more: DEL-xx, DEL-yy, ... (see <source locator>)`, listing every omitted ID, so no ID is ever dropped. | New | `test_deck_completeness.py`, INV-27 |
+| DECK-07 | **Completeness.** Slide 3 shows every gate, every checkpoint, and every deliverable ID in the Workbook Project Schedule. Slide 4 shows every deliverable ID. Where a table exceeds its row capacity (Appendix K), the last row reads `+N more: DEL-xx, DEL-yy, ... (see <source locator>)`, listing every omitted ID, so no ID is ever dropped. | New | `test_deck_completeness.py`, INV-27 |
 | DECK-08 | **Concise text.** Slide title at most 8 words. Bullets and table cells at most 15 words, cut at a clause boundary by the DECK-05 prefix rule. At most 6 bullets per card or text block. At most 6 talking points per slide, each at most 30 words. No text may overflow its shape: the writer measures each text frame against its character capacity (Appendix K) and reduces font size by at most 2 pt before cutting at a clause boundary. | New | `test_deck_text_limits.py`, INV-28 |
-| DECK-09 | **Talking points.** Each slide's speaker notes contain a `TALKING POINTS` section of 3 to 6 bullets, and a `SOURCES` line. Talking points are sentences built deterministically from templates in `talking_points.py`, filled only with traced facts, for example `The project runs in {n} phases, from {start} to {finish}.` Templates contain no project-specific data (P-08). The `SOURCES` line names each Kit section and Workbook sheet used on the slide. | New | `test_deck_talking_points.py` |
+| DECK-09 | **Talking points.** Each content slide's speaker notes contain a `TALKING POINTS` section of 3 to 6 bullets, and a `SOURCES` line. The cover slide's notes contain 2 to 4 talking points and a `SOURCES` line (Appendix K.2). Talking points are sentences built deterministically from templates in `talking_points.py`, filled only with traced facts, for example `The project runs in {n} phases, from {start} to {finish}.` Templates contain no project-specific data (P-08). The `SOURCES` line names each Kit section and Workbook sheet used on the slide. | New | `test_deck_talking_points.py` |
 | DECK-10 | **Placeholders.** Action tags (`[ACT-...]`) are removed. A value that is a placeholder (`[CONFIRMATION REQUIRED]`, `UNASSIGNED`, `[TBD]`, empty) is shown as `To be confirmed`, in italic accent blue (`204ECF`). It still carries its `TraceRef`, and the trace check accepts it against the placeholder in the source. | New | `test_deck_traceability.py` |
 | DECK-11 | **No readiness content.** The deck contains no readiness score, G-01 gate, checklist status, `ACT-` ID, or other INV-04 readiness term. The Readiness Checklist is never a deck source. | New | INV-04 (extended to the deck) |
-| DECK-12 | **Template.** The template is stored in the repository as `templates\Toptal_Presentation_Template.pptx`, a copy of the supplied file, with its path configurable by `DECK_TEMPLATE_PATH`. The generator opens it, removes every existing slide **and its slide part** (so no template slide content remains in the package), and adds the 5 slides on the layout named `CUSTOM_16` from the first slide master. That layout provides the title, kicker, `Confidential` footer with slide number, and the Toptal logo. If the layout is missing, the generator fails with an error naming it; it never falls back to another layout. | New | `test_deck_structure.py`, INV-29 |
+| DECK-12 | **Template.** The template is stored in the repository as `templates\Toptal_Presentation_Template.pptx`, a copy of the supplied file, with its path configurable by `DECK_TEMPLATE_PATH`. The generator opens it, removes every existing slide **and its slide part** (so no template slide content remains in the package), and adds the cover slide on the layout named `CUSTOM_1` and the 5 content slides on the layout named `CUSTOM_16`, both from the first slide master. `CUSTOM_1` provides the cover title and subtitle; `CUSTOM_16` provides the title and kicker; both provide the `Confidential` footer with slide number and the Toptal logo. If either layout is missing, the generator fails with an error naming it; it never falls back to another layout. | New | `test_deck_structure.py`, INV-29 |
 | DECK-13 | **Style.** The deck follows the template's styling (Appendix K, K.1): title Proxima Nova bold 28 pt `0F172A`; kicker Proxima Nova bold 11 pt `64748B`, reading `{PROJECT NAME} · TALENT TEAM ONBOARDING`; card headings Proxima Nova bold 16 pt `0F172A`; card subheadings Proxima Nova Semibold 11 pt `204ECF`; body Calibri 11 pt `475569`; tables with a `204ECF` header row (white Proxima Nova bold 12 pt), alternating `F8FAFC` and `FFFFFF` rows, and `E2E8F0` borders; cards as white rounded rectangles with an `E2E8F0` outline. No Material Icons glyphs (the font is not guaranteed on viewers' machines), no accent bars, no decorative stripes. | New | `test_deck_style.py` |
 | DECK-14 | **Determinism.** The same Kit and Workbook always produce the same deck and trace manifest, apart from file timestamps. | New | `test_deck_builder.py` |
 | DECK-15 | **Works for any SOW.** The deck builds without error for every fixture (ARC, ARC over-extracted, mock, no story IDs, numbered deliverables), including SOWs with no phases, no SOW references, no risks rated High, no client stakeholders, or no communications plan. Empty sections show one line, `None recorded in the Startup Kit` or `None recorded in the Project Delivery Workbook`, which is a fixed label. | New | `test_deck_any_sow.py` |
@@ -274,9 +274,9 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | INV-24 | The review window is the KIT-03 default or SOW text. It never contains `NOT SPECIFIED - TO BE CONFIRMED` or ends with `...`. |
 | INV-25 | Nothing sits in an `Other {workstream} work` package when its Kit parent deliverable exists in another gate. |
 | INV-26 | Every deck content element has a `TraceRef`, every `TraceRef` resolves in the written Kit or Workbook, and every displayed value equals its source or a clause-boundary prefix of it (DECK-05, DECK-20). The trace manifest exists beside the deck. |
-| INV-27 | Slide 2 contains every gate, checkpoint, and deliverable ID from the Workbook Project Schedule, and Slide 3 contains every deliverable ID, either in a table row or in a `+N more` overflow row (DECK-07). |
-| INV-28 | The deck has exactly 5 slides with the DECK-01 titles in order; every slide has 3 to 6 talking points and a `SOURCES` line; no title exceeds 8 words and no bullet or table cell exceeds 15 words (DECK-08, DECK-09). |
-| INV-29 | The deck package contains exactly 5 slide parts, all on layout `CUSTOM_16`, and none of the template's original slide text (for example `DELIVERY GOVERNANCE OPERATING LAYER`) appears anywhere in it (DECK-12). |
+| INV-27 | Slide 3 contains every gate, checkpoint, and deliverable ID from the Workbook Project Schedule, and Slide 4 contains every deliverable ID, either in a table row or in a `+N more` overflow row (DECK-07). |
+| INV-28 | The deck has exactly 6 slides: the cover, then the 5 content slides with the DECK-01 titles in order. The cover has 2 to 4 talking points and every content slide 3 to 6, each with a `SOURCES` line; no title exceeds 8 words and no bullet or table cell exceeds 15 words (DECK-08, DECK-09). |
+| INV-29 | The deck package contains exactly 6 slide parts: slide 1 on layout `CUSTOM_1`, slides 2 to 6 on layout `CUSTOM_16`; and none of the template's original slide text (for example `DELIVERY GOVERNANCE OPERATING LAYER`) appears anywhere in it (DECK-12). |
 
 ## 17. Pending work, in implementation order
 
@@ -299,6 +299,7 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | 6 | Rev 5 implementation round (Appendix I). Replaces QA-09 with the `arc_overextracted` fixture and retires `arc_run5`. Revises RAID-03 (plural forms, no information loss) and QA-10 (stop rather than redefine). Marks MAP-05 Done. |
 | 7 | Rev 6 implementation round (Appendix J). Adds QA-11. Revises QA-10 (mechanical quotes, git output), VAL-01 (renumbering with provenance), MS-04, MS-05 (checkpoint phases), and RAID-03 (consistent format). Marks QA-09, RAID-08, and FMT-03 Done. |
 | 8 | Adds the Talent Team Onboarding Deck: section 15A (DECK-01 to DECK-20), INV-26 to INV-29, and Appendix K. Revises OUT-01, OUT-02, OUT-09, OUT-10, and INV-04 for the deck. Marks the Rev 7 items (VAL-01, MS-04, MS-05, KIT-02, RAID-03, QA-09, QA-11) Done. |
+| 9 | Adds a cover slide to the deck (6 slides in total; cover on layout `CUSTOM_1`). Revises DECK-01, DECK-07, DECK-09, DECK-12, INV-27 to INV-29, and Appendix K; content slides renumbered 2 to 6. Confirms that `--slides` also writes the Kit and Workbook (DECK-02). |
 
 ## Appendix A: Workbook column layouts
 
@@ -540,7 +541,8 @@ QA-03 (revised), QA-08, and INV-19 to INV-25 close both gaps.
 ### K.1 Template and style tokens
 
 - **Canvas:** 13.33 × 7.5 in (16:9), from the template.
-- **Layout:** `CUSTOM_16` on master 1, with title placeholder (idx 0) at 0.29, 0.22 in (12.76 × 0.70 in) and kicker placeholder (idx 1) at 0.29, 0.84 in (12.76 × 0.53 in). The layout also supplies the `Confidential | <slide number>` footer and the logo.
+- **Cover layout:** `CUSTOM_1` on master 1, with title placeholder (idx 0) at 1.33, 3.09 in (11.37 × 0.75 in) and subtitle placeholder (idx 1) at 1.33, 3.84 in (11.37 × 0.57 in), plus the footer and logo. The cover keeps the layout's own placeholder styling (Proxima Nova; no font overrides), matching the template's cover.
+- **Content layout:** `CUSTOM_16` on master 1, with title placeholder (idx 0) at 0.29, 0.22 in (12.76 × 0.70 in) and kicker placeholder (idx 1) at 0.29, 0.84 in (12.76 × 0.53 in). The layout also supplies the `Confidential | <slide number>` footer and the logo.
 - **Content area:** x 0.83 to 12.50 in, y 1.70 to 6.70 in. Nothing is placed outside it.
 - **Cards:** white rounded rectangles, `E2E8F0` outline; three across at x 0.83, 4.81, 8.79 in (3.71 × 4.58 in each, from the template), or two across at x 0.83 and 6.75 in (5.75 in wide each). Text inset 0.25 in.
 - **Tables:** header `204ECF` with white Proxima Nova bold 12 pt; body Calibri 10 to 11 pt `0F172A` (first column bold) and `475569`; rows alternate `F8FAFC` and `FFFFFF`; borders `E2E8F0`.
@@ -548,9 +550,18 @@ QA-03 (revised), QA-08, and INV-19 to INV-25 close both gaps.
 
 ### K.2 Slides
 
-All five slides use layout `CUSTOM_16`, with the kicker `{PROJECT NAME} · TALENT TEAM ONBOARDING`. Capacities are maximums for the DECK-07 overflow row and the DECK-08 fit check.
+**Slide 1: Cover** (layout `CUSTOM_1`)
 
-**Slide 1: Project Charter**
+| Element | Content | Source (`TraceRef`) |
+| --- | --- | --- |
+| Title | `{Project Name}` | Kit · header table (Project Name) |
+| Subtitle | `Talent Team Onboarding · {Client Sponsor} · Start {Start Date}` (`Talent Team Onboarding` and `Start` are fixed labels) | Kit · header table (Client Sponsor); Workbook · Project Schedule title row 3 (Start Date) |
+
+Nothing else is placed on the cover. Talking points (2 to 4): who the deck is for (the Talent PM and the Talent Project Team) and how to use the notes; the project and client; the start date and whether it was provided or assumed. The cover title is exempt from the 8-word title limit (DECK-08), because it is the project's name.
+
+The five content slides use layout `CUSTOM_16`, with the kicker `{PROJECT NAME} · TALENT TEAM ONBOARDING`. Capacities are maximums for the DECK-07 overflow row and the DECK-08 fit check.
+
+**Slide 2: Project Charter**
 
 | Element | Content | Source (`TraceRef`) | Capacity |
 | --- | --- | --- | --- |
@@ -560,7 +571,7 @@ All five slides use layout `CUSTOM_16`, with the kicker `{PROJECT NAME} · TALEN
 
 Talking points: the purpose in one sentence; the contract type and governance tier; who leads delivery and how issues escalate; the start date and whether it was provided or assumed; the number of phases.
 
-**Slide 2: Workstreams, Milestones, Deliverables and Dates**
+**Slide 3: Workstreams, Milestones, Deliverables and Dates**
 
 A single table, one row per Workbook Project Schedule level 2 row, in Schedule order, grouped by workstream:
 
@@ -573,7 +584,7 @@ A single table, one row per Workbook Project Schedule level 2 row, in Schedule o
 
 Capacity: 12 table rows. Talking points: number of phases and the overall date span; each gate's predecessor chain (from the Workbook Predecessor column); the date basis (for example `SOW estimate, weeks 1–6`); checkpoints inside phases, if any.
 
-**Slide 3: Acceptance Criteria**
+**Slide 4: Acceptance Criteria**
 
 | Element | Content | Source | Capacity |
 | --- | --- | --- | --- |
@@ -582,7 +593,7 @@ Capacity: 12 table rows. Talking points: number of phases and the overall date s
 
 Talking points: acceptance is per milestone or per deliverable (WBS-04 mode); the evidence expected before submission; how rejection and rework work (Kit rework path); the number of deliverables whose criteria are still to be confirmed.
 
-**Slide 4: High-Risk Items**
+**Slide 5: High-Risk Items**
 
 Selection (deterministic): Workbook RAID Log rows of type Risk or Issue whose Rating (DECK-20) is `High`, ordered by Score descending, then RAID ID. If fewer than 3 qualify, add the next highest-scored Risks and Issues until there are 3. At most 6 rows; if more qualify, the last row is the `+N more` overflow row listing their RAID IDs. Contract clarifications and open questions have no Probability or Impact, so they are never selected.
 
@@ -595,9 +606,9 @@ Selection (deterministic): Workbook RAID Log rows of type Risk or Issue whose Ra
 | Response | Mitigation / Response, first clause | Workbook · RAID Log · Mitigation / Response |
 | Phase | Linked Milestone's workstream, or `Cross-phase` | Workbook · RAID Log · Workstream |
 
-Talking points: how many High items there are in total; the early-warning trigger of each shown item (Trigger / Early Warning column); who to raise new risks with (the escalation path from Slide 1's source).
+Talking points: how many High items there are in total; the early-warning trigger of each shown item (Trigger / Early Warning column); who to raise new risks with (the escalation path from Slide 2's source).
 
-**Slide 5: Client Collaboration**
+**Slide 6: Client Collaboration**
 
 Three cards:
 
@@ -625,9 +636,10 @@ Each placeholder is filled only with a traced value. A template whose value is m
 
 These follow from the oracle (Appendix D) and the Rev 7 ARC outputs, and are asserted by `test_deck_arc.py` alongside the deck snapshot:
 
-- **Slide 1:** Client Sponsor `Syngenta`; Contract Type `Fixed Bid`; Governance Tier `Partnered`; Start Date `2026-10-05 (Provided)`; Talent PM, Delivery Manager, and PMO Lead `To be confirmed` (no names supplied); phases P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch.
-- **Slide 2:** 4 gates, M1 to M4, one per phase, from 2026-10-05 to 2027-04-02; every deliverable ID in the Workbook appears exactly once.
-- **Slide 3:** every deliverable ID appears exactly once; acceptance is milestone-level.
-- **Slide 4:** RAID-01 (RSK-01), RAID-02 (RSK-02), RAID-05 (RSK-05), and RAID-07 (ISS-01), all rated High (RAID-07 is High Probability, Medium Impact).
-- **Slide 5:** 6 client stakeholders (5 shown, then `+1 more`); 7 communications items (COM-01 to COM-07).
+- **Slide 1 (Cover):** title `ARC Genomics Platform`; subtitle `Talent Team Onboarding · Syngenta · Start 2026-10-05`.
+- **Slide 2:** Client Sponsor `Syngenta`; Contract Type `Fixed Bid`; Governance Tier `Partnered`; Start Date `2026-10-05 (Provided)`; Talent PM, Delivery Manager, and PMO Lead `To be confirmed` (no names supplied); phases P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch.
+- **Slide 3:** 4 gates, M1 to M4, one per phase, from 2026-10-05 to 2027-04-02; every deliverable ID in the Workbook appears exactly once.
+- **Slide 4:** every deliverable ID appears exactly once; acceptance is milestone-level.
+- **Slide 5:** RAID-01 (RSK-01), RAID-02 (RSK-02), RAID-05 (RSK-05), and RAID-07 (ISS-01), all rated High (RAID-07 is High Probability, Medium Impact).
+- **Slide 6:** 6 client stakeholders (5 shown, then `+1 more`); 7 communications items (COM-01 to COM-07).
 - **Everywhere:** no `ACT-` tags, no readiness score, no G-01, and 100% of elements traced.
