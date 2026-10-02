@@ -1,0 +1,21 @@
+{
+  "$schema": "./schema/fixture_oracle.schema.json",
+  "fixture": "arc_application_implementation",
+  "extends_reference_phase_map_from": "arc",
+  "gate_count": 4,
+  "award_date_stated_in_sow": true,
+  "award_date": "2026-10-07",
+  "milestone_external_dates": {
+    "M1": "2026-11-17",
+    "M2": "2027-01-26",
+    "M3": "2027-03-02",
+    "M4": "2027-04-06"
+  },
+  "named_delivery_manager": "Saadia Iqbal",
+  "named_client_contact": "Mike Magwire",
+  "contract_wide_review_window": "5 business days from notice of milestone completion",
+  "milestone_description_phrasing": "wrapped",
+  "checkpoint_phases": {
+    "CP-01": "P1"
+  }
+}
