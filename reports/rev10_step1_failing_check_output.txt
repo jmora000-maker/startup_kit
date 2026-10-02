@@ -1,0 +1,299 @@
+FAILED: Found 298 invariant violation(s) in 'output\_rev9':
+  - INV-26 [Deck]: TraceRef artifact 'Project Delivery Workbook' must be 'Workbook' (DECK-04)
+  - INV-26 [Deck]: TraceRef artifact 'Startup Kit' must be 'Kit' (DECK-04)
+  - INV-26 [Deck]: 120 manifest entries lack a shape name (DECK-06), for example slide 1 element 'Title'
+  - INV-26 [Deck]: Slide 1 element 'Title': TraceRef (Kit / Project Charter / Project Name / Project Name) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 1 element 'Client Sponsor': TraceRef (Kit / Project Charter / Client Sponsor / Client Sponsor) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 1 element 'Start Date': TraceRef (Workbook / Project Schedule / Title Row 3 / Start Date) does not resolve: key 'Title Row 3' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Client Sponsor': TraceRef (Kit / Project Charter / Client Sponsor / Client Sponsor) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Contract Type': TraceRef (Kit / Project Charter / Contract Type / Contract Type) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Governance Tier': TraceRef (Kit / Project Charter / Governance Tier / Governance Tier) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Start Date': TraceRef (Workbook / Project Schedule / Title Row 3 / Start Date) does not resolve: key 'Title Row 3' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Talent PM': TraceRef (Kit / Project Charter / Talent PM / Talent PM) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: Delivery Manager': TraceRef (Kit / Project Charter / Delivery Manager / Delivery Manager) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Key Fact: PMO Lead': TraceRef (Kit / Project Charter / PMO Lead / PMO Lead) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Project Purpose': TraceRef (Kit / Project Charter / Project Purpose / Project Purpose) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Delivery Model': TraceRef (Kit / Project Charter / Delivery Model / Delivery Model) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Escalation Path': TraceRef (Kit / Project Charter / Escalation Path / Escalation Path) does not resolve: Kit section 'Project Charter' not found
+  - INV-26 [Deck]: Slide 2 element 'Phase: P1 Foundation': TraceRef (Workbook / Project Schedule / P1 Foundation / Workstream) does not resolve: key 'P1 Foundation' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Phase: P2a Services and Data': TraceRef (Workbook / Project Schedule / P2a Services and Data / Workstream) does not resolve: key 'P2a Services and Data' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Phase: P2b Application Surface': TraceRef (Workbook / Project Schedule / P2b Application Surface / Workstream) does not resolve: key 'P2b Application Surface' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Phase: P3 Launch': TraceRef (Workbook / Project Schedule / P3 Launch / Workstream) does not resolve: key 'P3 Launch' not found in Workbook sheet 'Project Schedule'
+  - INV-26 [Deck]: Slide 2 element 'Exclusion 1': TraceRef (Kit / SOW Interpretation Summary / Exclusion 1 / Out of Scope) does not resolve: key 'Exclusion 1' not found in Kit section 'SOW Interpretation Summary'
+  - INV-26 [Deck]: Slide 2 element 'Exclusion 2': TraceRef (Kit / SOW Interpretation Summary / Exclusion 2 / Out of Scope) does not resolve: key 'Exclusion 2' not found in Kit section 'SOW Interpretation Summary'
+  - INV-26 [Deck]: Slide 2 element 'Exclusion 3': TraceRef (Kit / SOW Interpretation Summary / Exclusion 3 / Out of Scope) does not resolve: key 'Exclusion 3' not found in Kit section 'SOW Interpretation Summary'
+  - INV-26 [Deck]: Slide 2 element 'Exclusion 4': TraceRef (Kit / SOW Interpretation Summary / Exclusion 4 / Out of Scope) does not resolve: key 'Exclusion 4' not found in Kit section 'SOW Interpretation Summary'
+  - INV-26 [Deck]: Slide 3 element 'R1C2': displayed value 'M1: P1 Foundation accepted' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R1C3': displayed value '2026-10-05 – 2026-11-13' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R1C4': displayed value 'DEL-01 Micro-Frontend Shell and Azure AD/MSAL Authentication DEL-02 Shell and Authentication E2E Test Harness DEL-03 Pipeline Quality Gates and Deployment Smoke DEL-04 Authentication Negative-Test Suite and Security Scan DEL-05 Snowflake Data Model and Data Governance' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R2C2': displayed value 'M2: P2a Services and Data accepted' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R2C3': displayed value '2026-11-16 – 2027-01-22' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R2C4': displayed value 'DEL-06 FastAPI Search/Detail Endpoints and Asynchronous Query DEL-07 Backend Integration/Load Tests and Performance Engineering DEL-08 OneGWAS Direct-Write Integration and Test Suite DEL-09 Data Ingestion and Migration Validation DEL-10 PubMed Extraction and Trait Taxonomy Validation' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R3C2': displayed value 'M3: P2b Application Surface accepted' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R3C3': displayed value '2027-01-25 – 2027-02-26' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R3C4': displayed value 'DEL-11 ARC Faceted Search DEL-12 Haplotype Search, Visualization and API DEL-13 Nomenclature Service DEL-14 P2b Test Suites (Frontend, Haplotype, Nomenclature)' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R4C2': displayed value 'M4: P3 Launch accepted' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R4C3': displayed value '2027-03-01 – 2027-04-02' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 3 element 'R4C4': displayed value 'DEL-15 Launch Test Suites and Test Data/Fixtures DEL-16 UAT Execution and Pre-Launch Hardening DEL-17 Production Smoke Tests and 48-Hour Defect DEL-18 MTA Store Parity and Usage-Zero Confirmation DEL-19 Training Materials and User Documentation' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 1': displayed value 'Confirm: Client provides design system access (code library, tokens, design files, guidelines, named contact) by the...' contains an ellipsis (DECK-05)
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 1': TraceRef (Workbook / WBS / M1 Step 1 / Task Name) does not resolve: key 'M1 Step 1' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 2': TraceRef (Workbook / WBS / M1 Step 2 / Task Name) does not resolve: key 'M1 Step 2' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 3': TraceRef (Workbook / WBS / M1 Step 3 / Task Name) does not resolve: key 'M1 Step 3' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 4': TraceRef (Workbook / WBS / M1 Step 4 / Task Name) does not resolve: key 'M1 Step 4' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 5': TraceRef (Workbook / WBS / M1 Step 5 / Task Name) does not resolve: key 'M1 Step 5' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 6': displayed value 'Build HS-4762: Micro-frontend shell with global navigation, routing, built with Client's design system and sharing...' contains an ellipsis (DECK-05)
+  - INV-26 [Deck]: Slide 4 element 'Acceptance Step 6': TraceRef (Workbook / WBS / M1 Step 6 / Task Name) does not resolve: key 'M1 Step 6' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'Review Window': displayed value 'Not specified; reviewed at the Milestone Acceptance Review' is cut mid-phrase (not at a sentence or clause boundary) (DECK-05)
+  - INV-26 [Deck]: Slide 4 element 'R1C3': TraceRef (Workbook / WBS / DEL-01 / Milestone ID) does not resolve: key 'DEL-01' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R2C3': TraceRef (Workbook / WBS / DEL-02 / Milestone ID) does not resolve: key 'DEL-02' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R3C3': TraceRef (Workbook / WBS / DEL-03 / Milestone ID) does not resolve: key 'DEL-03' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R4C3': TraceRef (Workbook / WBS / DEL-04 / Milestone ID) does not resolve: key 'DEL-04' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R5C2': displayed value 'Targets are referential integrity 100%, representative query patterns validated, controls audited' is cut mid-phrase (not at a sentence or clause boundary) (DECK-05)
+  - INV-26 [Deck]: Slide 4 element 'R5C3': TraceRef (Workbook / WBS / DEL-05 / Milestone ID) does not resolve: key 'DEL-05' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R6C3': TraceRef (Workbook / WBS / DEL-06 / Milestone ID) does not resolve: key 'DEL-06' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R7C3': TraceRef (Workbook / WBS / DEL-07 / Milestone ID) does not resolve: key 'DEL-07' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R8C3': TraceRef (Workbook / WBS / DEL-08 / Milestone ID) does not resolve: key 'DEL-08' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R9C3': TraceRef (Workbook / WBS / DEL-09 / Milestone ID) does not resolve: key 'DEL-09' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R10C3': TraceRef (Workbook / WBS / DEL-10 / Milestone ID) does not resolve: key 'DEL-10' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R11C3': TraceRef (Workbook / WBS / DEL-11 / Milestone ID) does not resolve: key 'DEL-11' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R12C3': TraceRef (Workbook / WBS / DEL-12 / Milestone ID) does not resolve: key 'DEL-12' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 4 element 'R13C3': TraceRef (Workbook / WBS / DEL-13 / Milestone ID) does not resolve: key 'DEL-13' not found in Workbook sheet 'WBS'
+  - INV-26 [Deck]: Slide 5 element 'R1C1': displayed value 'RAID-01 (RSK-01)' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R1C2': displayed value 'Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing,' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R1C2': displayed value 'Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing,' is cut at a comma (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R1C2': displayed value 'Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing,' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R1C3': TraceRef (Workbook / RAID Log / RAID-01 / Probability and Impact) does not resolve: field 'Probability and Impact' not found for key 'RAID-01' in Workbook sheet 'RAID Log'
+  - INV-26 [Deck]: Slide 5 element 'R2C1': displayed value 'RAID-02 (RSK-02)' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R2C2': displayed value 'Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R2C2': displayed value 'Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R2C3': TraceRef (Workbook / RAID Log / RAID-02 / Probability and Impact) does not resolve: field 'Probability and Impact' not found for key 'RAID-02' in Workbook sheet 'RAID Log'
+  - INV-26 [Deck]: Slide 5 element 'R3C1': displayed value 'RAID-05 (RSK-05)' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R3C3': TraceRef (Workbook / RAID Log / RAID-05 / Probability and Impact) does not resolve: field 'Probability and Impact' not found for key 'RAID-05' in Workbook sheet 'RAID Log'
+  - INV-26 [Deck]: Slide 5 element 'R4C1': displayed value 'RAID-07 (ISS-01)' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R4C2': displayed value 'The number of ARC-specific design system components included in the estimate is still undefined ([N]),' is cut at a comma (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R4C2': displayed value 'The number of ARC-specific design system components included in the estimate is still undefined ([N]),' ends at a comma (DECK-05)
+  - INV-26 [Deck]: Slide 5 element 'R4C3': TraceRef (Workbook / RAID Log / RAID-07 / Probability and Impact) does not resolve: field 'Probability and Impact' not found for key 'RAID-07' in Workbook sheet 'RAID Log'
+  - INV-26 [Deck]: Slide 6 element 'Client Role 1': TraceRef (Kit / Stakeholder and Responsibility Model / Client Contact (designated) / Role and Decision Rights) does not resolve: field 'Role and Decision Rights' not found for key 'Client Contact (designated)' in Kit section 'Stakeholder and Responsibility Model'
+  - INV-26 [Deck]: Slide 6 element 'Client Role 2': TraceRef (Kit / Stakeholder and Responsibility Model / Client Designated Milestone Approvers / Role and Decision Rights) does not resolve: field 'Role and Decision Rights' not found for key 'Client Designated Milestone Approvers' in Kit section 'Stakeholder and Responsibility Model'
+  - INV-26 [Deck]: Slide 6 element 'Client Role 3': displayed value 'Client Platform and Data Tier Owners (Client Delivery Counterpart): Own the platform layer (Terraform' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Role 3': TraceRef (Kit / Stakeholder and Responsibility Model / Client Platform and Data Tier Owners / Role and Decision Rights) does not resolve: field 'Role and Decision Rights' not found for key 'Client Platform and Data Tier Owners' in Kit section 'Stakeholder and Responsibility Model'
+  - INV-26 [Deck]: Slide 6 element 'Client Role 4': TraceRef (Kit / Stakeholder and Responsibility Model / Client Domain Experts and Domain Users / Role and Decision Rights) does not resolve: field 'Role and Decision Rights' not found for key 'Client Domain Experts and Domain Users' in Kit section 'Stakeholder and Responsibility Model'
+  - INV-26 [Deck]: Slide 6 element 'Client Role 5': displayed value 'Client Scientist UAT Groups (UAT Participants): Run UAT after each milestone (limited to two' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Role 5': TraceRef (Kit / Stakeholder and Responsibility Model / Client Scientist UAT Groups / Role and Decision Rights) does not resolve: field 'Role and Decision Rights' not found for key 'Client Scientist UAT Groups' in Kit section 'Stakeholder and Responsibility Model'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 1': TraceRef (Kit / Communications and Reporting Plan / Kickoff Call / Name and Cadence) does not resolve: key 'Kickoff Call' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 2': TraceRef (Kit / Communications and Reporting Plan / Daily Standups / Name and Cadence) does not resolve: key 'Daily Standups' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 3': TraceRef (Kit / Communications and Reporting Plan / Biweekly Sprint Demo / Name and Cadence) does not resolve: key 'Biweekly Sprint Demo' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 4': TraceRef (Kit / Communications and Reporting Plan / Weekly Status Meeting / Name and Cadence) does not resolve: key 'Weekly Status Meeting' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 5': TraceRef (Kit / Communications and Reporting Plan / Weekly Status Report / Name and Cadence) does not resolve: key 'Weekly Status Report' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 6': TraceRef (Kit / Communications and Reporting Plan / Milestone Acceptance Review / Name and Cadence) does not resolve: key 'Milestone Acceptance Review' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Working Rhythm 7': TraceRef (Kit / Communications and Reporting Plan / Ad-Hoc Working Sessions / Name and Cadence) does not resolve: key 'Ad-Hoc Working Sessions' not found in Kit section 'Communications and Reporting Plan'
+  - INV-26 [Deck]: Slide 6 element 'Client Prerequisite 1': displayed value 'M1: Client provides design system access (code library, tokens, design files, guidelines' leaves an unbalanced bracket, parenthesis, or quotation mark (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Prerequisite 1': displayed value 'M1: Client provides design system access (code library, tokens, design files, guidelines' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Prerequisite 2': displayed value 'M2: Client completes Snowflake data model story (HS-4781) before P2a begins' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Prerequisite 3': displayed value 'M3: Client provides UI/UX designs for the Milestone 3 screens by the Start' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 6 element 'Client Prerequisite 4': displayed value 'M4: Client scientist UAT groups available; Client maintains staging and production environments' is not the source text or a prefix of it (DECK-05)
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Client Sponsor'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Contract Type'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Governance Tier'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Start Date'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Talent PM'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'Delivery Manager'
+  - INV-26 [Deck]: Slide 2 shape 'Table 5' text has no TraceRef: 'PMO Lead'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 7' text has no TraceRef: 'Purpose and delivery model'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 7' text has no TraceRef: 'Project Purpose'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 7' text has no TraceRef: 'Delivery Model & Governance'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 7' text has no TraceRef: 'Escalation Path'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 9' text has no TraceRef: 'Phases and boundaries'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 9' text has no TraceRef: 'Delivery Phases'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 9' text has no TraceRef: 'Out of Scope'
+  - INV-26 [Deck]: Slide 2 shape 'TextBox 9' text has no TraceRef: '• +4 more (see Startup Kit)'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-01 Micro-Frontend Shell and Azure AD/MSAL Authentication'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-02 Shell and Authentication E2E Test Harness'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-03 Pipeline Quality Gates and Deployment Smoke'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-04 Authentication Negative-Test Suite and Security Scan'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-05 Snowflake Data Model and Data Governance'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-06 FastAPI Search/Detail Endpoints and Asynchronous Query'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-07 Backend Integration/Load Tests and Performance Engineering'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-08 OneGWAS Direct-Write Integration and Test Suite'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-09 Data Ingestion and Migration Validation'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-10 PubMed Extraction and Trait Taxonomy Validation'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-11 ARC Faceted Search'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-12 Haplotype Search, Visualization and API'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-13 Nomenclature Service'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-14 P2b Test Suites (Frontend, Haplotype, Nomenclature)'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-15 Launch Test Suites and Test Data/Fixtures'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-16 UAT Execution and Pre-Launch Hardening'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-17 Production Smoke Tests and 48-Hour Defect'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-18 MTA Store Parity and Usage-Zero Confirmation'
+  - INV-26 [Deck]: Slide 3 shape 'Table 3' text has no TraceRef: 'DEL-19 Training Materials and User Documentation'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: 'Milestone Acceptance Process'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '1. Confirm: Client provides design system access (code library, tokens, design files, guidelines, named contact) by the...'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '2. Confirm: Client IdP team available for Azure AD / MSAL authentication'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '3. Confirm: Client-owned stories and code dependencies completed before related Toptal work begins'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '4. Confirm: Coding and delivery documentation standards provided on or before the start date'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '5. Refine stories and acceptance criteria'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: '6. Build HS-4762: Micro-frontend shell with global navigation, routing, built with Client's design system and sharing...'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: 'Governance Parameters'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: 'Review Window: Not specified; reviewed at the Milestone Acceptance Review'
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' text has no TraceRef: 'Client Approver: Client's designated Milestone Sign-Off approver (name not specified)'
+  - INV-26 [Deck]: Slide 4 shape 'Table 5' text has no TraceRef: '+6 more: DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19 (see Startup Kit · Deliverables and Acceptance Matrix)'
+  - INV-26 [Deck]: Slide 6 shape 'TextBox 4' text has no TraceRef: 'Client roles and approvers'
+  - INV-26 [Deck]: Slide 6 shape 'TextBox 4' text has no TraceRef: '• +1 more (see Startup Kit)'
+  - INV-26 [Deck]: Slide 6 shape 'TextBox 8' text has no TraceRef: 'What we need from the client'
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R1C3 shows a shortened name 'Pipeline Quality Gates and Deployment Smoke' for 'Pipeline Quality Gates and Deployment Smoke Checks' (DECK-05)
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R1C3 shows a shortened name 'Snowflake Data Model and Data Governance' for 'Snowflake Data Model and Data Governance Validation' (DECK-05)
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R2C3 shows a shortened name 'FastAPI Search/Detail Endpoints and Asynchronous Query' for 'FastAPI Search/Detail Endpoints and Asynchronous Query Processing' (DECK-05)
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R2C3 shows a shortened name 'Backend Integration/Load Tests and Performance Engineering' for 'Backend Integration/Load Tests and Performance Engineering Spike' (DECK-05)
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R4C3 shows a shortened name 'Production Smoke Tests and 48-Hour Defect' for 'Production Smoke Tests and 48-Hour Defect Watch' (DECK-05)
+  - INV-26 [Deck]: Slide 3 table 'Table 3' R4C3 shows a shortened name 'MTA Store Parity and Usage-Zero Confirmation' for 'MTA Store Parity and Usage-Zero Confirmation Report' (DECK-05)
+  - INV-26 [Deck]: Slide 4 shape 'TextBox 4' shows a shortened name 'Milestone Acceptance' for 'Milestone Acceptance Review' (DECK-05)
+  - INV-26 [Deck]: Slide 2 talking point has no trace manifest entry (DECK-09): 'Project operates under Fixed Bid contract terms and Partnered governance.'
+  - INV-26 [Deck]: Slide 2 talking point has no trace manifest entry (DECK-09): 'Delivery leadership: PMO Lead To be confirmed, Delivery Manager To be confirmed, Talent PM To be confirmed.'
+  - INV-26 [Deck]: Slide 2 talking point has no trace manifest entry (DECK-09): 'Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform..'
+  - INV-26 [Deck]: Slide 2 talking point has no trace manifest entry (DECK-09): 'Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.'
+  - INV-26 [Deck]: Slide 2 talking point has no trace manifest entry (DECK-09): 'Delivery spans 4 phases from 2026-10-05 to 2027-04-02.'
+  - INV-26 [Deck]: Slide 3 talking point has no trace manifest entry (DECK-09): 'The project runs in 4 phases, from 2026-10-05 to 2027-04-02.'
+  - INV-26 [Deck]: Slide 3 talking point has no trace manifest entry (DECK-09): 'Delivery commits to 4 milestones across 4 workstreams.'
+  - INV-26 [Deck]: Slide 3 talking point has no trace manifest entry (DECK-09): 'All 19 deliverables are mapped to baseline milestone dates.'
+  - INV-26 [Deck]: Slide 3 talking point has no trace manifest entry (DECK-09): 'Date basis: SOW estimate, weeks 1–6.'
+  - INV-26 [Deck]: Slide 4 talking point has no trace manifest entry (DECK-09): 'Acceptance is conducted at milestone level following defined quality review gates.'
+  - INV-26 [Deck]: Slide 4 talking point has no trace manifest entry (DECK-09): 'Milestone review window is Not specified; reviewed at the Milestone Acceptance Review with client approver Client's designated Milestone Sign-Off approver (name not specified).'
+  - INV-26 [Deck]: Slide 4 talking point has no trace manifest entry (DECK-09): 'All 19 deliverable acceptance criteria must be verified with required completion evidence.'
+  - INV-26 [Deck]: Slide 4 talking point has no trace manifest entry (DECK-09): 'Submissions follow standard verification and rework remediation workflows.'
+  - INV-26 [Deck]: Slide 5 talking point has no trace manifest entry (DECK-09): 'Active RAID tracking monitors 4 items rated High severity.'
+  - INV-26 [Deck]: Slide 5 talking point has no trace manifest entry (DECK-09): 'First priority risk is RAID-01: Latency and render-time targets may be missed because they depend.'
+  - INV-26 [Deck]: Slide 5 talking point has no trace manifest entry (DECK-09): 'Mitigations and proactive response ownership are assigned across delivery phases.'
+  - INV-26 [Deck]: Slide 5 talking point has no trace manifest entry (DECK-09): 'New risks or issues should be raised via the delivery escalation path.'
+  - INV-26 [Deck]: Slide 6 talking point has no trace manifest entry (DECK-09): 'Engagement governance establishes regular cadence with 6 client stakeholders.'
+  - INV-26 [Deck]: Slide 6 talking point has no trace manifest entry (DECK-09): 'Communications rhythm includes 7 scheduled governance touchpoints.'
+  - INV-26 [Deck]: Slide 6 talking point has no trace manifest entry (DECK-09): 'First client prerequisite is required by M1: Client provides design system access (code library.'
+  - INV-26 [Deck]: Slide 6 talking point has no trace manifest entry (DECK-09): 'Active alignment ensures clear decision rights and rapid resolution of open items.'
+  - INV-31 [Deck]: Slide 2 speaker notes has doubled punctuation '..': '• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform..'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R1C3 shows a shortened name 'Pipeline Quality Gates and Deployment Smoke' for 'Pipeline Quality Gates and Deployment Smoke Checks'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R1C3 shows a shortened name 'Snowflake Data Model and Data Governance' for 'Snowflake Data Model and Data Governance Validation'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R2C3 shows a shortened name 'FastAPI Search/Detail Endpoints and Asynchronous Query' for 'FastAPI Search/Detail Endpoints and Asynchronous Query Processing'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R2C3 shows a shortened name 'Backend Integration/Load Tests and Performance Engineering' for 'Backend Integration/Load Tests and Performance Engineering Spike'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R4C3 shows a shortened name 'Production Smoke Tests and 48-Hour Defect' for 'Production Smoke Tests and 48-Hour Defect Watch'
+  - INV-31 [Deck]: Slide 3 table 'Table 3' R4C3 shows a shortened name 'MTA Store Parity and Usage-Zero Confirmation' for 'MTA Store Parity and Usage-Zero Confirmation Report'
+  - INV-31 [Deck]: Slide 4 shape 'TextBox 4' shows a shortened name 'Milestone Acceptance' for 'Milestone Acceptance Review'
+  - INV-31 [Deck]: Slide 4 shape 'TextBox 4' contains an ellipsis: '1. Confirm: Client provides design system access (code library, tokens, design files, guidelines, named contact) by the...'
+  - INV-31 [Deck]: Slide 4 shape 'TextBox 4' has doubled punctuation '..': '1. Confirm: Client provides design system access (code library, tokens, design files, guidelines, named contact) by the...'
+  - INV-31 [Deck]: Slide 4 shape 'TextBox 4' contains an ellipsis: '6. Build HS-4762: Micro-frontend shell with global navigation, routing, built with Client's design system and sharing...'
+  - INV-31 [Deck]: Slide 4 shape 'TextBox 4' has doubled punctuation '..': '6. Build HS-4762: Micro-frontend shell with global navigation, routing, built with Client's design system and sharing...'
+  - INV-31 [Deck]: Slide 5 table 'Table 3' R1C1 has an unbalanced bracket, parenthesis, or quotation mark: 'Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing,'
+  - INV-31 [Deck]: Slide 5 table 'Table 3' R2C1 has an unbalanced bracket, parenthesis, or quotation mark: 'Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%'
+  - INV-31 [Deck]: Slide 5 table 'Table 3' R2C1 has doubled punctuation '.,': 'Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%'
+  - INV-31 [Deck]: Slide 5 speaker notes uses evaluative filler 'proactive' (DECK-09): '• Mitigations and proactive response ownership are assigned across delivery phases.'
+  - INV-31 [Deck]: Slide 6 shape 'TextBox 4' has an unbalanced bracket, parenthesis, or quotation mark: '• Client Platform and Data Tier Owners (Client Delivery Counterpart): Own the platform layer (Terraform'
+  - INV-31 [Deck]: Slide 6 shape 'TextBox 4' has an unbalanced bracket, parenthesis, or quotation mark: '• Client Scientist UAT Groups (UAT Participants): Run UAT after each milestone (limited to two'
+  - INV-31 [Deck]: Slide 6 shape 'TextBox 8' has an unbalanced bracket, parenthesis, or quotation mark: '• M1: Client provides design system access (code library, tokens, design files, guidelines'
+  - INV-31 [Deck]: Slide 6 speaker notes has an unbalanced bracket, parenthesis, or quotation mark: '• First client prerequisite is required by M1: Client provides design system access (code library.'
+  - INV-31 [Deck]: Slide 6 speaker notes uses evaluative filler 'Active alignment' (DECK-09): '• Active alignment ensures clear decision rights and rapid resolution of open items.'
+  - INV-31 [Deck]: Slide 2 talking point has no trace manifest entry: 'Project operates under Fixed Bid contract terms and Partnered governance.'
+  - INV-31 [Deck]: Slide 2 talking point has no trace manifest entry: 'Delivery leadership: PMO Lead To be confirmed, Delivery Manager To be confirmed, Talent PM To be confirmed.'
+  - INV-31 [Deck]: Slide 2 talking point has no trace manifest entry: 'Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform..'
+  - INV-31 [Deck]: Slide 2 talking point has no trace manifest entry: 'Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.'
+  - INV-31 [Deck]: Slide 2 talking point has no trace manifest entry: 'Delivery spans 4 phases from 2026-10-05 to 2027-04-02.'
+  - INV-31 [Deck]: Slide 3 talking point has no trace manifest entry: 'The project runs in 4 phases, from 2026-10-05 to 2027-04-02.'
+  - INV-31 [Deck]: Slide 3 talking point has no trace manifest entry: 'Delivery commits to 4 milestones across 4 workstreams.'
+  - INV-31 [Deck]: Slide 3 talking point has no trace manifest entry: 'All 19 deliverables are mapped to baseline milestone dates.'
+  - INV-31 [Deck]: Slide 3 talking point has no trace manifest entry: 'Date basis: SOW estimate, weeks 1–6.'
+  - INV-31 [Deck]: Slide 4 talking point has no trace manifest entry: 'Acceptance is conducted at milestone level following defined quality review gates.'
+  - INV-31 [Deck]: Slide 4 talking point has no trace manifest entry: 'Milestone review window is Not specified; reviewed at the Milestone Acceptance Review with client approver Client's designated Milestone Sign-Off approver (name not specified).'
+  - INV-31 [Deck]: Slide 4 talking point has no trace manifest entry: 'All 19 deliverable acceptance criteria must be verified with required completion evidence.'
+  - INV-31 [Deck]: Slide 4 talking point has no trace manifest entry: 'Submissions follow standard verification and rework remediation workflows.'
+  - INV-31 [Deck]: Slide 5 talking point has no trace manifest entry: 'Active RAID tracking monitors 4 items rated High severity.'
+  - INV-31 [Deck]: Slide 5 talking point has no trace manifest entry: 'First priority risk is RAID-01: Latency and render-time targets may be missed because they depend.'
+  - INV-31 [Deck]: Slide 5 talking point has no trace manifest entry: 'Mitigations and proactive response ownership are assigned across delivery phases.'
+  - INV-31 [Deck]: Slide 5 talking point has no trace manifest entry: 'New risks or issues should be raised via the delivery escalation path.'
+  - INV-31 [Deck]: Slide 6 talking point has no trace manifest entry: 'Engagement governance establishes regular cadence with 6 client stakeholders.'
+  - INV-31 [Deck]: Slide 6 talking point has no trace manifest entry: 'Communications rhythm includes 7 scheduled governance touchpoints.'
+  - INV-31 [Deck]: Slide 6 talking point has no trace manifest entry: 'First client prerequisite is required by M1: Client provides design system access (code library.'
+  - INV-31 [Deck]: Slide 6 talking point has no trace manifest entry: 'Active alignment ensures clear decision rights and rapid resolution of open items.'
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R0C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R0C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R1C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R1C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R2C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R2C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R3C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R3C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R4C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R4C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R5C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R5C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R6C0 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 table 'Table 5': R6C1 font 9.5 pt is below the 10 pt minimum
+  - INV-32 [Deck]: Slide 2 shapes 'TextBox 4' and 'Table 5' overlap
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 4' paragraph 1 has no explicit font size: 'Key facts'
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 4' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 4' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 1 has no explicit font size: 'Purpose and delivery model'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 2 has no explicit font size: 'Project Purpose'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 3 has no explicit font size: 'Build part of the ARC application and automate its'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 4 has no explicit font size: 'Delivery Model & Governance'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 5 has no explicit font size: 'Toptal Talent Team (Agile/Milestone Hybrid)'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 6 has no explicit font size: 'Escalation Path'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 7' paragraph 7 has no explicit font size: 'Talent PM / Delivery Manager -> PMO Lead -> Direct'
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 7' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 7' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 1 has no explicit font size: 'Phases and boundaries'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 2 has no explicit font size: 'Delivery Phases'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 3 has no explicit font size: '• P1 Foundation'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 4 has no explicit font size: '• P2a Services and Data'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 5 has no explicit font size: '• P2b Application Surface'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 6 has no explicit font size: '• P3 Launch'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 7 has no explicit font size: 'Out of Scope'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 8 has no explicit font size: '• Platform infrastructure and DevOps: environment/'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 9 has no explicit font size: '• Security design, threat modeling, platform harde'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 10 has no explicit font size: '• Architecture and design work: shell architecture'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 11 has no explicit font size: '• Snowflake data model design, schema DDL, haploty'
+  - INV-32 [Deck]: Slide 2 text frame 'TextBox 9' paragraph 12 has no explicit font size: '• +4 more (see Startup Kit)'
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 9' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 2 card text frame 'TextBox 9' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 3 shape 'Table 3' lies outside the content area (x 0.83-12.50, y 1.70-7.02; allowed x 0.83-12.5, y 1.7-6.7)
+  - INV-32 [Deck]: Slide 4 shape 'Table 5' lies outside the content area (x 4.81-12.50, y 1.70-9.14; allowed x 0.83-12.5, y 1.7-6.7)
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 1 has no explicit font size: 'How acceptance works'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 2 has no explicit font size: 'Milestone Acceptance Process'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 3 has no explicit font size: '1. Confirm: Client provides design system access ('
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 4 has no explicit font size: '2. Confirm: Client IdP team available for Azure AD'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 5 has no explicit font size: '3. Confirm: Client-owned stories and code dependen'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 6 has no explicit font size: '4. Confirm: Coding and delivery documentation stan'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 7 has no explicit font size: '5. Refine stories and acceptance criteria'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 8 has no explicit font size: '6. Build HS-4762: Micro-frontend shell with global'
+  - INV-32 [Deck]: Slide 4 text frame 'TextBox 4' paragraph 9 has no explicit font size: 'Governance Parameters'
+  - INV-32 [Deck]: Slide 4 card text frame 'TextBox 4' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 4 card text frame 'TextBox 4' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 1 has no explicit font size: 'Client roles and approvers'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 2 has no explicit font size: '• Client Contact (designated) (Client Sponsor / Ap'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 3 has no explicit font size: '• Client Designated Milestone Approvers (Client Ap'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 4 has no explicit font size: '• Client Platform and Data Tier Owners (Client Del'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 5 has no explicit font size: '• Client Domain Experts and Domain Users (Client S'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 6 has no explicit font size: '• Client Scientist UAT Groups (UAT Participants): '
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 4' paragraph 7 has no explicit font size: '• +1 more (see Startup Kit)'
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 4' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 4' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 1 has no explicit font size: 'Working rhythm'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 2 has no explicit font size: '• Kickoff Call: One-time'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 3 has no explicit font size: '• Daily Standups: Daily'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 4 has no explicit font size: '• Biweekly Sprint Demo: Biweekly (every sprint)'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 5 has no explicit font size: '• Weekly Status Meeting: Weekly'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 6 has no explicit font size: '• Weekly Status Report: Weekly'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 7 has no explicit font size: '• Milestone Acceptance Review: At the end of each '
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 6' paragraph 8 has no explicit font size: '• Ad-Hoc Working Sessions: As needed'
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 6' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 6' must have word wrap on, autofit off, and top anchor
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 8' paragraph 1 has no explicit font size: 'What we need from the client'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 8' paragraph 2 has no explicit font size: '• M1: Client provides design system access (code l'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 8' paragraph 3 has no explicit font size: '• M2: Client completes Snowflake data model story '
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 8' paragraph 4 has no explicit font size: '• M3: Client provides UI/UX designs for the Milest'
+  - INV-32 [Deck]: Slide 6 text frame 'TextBox 8' paragraph 5 has no explicit font size: '• M4: Client scientist UAT groups available; Clien'
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 8' is not inset 0.2 in from its card
+  - INV-32 [Deck]: Slide 6 card text frame 'TextBox 8' must have word wrap on, autofit off, and top anchor
+  - INV-30 [Workbook]: RAID-01 (RSK-01) Mitigation / Response is '' but the Kit RAID Log says 'Use query observability (HS-4942) to attribute misses and report Client-owned causes for remediation' (RAID-09)
+  - INV-30 [Workbook]: RAID-02 (RSK-02) Mitigation / Response is '' but the Kit RAID Log says 'Report defects early, agree Client remediation timelines, and manage re-runs beyond the first through Change Order' (RAID-09)
+  - INV-30 [Workbook]: RAID-03 (RSK-03) Mitigation / Response is '' but the Kit RAID Log says 'Ask Client for advance notice of changes and raise a Change Order for resulting rework' (RAID-09)
+  - INV-30 [Workbook]: RAID-04 (RSK-04) Mitigation / Response is '' but the Kit RAID Log says 'Agree UAT scope, scientist group availability, and entry criteria before each run' (RAID-09)
+  - INV-30 [Workbook]: RAID-05 (RSK-05) Mitigation / Response is '' but the Kit RAID Log says 'Include forward-looking risk assessment at each Milestone Acceptance Review and track critical path weekly' (RAID-09)
+  - INV-30 [Workbook]: RAID-06 (RSK-06) Mitigation / Response is '' but the Kit RAID Log says 'Review holiday calendars with the Client at kickoff and plan around known breaks' (RAID-09)
+  - INV-30 [Workbook]: RAID-07 (ISS-01) Mitigation / Response is '' but the Kit RAID Log says 'Agree and document the component count with the Client at kickoff; additional components go through Change Order' (RAID-09)

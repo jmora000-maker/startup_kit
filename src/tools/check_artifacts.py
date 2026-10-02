@@ -12,6 +12,9 @@ import docx
 import openpyxl
 import pptx
 
+from src.tools.invariant_violation import InvariantViolation
+from src.tools import deck_checks
+
 logger = logging.getLogger(__name__)
 
 READINESS_REGEX = re.compile(
@@ -31,17 +34,6 @@ VALID_CONTRACT_REF_EXT_REGEX = re.compile(r'\.[a-zA-Z0-9]{2,4}\b', re.IGNORECASE
 EXHIBIT_WORD_REGEX = re.compile(r'\b(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)', re.IGNORECASE)
 SECTION_WORD_REGEX = re.compile(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', re.IGNORECASE)
 SOW_REF_REGEX = re.compile(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', re.IGNORECASE)
-
-
-class InvariantViolation:
-    def __init__(self, inv_id: str, message: str, artifact: str = ""):
-        self.inv_id = inv_id
-        self.message = message
-        self.artifact = artifact
-
-    def __str__(self):
-        art = f" [{self.artifact}]" if self.artifact else ""
-        return f"{self.inv_id}{art}: {self.message}"
 
 
 def load_oracle_for_folder(folder_path: Path, project_name: str = "") -> Optional[Dict[str, Any]]:
@@ -211,124 +203,17 @@ def check_deck_invariants(
             if len(s5_tab.rows) - 1 > 6:
                 violations.append(InvariantViolation("INV-27", f"Slide 5 risks table has {len(s5_tab.rows)-1} rows, exceeding capacity of 6", "Deck"))
 
-    # Traceability check (INV-26, DECK-05, DECK-20)
+    # INV-26 (strict), INV-31, INV-32: read the written files back (DECK-04, DECK-05, DECK-09, DECK-21)
+    index = deck_checks.SourceIndex(kit_doc, wb)
     if not manifest_path or not manifest_path.exists():
         violations.append(InvariantViolation("INV-26", "Trace manifest file is missing beside the deck", "Deck"))
-        return violations
-
-    try:
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            manifest_data = json.load(f)
-    except Exception as e:
-        violations.append(InvariantViolation("INV-26", f"Failed to load trace manifest: {e}", "Deck"))
-        return violations
-
-    entries = manifest_data.get("entries", [])
-    if not entries:
-        violations.append(InvariantViolation("INV-26", "Trace manifest has zero entries", "Deck"))
-
-    # Index Kit text and Workbook cells
-    kit_text_blob = ""
-    if kit_doc:
-        for p in kit_doc.paragraphs:
-            kit_text_blob += p.text + "\n"
-        for t in kit_doc.tables:
-            for r in t.rows:
-                kit_text_blob += " | ".join(c.text.strip() for c in r.cells) + "\n"
-
-    wb_cells_by_sheet: Dict[str, List[List[str]]] = {}
-    if wb:
-        for sname in wb.sheetnames:
-            sheet_rows = []
-            for r in wb[sname].iter_rows(values_only=True):
-                sheet_rows.append([str(c or "").strip() for c in r])
-            wb_cells_by_sheet[sname] = sheet_rows
-
-    for entry in entries:
-        slide_num = entry.get("slide")
-        element = entry.get("element", "")
-        disp_val = entry.get("displayed_value", "").strip()
-        trace = entry.get("trace")
-
-        if not trace:
-            violations.append(InvariantViolation("INV-26", f"Slide {slide_num} element '{element}' has no TraceRef", "Deck"))
-            continue
-
-        artifact = trace.get("artifact")
-        locator = trace.get("locator")
-        key = trace.get("key")
-        field_name = trace.get("field")
-
-        if not artifact or not locator:
-            violations.append(InvariantViolation("INV-26", f"Slide {slide_num} element '{element}' has incomplete TraceRef: {trace}", "Deck"))
-            continue
-
-        if artifact == "Startup Kit":
-            if not kit_doc:
-                continue
-            # Handle placeholder
-            if disp_val == "To be confirmed":
-                continue
-            # Verify text is in Kit
-            # Normalize whitespace
-            norm_disp = re.sub(r"\s+", " ", disp_val)
-            norm_kit = re.sub(r"\s+", " ", kit_text_blob)
-            if norm_disp not in norm_kit:
-                # Check if it's a clause-prefix
-                matched_prefix = False
-                for delim in [".", ";", ":", "-", ","]:
-                    if norm_disp.endswith(delim) and norm_disp[:-1].strip() in norm_kit:
-                        matched_prefix = True
-                        break
-                # Check if it's a composite bullet like "Name (Role): Decision Rights" or "Item: Cadence"
-                if not matched_prefix and ":" in norm_disp:
-                    parts = [p.strip() for p in norm_disp.split(":") if p.strip()]
-                    if all(any(p_part in norm_kit for p_part in [p, p.split("(")[0].strip()]) for p in parts):
-                        matched_prefix = True
-                if not matched_prefix and not any(part in norm_kit for part in norm_disp.split(" · ")):
-                    violations.append(InvariantViolation(
-                        "INV-26",
-                        f"Slide {slide_num} element '{element}' displayed value '{disp_val}' not found in Startup Kit",
-                        "Deck"
-                    ))
-
-        elif artifact == "Project Delivery Workbook":
-            if not wb:
-                continue
-            sheet_name = locator
-            # Find matching sheet
-            target_sheet_rows = None
-            for sname, srows in wb_cells_by_sheet.items():
-                if sheet_name.lower() in sname.lower():
-                    target_sheet_rows = srows
-                    break
-
-            if target_sheet_rows is None:
-                violations.append(InvariantViolation("INV-26", f"Workbook sheet '{sheet_name}' referenced by TraceRef not found", "Deck"))
-                continue
-
-            if disp_val == "To be confirmed":
-                continue
-
-            # DECK-20 Rating check
-            if field_name in ("Rating", "Severity") or locator == "RAID Log" and field_name == "Probability and Impact":
-                # Find row by key in RAID sheet
-                found_row = None
-                for row in target_sheet_rows:
-                    if len(row) > 0 and key.lower() in row[0].lower():
-                        found_row = row
-                        break
-                if found_row:
-                    # Prob is col K (index 10), Impact is col L (index 11)
-                    prob_val = found_row[10] if len(found_row) > 10 else ""
-                    imp_val = found_row[11] if len(found_row) > 11 else ""
-                    expected_rating = compute_deck20_rating(prob_val, imp_val)
-                    if disp_val in ("High", "Medium", "Low") and disp_val != expected_rating:
-                        violations.append(InvariantViolation(
-                            "INV-26",
-                            f"Slide {slide_num} RAID item '{key}' Rating '{disp_val}' differs from DECK-20 calculated rating '{expected_rating}' (Prob={prob_val}, Impact={imp_val})",
-                            "Deck"
-                        ))
+        entries: List[Dict[str, Any]] = []
+    else:
+        entries, manifest_error = deck_checks.load_manifest_entries(manifest_path)
+        violations.extend(deck_checks.check_inv26(entries, index, prs, manifest_error))
+    file_names = [p.name for p in deck_path.parent.glob("*") if p.suffix in (".docx", ".xlsx") and "Checklist" not in p.name]
+    violations.extend(deck_checks.check_inv31(prs, entries, index.names(), file_names))
+    violations.extend(deck_checks.check_inv32(prs))
 
     return violations
 
@@ -353,6 +238,9 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
         deck_path = deck_files[0]
         manifest_path = manifest_files[0] if manifest_files else None
         violations.extend(check_deck_invariants(deck_path, manifest_path, kit_doc, wb))
+
+    # INV-30: Workbook RAID rows carry the Kit RAID Log fields (RAID-09)
+    violations.extend(deck_checks.check_inv30(kit_doc, wb))
 
     # Parse Kit tables
     kit_milestones: List[List[str]] = []
