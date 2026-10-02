@@ -483,6 +483,91 @@ def check_inv27_completeness(prs: Any, index: SourceIndex) -> List[InvariantViol
         for i in deliv_ids:
             if not re.search(r"(?<![A-Za-z0-9-])" + re.escape(i) + r"(?![A-Za-z0-9])", text4):
                 v.append(_inv("INV-27", f"Slide 4 does not contain {i}, which is in the Kit Deliverables and Acceptance Matrix"))
+    if len(slides) >= 6:
+        v.extend(_slide6_completeness(slides[5], index))
+    return v
+
+
+MORE_LINE_RE = re.compile(r"^\+\s*(\d+)\s+more\b")
+SLIDE6_ROLES, SLIDE6_RHYTHM, SLIDE6_PREREQS = "Client roles", "Working rhythm", "Client prerequisites"
+
+
+def _kit_rows(index: SourceIndex, locator: str) -> List[Tuple[Dict[str, str], List[str]]]:
+    """(row as {normalized header: cell text}, raw cells) for every body row of the Kit tables under `locator`."""
+    out: List[Tuple[Dict[str, str], List[str]]] = []
+    for t in index.kit_sections.get(locator, []):
+        if not t:
+            continue
+        hdr = [normalize_text(h) for h in t[0]]
+        for r in t[1:]:
+            out.append(({h: (r[i] if i < len(r) else "") for i, h in enumerate(hdr)}, r))
+    return out
+
+
+def _slide6_items(index: SourceIndex) -> Dict[str, List[Tuple[str, str]]]:
+    """Source items per Slide 6 card, as (kind, text): the bullet for each must start with / contain `text`."""
+    roles = [("role", normalize_text(row.get("Role", ""))) for row, _ in _kit_rows(index, "Stakeholder and Responsibility Model")
+             if normalize_text(row.get("Organization", "")).lower() == "client" and normalize_text(row.get("Role", ""))]
+    comms = [("comm", normalize_text(row.get("Report / Meeting", ""))) for row, _ in _kit_rows(index, "Communications and Reporting Plan")
+             if normalize_text(row.get("Report / Meeting", ""))]
+    prereqs: List[Tuple[str, str]] = []
+    ps = index.sheets.get("Project Schedule")
+    if ps and ps["header_idx"] is not None:
+        h = ps["headers"]
+        for r in ps["rows"][ps["header_idx"] + 1:]:
+            if "Row Type" not in h or "Client Prerequisites" not in h or "Milestone ID" not in h:
+                break
+            if max(h["Row Type"], h["Client Prerequisites"], h["Milestone ID"]) >= len(r) or r[h["Row Type"]] not in ("Milestone", "Checkpoint"):
+                continue
+            for part in r[h["Client Prerequisites"]].split("; "):
+                part = normalize_text(part)
+                if part:
+                    prereqs.append((r[h["Milestone ID"]], part))
+    return {SLIDE6_ROLES: roles, SLIDE6_RHYTHM: comms, SLIDE6_PREREQS: prereqs}
+
+
+def _bullet_matches(heading: str, item: Tuple[str, str], bullet: str) -> bool:
+    kind, text = item
+    if heading == SLIDE6_PREREQS:
+        gate, prereq = kind, text
+        if not bullet.startswith(gate + ":"):
+            return False
+        shown = normalize_text(bullet[len(gate) + 1:])
+        return bool(shown) and (prereq.startswith(shown) or prereq in shown)
+    return bullet.startswith(text + ":") or bullet == text
+
+
+def _slide6_completeness(slide: Any, index: SourceIndex) -> List[InvariantViolation]:
+    """INV-27 (DECK-07): every client stakeholder, communications item, and client prerequisite (each `; `-separated
+    prerequisite counted separately) is a bullet on Slide 6 or covered by that card's `+N more` line."""
+    v: List[InvariantViolation] = []
+    cards: Dict[str, List[str]] = {}
+    for sh in slide.shapes:
+        if sh.has_text_frame and sh.name.startswith("Card text:"):
+            paras = [p.text.strip() for p in sh.text_frame.paragraphs if p.text.strip()]
+            if paras:
+                cards[paras[0]] = paras[1:]
+    for heading, items in _slide6_items(index).items():
+        if not items:
+            continue
+        if heading not in cards:
+            v.append(_inv("INV-27", f"Slide 6 has no '{heading}' card, but the sources have {len(items)} item(s) for it"))
+            continue
+        lines = cards[heading]
+        more = sum(int(m.group(1)) for m in (MORE_LINE_RE.match(ln) for ln in lines) if m)
+        bullets = [normalize_text(ln) for ln in lines if not MORE_LINE_RE.match(ln)]
+        unused = list(bullets)
+        missing: List[Tuple[str, str]] = []
+        for item in items:
+            hit = next((b for b in unused if _bullet_matches(heading, item, b)), None)
+            if hit is None:
+                missing.append(item)
+            else:
+                unused.remove(hit)
+        if len(missing) > more:
+            what = ", ".join((f"{k}: {t}" if heading == SLIDE6_PREREQS else t)[:60] for k, t in missing)
+            line = f"its '+N more' line covers only {more}" if more else "it has no '+N more' line"
+            v.append(_inv("INV-27", f"Slide 6 '{heading}' is missing {len(missing)} of {len(items)} source items and {line}: {what}"))
     return v
 
 
@@ -613,13 +698,92 @@ def _table_estimate(sh: Any, slide_no: int) -> Tuple[float, List[str]]:
     return total, problems
 
 
+def _inherited_size_pt(sh: Any) -> Optional[float]:
+    """Font size of a placeholder's first run: explicit on the run, else the layout placeholder's level-1 default."""
+    for p in sh.text_frame.paragraphs:
+        for r in p.runs:
+            if r.font.size is not None:
+                return r.font.size.pt
+    try:
+        layout_ph = next(x for x in sh.part.slide.slide_layout.placeholders if x.placeholder_format.idx == sh.placeholder_format.idx)
+    except (StopIteration, AttributeError, ValueError):
+        return None
+    for el in layout_ph._element.iter("{http://schemas.openxmlformats.org/drawingml/2006/main}defRPr"):
+        if el.get("sz"):
+            return int(el.get("sz")) / 100.0
+    return None
+
+
+def _inherited_insets_in(sh: Any) -> Tuple[float, float]:
+    """(left, right) text inset in inches: the shape's own bodyPr, else the layout placeholder's, else the 0.10 in default."""
+    ns = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    sources = [sh._element]
+    try:
+        sources.append(next(x for x in sh.part.slide.slide_layout.placeholders if x.placeholder_format.idx == sh.placeholder_format.idx)._element)
+    except (StopIteration, AttributeError, ValueError):
+        pass
+    out = []
+    for attr in ("lIns", "rIns"):
+        val = None
+        for el in sources:
+            body = next(el.iter(ns + "bodyPr"), None)
+            if body is not None and body.get(attr) is not None:
+                val = int(body.get(attr))
+                break
+        out.append((val if val is not None else 91440) / 914400.0)
+    return out[0], out[1]
+
+
+COVER_TITLE_WIDTH_SAFETY = 1.15  # cover title only; see the comment in _cover_violations
+
+
+def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
+    """INV-32 / DECK-21 (5): on the CUSTOM_1 cover, the title (placeholder idx 0) and subtitle (idx 1) stay within their
+    layout placeholders, and the title's estimated bottom edge (the DECK-21 (6) estimator at its rendered size) is at or
+    above the subtitle's top edge."""
+    if slide.slide_layout.name != "CUSTOM_1":
+        return []  # not a writer cover; INV-28 owns the slide structure
+    by_idx = {sh.placeholder_format.idx: sh for sh in slide.placeholders}
+    layout_by_idx = {ph.placeholder_format.idx: ph for ph in slide.slide_layout.placeholders}
+    title, sub = by_idx.get(0), by_idx.get(1)
+    if title is None or sub is None or 0 not in layout_by_idx or 1 not in layout_by_idx:
+        return [_inv("INV-32", "Slide 1 (CUSTOM_1) must have a title placeholder (idx 0) and a subtitle placeholder (idx 1)")]
+    v: List[InvariantViolation] = []
+    for label, sh in (("title", title), ("subtitle", sub)):
+        x0, y0, x1, y1 = _rect(sh)
+        lx0, ly0, lx1, ly1 = _rect(layout_by_idx[sh.placeholder_format.idx])
+        if x0 < lx0 - EPS or y0 < ly0 - EPS or x1 > lx1 + EPS or y1 > ly1 + EPS:
+            v.append(_inv("INV-32", f"Slide 1 cover {label} (x {x0:.2f}-{x1:.2f}, y {y0:.2f}-{y1:.2f}) is outside its layout placeholder (x {lx0:.2f}-{lx1:.2f}, y {ly0:.2f}-{ly1:.2f})"))
+    size = _inherited_size_pt(title)
+    if size is None:
+        v.append(_inv("INV-32", "Slide 1 cover title has no font size on its runs or in its layout placeholder"))
+        return v
+    if size < L.TITLE_PT - 1e-6:
+        v.append(_inv("INV-32", f"Slide 1 cover title font {size:g} pt is below the {L.TITLE_PT:g} pt minimum"))
+    inset_l, inset_r = _inherited_insets_in(title)
+    text = title.text_frame.text
+    # COVER-ONLY SAFETY MARGIN. The shared estimator (L.text_height_pt, used unchanged by every other DECK-21 fit
+    # check) assumes an average character width of 0.5 x font size. At the cover's 43 pt Proxima Nova renders WIDER
+    # than that average, so a 38-character title that the estimate puts exactly on one line wraps in a real render
+    # (LibreOffice, Appendix M2) and runs into the subtitle. Dividing the frame width by COVER_TITLE_WIDTH_SAFETY has
+    # the same effect as multiplying the character width by it. Do not remove this and do not move it into the shared
+    # estimator: body text is calibrated against the 0.5 average and must not change.
+    usable_in = (_in(title.width) - inset_l - inset_r) / COVER_TITLE_WIDTH_SAFETY
+    bottom = _rect(title)[1] + L.text_height_pt(text, usable_in, size) / 72.0
+    sub_top = _rect(sub)[1]
+    if bottom > sub_top + EPS:
+        v.append(_inv("INV-32", f"Slide 1 cover title ('{text}') at {size:g} pt is estimated to end at y {bottom:.2f} in, below the subtitle's top at y {sub_top:.2f} in"))
+    return v
+
+
 def check_inv32(prs: Any) -> List[InvariantViolation]:
     """INV-32: bounds, overlaps, fit estimate, card text frames, and minimum fonts."""
     v: List[InvariantViolation] = []
     for idx, slide in enumerate(prs.slides, start=1):
         if idx == 1:
+            v.extend(_cover_violations(prs, slide))
             continue
-        content = [sh for sh in slide.shapes if not sh.is_placeholder]
+        content =[sh for sh in slide.shapes if not sh.is_placeholder]
         cards = [sh for sh in content if _is_card(sh)]
         rects: Dict[int, Tuple[float, float, float, float]] = {}
 

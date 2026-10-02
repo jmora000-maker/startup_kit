@@ -102,6 +102,66 @@ def test_inv32_card_text_frame_must_not_autofit():
     assert any("autofit off" in m for m in _inv32(prs))
 
 
+LONG_TITLE = "Pfizer Analytics and Cloud Modernization Platform"
+
+
+def _cover_deck(title, title_pt=None):
+    """A one-slide deck with the cover on the template's CUSTOM_1 layout, built as the writer builds it."""
+    import pptx
+
+    from src.config import DECK_TEMPLATE_PATH
+
+    prs = pptx.Presentation(str(DECK_TEMPLATE_PATH))
+    ids = prs.slides._sldIdLst
+    rids = [el.rId for el in list(ids)]
+    for el in list(ids):
+        ids.remove(el)
+    for rid in rids:
+        prs.part.drop_rel(rid)
+    layout = next(l for l in prs.slide_masters[0].slide_layouts if l.name == "CUSTOM_1")
+    slide = prs.slides.add_slide(layout)
+    slide.placeholders[0].text = title
+    slide.placeholders[1].text = "Talent Team Onboarding · Acme · Start 2026-10-05"
+    if title_pt is not None:
+        slide.placeholders[0].text_frame.paragraphs[0].runs[0].font.size = Pt(title_pt)
+    return prs, slide
+
+
+def test_inv32_passes_on_a_cover_whose_title_fits_on_one_line():
+    prs, _ = _cover_deck("Acme Genomics Platform")
+    assert _inv32(prs) == []
+
+
+def test_inv32_fails_when_the_cover_title_is_estimated_to_run_past_the_subtitle():
+    """M2: a long project name wraps to two lines at the layout size and its estimated bottom passes the subtitle top."""
+    prs, _ = _cover_deck(LONG_TITLE)
+    assert any("cover title" in m and "below the subtitle's top" in m for m in _inv32(prs))
+
+
+def test_inv32_cover_margin_catches_known_wrap():
+    """Cover-only 1.15 width margin (Proxima Nova is wider than the shared 0.5 x font-size estimate): the mock project's
+    38-character title is exactly one line by the shared formula but wraps in a real render (Appendix M2)."""
+    prs, _ = _cover_deck("Pfizer Analytics & Cloud Modernization")
+    assert any("cover title" in m and "below the subtitle's top" in m for m in _inv32(prs))
+
+
+@pytest.mark.parametrize("title", ["ARC Genomics Platform", "Acme Genomics Platform", "Syngenta Crop Protection"])
+def test_inv32_cover_margin_allows_short_title(title):
+    prs, _ = _cover_deck(title)
+    assert _inv32(prs) == []
+
+
+def test_inv32_passes_when_a_long_cover_title_is_reduced_to_one_line():
+    prs, _ = _cover_deck(LONG_TITLE, title_pt=28.0)
+    assert _inv32(prs) == []
+
+
+def test_inv32_fails_when_a_cover_placeholder_leaves_its_layout_bounds():
+    prs, s = _cover_deck("Acme Genomics Platform")
+    s.placeholders[1].top = s.placeholders[1].top + Inches(0.5)
+    assert any("cover subtitle" in m and "outside its layout placeholder" in m for m in _inv32(prs))
+
+
 def test_inv32_flags_runs_without_an_explicit_font_size():
     prs, slides = blank_deck(2)
     b = slides[1].shapes.add_textbox(Inches(0.83), Inches(1.7), Inches(3), Inches(1))
@@ -129,10 +189,17 @@ def _cards(slide):
     return [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and s.name.startswith("Card:")]
 
 
-def test_inv32_passes_on_every_content_slide_of_every_fixture(tmp_path):
-    for name in FIXTURES:
-        bundle = build_bundle(tmp_path / name, name)
-        assert [str(v) for v in deck_checks.check_inv32(bundle["prs"])] == [], name
+MOCK_COVER_XFAIL = pytest.mark.xfail(
+    strict=True,
+    reason="Rev 11 Part 1: the mock cover title wraps onto the subtitle (Appendix M2). The Part 2 cover-fit fix "
+           "(DECK-21 (5)) removes this marker; strict=True turns an unexpected pass into a failure so it cannot be forgotten.",
+)
+
+
+@pytest.mark.parametrize("name", [pytest.param(n, marks=MOCK_COVER_XFAIL) if n == "mock_sow" else n for n in FIXTURES])
+def test_inv32_passes_on_every_content_slide_of_every_fixture(name, tmp_path):
+    bundle = build_bundle(tmp_path / name, name)
+    assert [str(v) for v in deck_checks.check_inv32(bundle["prs"])] == [], name
 
 
 def test_card_text_frames_follow_deck_21_1(arc_bundle):
