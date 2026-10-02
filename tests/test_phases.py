@@ -35,6 +35,29 @@ def test_phase_label_parsing():
     assert p4.workstream_name == "P3 Launch"
 
 
+def test_wrapped_phase_label_parsing():
+    desc1 = "Milestone 1 (P1 Foundation) accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness (est. weeks 1–6)."
+    p1 = parse_milestone_phase(desc1)
+    assert p1.phase_code == "P1"
+    assert p1.workstream_name == "P1 Foundation"
+    assert p1.milestone_name == "Milestone 1 (P1 Foundation) accepted"
+    assert p1.has_phase_label is True
+    assert "(est. weeks 1–6)" not in p1.milestone_scope_clean
+
+    desc2 = "Milestone 4 (P3 Launch) accepted and project completed: integration, performance, security and cross-browser testing (est. weeks 22–26)."
+    p2 = parse_milestone_phase(desc2)
+    assert p2.phase_code == "P3"
+    assert p2.workstream_name == "P3 Launch"
+    assert p2.milestone_name == "Milestone 4 (P3 Launch) accepted and project completed"
+    assert p2.has_phase_label is True
+
+    # Ensure phase mentioned later in scope is not mistaken for milestone's own phase
+    desc3 = "Testing and Validation: E2E test harness verification for P1 Foundation."
+    p3 = parse_milestone_phase(desc3)
+    assert p3.phase_code is None
+    assert p3.has_phase_label is False
+
+
 def test_week_range_parsing():
     assert parse_week_range("Running weeks 1–6 from Start Date") == (1, 6)
     assert parse_week_range("est. weeks 7—16") == (7, 16)

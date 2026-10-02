@@ -75,6 +75,11 @@ PHASE_LABEL_REGEX = re.compile(
     re.IGNORECASE
 )
 
+WRAPPED_PHASE_LABEL_REGEX = re.compile(
+    r"^\s*(?:Milestone\s+\d+\s+)?\(\s*(?P<code>P\d+[a-z]?)\s+(?P<name>[^():]*?)\s*\)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?(?:[,;]?\s*[\w\s,;-]*?)?\s*:\s*(?P<scope>.+)$",
+    re.IGNORECASE
+)
+
 
 @dataclass(frozen=True)
 class ParsedMilestonePhase:
@@ -102,6 +107,8 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
     clean_desc = sanitize_report_text(desc)
 
     match = PHASE_LABEL_REGEX.match(clean_desc)
+    if not match:
+        match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)
     if match:
         code = match.group("code")
         raw_name = match.group("name").strip()
