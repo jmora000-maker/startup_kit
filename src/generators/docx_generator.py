@@ -24,6 +24,7 @@ from src.generators.formatting import (
     COLOR_PRIMARY_BLUE_HEX,
     COLOR_LIGHT_BG_HEX,
     COLOR_WARNING_BG_HEX,
+    sanitize_filename,
 )
 from src.generators.checklist import G01ChecklistRenderer
 from src.generators.kit_values import kit_header_values
@@ -261,12 +262,6 @@ def find_all_cell_actions(
             break
         matched.append(act)
     return matched
-
-
-def sanitize_filename(name: str) -> str:
-    """Sanitize project name for safe filename creation."""
-    s = re.sub(r'[^a-zA-Z0-9_\- ]+', '', name).strip()
-    return s.replace(' ', '_') or "Project"
 
 
 class DocxGenerator(IDocumentWriter):

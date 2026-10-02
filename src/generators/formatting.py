@@ -137,9 +137,10 @@ def format_cell_text_and_highlight(cell, text: str, is_warning: bool = False):
 
 
 def sanitize_filename(name: str) -> str:
-    """Sanitize project name for safe filename creation."""
+    """The one file-name rule for every output (OUT-11): remove unsafe characters, then collapse each run of
+    spaces and underscores into a single underscore, so all files of a run share one prefix."""
     s = re.sub(r'[^a-zA-Z0-9_\- ]+', '', name or "").strip()
-    return re.sub(r'\s+', '_', s)
+    return re.sub(r'[ _]+', '_', s) or "Project"
 
 
 def style_table(

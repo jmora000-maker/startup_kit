@@ -4,13 +4,14 @@ import pytest
 from pathlib import Path
 import docx
 from src.core.models import StartupKitBaseline
-from src.generators.docx_generator import DocxGenerator, sanitize_filename
+from src.generators.docx_generator import DocxGenerator
+from src.generators.formatting import sanitize_filename
 from src.generators.checklist import G01ChecklistRenderer
 
 
 def test_sanitize_filename():
     assert sanitize_filename("Pfizer Cloud Migration") == "Pfizer_Cloud_Migration"
-    assert sanitize_filename("Project: Alpha / Beta (v1)") == "Project_Alpha__Beta_v1"
+    assert sanitize_filename("Project: Alpha / Beta (v1)") == "Project_Alpha_Beta_v1"
     assert sanitize_filename("") == "Project"
 
 

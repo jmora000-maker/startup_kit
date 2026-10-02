@@ -10,7 +10,8 @@ from src.generators.formatting import (
     ACTION_TAG_REGEX,
 )
 from src.generators.checklist import G01ChecklistRenderer
-from src.generators.docx_generator import DocxGenerator, sanitize_filename
+from src.generators.docx_generator import DocxGenerator
+from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
 
 __all__ = [

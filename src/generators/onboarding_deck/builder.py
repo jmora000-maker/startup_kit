@@ -11,7 +11,7 @@ from datetime import date
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from src.core.models import StartupKitBaseline
-from src.generators.kit_values import kit_header_values, kit_sanitize_filename
+from src.generators.kit_values import kit_header_values
 from src.generators.formatting import sanitize_filename
 from src.generators.onboarding_deck import fixed_text as FT
 from src.generators.onboarding_deck import layout as L
@@ -341,7 +341,7 @@ def build_deck_model(
         _build_risks(ctx, kicker),
         _build_collaboration(ctx, kicker),
     ]
-    kit_file = f"{kit_sanitize_filename(project)}_Startup_Kit.docx"
+    kit_file = f"{sanitize_filename(project)}_Startup_Kit.docx"
     wb_file = f"{sanitize_filename(project)}_Project_Delivery_Workbook.xlsx"
     slides.append(_build_project_kit(ctx, kicker, slides, cover, kit_file, wb_file))
 

@@ -8,12 +8,6 @@ import re
 from src.core.models import StartupKitBaseline
 
 
-def kit_sanitize_filename(name: str) -> str:
-    """Project name as it appears in the Kit file name."""
-    s = re.sub(r'[^a-zA-Z0-9_\- ]+', '', name).strip()
-    return s.replace(' ', '_') or "Project"
-
-
 def kit_header_values(baseline: StartupKitBaseline) -> dict:
     """The values the Kit header table shows for the people and client fields (also used by the deck, DECK-03)."""
     ctx = baseline.governance_context
