@@ -107,6 +107,13 @@ def test_slide_6_client_stakeholders_and_communications(arc_bundle):
     rhythm = cards["Card text: Working rhythm"][1:]
     assert len(rhythm) == 7
     assert rhythm[0] == "Kickoff Call: One-time"
+    # the 7 communications items are COM-01 to COM-07 of the written Kit, shown as "{Report / Meeting}: {Cadence}"
+    kit_rows = []
+    for t in arc_bundle["kit"].tables:
+        if t.rows[0].cells[0].text == "Item ID" and t.rows[0].cells[1].text == "Report / Meeting":
+            kit_rows = [[c.text for c in r.cells] for r in t.rows[1:]]
+    assert [r[0] for r in kit_rows] == [f"COM-0{i}" for i in range(1, 8)]
+    assert rhythm == [f"{r[1]}: {r[4]}" for r in kit_rows]
 
 
 def test_slide_7_project_kit(arc_bundle):
