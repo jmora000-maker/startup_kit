@@ -30,11 +30,40 @@ BANNED_EFFORT_REGEX = re.compile(r'\b(' + '|'.join(BANNED_EFFORT_WORDS) + r')\b'
 CITATION_PREFIX_REGEX = re.compile(r'^\s*(\[V\d+\]|Exhibit\s+[A-Z0-9]+,|[A-Za-z0-9_\-]+\.(?:pdf|docx|pptx|txt|md)\s*[,:])', re.IGNORECASE)
 PLACEHOLDER_REGEX = re.compile(r'\[(?:CONFIRMATION REQUIRED|TBD|UNASSIGNED|TO BE CONFIRMED|ACT-[^\]]+)\]', re.IGNORECASE)
 BANNED_WORKSTREAM_NAMES = ["Project Management", "Kickoff", "Reporting and Control", "Ongoing"]
+KEYWORD_TAXONOMY_WORKSTREAMS = {
+    "Discovery & Requirements",
+    "Design & Architecture",
+    "Build & Configuration",
+    "Data & Integration",
+    "Testing & Quality Assurance",
+    "Deployment & Release",
+    "Transition & Hypercare",
+}
+PHASE_CODE_REGEX = re.compile(r'\b(P\d+[a-z]?|Phase\s+\d+[a-z]?)\b', re.IGNORECASE)
 
 VALID_CONTRACT_REF_EXT_REGEX = re.compile(r'\.[a-zA-Z0-9]{2,4}\b', re.IGNORECASE)
 EXHIBIT_WORD_REGEX = re.compile(r'\b(?:Exhibit|Schedule|Appendix|Attachment|Annex)\s+(?:[0-9]+(?:\.[0-9]+)*|[A-Z]\b|[IVXLCDM]+\b)', re.IGNORECASE)
 SECTION_WORD_REGEX = re.compile(r'\b(?:Sections?|Clause|§)\s*:?\s*\d+(?:\.\d+)*\b', re.IGNORECASE)
 SOW_REF_REGEX = re.compile(r'\b(?:[A-Z][A-Z0-9]{1,9}-\d{2,6}|Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Task\s+\d+(?:\.\d+)*|WBS\s+\d+(?:\.\d+)*|SOW-\d+(?:-\d+)?)\b', re.IGNORECASE)
+
+
+def _resolve_oracle_inheritance(oracle: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not oracle:
+        return oracle
+    extends_name = oracle.get("extends_reference_phase_map_from")
+    if extends_name:
+        base_path = Path("tests/oracles") / f"{extends_name}.json"
+        if not base_path.exists():
+            base_path = Path("tests/oracles_draft") / f"{extends_name}.json"
+        if base_path.exists():
+            with open(base_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                base_data = json.loads(cleaned)
+                merged = dict(base_data)
+                merged.update(oracle)
+                return merged
+    return oracle
 
 
 def load_oracle_for_folder(folder_path: Path, project_name: str = "") -> Optional[Dict[str, Any]]:
@@ -364,8 +393,38 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
 
     proj_name = kit_charter.get("project name", "")
     oracle = oracle_override or load_oracle_for_folder(folder, proj_name)
+    if oracle:
+        oracle = _resolve_oracle_inheritance(oracle)
 
     if kit_doc:
+        # INV-34: Kit 1-Day SLA Status is never 'Not determinable - award date not stated' when oracle states award date is in SOW
+        if oracle and oracle.get("award_date_stated_in_sow") is True:
+            sla_status = kit_charter.get("1-day sla status", "")
+            if "not determinable" in sla_status.lower():
+                violations.append(InvariantViolation(
+                    "INV-34",
+                    f"Kit 1-Day SLA Status is '{sla_status}' when oracle states award date is in SOW",
+                    "Kit"
+                ))
+
+        # INV-35: No generic review-window fallback when oracle specifies contract_wide_review_window
+        if oracle and oracle.get("contract_wide_review_window"):
+            cw_window = oracle["contract_wide_review_window"]
+            for d in kit_deliverables:
+                d_id = d[0]
+                rw = ""
+                for idx in [7, 6, 5]:
+                    if len(d) > idx and ("day" in d[idx].lower() or "review" in d[idx].lower() or "not specified" in d[idx].lower() or "business" in d[idx].lower()):
+                        rw = d[idx].strip()
+                        break
+                if not rw and len(d) > 7:
+                    rw = d[7].strip()
+                if "reviewed at the milestone acceptance review" in rw.lower() or "not specified; reviewed at the" in rw.lower():
+                    violations.append(InvariantViolation(
+                        "INV-35",
+                        f"Deliverable {d_id} has generic review window fallback '{rw}' when oracle specifies contract_wide_review_window: '{cw_window}'",
+                        "Kit"
+                    ))
         # INV-01: Kit milestone count equals SOW gate count
         if oracle and "gate_count" in oracle:
             expected_gates = oracle["gate_count"]
@@ -519,12 +578,50 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     if "project awarded 20" in txt.lower() or "awarded: 20" in txt.lower():
                         violations.append(InvariantViolation("INV-18", f"Checklist contains computed award date: '{txt[:60]}'", "Checklist"))
 
+        # INV-34: Checklist G01-01 and SLA status are never 'Not determinable' when oracle states award date is in SOW
+        if oracle and oracle.get("award_date_stated_in_sow") is True:
+            if chk_items and "G01-01" in chk_items:
+                g1_ev = chk_items["G01-01"].get("evidence", "")
+                g1_status = chk_items["G01-01"].get("status", "")
+                if "not determinable" in g1_ev.lower() or "not determinable" in g1_status.lower():
+                    violations.append(InvariantViolation(
+                        "INV-34",
+                        f"Checklist G01-01 evidence/status contains 'Not determinable' ('{g1_ev}') when oracle states award date is in SOW",
+                        "Checklist"
+                    ))
+            for t in chk_doc.tables:
+                for r in t.rows:
+                    txt = " ".join([c.text for c in r.cells])
+                    if "sla" in txt.lower() and "not determinable" in txt.lower():
+                        violations.append(InvariantViolation(
+                            "INV-34",
+                            f"Checklist metadata table contains 'Not determinable' SLA status when oracle states award date is in SOW",
+                            "Checklist"
+                        ))
+                        break
+
     # Workbook checks
     if wb:
         # Check sheet names for readiness terms
         for sheet_name in wb.sheetnames:
             if READINESS_REGEX.search(sheet_name):
                 violations.append(InvariantViolation("INV-04", f"Sheet name '{sheet_name}' contains readiness terms", "Workbook"))
+
+        has_phase_milestone = False
+        for m in kit_milestones:
+            if len(m) > 1 and PHASE_CODE_REGEX.search(m[1]):
+                has_phase_milestone = True
+                break
+        if not has_phase_milestone:
+            for m in kit_checkpoints:
+                if len(m) > 2 and PHASE_CODE_REGEX.search(m[2]):
+                    has_phase_milestone = True
+                    break
+        if not has_phase_milestone and oracle and ("phases" in oracle or "sow_reference_phase" in oracle):
+            has_phase_milestone = True
+
+        sched_workstreams: Set[str] = set()
+        wbs_workstreams: Set[str] = set()
 
         # Inspect Project Schedule
         sched_gate_count = 0
@@ -541,6 +638,15 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 if "after award" in row3_val.lower():
                     violations.append(InvariantViolation("INV-18", f"Schedule Start Date basis says 'after award' when SOW has no award date: '{row3_val}'", "Project Schedule"))
 
+            # INV-34: Schedule Start Date basis is not assumed when award date is stated in SOW
+            if oracle and oracle.get("award_date_stated_in_sow") is True:
+                if "assumed -" in row3_val.lower():
+                    violations.append(InvariantViolation(
+                        "INV-34",
+                        f"Schedule Start Date basis is '{row3_val}' when oracle states award date is in SOW",
+                        "Project Schedule"
+                    ))
+
             for row_idx, row in enumerate(sched.iter_rows(min_row=5, values_only=True), start=5):
                 wbs_code = str(row[0] or "").strip()
                 row_type = str(row[1] or "").strip()
@@ -552,6 +658,9 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                 if not wbs_code and not row_type:
                     continue
 
+                if ws_name:
+                    sched_workstreams.add(ws_name)
+
                 if row_type == "Workstream":
                     l1_rows.append((wbs_code, ws_name))
 
@@ -559,6 +668,15 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     sched_gate_count += 1
                     refs = [r.strip() for r in sow_refs.split(",") if r.strip()]
                     schedule_gate_items[m_id] = len(refs)
+
+                # INV-33: No milestone or checkpoint workstream is keyword-taxonomy name
+                if row_type in ("Milestone", "Checkpoint"):
+                    if has_phase_milestone and ws_name in KEYWORD_TAXONOMY_WORKSTREAMS:
+                        violations.append(InvariantViolation(
+                            "INV-33",
+                            f"Milestone/checkpoint row {wbs_code} has keyword-taxonomy workstream '{ws_name}' despite recognizable phase code in milestone descriptions",
+                            "Project Schedule"
+                        ))
 
                 if wbs_code:
                     row_wbs_codes.append(wbs_code)
@@ -644,6 +762,18 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                     if d_id and d_id.startswith("DEL-"):
                         wbs_deliv_ids.append(d_id)
 
+                if ws_name:
+                    wbs_workstreams.add(ws_name)
+
+                # INV-33: No milestone or checkpoint workstream is keyword-taxonomy name
+                if elem_type in ("Milestone", "Gate", "Checkpoint") or level in (2, "2"):
+                    if has_phase_milestone and ws_name in KEYWORD_TAXONOMY_WORKSTREAMS:
+                        violations.append(InvariantViolation(
+                            "INV-33",
+                            f"WBS level {level} row '{name}' ({m_id}) has keyword-taxonomy workstream '{ws_name}' despite recognizable phase code in milestone descriptions",
+                            "WBS"
+                        ))
+
                 if s_id:
                     for wp_match in re.findall(r'WP-\d+', s_id):
                         wbs_tasks_by_wp_id.add(wp_match)
@@ -683,6 +813,17 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
                         target_d = flag_m.group(1).upper()
                         if target_d == d_id.upper():
                             violations.append(InvariantViolation("INV-14", f"Evidence flag on {d_id} names itself: '{notes_val}'", "WBS"))
+
+            # INV-33: Keyword and phase workstreams are never mixed within one Workbook
+            all_wb_workstreams = sched_workstreams | wbs_workstreams
+            has_kw = any(w in KEYWORD_TAXONOMY_WORKSTREAMS for w in all_wb_workstreams)
+            has_ph = any(PHASE_CODE_REGEX.search(w) for w in all_wb_workstreams)
+            if has_kw and has_ph:
+                violations.append(InvariantViolation(
+                    "INV-33",
+                    f"Keyword workstreams and phase workstreams are mixed within the Workbook: {sorted(all_wb_workstreams)}",
+                    "Workbook"
+                ))
 
             # INV-06: Every Kit deliverable appears exactly once at WBS level 3 under a gate. Every gate has a Milestone Acceptance package.
             if kit_deliverables:
@@ -1053,12 +1194,26 @@ def main():
 
     oracle_data = None
     if args.oracle:
-        oracle_path = Path("tests/oracles") / f"{args.oracle}.json"
-        if oracle_path.exists():
-            with open(oracle_path, "r", encoding="utf-8") as f:
+        direct_path = Path(args.oracle)
+        if direct_path.exists() and direct_path.is_file():
+            with open(direct_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 cleaned = re.sub(r',\s*([}\]])', r'\1', content)
                 oracle_data = json.loads(cleaned)
+        else:
+            oracle_path = Path("tests/oracles") / f"{args.oracle}.json"
+            if oracle_path.exists():
+                with open(oracle_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                    oracle_data = json.loads(cleaned)
+            else:
+                draft_path = Path("tests/oracles_draft") / f"{args.oracle}.json"
+                if draft_path.exists():
+                    with open(draft_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                        oracle_data = json.loads(cleaned)
 
     violations = check_artifacts_directory(folder, oracle_override=oracle_data)
     if violations:

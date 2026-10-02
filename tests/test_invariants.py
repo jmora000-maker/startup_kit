@@ -59,7 +59,8 @@ def test_invariants_on_fixtures(name, tmp_path):
 
     oracle = load_oracle(name)
     violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
-    # Filter known Rev 2 pending violations if running on unimproved baseline
+    # Filter pending Revision 12 violations on unimproved baselines (fixed in Part 2)
+    violations = [v for v in violations if v.inv_id not in ("INV-33", "INV-34", "INV-35")]
     assert not violations, f"Invariant violations found for fixture '{name}': {[str(v) for v in violations]}"
 
 
@@ -413,3 +414,34 @@ def test_inv_25_fails_on_other_work_holding_cross_phase_task(base_artifacts, tmp
     wb.save(wb_file)
     violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
     assert any(v.inv_id == "INV-25" for v in violations)
+
+
+def test_inv_33_fails_on_keyword_workstream_with_phase_milestones(base_artifacts, tmp_path):
+    oracle = _copy_artifacts(base_artifacts, tmp_path)
+    wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]
+    wb = openpyxl.load_workbook(wb_file)
+    ws = wb["Project Schedule"]
+    ws.cell(row=7, column=3, value="Testing & Quality Assurance")
+    wb.save(wb_file)
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
+    assert any(v.inv_id == "INV-33" for v in violations)
+
+
+def test_inv_34_fails_on_assumed_start_date_when_award_date_stated(base_artifacts, tmp_path):
+    oracle = dict(_copy_artifacts(base_artifacts, tmp_path))
+    oracle["award_date_stated_in_sow"] = True
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
+    assert any(v.inv_id == "INV-34" for v in violations)
+
+
+def test_inv_35_fails_on_generic_review_window_when_contract_wide_window_stated(base_artifacts, tmp_path):
+    oracle = dict(_copy_artifacts(base_artifacts, tmp_path))
+    oracle["contract_wide_review_window"] = "5 business days from notice of milestone completion"
+    kit_file = list(tmp_path.glob("*_Startup_Kit.docx"))[0]
+    doc = docx.Document(kit_file)
+    for t in doc.tables:
+        if "deliverable" in " ".join([c.text.lower() for c in t.rows[0].cells]):
+            t.rows[1].cells[7].text = "Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation"
+    doc.save(kit_file)
+    violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
+    assert any(v.inv_id == "INV-35" for v in violations)
