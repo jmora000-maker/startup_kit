@@ -4,7 +4,7 @@ The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kick
 - the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, and RAID items;
 - the **Startup Readiness Checklist** (`.docx`), containing the G-01 executive gateway dashboard, 15-row readiness checklist, commercial guardrails, actionable clarification questions, and contract ambiguities;
 - the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), containing an executive 6-slide briefing deck for talent onboarding, built with strict traceability back to the Kit and Workbook.
+- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), containing an executive 7-slide briefing deck for talent onboarding (cover, five content slides, and a closing Your Project Kit slide), built with strict traceability back to the Kit and Workbook.
 
 For detailed specification rules and background, see [spec/PMO_Startup_Kit_Consolidated_Spec.md](spec/PMO_Startup_Kit_Consolidated_Spec.md) and [spec/Review_Loop_Reference.md](spec/Review_Loop_Reference.md).
 
@@ -16,7 +16,7 @@ The tool reads a Statement of Work (SOW) and produces four standardized project 
 - the **Startup Kit** (`.docx`);
 - the **Startup Readiness Checklist** (`.docx`);
 - the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`), with executive onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
+- the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
 
 ---
 
@@ -156,6 +156,7 @@ The testing framework employs a multi-tiered validation architecture:
    ```bash
    python -m src.tools.check_artifacts output
    ```
+   The deck checks read the written files back: INV-26 resolves every trace key in the Kit and Workbook and applies the boundary rules (no ellipsis, no comma cuts, no unbalanced brackets, names whole); INV-30 compares the Workbook RAID rows with the Kit RAID Log; INV-31 checks text quality; INV-32 checks bounds, overlaps, the fit estimate, and minimum fonts.
 4. **Snapshots (`tests\snapshots\` and `tests\snapshots_proposed\`)**: Regression tests compare newly generated workbook models and document contents against approved snapshot files in `tests/snapshots/<fixture>/snapshot.json`. Any differences are written to `tests/snapshots_proposed/` for human review.
 5. **Full Test Suite Execution**:
    ```bash
@@ -190,6 +191,18 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 - **No project-specific data in `src\`**: In accordance with rule P-08, never hardcode SOW-specific IDs, client names, or deliverables into application source code (enforced by `tests/test_no_sow_literals.py`).
 - **Re-recordings go in their own commit**: Any update to LLM recordings or fixture baselines must be isolated in a dedicated Git commit.
 - **Commit all work and maintain a clean working tree**: Always ensure `git status` is clean before and after completing a task.
+
+---
+
+## Talent Team Onboarding Deck
+
+`--slides` writes `{Project}_Talent_Onboarding_Deck.pptx` and `{Project}_Talent_Onboarding_Deck.trace.json` beside the Kit and Workbook; because every fact in the deck traces to those two documents, `--slides` also writes them in the same run (the log says `Deck sources: Startup Kit and Project Delivery Workbook also written`).
+
+- **Slides:** Cover, Project Charter, Workstreams / Milestones / Deliverables / Dates, Acceptance Criteria, High-Risk Items, Client Collaboration, and Your Project Kit. Each slide carries talking points and a `SOURCES` line in its speaker notes.
+- **Template:** `templates/Toptal_Presentation_Template.pptx`, or the path in `DECK_TEMPLATE_PATH`. The generator removes the template's slides and slide parts and builds on the `CUSTOM_1` (cover) and `CUSTOM_16` (content) layouts.
+- **Trace manifest:** lists every element (slide, shape, displayed text, and its `Kit` / `Workbook` TraceRefs) and every talking point on slides 2 to 6. `check_artifacts` uses it.
+- **Text:** shown whole or cut only at a sentence or clause boundary; never an ellipsis, a comma cut, an unbalanced bracket, or a shortened name. Text that does not fit gets a smaller font (within the minimums), then a `+N more` row or line.
+- **Review aids:** `python -m src.tools.render_deck <deck.pptx>` renders each slide to a PNG beside the deck when LibreOffice is installed (set `SOFFICE_PATH` if it is not on `PATH`). `python -m src.tools.dump_deck <deck.pptx>` prints every slide's text, tables, notes, and the slide-part count.
 
 ---
 
