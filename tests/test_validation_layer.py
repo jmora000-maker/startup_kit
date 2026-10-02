@@ -112,3 +112,74 @@ def test_val_06_one_numbering_system():
     validate_and_repair_baseline(baseline)
 
     assert baseline.deliverables[0].sow_reference == "HS-4762, HS-4764"
+
+
+def test_val_11_award_date_recognition():
+    """VAL-11: Recognize explicit award date from documents and preserve in baseline."""
+    from src.extractors.date_extractor import extract_stated_award_date
+    from src.core.models import ExtractedDocument
+    from pathlib import Path
+
+    doc1 = ExtractedDocument(
+        file_name="sow.txt",
+        file_type="txt",
+        file_path=Path("sow.txt"),
+        metadata={"total_pages": 1},
+        text_content="This SOW becomes effective on October 7, 2026 (SOW Effective Date). Section 3: Estimated Start Date October 7, 2026."
+    )
+    d, warning = extract_stated_award_date([doc1])
+    assert d == date(2026, 10, 7)
+    assert warning is None
+
+    # Disagreeing statements warning
+    doc2 = ExtractedDocument(
+        file_name="sow.txt",
+        file_type="txt",
+        file_path=Path("sow.txt"),
+        metadata={"total_pages": 1},
+        text_content="This SOW becomes effective on October 7, 2026. Section 3: Estimated Start Date October 14, 2026."
+    )
+    d2, warning2 = extract_stated_award_date([doc2])
+    assert d2 == date(2026, 10, 7)
+    assert warning2 is not None
+    assert "2026-10-07" in warning2 and "2026-10-14" in warning2
+
+    # Baseline validation with stated award date
+    baseline = StartupKitBaseline(
+        project_name="Stated Award Date Test",
+        sow_awarded_date=date(2026, 10, 7),
+        kit_drafted_date=date(2026, 10, 8),
+        open_questions=[]
+    )
+    report = validate_and_repair_baseline(baseline)
+    warnings = [f for f in report.findings if f.invariant_id == "INV-18"]
+    assert len(warnings) == 0
+    assert not any("award" in q.lower() for q in baseline.open_questions)
+    assert baseline.sow_awarded_date == date(2026, 10, 7)
+
+
+def test_kit_03_contract_wide_review_window_propagation():
+    """KIT-03: Propagate contract-wide review window to deliverables lacking specific windows."""
+    deliverables = [
+        Deliverable(id="DEL-01", name="P1 Shell", review_window=""),
+        Deliverable(id="DEL-02", name="P1 Auth", review_window="Each milestone is an acceptance gate with its own sign-off."),
+        Deliverable(id="DEL-03", name="P2 Specific", review_window="Audit committee signs off within 10 business days."),
+    ]
+    sow_interp = SOWInterpretationSummary(
+        contracted_deliverables=["D1", "D2", "D3"],
+        in_scope_activities=["Build"],
+        out_of_scope_activities=["Deploy"],
+        key_assumptions=["Snowflake"],
+        critical_dependencies=["Azure"],
+        approval_expectations="The client has 5 business days from notice of completion to review and accept deliverables."
+    )
+    baseline = StartupKitBaseline(
+        project_name="Uniform Review Window Test",
+        deliverables=deliverables,
+        sow_interpretation=sow_interp,
+    )
+    validate_and_repair_baseline(baseline)
+
+    assert baseline.deliverables[0].review_window == "5 business days from notice of milestone completion"
+    assert baseline.deliverables[1].review_window == "5 business days from notice of milestone completion"
+    assert baseline.deliverables[2].review_window == "Audit committee signs off within 10 business days."

@@ -391,11 +391,6 @@ def validate_and_repair_ids(baseline: StartupKitBaseline, findings: List[Validat
 
 def validate_award_date(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
     """VAL-05: Award date provenance verification without synthetic fallback."""
-    # ARC Genomics and synthetic fixtures have no stated award date
-    p_name = (baseline.project_name or "").lower()
-    if "arc" in p_name or "genomics" in p_name or baseline.sow_awarded_date is None:
-        baseline.sow_awarded_date = None
-
     if baseline.sow_awarded_date is None:
         findings.append(ValidationFinding(
             invariant_id="INV-18",
@@ -414,6 +409,21 @@ def validate_award_date(baseline: StartupKitBaseline, findings: List[ValidationF
                     item.status = "Confirmation Required"
                     item.exception_required = False
                     item.exception_details = None
+    else:
+        # Clear any fallback open question if award date is known
+        if baseline.open_questions is not None:
+            q = "What is the formal SOW contract award and execution date?"
+            if q in baseline.open_questions:
+                baseline.open_questions.remove(q)
+        if baseline.readiness_checklist:
+            draft_str = baseline.kit_drafted_date.strftime('%Y-%m-%d') if baseline.kit_drafted_date else date.today().strftime('%Y-%m-%d')
+            for item in baseline.readiness_checklist:
+                if item.item_id == "G01-01":
+                    item.evidence = f"Startup Kit drafted on {draft_str} (Project awarded {baseline.sow_awarded_date.strftime('%Y-%m-%d')}). SLA {'Met' if baseline.sla_met else 'Breached'}."
+                    if baseline.sla_met:
+                        item.status = "Complete"
+                        item.exception_required = False
+                        item.exception_details = None
 
 
 def validate_contract_ambiguities(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
@@ -485,6 +495,34 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
                 if "shared evidence" not in curr_ev.lower():
                     d.evidence_required = f"{curr_ev} (Shared evidence item with {', '.join(sid for sid in sharing_ids if sid != d_id)})."
 
+    # KIT-03: Uniform contract-wide review window detection
+    contract_wide_rw: Optional[str] = None
+    cw_pattern = re.compile(
+        r'\b(?:have\s+|has\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*\(\d+\))?\s+business\s+days?\s+from\s+notice\s+of\s+(?:milestone\s+)?completion\b',
+        re.IGNORECASE
+    )
+    number_words = {
+        "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+        "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10"
+    }
+
+    if baseline.sow_interpretation and baseline.sow_interpretation.approval_expectations:
+        m = cw_pattern.search(baseline.sow_interpretation.approval_expectations)
+        if m:
+            num = m.group(1).lower()
+            n_days = number_words.get(num, num)
+            contract_wide_rw = f"{n_days} business days from notice of milestone completion"
+
+    if not contract_wide_rw:
+        for d in baseline.deliverables:
+            if d.review_window:
+                m = cw_pattern.search(d.review_window)
+                if m:
+                    num = m.group(1).lower()
+                    n_days = number_words.get(num, num)
+                    contract_wide_rw = f"{n_days} business days from notice of milestone completion"
+                    break
+
     # Review window normalization
     for d in baseline.deliverables:
         rw = (d.review_window or "").strip()
@@ -493,17 +531,31 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
             phase_str = f"Phase {phase_str}"
 
         # Clean review window
-        if not rw or rw.upper() in ("NONE", "NOT SPECIFIED", "TBD") or "not specified - to be confirmed" in rw.lower():
-            d.review_window = f"Not specified; reviewed at the Milestone Acceptance Review at the end of {phase_str}"
-        elif rw.endswith("...") or rw.endswith("…"):
-            d.review_window = f"Not specified; reviewed at the Milestone Acceptance Review at the end of {phase_str}"
-        else:
-            # Check length: up to first sentence or 120 chars
-            first_sent = re.split(r'\.\s+', rw)[0].strip()
-            if len(first_sent) > 120:
-                d.review_window = first_sent[:117] + "..."
+        is_missing_or_generic = (
+            not rw
+            or rw.upper() in ("NONE", "NOT SPECIFIED", "TBD")
+            or "not specified - to be confirmed" in rw.lower()
+            or "acceptance gate with its own sign-off" in rw.lower()
+            or rw.endswith("...")
+            or rw.endswith("…")
+        )
+
+        if is_missing_or_generic:
+            if contract_wide_rw:
+                d.review_window = contract_wide_rw
             else:
-                d.review_window = first_sent
+                d.review_window = f"Not specified; reviewed at the Milestone Acceptance Review at the end of {phase_str}"
+        else:
+            # If uniform contract clause exists and deliverable has a notice-of-completion phrase, normalize
+            if contract_wide_rw and cw_pattern.search(rw):
+                d.review_window = contract_wide_rw
+            else:
+                # Check length: up to first sentence or 120 chars
+                first_sent = re.split(r'\.\s+', rw)[0].strip()
+                if len(first_sent) > 120:
+                    d.review_window = first_sent[:117] + "..."
+                else:
+                    d.review_window = first_sent
 
 
 def validate_talent_and_leadership(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
