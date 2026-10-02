@@ -12,39 +12,44 @@
     "delivery_manager": "Saadia Iqbal",
     "talent_pm": null,
     "pmo_lead": null,
-    "executive_summary": "The project builds part of the ARC genomics application and delivers QA test automation across four sequential milestones: P1 Foundation, P2a Services and Data, P2b Application Surface, and P3 Launch. Toptal develops the micro-frontend shell, ARC micro-frontend (React/Next.js), FastAPI services and nomenclature service on Snowflake and Azure AD/MSAL, and writes automated tests (Playwright, Jest, Pytest) for both Toptal-built and Client-built components. The Client owns platform infrastructure, the data tier, and remediation of defects in its own components.",
-    "project_purpose": "Build the scientist-facing ARC application within the Client's larger genomics platform and provide automated QA coverage across the full ARC program.",
+    "executive_summary": "The project delivers part of the ARC application, a scientist-facing genomics search and visualization app within a larger Syngenta platform, plus QA test automation for the full ARC program. Toptal builds the micro-frontend shell, ARC micro-frontend (React/Next.js), FastAPI services and nomenclature service, and tests against Client-owned Snowflake, Azure AD/MSAL and CloudFront components using Playwright, Jest and Pytest. Work runs in four sequential milestone-gated phases (P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch) over about 26 weeks for a $200,365 fixed fee.",
+    "project_purpose": "Build part of the ARC genomics application and deliver QA test automation for the ARC program within a larger Syngenta platform.",
     "delivery_objectives": [
-      "Build the micro-frontend shell with global navigation, routing, Azure AD/MSAL authentication and the Client's design system.",
-      "Implement FastAPI search, detail, asynchronous query, OneGWAS direct-write and haplotype services over Snowflake.",
-      "Build the ARC micro-frontend with faceted search, result detail and PHG/GATSBY interval visualization, plus the nomenclature service.",
-      "Deliver automated test scripts, execution and defect reports for Toptal-built and designated Client-built components.",
-      "Run integration, UAT and hardening cycles and complete production smoke testing with a 48-hour defect watch."
+      "Build the micro-frontend shell with global navigation, routing, design system integration and Azure AD / MSAL authentication.",
+      "Build FastAPI faceted search, detail, asynchronous query processing and OneGWAS direct-write services over Snowflake.",
+      "Build the ARC micro-frontend with faceted search, result detail and PHG/GATSBY haplotype interval visualization.",
+      "Implement the nomenclature service for trait resolution, synonym lookup and unmapped-term handling.",
+      "Deliver automated test scripts, execution and defect reports covering Toptal-built work and designated Client-built components.",
+      "Execute UAT cycles, pre-launch hardening, production smoke tests and a 48-hour defect watch, and produce training materials and user documentation."
     ],
     "success_criteria": [
-      "Each milestone is accepted through its own acceptance gate and sign-off, with UAT run after each milestone.",
-      "Search P95 latency under 1 second and detail P95 under 500ms.",
-      "Shell load P95 under 3 seconds and authentication success at 100%.",
-      "Frontend unit test coverage at or above 80%, with accessibility tests passing.",
-      "All critical and high defects in Toptal-built work closed and full regression green before cutover.",
-      "Production smoke tests pass 100% with a clean 48-hour defect watch."
+      "Each of the four milestones is accepted by Client sign-off after its own work output and acceptance criteria are met.",
+      "Search latency meets P50 < 300ms, P90 < 700ms and P95 < 1s, with detail P95 < 500ms.",
+      "Shell load meets P50 < 1.5s, P90 < 2.5s and P95 < 3s, with authentication success at 100%.",
+      "Frontend unit test coverage is at or above 80%, with the accessibility pass green.",
+      "UAT exits with no open critical defects in Toptal-built work, and all critical and high defects are closed before cutover.",
+      "Production smoke tests pass 100% and the 48-hour defect watch is clean."
     ],
     "high_level_scope": [
-      "P1 Foundation (weeks 1-6): micro-frontend shell, Azure AD/MSAL authentication, end-to-end test harness, pipeline quality gates, security testing and data model validation.",
-      "P2a Services and Data (weeks 7-16): FastAPI search and detail endpoints, asynchronous query processing, performance spike, OneGWAS direct-write integration and validation of Client-built ingestion pipelines.",
-      "P2b Application Surface (weeks 17-21): ARC micro-frontend faceted search, result detail and haplotype visualization, haplotype endpoints, nomenclature service and related test suites.",
-      "P3 Launch (weeks 22-26): integration, performance, security and cross-browser (Chrome and Edge) testing, UAT execution, hardening iteration, production smoke tests, MTA Store parity confirmation and training documentation."
+      "P1 Foundation (Est. weeks 1-6): micro-frontend shell, Azure AD / MSAL authentication, E2E test harness, pipeline quality gates, security testing and data model/governance validation; fee $26,808, est. completion Nov 17, 2026.",
+      "P2a Services and Data (Est. weeks 7-16): FastAPI search/detail endpoints, asynchronous processing, load testing, performance spike, OneGWAS direct-write integration and data ingestion/migration validation; fee $60,356, est. completion Jan 26, 2027.",
+      "P2b Application Surface (Est. weeks 17-21): ARC micro-frontend faceted search, result detail, haplotype visualization and filters, haplotype endpoints, nomenclature service and related test suites; fee $68,210, est. completion Mar 2, 2027.",
+      "P3 Launch (Est. weeks 22-26): integration, performance, security and cross-browser (Chrome and Edge) testing, test data support, UAT, hardening, production smoke tests, MTA Store parity confirmation and training materials; fee $44,991, est. completion Apr 6, 2027.",
+      "Governance cadence: kickoff call, biweekly sprint demos, daily standups with the Client team, milestone acceptance reviews and weekly status reports; SAFe-aligned methodology."
     ],
     "exclusions": [
-      "Platform infrastructure, DevOps, CI/CD pipelines, monitoring and security design/hardening (Client-owned).",
-      "Architecture and design stories, Snowflake data model design, and data ingestion and migration builds (Client-owned).",
-      "Remediation of defects in Client-built components, and achievement of numeric targets for Client-built work.",
-      "Hypercare beyond the 48-hour defect watch, post-launch maintenance, and go-live planning and production deployment.",
-      "Creation, extension or maintenance of the Client's design system, and UAT coordination and sign-off."
+      "Platform infrastructure and DevOps, including Terraform, CI/CD pipelines, monitoring and telemetry (Client-owned).",
+      "Security design, threat modeling, platform hardening and RBAC/secrets implementation.",
+      "Architecture and design stories, Snowflake data model design and data governance design and controls.",
+      "Data ingestion and migration build, including MTA Store migration, GWAS Atlas ETL, PubMed ingestion, PHG/GATSBY ingestion and trait taxonomy definition.",
+      "Integration test plan, UAT coordination and sign-off, go-live planning, production deployment and MTA Store decommission.",
+      "Hypercare and post-go-live support beyond the 48-hour defect watch, and any post-launch maintenance.",
+      "Remediation of defects in Client-built components and achievement of numeric targets for Client-built work.",
+      "Creation, extension or maintenance of the Client-provided design system."
     ],
     "source_reference": {
       "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-      "clause_or_slide": "Page 1 Sections 1-2; Exhibit A Sections 1, 2, 4, 8, 9",
+      "clause_or_slide": "Page 1 (Sections 1-2); Exhibit A Sections 1, 2, 4, 9",
       "confidence_score": 0.95
     }
   }

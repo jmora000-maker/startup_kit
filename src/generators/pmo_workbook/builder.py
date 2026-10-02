@@ -401,14 +401,14 @@ def calculate_start_date(baseline: StartupKitBaseline, user_start_date: Optional
     if user_start_date is not None:
         return user_start_date, "Provided"
 
+    if baseline.sow_awarded_date is not None:
+        return baseline.sow_awarded_date, "Provided"
+
     if today is None:
         today = date.today()
 
-    ref_date = baseline.sow_awarded_date
-    basis = "Assumed - first Monday after award; confirm"
-    if ref_date is None:
-        ref_date = today
-        basis = "Assumed - first Monday after generation date; confirm"
+    ref_date = today
+    basis = "Assumed - first Monday after generation date; confirm"
 
     # First Monday on or after ref_date
     days_to_monday = (0 - ref_date.weekday()) % 7

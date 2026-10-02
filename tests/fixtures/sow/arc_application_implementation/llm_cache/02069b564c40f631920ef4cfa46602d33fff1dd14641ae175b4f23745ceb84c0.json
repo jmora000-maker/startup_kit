@@ -8,31 +8,31 @@
     "decisions": [
       {
         "id": "DEC-01",
-        "decision_text": "The engagement is Fixed Fee with milestone billing, totaling $200,365 across four milestones, each invoiced on completion.",
-        "decision_owner": "Toptal and Syngenta",
-        "decision_date": "2026-09-24",
-        "rationale": "Syngenta accepted the fixed-price four-phase model. Milestone fees: $26,808 (P1), $60,356 (P2a), $68,210 (P2b), $44,991 (P3).",
+        "decision_text": "The engagement is Fixed Fee with milestone billing, totaling $200,365 across four milestones: P1 $26,808, P2a $60,356, P2b $68,210, P3 $44,991.",
+        "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+        "decision_date": null,
+        "rationale": "The fixed fee is based on the agreed scope, timing, client responsibilities and assumptions. Each milestone is invoiced on completion.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 2 (Fees)",
-          "confidence_score": 0.95
+          "clause_or_slide": "Section 2",
+          "confidence_score": 0.98
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-02",
-        "decision_text": "Delivery runs in four sequential phases (P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch). Each phase is an acceptance gate with its own deliverables, acceptance criteria and sign-off, and UAT runs after each.",
+        "decision_text": "Delivery runs in four sequential milestones that act as acceptance gates: P1 Foundation (weeks 1-6), P2a Services and Data (weeks 7-16), P2b Application Surface (weeks 17-21) and P3 Launch (weeks 22-26). Each has its own deliverables, acceptance criteria and sign-off.",
         "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": "2026-09-24",
-        "rationale": "The phases follow Syngenta's own plan, with P2 split on a real technical dependency boundary. Sign-off comes from Mike Magwire and Satya.",
+        "rationale": "The phases follow the client's own plan, with P2 split on a real technical dependency boundary. Estimated start is October 7, 2026 and estimated completion April 6, 2027.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "phase-scope-and-acceptance-syngenta-arc.docx",
-          "clause_or_slide": "Section 1 (How the four phases fit together)",
+          "clause_or_slide": "Section 1: How the four phases fit together",
           "confidence_score": 0.95
         },
         "status": "Approved",
@@ -41,73 +41,73 @@
       {
         "id": "DEC-03",
         "decision_text": "Syngenta owns the platform layer (Terraform, infrastructure) and the data tier (ingestion pipelines, Snowflake data model). Toptal owns ARC application development: the micro-frontend shell, ARC micro-frontend, FastAPI services and nomenclature service.",
-        "decision_owner": "Toptal and Syngenta",
+        "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": "2026-09-24",
-        "rationale": "This ownership split was stated by Syngenta's technical lead and defines who builds, and who remediates defects in, each component.",
+        "rationale": "ARC is one application within a larger Syngenta platform. This split sets who builds and who remediates each component.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 1 (Overview)",
-          "confidence_score": 0.95
+          "document_name": "phase-scope-and-acceptance-syngenta-arc.docx",
+          "clause_or_slide": "Section 1: Who builds what",
+          "confidence_score": 0.97
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-04",
-        "decision_text": "Toptal delivers automated QA test scripts, their execution and defect reports for both Toptal-built and Syngenta-built components, rather than manual QA. Testing is against the full platform, with SSO and external integrations in test scope.",
+        "decision_text": "Toptal delivers QA test automation for the whole program, covering both Toptal-built and Syngenta-built components. Testing is against the full platform, with SSO and external integrations in scope, and the output is automated test scripts rather than manual QA.",
         "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
         "decision_date": "2026-09-24",
-        "rationale": "This is the position Syngenta stated. Automated scripts make test coverage durable rather than a one-off pass.",
+        "rationale": "This is the position Syngenta stated on the client call. Automated scripts make test coverage durable rather than a one-off pass.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "phase-scope-and-acceptance-syngenta-arc.docx",
-          "clause_or_slide": "Section 2 (QA)",
-          "confidence_score": 0.95
+          "clause_or_slide": "Section 2: QA",
+          "confidence_score": 0.97
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-05",
-        "decision_text": "Toptal tests and certifies Syngenta-built components, but Syngenta remediates failures. Numeric targets on Syngenta-built work (e.g., PubMed precision, GWAS Atlas coverage, taxonomy coverage, referential integrity) are Syngenta's to achieve and are not a condition of accepting Toptal's work.",
+        "decision_text": "Toptal tests and whoever built the component fixes it. For \"Certification\" criteria on Syngenta-built work, Toptal delivers the test scripts, their execution and a defect report. Achieving the target and remediating failures is Syngenta's responsibility and is not a condition of acceptance.",
         "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": "2026-09-24",
-        "rationale": "Writing a test for a component is not a guarantee that the component meets its target. Toptal re-runs scripts after remediation, and additional re-runs go through Change Order.",
+        "rationale": "Writing a test for a component is not a guarantee that the component meets its numeric target. Re-testing after remediation is included, and additional re-runs go through Change Order.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 3 (Quality Assurance and Test Automation)",
-          "confidence_score": 0.95
+          "clause_or_slide": "Exhibit A, Sections 3 and 4",
+          "confidence_score": 0.96
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-06",
-        "decision_text": "A missed latency or render-time target is treated as met for Toptal's work if telemetry shows the cause is a Client-owned platform component, Client-provided third-party item, data volume or environment. The finding is logged in the defect report for Client remediation.",
-        "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+        "decision_text": "If telemetry shows a missed latency or render target is caused by a Client-owned platform component, a Client-provided third-party item, or conditions outside Toptal's control, the criterion is treated as met for Toptal's work. The finding is logged in the defect report for Client remediation.",
+        "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": null,
-        "rationale": "Toptal-built components run on Syngenta-owned Snowflake, Azure AD, CloudFront and upstream systems that Toptal does not control.",
+        "rationale": "Toptal-built components run on Client-owned Snowflake, Azure AD, CloudFront, upstream systems and networks. Performance depends on these.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 (Latency Acceptance Criteria)",
-          "confidence_score": 0.9
+          "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-07",
-        "decision_text": "UAT is included in the fixed price and limited to two runs per milestone, covering all UAT and not only Toptal-built work. Additional runs are handled by Change Order.",
-        "decision_owner": "Toptal and Syngenta",
+        "decision_text": "UAT runs after each milestone and is included in the fixed price, limited to two runs per milestone. Runs beyond two are handled by Change Order.",
+        "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": "2026-09-24",
-        "rationale": "Agreed on the client call to bound UAT effort within the fixed price.",
+        "rationale": "UAT scope boundaries were agreed on the client call and are treated as settled. Two runs cap the effort inside the fixed price.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
@@ -120,47 +120,47 @@
       },
       {
         "id": "DEC-08",
-        "decision_text": "Changes outside Toptal's control that force extra UAT or test cycles or test-script rework are handled by Change Order. Examples are upstream Snowflake schema changes, API taxonomy shifts, and Cogen availability below about 95%.",
-        "decision_owner": "Toptal and Syngenta",
+        "decision_text": "Changes outside Toptal's control that force additional UAT or test cycles or rework of test scripts, such as upstream Snowflake schema changes and API taxonomy shifts, are handled by Change Order.",
+        "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
         "decision_date": "2026-09-24",
-        "rationale": "This protects the fixed price from rework caused by Syngenta-controlled or external changes.",
+        "rationale": "This protects the fixed price from upstream changes that Toptal does not control.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 7 (Assumptions & Dependencies)",
-          "confidence_score": 0.9
+          "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-09",
-        "decision_text": "Toptal will use Syngenta's existing design system for all user-facing screens. Creating, extending or maintaining the design system is excluded, and additional components or design-system changes go through Change Order.",
-        "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
-        "decision_date": null,
-        "rationale": "Estimates cover only integrating the design system and building a limited set of ARC-specific components. Syngenta must provide design system access and Milestone 3 UI/UX designs by the start date.",
+        "decision_text": "The Cogen API is assumed to be about 95% stable, as assessed by Syngenta. Test failures and re-test cycles caused by availability below that level are handled by Change Order.",
+        "decision_owner": "Mike Magwire (Client Contact)",
+        "decision_date": "2026-09-24",
+        "rationale": "Cogen is the only real external dependency, and its stability is outside Toptal's control.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 7 (Assumptions & Dependencies)",
-          "confidence_score": 0.9
+          "confidence_score": 0.93
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-10",
-        "decision_text": "Test script maintenance means in-flight upkeep during development only. There is no post-launch maintenance phase, and hypercare beyond the 48-hour post-deployment defect watch is out of scope.",
-        "decision_owner": "Toptal and Syngenta",
-        "decision_date": "2026-09-24",
-        "rationale": "This was settled and is not to be reopened, so post-launch support does not creep into the fixed price.",
+        "decision_text": "Toptal will use Syngenta's existing design system for all user-facing screens. Creating, extending or maintaining the design system is excluded, and further components or design-system changes are handled by Change Order.",
+        "decision_owner": "Mike Magwire (Client Contact)",
+        "decision_date": null,
+        "rationale": "Estimates cover integration of the design system and a bounded number of ARC-specific components only. Syngenta must provide design system access and UI/UX designs for the Milestone 3 screens by the start date.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Sections 3 and 9",
+          "clause_or_slide": "Exhibit A, Section 7 (Assumptions & Dependencies)",
           "confidence_score": 0.9
         },
         "status": "Approved",
@@ -168,31 +168,31 @@
       },
       {
         "id": "DEC-11",
-        "decision_text": "Each milestone has a 5-business-day acceptance period. Silence or commercial use counts as acceptance, and after three failed remediation attempts Syngenta may terminate the SOW and pay for work completed.",
+        "decision_text": "Each milestone has a 5-business-day acceptance period after Toptal gives notice of completion. The milestone is deemed accepted if no written failure notice is given in that time or if the work is used in production, and up to three remediation attempts are allowed for nonconformance.",
         "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": null,
-        "rationale": "A defined acceptance window and remediation limit give a predictable path to milestone sign-off and billing.",
+        "rationale": "This gives a clear, time-boxed acceptance process that triggers milestone billing. Acceptance requires material conformance to the criteria.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 7 (Acceptance)",
-          "confidence_score": 0.95
+          "clause_or_slide": "Section 7",
+          "confidence_score": 0.97
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-12",
-        "decision_text": "Governance cadence: Day-1 kickoff, biweekly sprint demos, joining Syngenta's daily standups, ad-hoc working sessions, a milestone acceptance review at each milestone end, and a Weekly Status Report from the Delivery Manager.",
+        "decision_text": "Governance cadence is a Day 1 kickoff, biweekly sprint demos, Toptal joining Syngenta's daily standups, ad-hoc working sessions, a milestone acceptance review at each milestone end, and a Weekly Status Report. Work uses SAFe methodology and terminology.",
         "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
         "decision_date": null,
-        "rationale": "This keeps milestone status, risks, blockers and Client decisions visible, and Syngenta is asked to confirm each weekly report.",
+        "rationale": "This keeps progress, risks and decisions visible. Syngenta is expected to respond in writing to decision requests and to each weekly report.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 5 (Engagement Governance)",
+          "clause_or_slide": "Exhibit A, Sections 1 and 5",
           "confidence_score": 0.95
         },
         "status": "Approved",
@@ -200,47 +200,47 @@
       },
       {
         "id": "DEC-13",
-        "decision_text": "Delivery uses SAFe-aligned methodology and terminology. Terms such as epic, feature, user story, MVP and backlog follow SAFe definitions unless defined otherwise.",
+        "decision_text": "Post-launch maintenance and hypercare beyond the 48-hour post-deployment defect watch are out of scope. Test script \"maintenance\" means in-flight upkeep during development only.",
         "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
         "decision_date": null,
-        "rationale": "A common vocabulary avoids ambiguity in scope, estimation and reporting.",
+        "rationale": "The scope ends at launch, with a 48-hour production defect watch. This definition of maintenance is settled and not to be reopened.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 1 (Overview)",
-          "confidence_score": 0.9
+          "clause_or_slide": "Exhibit A, Sections 3 and 9",
+          "confidence_score": 0.95
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-14",
-        "decision_text": "The estimated schedule is 26 weeks from an estimated start of October 7, 2026 to April 6, 2027 (P1 weeks 1–6, P2a 7–16, P2b 17–21, P3 22–26). If the start date moves by mutual agreement, the end date shifts equally without a Change Order.",
-        "decision_owner": "Toptal and Syngenta",
+        "decision_text": "Syngenta performs platform infrastructure and DevOps, security design, architecture and design stories, Snowflake data model design, data ingestion and migration build, UAT coordination, go-live and decommission activities. Toptal's QA automation for these items remains in scope where listed.",
+        "decision_owner": "Mike Magwire (Client Contact)",
         "decision_date": null,
-        "rationale": "Keeping the performance period constant protects the plan if the start moves. The schedule assumes no holiday stoppages.",
+        "rationale": "This keeps Toptal focused on ARC application build and QA test automation. Syngenta-owned work must be complete before dependent Toptal work can start.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 3 (Schedule); Exhibit A, Section 7",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A, Sections 6 and 9",
+          "confidence_score": 0.93
         },
         "status": "Approved",
         "linked_action_id": null
       },
       {
         "id": "DEC-15",
-        "decision_text": "Syngenta is responsible for infrastructure and DevOps, security design, architecture and design stories, Snowflake data model design, data ingestion and migration builds, UAT coordination, and go-live and decommission work. Toptal's dependent work starts only after the related Syngenta-owned work is complete.",
-        "decision_owner": "Mike Magwire (Client Contact)",
+        "decision_text": "If the start date changes by mutual agreement, the completion date shifts by the same amount so the performance period stays unchanged. This adjustment needs no Change Order, only written confirmation (email suffices).",
+        "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
         "decision_date": null,
-        "rationale": "These items sit outside Toptal's scope, and the fixed schedule and fees depend on Syngenta completing them before the dependent Toptal work is due to begin.",
+        "rationale": "The start date is still open, and the phase sequence depends on it. This avoids contract overhead for a date shift.",
         "linked_raid_item": null,
         "linked_artifact": null,
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Sections 6, 7 and 9",
+          "clause_or_slide": "Section 3.C",
           "confidence_score": 0.9
         },
         "status": "Approved",

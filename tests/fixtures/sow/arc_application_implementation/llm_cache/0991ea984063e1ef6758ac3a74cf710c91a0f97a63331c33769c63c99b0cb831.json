@@ -8,20 +8,25 @@
     "milestones": [
       {
         "id": "M1",
-        "description": "Project kickoff and start of the P1 Foundation phase.",
-        "external_date": "2026-10-07",
+        "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication and the related test automation are delivered and signed off.",
+        "external_date": "2026-11-17",
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "Client provides design system access, UI/UX designs for Milestone 3 screens, and coding and delivery documentation standards by the start date"
+          "Client provides design system access and UI/UX designs by the start date",
+          "Client IdP team is available for Azure AD/MSAL integration",
+          "Client delivers coding and delivery documentation standards on or before the start date",
+          "Client completes its own foundation work (platform infrastructure, Snowflake data model) before the related Toptal tests"
         ],
         "critical_path_assumptions": [
-          "Start date is not yet agreed with the client; all later dates shift if it changes"
+          "Estimated schedule is project weeks 1-6 from the start date of 2026-10-07",
+          "No holiday breaks or stoppages affect delivery",
+          "Client sign-off is given within 5 business days of milestone completion notice"
         ],
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 3.A; Exhibit A Sections 5.1 and 6",
-          "confidence_score": 0.85
+          "clause_or_slide": "Section 2.B Fees (milestone table); Exhibit A Sections 4 and 7",
+          "confidence_score": 0.95
         },
         "linked_action_id": null,
         "merged_milestone_ids": [],
@@ -32,23 +37,25 @@
       },
       {
         "id": "M2",
-        "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, and the related test and certification outputs are delivered.",
-        "external_date": "2026-11-17",
+        "description": "P2a Services and Data accepted: search/detail APIs, async query processing, OneGWAS direct-write integration and data validation test suites are delivered and signed off.",
+        "external_date": "2027-01-26",
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "Client-built Terraform estate, CI/CD, and Snowflake data model are in place",
-          "Client identity provider team is available for authentication work",
-          "Client design system is available"
+          "Client completes Snowflake schema DDL (HS-4781) before Toptal backend work begins",
+          "Client completes data ingestion and migration pipelines (GWAS Atlas, MTA Store, PHG/GATSBY, PubMed, trait taxonomy) before the related validation tests",
+          "Client domain experts and domain users are available for validation",
+          "P1 Foundation accepted"
         ],
         "critical_path_assumptions": [
-          "Planned for weeks 1-6 from the start date",
-          "Fee of $26,808 is invoiced on acceptance",
-          "Client sign-off by Mike Magwire and Satya after UAT"
+          "Estimated schedule is project weeks 7-16 from the start date",
+          "Cogen API is available and stable at about 95%",
+          "UAT is limited to two runs per milestone",
+          "Upstream Snowflake schema changes or taxonomy shifts requiring rework are handled by Change Order"
         ],
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 2.B (Milestone 1); Exhibit A Sections 2.1 and 4",
+          "clause_or_slide": "Section 2.B Fees (milestone table); Exhibit A Sections 4 and 7",
           "confidence_score": 0.95
         },
         "linked_action_id": null,
@@ -56,28 +63,28 @@
         "extracted_ids": [
           "M2"
         ],
-        "phase": "P1"
+        "phase": "P2a"
       },
       {
         "id": "M3",
-        "description": "P2a Services and Data accepted: search and detail endpoints, async processing, OneGWAS direct-write, and data validation outputs are delivered.",
-        "external_date": "2027-01-26",
+        "description": "P2b Application Surface accepted: ARC faceted search, result detail, haplotype visualization and nomenclature service are delivered with their test suites and signed off.",
+        "external_date": "2027-03-02",
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "Client deploys the Snowflake schema (HS-4781) before backend work starts",
-          "P1 Foundation is accepted",
-          "Client-built ingestion pipelines and trait taxonomy are completed",
-          "Cogen API is available at about 95% stability"
+          "P2a Services and Data accepted",
+          "Client provides UI/UX designs for the Milestone 3 screens",
+          "Client completes haplotype schema extensions, haplotype ingestion pipeline and canonical trait list/synonyms",
+          "Client gives advance notice of any design system changes"
         ],
         "critical_path_assumptions": [
-          "Planned for weeks 7-16 from the start date",
-          "Fee of $60,356 is invoiced on acceptance",
+          "Estimated schedule is project weeks 17-21 from the start date",
+          "Client's existing design system is used; creating or extending it is out of scope",
           "UAT is limited to two runs per milestone"
         ],
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 2.B (Milestone 2); Exhibit A Sections 2.2, 4 and 7",
+          "clause_or_slide": "Section 2.B Fees (milestone table); Exhibit A Sections 4, 6 and 7",
           "confidence_score": 0.95
         },
         "linked_action_id": null,
@@ -85,61 +92,34 @@
         "extracted_ids": [
           "M3"
         ],
-        "phase": "P2a"
+        "phase": "P2b"
       },
       {
         "id": "M4",
-        "description": "P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, haplotype endpoints, and nomenclature service are delivered.",
-        "external_date": "2027-03-02",
+        "description": "P3 Launch accepted: integration, performance, security and cross-browser testing, UAT, hardening, production smoke tests with a 48-hour defect watch, and training materials are completed.",
+        "external_date": "2027-04-06",
         "internal_buffer_date": null,
         "owner": "Delivery Manager",
         "key_dependencies": [
-          "P2a Services and Data is accepted",
-          "Client provides UI/UX designs for the Milestone 3 screens",
-          "Client extends the Snowflake schema and views for haplotype attributes"
+          "P2b Application Surface accepted",
+          "Client scientist UAT groups are available",
+          "Client maintains development, staging and production environments and resolves environment blockers",
+          "Client completes integration test plan, production deployment and MTA Store decommission work"
         ],
         "critical_path_assumptions": [
-          "Planned for weeks 17-21 from the start date",
-          "Fee of $68,210 is invoiced on acceptance",
-          "Further design-system components or changes are handled by Change Order"
+          "Estimated schedule is project weeks 22-26 from the start date",
+          "UAT is limited to two runs per milestone",
+          "Hypercare beyond the 48-hour defect watch and post-launch maintenance are out of scope"
         ],
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 2.B (Milestone 3); Exhibit A Sections 2.3, 4 and 7",
+          "clause_or_slide": "Section 2.B Fees (milestone table); Section 3 Schedule; Exhibit A Sections 4, 7 and 9",
           "confidence_score": 0.95
         },
         "linked_action_id": null,
         "merged_milestone_ids": [],
         "extracted_ids": [
           "M4"
-        ],
-        "phase": "P2b"
-      },
-      {
-        "id": "M5",
-        "description": "P3 Launch accepted: integration testing, UAT, hardening, production smoke tests with 48-hour defect watch, MTA Store parity confirmation, and training materials are completed.",
-        "external_date": "2027-04-06",
-        "internal_buffer_date": null,
-        "owner": "Delivery Manager",
-        "key_dependencies": [
-          "P2b Application Surface is accepted",
-          "Client coordinates scientist UAT groups and provides staging and production environments",
-          "Client completes production deployment and go-live planning"
-        ],
-        "critical_path_assumptions": [
-          "Planned for weeks 22-26 from the start date; this is the final project completion date",
-          "Fee of $44,991 is invoiced on acceptance",
-          "No holiday breaks or stoppages are assumed in the schedule"
-        ],
-        "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 2.B (Milestone 4) and Section 3.B; Exhibit A Sections 2.4, 4 and 7",
-          "confidence_score": 0.95
-        },
-        "linked_action_id": null,
-        "merged_milestone_ids": [],
-        "extracted_ids": [
-          "M5"
         ],
         "phase": "P3"
       }

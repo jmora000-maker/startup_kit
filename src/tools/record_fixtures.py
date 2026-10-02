@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from src.config import config
 from src.extractors.service import IngestionService
+from src.extractors.date_extractor import extract_stated_award_date
 from src.llm.client import LangChainLLMClient, CachingLLMClient, MockLLMClient
 from src.llm.aggregator import BaselineAggregator
 from main import create_mock_llm_client
@@ -160,6 +161,7 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
     backlog = backlog_ext.extract(docs, caching_client, deliverables=deliverables.deliverables)
     
     # Aggregate
+    stated_award_date, _ = extract_stated_award_date(docs)
     aggregator = BaselineAggregator()
     baseline = aggregator.aggregate(
         charter=charter,
@@ -176,6 +178,7 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
         talent_ext=talent,
         decisions_ext=decisions,
         conflicts_ext=conflicts,
+        sow_awarded_date=stated_award_date,
     )
     
     # Save baseline JSON

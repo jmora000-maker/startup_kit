@@ -221,8 +221,10 @@ def test_no_keys_configured_raises_value_error():
         client.generate_text("Test prompt")
 
 
-def test_max_tokens_configuration():
+def test_max_tokens_configuration(monkeypatch):
     """Verify max_tokens defaults to 16384 and is configurable."""
+    from src.config import config
+    monkeypatch.setattr(config, "max_tokens", 16384)
     client = LangChainLLMClient(
         api_key="",
         openai_api_key="",

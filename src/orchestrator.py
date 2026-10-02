@@ -16,6 +16,7 @@ from src.core.interfaces import (
 from src.core.models import StartupKitBaseline, OutputSelection, RunResult
 from src.extractors.service import IngestionService
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
+from src.extractors.date_extractor import extract_stated_award_date
 from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
 from src.llm.validation import validate_and_repair_baseline
 from src.llm.parsers import (
@@ -152,6 +153,11 @@ class StartupKitController:
 
         logger.info("Ingested %d document(s): %s", len(documents), [d.file_name for d in documents])
 
+        # VAL-11: Extract explicit award/start date statements from ingested documents
+        stated_award_date, date_warning = extract_stated_award_date(documents)
+        if stated_award_date:
+            logger.info("Extracted stated SOW award/start date: %s", stated_award_date)
+
         # 2. Multi-Pass LLM Extraction (Concurrent Execution)
         logger.info("Executing concurrent multi-pass LLM extractions (12 domain passes)...")
         with ThreadPoolExecutor(max_workers=14) as executor:
@@ -255,6 +261,7 @@ class StartupKitController:
             talent_ext=talent,
             decisions_ext=decisions,
             conflicts_ext=conflicts,
+            sow_awarded_date=stated_award_date,
         )
 
         # 3b. Extraction Validation Layer (Section 4, VAL-01 to VAL-07)

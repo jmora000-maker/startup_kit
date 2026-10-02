@@ -3954,9 +3954,9 @@
     "commercial_risk_mitigation": 53.3
   },
   "workflow_state": "Clarification Pending",
-  "sow_awarded_date": null,
+  "sow_awarded_date": "2026-10-07",
   "kit_drafted_date": "2026-10-02",
-  "sla_met": false,
+  "sla_met": true,
   "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
   "reviewer_names": [
     "Saadia Iqbal",
