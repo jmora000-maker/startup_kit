@@ -3,12 +3,14 @@
 import sys
 import re
 import json
+import zipfile
 import argparse
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple, Set
 import docx
 import openpyxl
+import pptx
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,276 @@ def load_oracle_for_folder(folder_path: Path, project_name: str = "") -> Optiona
     return None
 
 
+DECK_READINESS_REGEX = re.compile(
+    r'\b(G-?01|g01|readiness\s+gate|startup\s+readiness|readiness\s+checklist|readiness\s+score|gate\s+decision|gate\s+approval|mobiliz\w*|ACT-\d+)\b',
+    re.IGNORECASE,
+)
+
+
+def compute_deck20_rating(probability: str, impact: str) -> str:
+    """Recompute rating per DECK-20 rule."""
+    p_up = (probability or "").strip().capitalize()
+    i_up = (impact or "").strip().capitalize()
+
+    if (p_up == "High" and i_up in ("High", "Medium")) or (i_up == "High" and p_up in ("High", "Medium")):
+        return "High"
+    if p_up == "Low" and i_up == "Low":
+        return "Low"
+    return "Medium"
+
+
+def check_deck_invariants(
+    deck_path: Path,
+    manifest_path: Optional[Path],
+    kit_doc: Optional[Any],
+    wb: Optional[Any],
+) -> List[InvariantViolation]:
+    """Check deck presentation and trace manifest against INV-26, INV-27, INV-28, INV-29."""
+    violations: List[InvariantViolation] = []
+    if not deck_path.exists():
+        return violations
+
+    # Check zip parts and template text (INV-29)
+    with zipfile.ZipFile(deck_path, "r") as z:
+        slide_parts = [n for n in z.namelist() if n.startswith("ppt/slides/slide") and n.endswith(".xml")]
+        if len(slide_parts) != 6:
+            violations.append(InvariantViolation("INV-29", f"Deck contains {len(slide_parts)} slide parts, expected exactly 6", "Deck"))
+
+        for n in z.namelist():
+            if n.startswith("ppt/slides/"):
+                content = z.read(n).decode("utf-8", errors="ignore")
+                if "DELIVERY GOVERNANCE" in content:
+                    violations.append(InvariantViolation("INV-29", f"Template text 'DELIVERY GOVERNANCE' remains in '{n}'", "Deck"))
+
+    prs = pptx.Presentation(str(deck_path))
+    slides_list = list(prs.slides)
+    if len(slides_list) != 6:
+        violations.append(InvariantViolation("INV-28", f"Deck has {len(slides_list)} slides, expected exactly 6", "Deck"))
+
+    if len(slides_list) > 0 and slides_list[0].slide_layout.name != "CUSTOM_1":
+        violations.append(InvariantViolation("INV-29", f"Slide 1 layout is '{slides_list[0].slide_layout.name}', expected 'CUSTOM_1'", "Deck"))
+
+    for idx, s in enumerate(slides_list[1:], start=2):
+        if s.slide_layout.name != "CUSTOM_16":
+            violations.append(InvariantViolation("INV-29", f"Slide {idx} layout is '{s.slide_layout.name}', expected 'CUSTOM_16'", "Deck"))
+
+    # Expected titles (DECK-01, INV-28)
+    expected_titles = {
+        2: "Project Charter",
+        3: "Workstreams, Milestones, Deliverables and Dates",
+        4: "Acceptance Criteria",
+        5: "High-Risk Items",
+        6: "Client Collaboration",
+    }
+
+    # Check slide texts, notes, and limits (INV-04, INV-28)
+    for s_idx, slide in enumerate(slides_list, start=1):
+        # Speaker notes check
+        notes_text = slide.notes_slide.notes_text_frame.text if slide.has_notes_slide else ""
+        if "SOURCES:" not in notes_text and "SOURCES :" not in notes_text:
+            violations.append(InvariantViolation("INV-28", f"Slide {s_idx} speaker notes missing 'SOURCES:' line", "Deck"))
+
+        if DECK_READINESS_REGEX.search(notes_text):
+            violations.append(InvariantViolation("INV-04", f"Slide {s_idx} speaker notes contain readiness term: '{notes_text}'", "Deck"))
+
+        # Bullet count and word limits in notes
+        tp_lines = [line.strip().lstrip("•").strip() for line in notes_text.splitlines() if line.strip().startswith("•")]
+        if s_idx == 1 and not (2 <= len(tp_lines) <= 4):
+            violations.append(InvariantViolation("INV-28", f"Slide 1 has {len(tp_lines)} talking points, expected 2 to 4", "Deck"))
+        elif s_idx > 1 and not (3 <= len(tp_lines) <= 6):
+            violations.append(InvariantViolation("INV-28", f"Slide {s_idx} has {len(tp_lines)} talking points, expected 3 to 6", "Deck"))
+
+        for tp in tp_lines:
+            if len(tp.split()) > 30:
+                violations.append(InvariantViolation("INV-28", f"Slide {s_idx} talking point exceeds 30 words ({len(tp.split())} words): '{tp}'", "Deck"))
+
+        # Title check
+        if s_idx > 1 and len(slide.placeholders) > 0:
+            title_text = slide.placeholders[0].text.strip()
+            exp_t = expected_titles.get(s_idx, "")
+            if exp_t and title_text != exp_t:
+                violations.append(InvariantViolation("INV-28", f"Slide {s_idx} title is '{title_text}', expected '{exp_t}'", "Deck"))
+            if len(title_text.split()) > 8:
+                violations.append(InvariantViolation("INV-28", f"Slide {s_idx} title exceeds 8 words ({len(title_text.split())} words): '{title_text}'", "Deck"))
+
+        # Shape text check (INV-04, placeholders, cell length)
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                full_tf_text = shape.text_frame.text
+                if DECK_READINESS_REGEX.search(full_tf_text):
+                    violations.append(InvariantViolation("INV-04", f"Slide {s_idx} shape text contains readiness term: '{full_tf_text}'", "Deck"))
+                for p in shape.text_frame.paragraphs:
+                    p_txt = p.text.strip()
+                    if p_txt in ("[UNASSIGNED]", "[TBD]", "[CONFIRMATION REQUIRED]", "None", "null", "NULL"):
+                        violations.append(InvariantViolation("INV-28", f"Slide {s_idx} contains raw placeholder: '{p_txt}'", "Deck"))
+
+            if shape.has_table:
+                table = shape.table
+                for r_idx, row in enumerate(table.rows):
+                    for c_idx, cell in enumerate(row.cells):
+                        c_txt = cell.text.strip()
+                        if DECK_READINESS_REGEX.search(c_txt):
+                            violations.append(InvariantViolation("INV-04", f"Slide {s_idx} table cell R{r_idx}C{c_idx} contains readiness term: '{c_txt}'", "Deck"))
+                        if c_txt in ("[UNASSIGNED]", "[TBD]", "[CONFIRMATION REQUIRED]", "None", "null", "NULL"):
+                            violations.append(InvariantViolation("INV-28", f"Slide {s_idx} table cell contains raw placeholder: '{c_txt}'", "Deck"))
+                        if r_idx > 0 and len(c_txt.split()) > 15 and not c_txt.startswith("+"):
+                            # If cell contains multiple lines (e.g. deliverables list), check each line
+                            lines = [ln.strip() for ln in c_txt.splitlines() if ln.strip()]
+                            if lines and all(len(ln.split()) <= 15 for ln in lines):
+                                pass
+                            else:
+                                violations.append(InvariantViolation("INV-28", f"Slide {s_idx} table cell R{r_idx}C{c_idx} exceeds 15 words: '{c_txt}'", "Deck"))
+
+    # Table capacities and completeness (INV-27)
+    # Check Slide 3 schedule table
+    s3 = slides_list[2] if len(slides_list) >= 3 else None
+    if s3:
+        s3_tables = [sh.table for sh in s3.shapes if sh.has_table]
+        if s3_tables:
+            s3_tab = s3_tables[0]
+            if len(s3_tab.rows) - 1 > 12:
+                violations.append(InvariantViolation("INV-27", f"Slide 3 schedule table has {len(s3_tab.rows)-1} rows, exceeding capacity of 12", "Deck"))
+
+    # Check Slide 4 acceptance table
+    s4 = slides_list[3] if len(slides_list) >= 4 else None
+    if s4:
+        s4_tables = [sh.table for sh in s4.shapes if sh.has_table]
+        if s4_tables:
+            s4_tab = s4_tables[0]
+            if len(s4_tab.rows) - 1 > 14:
+                violations.append(InvariantViolation("INV-27", f"Slide 4 acceptance table has {len(s4_tab.rows)-1} rows, exceeding capacity of 14", "Deck"))
+
+    # Check Slide 5 risks table
+    s5 = slides_list[4] if len(slides_list) >= 5 else None
+    if s5:
+        s5_tables = [sh.table for sh in s5.shapes if sh.has_table]
+        if s5_tables:
+            s5_tab = s5_tables[0]
+            if len(s5_tab.rows) - 1 > 6:
+                violations.append(InvariantViolation("INV-27", f"Slide 5 risks table has {len(s5_tab.rows)-1} rows, exceeding capacity of 6", "Deck"))
+
+    # Traceability check (INV-26, DECK-05, DECK-20)
+    if not manifest_path or not manifest_path.exists():
+        violations.append(InvariantViolation("INV-26", "Trace manifest file is missing beside the deck", "Deck"))
+        return violations
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+    except Exception as e:
+        violations.append(InvariantViolation("INV-26", f"Failed to load trace manifest: {e}", "Deck"))
+        return violations
+
+    entries = manifest_data.get("entries", [])
+    if not entries:
+        violations.append(InvariantViolation("INV-26", "Trace manifest has zero entries", "Deck"))
+
+    # Index Kit text and Workbook cells
+    kit_text_blob = ""
+    if kit_doc:
+        for p in kit_doc.paragraphs:
+            kit_text_blob += p.text + "\n"
+        for t in kit_doc.tables:
+            for r in t.rows:
+                kit_text_blob += " | ".join(c.text.strip() for c in r.cells) + "\n"
+
+    wb_cells_by_sheet: Dict[str, List[List[str]]] = {}
+    if wb:
+        for sname in wb.sheetnames:
+            sheet_rows = []
+            for r in wb[sname].iter_rows(values_only=True):
+                sheet_rows.append([str(c or "").strip() for c in r])
+            wb_cells_by_sheet[sname] = sheet_rows
+
+    for entry in entries:
+        slide_num = entry.get("slide")
+        element = entry.get("element", "")
+        disp_val = entry.get("displayed_value", "").strip()
+        trace = entry.get("trace")
+
+        if not trace:
+            violations.append(InvariantViolation("INV-26", f"Slide {slide_num} element '{element}' has no TraceRef", "Deck"))
+            continue
+
+        artifact = trace.get("artifact")
+        locator = trace.get("locator")
+        key = trace.get("key")
+        field_name = trace.get("field")
+
+        if not artifact or not locator:
+            violations.append(InvariantViolation("INV-26", f"Slide {slide_num} element '{element}' has incomplete TraceRef: {trace}", "Deck"))
+            continue
+
+        if artifact == "Startup Kit":
+            if not kit_doc:
+                continue
+            # Handle placeholder
+            if disp_val == "To be confirmed":
+                continue
+            # Verify text is in Kit
+            # Normalize whitespace
+            norm_disp = re.sub(r"\s+", " ", disp_val)
+            norm_kit = re.sub(r"\s+", " ", kit_text_blob)
+            if norm_disp not in norm_kit:
+                # Check if it's a clause-prefix
+                matched_prefix = False
+                for delim in [".", ";", ":", "-", ","]:
+                    if norm_disp.endswith(delim) and norm_disp[:-1].strip() in norm_kit:
+                        matched_prefix = True
+                        break
+                # Check if it's a composite bullet like "Name (Role): Decision Rights" or "Item: Cadence"
+                if not matched_prefix and ":" in norm_disp:
+                    parts = [p.strip() for p in norm_disp.split(":") if p.strip()]
+                    if all(any(p_part in norm_kit for p_part in [p, p.split("(")[0].strip()]) for p in parts):
+                        matched_prefix = True
+                if not matched_prefix and not any(part in norm_kit for part in norm_disp.split(" · ")):
+                    violations.append(InvariantViolation(
+                        "INV-26",
+                        f"Slide {slide_num} element '{element}' displayed value '{disp_val}' not found in Startup Kit",
+                        "Deck"
+                    ))
+
+        elif artifact == "Project Delivery Workbook":
+            if not wb:
+                continue
+            sheet_name = locator
+            # Find matching sheet
+            target_sheet_rows = None
+            for sname, srows in wb_cells_by_sheet.items():
+                if sheet_name.lower() in sname.lower():
+                    target_sheet_rows = srows
+                    break
+
+            if target_sheet_rows is None:
+                violations.append(InvariantViolation("INV-26", f"Workbook sheet '{sheet_name}' referenced by TraceRef not found", "Deck"))
+                continue
+
+            if disp_val == "To be confirmed":
+                continue
+
+            # DECK-20 Rating check
+            if field_name in ("Rating", "Severity") or locator == "RAID Log" and field_name == "Probability and Impact":
+                # Find row by key in RAID sheet
+                found_row = None
+                for row in target_sheet_rows:
+                    if len(row) > 0 and key.lower() in row[0].lower():
+                        found_row = row
+                        break
+                if found_row:
+                    # Prob is col K (index 10), Impact is col L (index 11)
+                    prob_val = found_row[10] if len(found_row) > 10 else ""
+                    imp_val = found_row[11] if len(found_row) > 11 else ""
+                    expected_rating = compute_deck20_rating(prob_val, imp_val)
+                    if disp_val in ("High", "Medium", "Low") and disp_val != expected_rating:
+                        violations.append(InvariantViolation(
+                            "INV-26",
+                            f"Slide {slide_num} RAID item '{key}' Rating '{disp_val}' differs from DECK-20 calculated rating '{expected_rating}' (Prob={prob_val}, Impact={imp_val})",
+                            "Deck"
+                        ))
+
+    return violations
+
+
 def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[str, Any]] = None) -> List[InvariantViolation]:
     """Inspect output folder containing Kit docx, Checklist docx, and Workbook xlsx against INV-01 to INV-25."""
     violations: List[InvariantViolation] = []
@@ -69,10 +341,18 @@ def check_artifacts_directory(folder_path: Path, oracle_override: Optional[Dict[
     kit_files = list(folder.glob("*_Startup_Kit.docx"))
     chk_files = list(folder.glob("*_Startup_Readiness_Checklist.docx"))
     wb_files = list(folder.glob("*_Project_Delivery_Workbook.xlsx"))
+    deck_files = list(folder.glob("*_Talent_Onboarding_Deck.pptx"))
+    manifest_files = list(folder.glob("*_Talent_Onboarding_Deck.trace.json"))
 
     kit_doc = docx.Document(str(kit_files[0])) if kit_files else None
     chk_doc = docx.Document(str(chk_files[0])) if chk_files else None
     wb = openpyxl.load_workbook(str(wb_files[0]), data_only=False) if wb_files else None
+
+    # Check deck invariants if deck is present (INV-26, INV-27, INV-28, INV-29)
+    if deck_files:
+        deck_path = deck_files[0]
+        manifest_path = manifest_files[0] if manifest_files else None
+        violations.extend(check_deck_invariants(deck_path, manifest_path, kit_doc, wb))
 
     # Parse Kit tables
     kit_milestones: List[List[str]] = []
