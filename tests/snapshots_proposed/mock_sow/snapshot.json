@@ -2371,8 +2371,8 @@
         "High",
         "High",
         "=IF(OR(K6=\"\",L6=\"\"),\"\",(IF(K6=\"High\",3,IF(K6=\"Medium\",2,1)))*(IF(L6=\"High\",3,IF(L6=\"Medium\",2,1))))",
-        "",
-        "",
+        "No IAM access provided 5 days prior to sprint 1",
+        "Escalate to Pfizer VP Sponsor and utilize local sandbox",
         "",
         "Open",
         "<DATE>",
@@ -2507,7 +2507,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Welcome the Talent PM and Talent Project Team to onboarding.\n• Engagement for Pfizer Inc. starting 2026-10-05 (Assumed - first Monday after award; confirm).\n• Review delivery charter, milestone commitments, acceptance criteria, and governance cadence.\n\nSOURCES: Startup Kit · Project Charter; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Pfizer Analytics & Cloud Modernization for Pfizer Inc.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 2,
@@ -2524,22 +2524,22 @@
           "Key facts"
         ],
         [
-          "Purpose and delivery model",
-          "Project Purpose",
+          "Purpose & delivery",
+          "Purpose",
           "Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.",
-          "Delivery Model & Governance",
-          "Toptal Talent Team (Agile/Milestone Hybrid)",
-          "Escalation Path",
+          "Delivery model",
+          "Delivery: Toptal Talent Team (Agile/Milestone Hybrid) | Governance: PMO Partnered Tier Governance Model",
+          "Escalation path",
           "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
         ],
         [
-          "Phases and boundaries",
-          "Delivery Phases",
-          "• Design & Architecture",
-          "• Deployment & Release",
-          "Out of Scope",
-          "• Legacy on-premise hardware decommissioning",
-          "• Pre-migration data cleansing and enrichment"
+          "Phases & scope",
+          "Phases",
+          "Design & Architecture",
+          "Deployment & Release",
+          "Out of scope",
+          "Legacy on-premise hardware decommissioning",
+          "Pre-migration data cleansing and enrichment"
         ]
       ],
       "tables": [
@@ -2574,7 +2574,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Project operates under Time and Materials contract terms and Partnered governance.\n• Delivery leadership: PMO Lead Sarah Connor, Delivery Manager Jane Doe, Talent PM John Smith.\n• Purpose: Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance..\n• Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• Delivery spans 2 phases from 2026-10-05 to 2026-11-30.\n\nSOURCES: Startup Kit · Project Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Purpose: Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: Jane Doe; Talent PM: John Smith; PMO Lead: Sarah Connor.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 3,
@@ -2610,7 +2610,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n• Delivery commits to 2 milestones across 2 workstreams.\n• All 3 deliverables are mapped to baseline milestone dates.\n• Date basis: Contract date.\n\nSOURCES: Project Delivery Workbook · Project Schedule; Startup Kit · Deliverables and Acceptance Matrix"
+      "notes": "TALKING POINTS:\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n• M1 (Design & Architecture) is due 2026-10-15.\n• M2 (Deployment & Release) is due 2026-11-30.\n• The dates for M1 are based on: Contract date.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 4,
@@ -2625,16 +2625,11 @@
         ],
         [
           "How acceptance works",
-          "Milestone Acceptance Process",
-          "1. Confirm: AWS IAM provisioning",
-          "2. Refine stories and acceptance criteria",
-          "3. Build Section 3.1",
-          "4. Peer review and unit test",
-          "5. Demo completed work to the client",
-          "6. Assemble acceptance evidence",
-          "Governance Parameters",
-          "Review Window: Formal written approval from Pfizer Engineering Lead within",
-          "Client Approver: Pfizer Chief Architect"
+          "Formal written approval from Pfizer Engineering Lead within 5 business days.",
+          "Confirm all M1 deliverables are accepted",
+          "Update schedule and RAID Log after acceptance",
+          "Review window: Formal written approval from Pfizer Engineering Lead within 5 business days.",
+          "Client approver: Pfizer Chief Architect"
         ]
       ],
       "tables": [
@@ -2661,7 +2656,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Acceptance is conducted at milestone level following defined quality review gates.\n• Milestone review window is Formal written approval from Pfizer Engineering Lead within with client approver Pfizer Chief Architect.\n• All 3 deliverable acceptance criteria must be verified with required completion evidence.\n• Submissions follow standard verification and rework remediation workflows.\n\nSOURCES: Project Delivery Workbook · WBS; Startup Kit · Deliverables and Acceptance Matrix"
+      "notes": "TALKING POINTS:\n• Acceptance is per deliverable; the M1 acceptance package has 2 steps, starting with: Confirm all M1 deliverables are accepted.\n• Review window: Formal written approval from Pfizer Engineering Lead within 5 business days.; client approver: Pfizer Chief Architect.\n• Evidence expected for DEL-01: Architecture Blueprint & Threat Model Document.\n\nSOURCES: Startup Kit · SOW Interpretation Summary, Deliverables and Acceptance Matrix; Project Delivery Workbook · WBS"
     },
     {
       "slide_index": 5,
@@ -2690,28 +2685,12 @@
             "Client IAM and AWS account provisioning delays",
             "High",
             "Delivery Manager",
-            "",
+            "Escalate to Pfizer VP Sponsor and utilize local sandbox",
             "Cross-phase"
-          ],
-          [
-            "RAID-04 (AMB-01)",
-            "Ambiguous Acceptance: Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated",
-            "Medium",
-            "Talent PM",
-            "Align contractual acceptance criteria to objective automated test passing metrics.",
-            "Cross-phase"
-          ],
-          [
-            "RAID-05 (CONF-01)",
-            "Date Conflict: Proposal schedule commits Milestone 2 delivery by 2026-11-15",
-            "Medium",
-            "Talent PM",
-            "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
-            "Deployment & Release"
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Active RAID tracking monitors 1 items rated High severity.\n• First priority risk is RAID-01: Client IAM and AWS account provisioning delays.\n• Mitigations and proactive response ownership are assigned across delivery phases.\n• New risks or issues should be raised via the delivery escalation path.\n\nSOURCES: Project Delivery Workbook · RAID Log; Startup Kit · Project Charter"
+      "notes": "TALKING POINTS:\n• 1 risks and issues are rated High; the first to watch is RAID-01: Client IAM and AWS account provisioning delays.\n• Early warning for RAID-01: No IAM access provided 5 days prior to sprint 1.\n• Owner of RAID-01: Delivery Manager.\n• Raise new risks and issues along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n\nSOURCES: Startup Kit · Project Startup Charter; Project Delivery Workbook · RAID Log"
     },
     {
       "slide_index": 6,
@@ -2725,22 +2704,59 @@
           "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
         ],
         [
-          "Client roles and approvers",
-          "• Pfizer VP Sponsor (Client Sponsor / Approver): Contractual approvals, deliverable sign-offs, change orders"
+          "Client roles",
+          "None recorded in the Startup Kit"
         ],
         [
           "Working rhythm",
-          "• Weekly Project Status Report (PSR): Weekly (Fridays)",
-          "• Monthly Business Review (MBR): Monthly"
+          "Weekly Project Status Report (PSR): Weekly (Fridays)",
+          "Monthly Business Review (MBR): Monthly"
         ],
         [
-          "What we need from the client",
-          "• M1: AWS IAM provisioning",
-          "• M2: Sample clinical dataset delivery"
+          "Client prerequisites",
+          "M1: AWS IAM provisioning",
+          "M2: Sample clinical dataset delivery"
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Engagement governance establishes regular cadence with 1 client stakeholders.\n• Communications rhythm includes 2 scheduled governance touchpoints.\n• First client prerequisite is required by M1: AWS IAM provisioning.\n• Active alignment ensures clear decision rights and rapid resolution of open items.\n\nSOURCES: Startup Kit · Stakeholder and Responsibility Model, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Monthly Business Review (MBR): Monthly.\n• Weekly Project Status Report (PSR): Weekly (Fridays).\n• Before Design & Architecture starts on 2026-10-05, the client prerequisite is: AWS IAM provisioning.\n• Before Deployment & Release starts on 2026-10-16, the client prerequisite is: Sample clinical dataset delivery.\n\nSOURCES: Startup Kit · Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 7,
+      "title": "Your Project Kit",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Your Project Kit"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Startup Kit",
+          "Pfizer_Analytics__Cloud_Modernization_Startup_Kit.docx",
+          "The approved project baseline: scope, deliverables and acceptance, governance, and RAID.",
+          "Sections used in this deck",
+          "Project Startup Charter",
+          "SOW Interpretation Summary",
+          "Deliverables and Acceptance Matrix",
+          "Communications and Reporting Plan"
+        ],
+        [
+          "Project Delivery Workbook",
+          "Pfizer_Analytics_Cloud_Modernization_Project_Delivery_Workbook.xlsx",
+          "The working delivery plan: schedule by phase, tasks, and the RAID Log.",
+          "Sheets",
+          "Project Schedule: gates, dates, and client prerequisites",
+          "WBS: deliverables and tasks, with acceptance steps",
+          "RAID Log: risks, issues, dependencies, and open questions"
+        ],
+        [
+          "Every fact in this deck traces to these two documents. Each slide's notes list its sources."
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Both files sit in the same folder as this deck.\n• The Startup Kit is the approved baseline; changes to it go through the escalation path on slide 2.\n• The Project Delivery Workbook is the plan to keep current as work progresses.\n• Each slide's SOURCES note says which section or sheet to open for detail.\n\nSOURCES: Startup Kit · Project Startup Charter, SOW Interpretation Summary, Deliverables and Acceptance Matrix, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule, WBS, RAID Log"
     }
   ]
 }
