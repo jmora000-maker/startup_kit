@@ -103,6 +103,10 @@ class AppConfig:
     max_tokens: int = int(os.getenv("MAX_TOKENS", "16384"))
     llm_cache_mode: str = os.getenv("LLM_CACHE_MODE", "off").lower()
     llm_cache_dir: Path = Path(os.getenv("LLM_CACHE_DIR", "tests/fixtures/llm_cache"))
+    deck_template_path: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
+
+
+DECK_TEMPLATE_PATH: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
 
 
 # Tool reserved prefixes that must never be classified as SOW identifiers (v6 Section 1.1)
