@@ -774,16 +774,13 @@ def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
     if title is None or sub is None or 0 not in layout_by_idx or 1 not in layout_by_idx:
         return [_inv("INV-32", "Slide 1 (CUSTOM_1) must have a title placeholder (idx 0) and a subtitle placeholder (idx 1)")]
     v: List[InvariantViolation] = []
-    # The cover text region is the bounding box of the two layout placeholders. A title that wraps to a second line
-    # grows downward and pushes the subtitle down inside that region (DECK-21 (5)), so each shape is held to the
-    # region, and the overlap check below keeps them apart.
-    boxes = [_rect(layout_by_idx[0]), _rect(layout_by_idx[1])]
-    lx0, ly0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
-    lx1, ly1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    # Each shape is held to its OWN layout placeholder rectangle, with no exception for a wrapped title. A wrapped
+    # title may push the subtitle down only within the slack below the subtitle's default position (DECK-21 (5)).
     for label, sh in (("title", title), ("subtitle", sub)):
         x0, y0, x1, y1 = _rect(sh)
+        lx0, ly0, lx1, ly1 = _rect(layout_by_idx[sh.placeholder_format.idx])
         if x0 < lx0 - EPS or y0 < ly0 - EPS or x1 > lx1 + EPS or y1 > ly1 + EPS:
-            v.append(_inv("INV-32", f"Slide 1 cover {label} (x {x0:.2f}-{x1:.2f}, y {y0:.2f}-{y1:.2f}) is outside the cover layout placeholder region (x {lx0:.2f}-{lx1:.2f}, y {ly0:.2f}-{ly1:.2f})"))
+            v.append(_inv("INV-32", f"Slide 1 cover {label} (x {x0:.2f}-{x1:.2f}, y {y0:.2f}-{y1:.2f}) is outside its layout placeholder (x {lx0:.2f}-{lx1:.2f}, y {ly0:.2f}-{ly1:.2f})"))
     size = _inherited_size_pt(title)
     if size is None:
         v.append(_inv("INV-32", "Slide 1 cover title has no font size on its runs or in its layout placeholder"))
@@ -794,6 +791,12 @@ def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
     text = title.text_frame.text
     # the cover-only margin (COVER_TITLE_WIDTH_SAFETY) is applied inside cover_title_height_in
     bottom = _rect(title)[1] + cover_title_height_in(text, _in(title.width) - inset_l - inset_r, size)
+    sub_size = _inherited_size_pt(sub)
+    if sub_size is not None:
+        sl, sr = _inherited_insets_in(sub)
+        need = L.text_height_pt(sub.text_frame.text, _in(sub.width) - sl - sr, sub_size) / 72.0
+        if need > _in(sub.height) + EPS:
+            v.append(_inv("INV-32", f"Slide 1 cover subtitle needs about {need:.2f} in but its frame is {_in(sub.height):.2f} in (fit estimate)"))
     sub_top = _rect(sub)[1]
     if bottom > sub_top + EPS:
         v.append(_inv("INV-32", f"Slide 1 cover title ('{text}') at {size:g} pt is estimated to end at y {bottom:.2f} in, below the subtitle's top at y {sub_top:.2f} in"))

@@ -159,7 +159,7 @@ def test_inv32_passes_when_a_long_cover_title_is_reduced_to_one_line():
 def test_inv32_fails_when_a_cover_placeholder_leaves_its_layout_bounds():
     prs, s = _cover_deck("Acme Genomics Platform")
     s.placeholders[1].top = s.placeholders[1].top + Inches(0.5)
-    assert any("cover subtitle" in m and "outside the cover layout placeholder region" in m for m in _inv32(prs))
+    assert any("cover subtitle" in m and "outside its layout placeholder" in m for m in _inv32(prs))
 
 
 def test_inv32_flags_runs_without_an_explicit_font_size():
@@ -219,13 +219,35 @@ def test_cover_title_keeps_the_layout_size_when_it_fits(tmp_path):
     assert title.text_frame.paragraphs[0].runs[0].font.size is None
 
 
-def test_cover_title_that_cannot_fit_at_28_pt_wraps_and_pushes_the_subtitle_down(tmp_path):
+def _layout_box(slide, idx):
+    ph = next(p for p in slide.slide_layout.placeholders if p.placeholder_format.idx == idx)
+    return ph.left, ph.top, ph.left + ph.width, ph.top + ph.height
+
+
+def test_cover_title_that_cannot_fit_at_28_pt_wraps_and_pushes_the_subtitle_down_within_its_own_box(tmp_path):
     name = "Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing and Supply Planning"
     prs, title, sub = _cover_of(tmp_path, name)
+    slide = prs.slides[0]
     assert title.text_frame.paragraphs[0].runs[0].font.size.pt == 28
     assert deck_checks.cover_title_lines(name, title.width / 914400.0, 28.0) == 2
-    assert sub.top >= title.top + title.height - 1
+    # the title keeps its own placeholder rectangle; the subtitle moves down but never past its placeholder's bottom edge
+    assert (title.left, title.top, title.left + title.width, title.top + title.height) == _layout_box(slide, 0)
+    sub_box = _layout_box(slide, 1)
+    assert sub.top > sub_box[1] and sub.top + sub.height == sub_box[3]
+    est_bottom = title.top / 914400.0 + deck_checks.cover_title_height_in(name, title.width / 914400.0, 28.0)
+    assert sub.top / 914400.0 >= est_bottom - 0.01
     assert [str(v) for v in deck_checks.check_inv32(prs)] == []
+
+
+def test_cover_title_needing_more_than_the_subtitle_slack_is_a_genuine_failure(tmp_path):
+    """A title that wraps to 3 lines at 28 pt cannot be accommodated by the subtitle's own slack. The writer does not
+    loosen the bounds: INV-32 reports the overlap (the Part 2 fallback is a human decision)."""
+    name = "Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing, Supply Planning, and Distribution Network Optimization Worldwide"
+    prs, title, sub = _cover_of(tmp_path, name)
+    assert deck_checks.cover_title_lines(name, title.width / 914400.0, 28.0) == 3
+    msgs = [str(v) for v in deck_checks.check_inv32(prs)]
+    assert any("cover title" in m and "below the subtitle's top" in m for m in msgs), msgs
+    assert not any("outside its layout placeholder" in m for m in msgs), msgs
 
 
 def test_card_text_frames_follow_deck_21_1(arc_bundle):

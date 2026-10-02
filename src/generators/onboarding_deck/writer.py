@@ -333,7 +333,10 @@ def _style_title(slide: Any, title: str, kicker: str) -> None:
 
 def _fit_cover(slide: Any) -> None:
     """DECK-21 (5): keep the cover title on one line by reducing its size from the layout's down to L.TITLE_PT. If it
-    still wraps, let it take the lines it needs and move the subtitle down, inside the layout's placeholder region.
+    still wraps, the title keeps its own placeholder rectangle (its text runs on below it) and the subtitle moves down
+    only as far as its own placeholder allows: its frame shrinks from the top so its bottom edge never passes the
+    layout's. If that slack is not enough, the subtitle stops at the limit and INV-32 reports the overlap; the writer
+    does not loosen anything.
 
     The line estimate is the one INV-32 uses (the cover-only margin lives in src.tools.deck_checks, the single source
     of truth for it). It is imported here, not at module level, because deck_checks imports this package."""
@@ -355,11 +358,13 @@ def _fit_cover(slide: Any) -> None:
         for run in title.text_frame.paragraphs[0].runs:
             run.font.size = Pt(size)
     if cover_title_lines(text, width_in, size) > 1:
-        title_h = int(round(cover_title_height_in(text, width_in, size) * 914400))
-        title.left, title.top, title.width, title.height = lt.left, lt.top, lt.width, title_h
-        sub_top = lt.top + title_h
-        sub.left, sub.top, sub.width = ls.left, sub_top, ls.width
-        sub.height = max(0, (ls.top + ls.height) - sub_top)
+        wanted_top = lt.top + int(round(cover_title_height_in(text, width_in, size) * 914400))
+        sub_size = _inherited_size_pt(sub)
+        sl, sr = _inherited_insets_in(sub)
+        sub_need = int(round(L.text_height_pt(sub.text_frame.text, ls.width / 914400.0 - sl - sr, sub_size) / 72.0 * 914400)) if sub_size else 0
+        sub_bottom = ls.top + ls.height
+        sub_top = max(ls.top, min(wanted_top, sub_bottom - sub_need))
+        sub.left, sub.top, sub.width, sub.height = ls.left, sub_top, ls.width, sub_bottom - sub_top
 
 
 def write_onboarding_deck(
