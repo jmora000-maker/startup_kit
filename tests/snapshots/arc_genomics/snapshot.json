@@ -7440,8 +7440,8 @@
         "High",
         "High",
         "=IF(OR(K6=\"\",L6=\"\"),\"\",(IF(K6=\"High\",3,IF(K6=\"Medium\",2,1)))*(IF(L6=\"High\",3,IF(L6=\"Medium\",2,1))))",
-        "",
-        "",
+        "Missed p95 targets in benchmarks or load tests",
+        "Use query observability (HS-4942) to attribute misses and report Client-owned causes for remediation",
         "",
         "Open",
         "<DATE>",
@@ -7467,8 +7467,8 @@
         "High",
         "High",
         "=IF(OR(K7=\"\",L7=\"\"),\"\",(IF(K7=\"High\",3,IF(K7=\"Medium\",2,1)))*(IF(L7=\"High\",3,IF(L7=\"Medium\",2,1))))",
-        "",
-        "",
+        "Failed certification test runs reported in defect reports",
+        "Report defects early, agree Client remediation timelines, and manage re-runs beyond the first through Change Order",
         "",
         "Open",
         "<DATE>",
@@ -7494,8 +7494,8 @@
         "Medium",
         "=IF(OR(K8=\"\",L8=\"\"),\"\",IF(OR(AND(K8=\"High\",L8=\"High\"),AND(K8=\"High\",L8=\"Medium\"),AND(K8=\"Medium\",L8=\"High\")),\"High\",IF(AND(K8=\"Low\",L8=\"Low\"),\"Low\",\"Medium\")))",
         "=IF(OR(K8=\"\",L8=\"\"),\"\",(IF(K8=\"High\",3,IF(K8=\"Medium\",2,1)))*(IF(L8=\"High\",3,IF(L8=\"Medium\",2,1))))",
-        "",
-        "",
+        "Unannounced schema or taxonomy changes by upstream teams",
+        "Ask Client for advance notice of changes and raise a Change Order for resulting rework",
         "",
         "Open",
         "<DATE>",
@@ -7521,8 +7521,8 @@
         "Medium",
         "=IF(OR(K9=\"\",L9=\"\"),\"\",IF(OR(AND(K9=\"High\",L9=\"High\"),AND(K9=\"High\",L9=\"Medium\"),AND(K9=\"Medium\",L9=\"High\")),\"High\",IF(AND(K9=\"Low\",L9=\"Low\"),\"Low\",\"Medium\")))",
         "=IF(OR(K9=\"\",L9=\"\"),\"\",(IF(K9=\"High\",3,IF(K9=\"Medium\",2,1)))*(IF(L9=\"High\",3,IF(L9=\"Medium\",2,1))))",
-        "",
-        "",
+        "A third UAT run is requested or required in any Milestone",
+        "Agree UAT scope, scientist group availability, and entry criteria before each run",
         "",
         "Open",
         "<DATE>",
@@ -7548,8 +7548,8 @@
         "High",
         "High",
         "=IF(OR(K10=\"\",L10=\"\"),\"\",(IF(K10=\"High\",3,IF(K10=\"Medium\",2,1)))*(IF(L10=\"High\",3,IF(L10=\"Medium\",2,1))))",
-        "",
-        "",
+        "Milestone acceptance review slipping past planned week",
+        "Include forward-looking risk assessment at each Milestone Acceptance Review and track critical path weekly",
         "",
         "Open",
         "<DATE>",
@@ -7575,8 +7575,8 @@
         "Medium",
         "=IF(OR(K11=\"\",L11=\"\"),\"\",IF(OR(AND(K11=\"High\",L11=\"High\"),AND(K11=\"High\",L11=\"Medium\"),AND(K11=\"Medium\",L11=\"High\")),\"High\",IF(AND(K11=\"Low\",L11=\"Low\"),\"Low\",\"Medium\")))",
         "=IF(OR(K11=\"\",L11=\"\"),\"\",(IF(K11=\"High\",3,IF(K11=\"Medium\",2,1)))*(IF(L11=\"High\",3,IF(L11=\"Medium\",2,1))))",
-        "",
-        "",
+        "Public holidays or planned team absences in the 26-week window",
+        "Review holiday calendars with the Client at kickoff and plan around known breaks",
         "",
         "Open",
         "<DATE>",
@@ -7602,8 +7602,8 @@
         "Medium",
         "=IF(OR(K12=\"\",L12=\"\"),\"\",IF(OR(AND(K12=\"High\",L12=\"High\"),AND(K12=\"High\",L12=\"Medium\"),AND(K12=\"Medium\",L12=\"High\")),\"High\",IF(AND(K12=\"Low\",L12=\"Low\"),\"Low\",\"Medium\")))",
         "=IF(OR(K12=\"\",L12=\"\"),\"\",(IF(K12=\"High\",3,IF(K12=\"Medium\",2,1)))*(IF(L12=\"High\",3,IF(L12=\"Medium\",2,1))))",
-        "",
-        "",
+        "Component count not agreed before frontend work starts",
+        "Agree and document the component count with the Client at kickoff; additional components go through Change Order",
         "",
         "Open",
         "<DATE>",
@@ -8911,5 +8911,377 @@
         ""
       ]
     ]
-  }
+  },
+  "deck_slides": [
+    {
+      "slide_index": 1,
+      "title": "ARC Genomics Platform",
+      "kicker": "Talent Team Onboarding · Syngenta · Start 2026-10-05",
+      "text_frames": [
+        [
+          "ARC Genomics Platform"
+        ],
+        [
+          "Talent Team Onboarding · Syngenta · Start 2026-10-05"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers ARC Genomics Platform for Syngenta.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 2,
+      "title": "Project Charter",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Project Charter"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Key facts"
+        ],
+        [
+          "Purpose & delivery",
+          "Purpose",
+          "Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.",
+          "Delivery model",
+          "Delivery: Toptal Talent Team (Agile/Milestone Hybrid) | Governance: PMO Partnered Tier Governance Model",
+          "Escalation path",
+          "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+        ],
+        [
+          "Phases & scope",
+          "Phases",
+          "P1 Foundation",
+          "P2a Services and Data",
+          "P2b Application Surface",
+          "P3 Launch",
+          "Out of scope",
+          "Platform infrastructure and DevOps: environment/IaC strategy, Terraform, CI/CD pipelines, monitoring and alerting, and shell telemetry.",
+          "Security design, threat modeling, platform hardening, and RBAC/secrets implementation.",
+          "Architecture and design work",
+          "Snowflake data model design, schema DDL, haplotype schema extensions, and data governance design and controls.",
+          "+4 more (see Startup Kit · SOW Interpretation Summary)"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Client Sponsor",
+            "Syngenta"
+          ],
+          [
+            "Contract Type",
+            "Fixed Bid"
+          ],
+          [
+            "Governance Tier",
+            "Partnered"
+          ],
+          [
+            "Start Date",
+            "2026-10-05 (Assumed - first Monday after generation date; confirm)"
+          ],
+          [
+            "Talent PM",
+            "To be confirmed"
+          ],
+          [
+            "Delivery Manager",
+            "To be confirmed"
+          ],
+          [
+            "PMO Lead",
+            "To be confirmed"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.\n• The contract type is Fixed Bid, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n• The project runs in 4 phases, from 2026-10-05 to 2027-04-02.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 3,
+      "title": "Workstreams, Milestones, Deliverables and Dates",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Workstreams, Milestones, Deliverables and Dates"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Workstream",
+            "Milestone",
+            "Dates",
+            "Deliverables"
+          ],
+          [
+            "P1 Foundation",
+            "M1: P1 Foundation accepted",
+            "2026-10-05 – 2026-11-13",
+            "DEL-01 Micro-Frontend Shell and Azure AD/MSAL Authentication\nDEL-02 Shell and Authentication E2E Test Harness\nDEL-03 Pipeline Quality Gates and Deployment Smoke Checks\nDEL-04 Authentication Negative-Test Suite and Security Scan\nDEL-05 Snowflake Data Model and Data Governance Validation"
+          ],
+          [
+            "P2a Services and Data",
+            "M2: P2a Services and Data accepted",
+            "2026-11-16 – 2027-01-22",
+            "DEL-06 FastAPI Search/Detail Endpoints and Asynchronous Query Processing\nDEL-07 Backend Integration/Load Tests and Performance Engineering Spike\nDEL-08 OneGWAS Direct-Write Integration and Test Suite\nDEL-09 Data Ingestion and Migration Validation\nDEL-10 PubMed Extraction and Trait Taxonomy Validation"
+          ],
+          [
+            "P2b Application Surface",
+            "M3: P2b Application Surface accepted",
+            "2027-01-25 – 2027-02-26",
+            "DEL-11 ARC Faceted Search, Results Table and Result Detail View\nDEL-12 Haplotype Search, Visualization and API\nDEL-13 Nomenclature Service\nDEL-14 P2b Test Suites (Frontend, Haplotype, Nomenclature)"
+          ],
+          [
+            "P3 Launch",
+            "M4: P3 Launch accepted",
+            "2027-03-01 – 2027-04-02",
+            "DEL-15 Launch Test Suites and Test Data/Fixtures\nDEL-16 UAT Execution and Pre-Launch Hardening\nDEL-17 Production Smoke Tests and 48-Hour Defect Watch\nDEL-18 MTA Store Parity and Usage-Zero Confirmation Report\nDEL-19 Training Materials and User Documentation"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• The project runs in 4 phases, from 2026-10-05 to 2027-04-02.\n• M1 (P1 Foundation) is due 2026-11-13.\n• M2 (P2a Services and Data) is due 2027-01-22; it starts after M1 is accepted.\n• M3 (P2b Application Surface) is due 2027-02-26; it starts after M2 is accepted.\n• M4 (P3 Launch) is due 2027-04-02; it starts after M3 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–6.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 4,
+      "title": "Acceptance Criteria",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Acceptance Criteria"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "How acceptance works",
+          "Each Milestone is an acceptance gate with Client Sign-Off through designated approvers, following a Milestone Acceptance Review at the end of each Milestone and UAT after each Milestone.",
+          "Prepare milestone acceptance package and evidence",
+          "Support client user acceptance testing",
+          "Milestone Acceptance Review for Client designated approvers and Toptal delivery team",
+          "Triage and address client review feedback",
+          "Obtain formal milestone acceptance and sign-off",
+          "Update schedule and RAID Log after acceptance",
+          "Review window: Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation",
+          "Client approver: Client's designated Milestone Sign-Off approver (name not specified)"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Acceptance Criteria",
+            "Gate"
+          ],
+          [
+            "DEL-01",
+            "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s",
+            "M1"
+          ],
+          [
+            "DEL-02",
+            "E2E coverage of composition, navigation and authentication with 100% critical-path pass.",
+            "M1"
+          ],
+          [
+            "DEL-03",
+            "Quality gates block on fail and deployment smoke checks pass 100% before promotion.",
+            "M1"
+          ],
+          [
+            "DEL-04",
+            "Negative tests pass and the scan is clean.",
+            "M1"
+          ],
+          [
+            "DEL-05",
+            "Targets are referential integrity 100%, representative query patterns validated, controls audited, classification coverage validated and gaps logged.",
+            "M1"
+          ],
+          [
+            "DEL-06",
+            "Search P50 < 300ms, P90 < 700ms, P95 < 1s",
+            "M2"
+          ],
+          [
+            "DEL-07",
+            "Search P95 < 1s under load.",
+            "M2"
+          ],
+          [
+            "DEL-08",
+            "100% of completed runs are written, retryable errors recovered and write P95 < 60s.",
+            "M2"
+          ],
+          [
+            "DEL-09",
+            "Targets are ≥90% GWAS Atlas import coverage with schema-change handling verified, MTA domain-user comparison sign-off with the data-quality log triaged/closed, and 100% of sampled PHG/GATSBY keys matching.",
+            "M2"
+          ],
+          [
+            "DEL-10",
+            "Targets are ≥85% precision on key fields with a green E2E run, and ≥80% taxonomy coverage with approvals captured.",
+            "M2"
+          ],
+          [
+            "DEL-11",
+            "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
+            "M3"
+          ],
+          [
+            "+8 more: DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19 (see Startup Kit · Deliverables and Acceptance Matrix)",
+            "",
+            ""
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Acceptance is milestone-level; the M1 acceptance package has 6 steps, starting with: Prepare milestone acceptance package and evidence.\n• Review window: Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation; client approver: Client's designated Milestone Sign-Off approver (name not specified).\n• Evidence expected for DEL-01: Work outputs, test results and defect reports for all P1 stories, presented at the Milestone Acceptance Review.\n\nSOURCES: Startup Kit · SOW Interpretation Summary, Deliverables and Acceptance Matrix; Project Delivery Workbook · WBS"
+    },
+    {
+      "slide_index": 5,
+      "title": "High-Risk Items",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "High-Risk Items"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Item",
+            "Rating",
+            "Owner",
+            "Response",
+            "Phase"
+          ],
+          [
+            "RAID-01 (RSK-01)",
+            "Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing, Azure AD, CloudFront, OneGWAS, network).",
+            "High",
+            "Toptal Delivery Manager",
+            "Use query observability (HS-4942) to attribute misses and report Client-owned causes for remediation",
+            "Cross-phase"
+          ],
+          [
+            "RAID-02 (RSK-02)",
+            "Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%, taxonomy coverage ≥80%), causing schedule slippage and re-test cycles.",
+            "High",
+            "Client",
+            "Report defects early, agree Client remediation timelines, and manage re-runs beyond the first through Change Order",
+            "Cross-phase"
+          ],
+          [
+            "RAID-05 (RSK-05)",
+            "Milestones run sequentially as acceptance gates, so any delay or late acceptance in one Milestone cascades to the later Milestones and the 26-week schedule.",
+            "High",
+            "Toptal Delivery Manager",
+            "Include forward-looking risk assessment at each Milestone Acceptance Review and track critical path weekly",
+            "Cross-phase"
+          ],
+          [
+            "RAID-07 (ISS-01)",
+            "The number of ARC-specific design system components included in the estimate is still undefined ([N]), so scope for further components is unclear.",
+            "High",
+            "To be confirmed",
+            "Agree and document the component count with the Client at kickoff",
+            "Cross-phase"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• 4 risks and issues are rated High; the first to watch is RAID-01.\n• Early warning for RAID-01: Missed p95 targets in benchmarks or load tests.\n• Early warning for RAID-02: Failed certification test runs reported in defect reports.\n• Early warning for RAID-05: Milestone acceptance review slipping past planned week.\n• Early warning for RAID-07: Component count not agreed before frontend work starts.\n• Raise new risks and issues along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n\nSOURCES: Startup Kit · Project Startup Charter; Project Delivery Workbook · RAID Log"
+    },
+    {
+      "slide_index": 6,
+      "title": "Client Collaboration",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Client Collaboration"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Client roles",
+          "Client Sponsor / Approver: Gives timely written responses to decision requests flagged in weekly reports.",
+          "Client Approver: Accept or reject each of the four sequential milestone gates (P1, P2a, P2b, P3)",
+          "Client Delivery Counterpart: Own the platform layer (Terraform, infrastructure) and the data tier (ingestion pipelines, Snowflake data model).",
+          "Client Subject Matter Experts: Provide trait taxonomy approvals and domain-user comparison sign-off for the MTA Store migration.",
+          "UAT Participants: Run UAT after each milestone (limited to two runs per milestone) and surface defects.",
+          "+1 more (see Startup Kit · Stakeholder and Responsibility Model)"
+        ],
+        [
+          "Working rhythm",
+          "Kickoff Call: One-time",
+          "Daily Standups: Daily",
+          "Biweekly Sprint Demo: Biweekly (every sprint)",
+          "Weekly Status Meeting: Weekly",
+          "Weekly Status Report: Weekly",
+          "Milestone Acceptance Review: At the end of each milestone (4 milestones)",
+          "Ad-Hoc Working Sessions: As needed"
+        ],
+        [
+          "Client prerequisites",
+          "M1: Client provides design system access (code library, tokens, design files, guidelines, named contact)",
+          "M1: Client IdP team available for Azure AD / MSAL authentication",
+          "M1: Client-owned stories and code dependencies completed before related Toptal work begins",
+          "M1: Coding and delivery documentation standards provided on or before the start date",
+          "M2: Client completes Snowflake data model story (HS-4781) before P2a begins",
+          "M2: Client domain users and domain experts available for trait taxonomy",
+          "+6 more (see Project Delivery Workbook · Project Schedule)"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Client Contact (designated).\n• Kickoff Call: One-time.\n• Daily Standups: Daily.\n• Biweekly Sprint Demo: Biweekly (every sprint).\n• Before P1 Foundation starts on 2026-10-05, the client prerequisite is: Client provides design system access (code library, tokens, design files, guidelines, named contact).\n• 20 open questions are waiting on the client; the first is RAID-36.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
+    },
+    {
+      "slide_index": 7,
+      "title": "Your Project Kit",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Your Project Kit"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Startup Kit",
+          "ARC_Genomics_Platform_Startup_Kit.docx",
+          "The approved project baseline: scope, deliverables and acceptance, governance, and RAID.",
+          "Sections used in this deck",
+          "Project Startup Charter",
+          "SOW Interpretation Summary",
+          "Deliverables and Acceptance Matrix",
+          "Communications and Reporting Plan",
+          "Stakeholder and Responsibility Model"
+        ],
+        [
+          "Project Delivery Workbook",
+          "ARC_Genomics_Platform_Project_Delivery_Workbook.xlsx",
+          "The working delivery plan: schedule by phase, tasks, and the RAID Log.",
+          "Sheets",
+          "Project Schedule: gates, dates, and client prerequisites",
+          "WBS: deliverables and tasks, with acceptance steps",
+          "RAID Log: risks, issues, dependencies, and open questions"
+        ],
+        [
+          "Every fact in this deck traces to these two documents. Each slide's notes list its sources."
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Both files sit in the same folder as this deck.\n• The Startup Kit is the approved baseline; changes to it go through the escalation path on slide 2.\n• The Project Delivery Workbook is the plan to keep current as work progresses.\n• Each slide's SOURCES note says which section or sheet to open for detail.\n\nSOURCES: Startup Kit · Project Startup Charter, SOW Interpretation Summary, Deliverables and Acceptance Matrix, Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, WBS, RAID Log"
+    }
+  ]
 }

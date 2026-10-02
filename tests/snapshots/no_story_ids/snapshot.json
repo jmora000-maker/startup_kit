@@ -4832,8 +4832,8 @@
         "Medium",
         "=IF(OR(K6=\"\",L6=\"\"),\"\",IF(OR(AND(K6=\"High\",L6=\"High\"),AND(K6=\"High\",L6=\"Medium\"),AND(K6=\"Medium\",L6=\"High\")),\"High\",IF(AND(K6=\"Low\",L6=\"Low\"),\"Low\",\"Medium\")))",
         "=IF(OR(K6=\"\",L6=\"\"),\"\",(IF(K6=\"High\",3,IF(K6=\"Medium\",2,1)))*(IF(L6=\"High\",3,IF(L6=\"Medium\",2,1))))",
-        "",
-        "",
+        "Sandbox latency observed during payment gateway integration",
+        "Active monitoring by PMO and Delivery Manager",
         "",
         "Open",
         "<DATE>",
@@ -6060,5 +6060,316 @@
         ""
       ]
     ]
-  }
+  },
+  "deck_slides": [
+    {
+      "slide_index": 1,
+      "title": "Omnichannel Digital Platform",
+      "kicker": "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-05",
+      "text_frames": [
+        [
+          "Omnichannel Digital Platform"
+        ],
+        [
+          "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-05"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Omnichannel Digital Platform for Apex Global Retail Inc.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 2,
+      "title": "Project Charter",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Project Charter"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Key facts"
+        ],
+        [
+          "Purpose & delivery",
+          "Purpose",
+          "Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.",
+          "Delivery model",
+          "Delivery: Toptal Talent Team (Agile/Milestone Hybrid) | Governance: PMO Partnered Tier Governance Model",
+          "Escalation path",
+          "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+        ],
+        [
+          "Phases & scope",
+          "Phases",
+          "Data & Integration",
+          "Deployment & Release",
+          "Out of scope",
+          "Custom infrastructure outside documented cloud provider scope",
+          "Unapproved out-of-scope feature requests without formal Change Order"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Client Sponsor",
+            "Apex Global Retail Inc."
+          ],
+          [
+            "Contract Type",
+            "Time and Materials"
+          ],
+          [
+            "Governance Tier",
+            "Partnered"
+          ],
+          [
+            "Start Date",
+            "2026-10-05 (Assumed - first Monday after award; confirm)"
+          ],
+          [
+            "Talent PM",
+            "To be confirmed"
+          ],
+          [
+            "Delivery Manager",
+            "To be confirmed"
+          ],
+          [
+            "PMO Lead",
+            "To be confirmed"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Purpose: Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n• The project runs in 2 phases, from 2026-10-05 to 2027-02-05.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 3,
+      "title": "Workstreams, Milestones, Deliverables and Dates",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Workstreams, Milestones, Deliverables and Dates"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Workstream",
+            "Milestone",
+            "Dates",
+            "Deliverables"
+          ],
+          [
+            "Data & Integration",
+            "M1: Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted: microservices framework, IAM integration, CI/CD pipeline, and infrastructure provisioning.",
+            "2026-10-05 – 2026-10-30",
+            "DEL-01 Core Cloud Infrastructure and Container Orchestration Platform"
+          ],
+          [
+            "",
+            "M2: Phase 2 (Service Implementation, weeks 5-12) accepted: catalog search, basket management, pricing engine, and payment gateway integration.",
+            "2026-11-02 – 2026-12-25",
+            "DEL-04 Basket and Checkout Orchestration Service\nDEL-05 Payment Gateway Integration and Secure Transaction Logging"
+          ],
+          [
+            "Deployment & Release",
+            "M3: Phase 3 (User Experience and Launch, weeks 13-18) accepted: web store front-end, end-to-end integration testing, UAT, production rollout, and training materials.",
+            "2026-12-28 – 2027-02-05",
+            "DEL-02 Identity, SSO and Role-Based Access Control Integration\nDEL-03 Product Catalogue Search API and Indexing Pipeline\nDEL-06 Responsive Web Customer Store Application\nDEL-07 Automated End-to-End Regression Test Suite\nDEL-08 Platform Deployment Runbook and Operational Documentation\nDEL-09 User Acceptance Testing and Production Rollout\nDEL-10 Training Materials"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• The project runs in 2 phases, from 2026-10-05 to 2027-02-05.\n• M1 (Data & Integration) is due 2026-10-30.\n• M2 (Data & Integration) is due 2026-12-25; it starts after M1 is accepted.\n• M3 (Deployment & Release) is due 2027-02-05; it starts after M2 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–4.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 4,
+      "title": "Acceptance Criteria",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Acceptance Criteria"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "How acceptance works",
+          "Client security team compliance review is expected within 5 business days of submission; each phase is accepted on completion of its listed outputs.",
+          "Support client UAT for M1",
+          "Confirm all M1 deliverables are accepted",
+          "Update schedule and RAID Log after acceptance",
+          "Review window: Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation",
+          "Client approver: To be confirmed"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Acceptance Criteria",
+            "Gate"
+          ],
+          [
+            "DEL-01",
+            "To be confirmed",
+            "M1"
+          ],
+          [
+            "DEL-02",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-03",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-04",
+            "To be confirmed",
+            "M2"
+          ],
+          [
+            "DEL-05",
+            "To be confirmed",
+            "M2"
+          ],
+          [
+            "DEL-06",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-07",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-08",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-09",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-10",
+            "To be confirmed",
+            "M3"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Acceptance is per deliverable; the M1 acceptance package has 3 steps, starting with: Support client UAT for M1.\n• Review window: Not specified; reviewed at the Milestone Acceptance Review at the end of P1 Foundation; client approver: to be confirmed.\n• Evidence expected for DEL-01: Demonstration, technical test report, and repository verification for Core Cloud Infrastructure and Container Orchestration Platform.\n• 10 deliverables have acceptance criteria still to be confirmed: DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10.\n\nSOURCES: Startup Kit · SOW Interpretation Summary, Deliverables and Acceptance Matrix; Project Delivery Workbook · WBS"
+    },
+    {
+      "slide_index": 5,
+      "title": "High-Risk Items",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "High-Risk Items"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Item",
+            "Rating",
+            "Owner",
+            "Response",
+            "Phase"
+          ],
+          [
+            "RAID-01 (RSK-01)",
+            "Slow response times from the third-party payment provider sandbox API may impact performance testing.",
+            "Medium",
+            "To be confirmed",
+            "Active monitoring by PMO and Delivery Manager",
+            "Cross-phase"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• 0 risks and issues are rated High; the first to watch is RAID-01: Slow response times from the third-party payment provider sandbox API may impact performance testing.\n• Early warning for RAID-01: Sandbox latency observed during payment gateway integration.\n• Owner of RAID-01: to be confirmed.\n• Raise new risks and issues along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n\nSOURCES: Startup Kit · Project Startup Charter; Project Delivery Workbook · RAID Log"
+    },
+    {
+      "slide_index": 6,
+      "title": "Client Collaboration",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Client Collaboration"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Client roles",
+          "Client Sponsor / Approver: Contractual approvals, deliverable sign-offs, change orders"
+        ],
+        [
+          "Working rhythm",
+          "Weekly Check-in (30 min): Weekly (30 min)",
+          "Weekly Project Status Report (PSR): Weekly",
+          "Monthly / Quarterly Business Review (MBR/QBR - G-07): Monthly"
+        ],
+        [
+          "Client prerequisites",
+          "M2: Client provides access to legacy ERP product catalog feeds prior to week 5.",
+          "M2: Client security team completes compliance review within 5 business days of submission.",
+          "M3: Client security team completes compliance review within 5 business days of submission."
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Apex Global Retail Inc.\n• Monthly / Quarterly Business Review (MBR/QBR - G-07): Monthly.\n• Weekly Check-in (30 min): Weekly (30 min).\n• Weekly Project Status Report (PSR): Weekly.\n• Before Data & Integration starts on 2026-11-02, the client prerequisite is: Client provides access to legacy ERP product catalog feeds prior to week 5.\n• 31 open questions are waiting on the client; the first is RAID-16.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
+    },
+    {
+      "slide_index": 7,
+      "title": "Your Project Kit",
+      "kicker": "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Your Project Kit"
+        ],
+        [
+          "OMNICHANNEL DIGITAL PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Startup Kit",
+          "Omnichannel_Digital_Platform_Startup_Kit.docx",
+          "The approved project baseline: scope, deliverables and acceptance, governance, and RAID.",
+          "Sections used in this deck",
+          "Project Startup Charter",
+          "SOW Interpretation Summary",
+          "Deliverables and Acceptance Matrix",
+          "Communications and Reporting Plan",
+          "Stakeholder and Responsibility Model"
+        ],
+        [
+          "Project Delivery Workbook",
+          "Omnichannel_Digital_Platform_Project_Delivery_Workbook.xlsx",
+          "The working delivery plan: schedule by phase, tasks, and the RAID Log.",
+          "Sheets",
+          "Project Schedule: gates, dates, and client prerequisites",
+          "WBS: deliverables and tasks, with acceptance steps",
+          "RAID Log: risks, issues, dependencies, and open questions"
+        ],
+        [
+          "Every fact in this deck traces to these two documents. Each slide's notes list its sources."
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Both files sit in the same folder as this deck.\n• The Startup Kit is the approved baseline; changes to it go through the escalation path on slide 2.\n• The Project Delivery Workbook is the plan to keep current as work progresses.\n• Each slide's SOURCES note says which section or sheet to open for detail.\n\nSOURCES: Startup Kit · Project Startup Charter, SOW Interpretation Summary, Deliverables and Acceptance Matrix, Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, WBS, RAID Log"
+    }
+  ]
 }
