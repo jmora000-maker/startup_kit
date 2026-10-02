@@ -10,3 +10,6 @@ class InvariantViolation:
     def __str__(self):
         art = f" [{self.artifact}]" if self.artifact else ""
         return f"{self.inv_id}{art}: {self.message}"
+
+    def __repr__(self):
+        return str(self)

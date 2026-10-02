@@ -61,6 +61,9 @@ from src.generators.pmo_workbook.rows import (
 
 logger = logging.getLogger(__name__)
 
+# The model's default trigger text, written when extraction found none (RAID-09)
+DEFAULT_RAID_TRIGGER = RiskAssumption.model_fields["trigger_or_early_warning"].default
+
 # Defensive filter: Drop any item matching this pattern (MS-07, Appendix C, INV-04)
 DEFENSIVE_FILTER_REGEX = re.compile(
     r"\b(G-?01|g01|readiness\s+gate|startup\s+readiness|readiness\s+checklist|readiness\s+score|gate\s+decision|gate\s+approval|startup\s+kit|mobiliz\w*|ACT-\d+)\b",
@@ -1768,8 +1771,14 @@ def build_workbook_model(
             sev_val = raw_sev.strip()
             sev_note = "Rating from baseline"
 
-        trig = clean_text_v2(getattr(r_item, "trigger", "") or "")
-        mitig = clean_text_v2(getattr(r_item, "mitigation", "") or "")
+        # RAID-09: the model fields are trigger_or_early_warning and mitigation_or_response.
+        # The model's own default trigger (written when extraction found none) is boilerplate that the
+        # Kit never displays and that INV-04 forbids in the Workbook, so it is not copied.
+        raw_trig = getattr(r_item, "trigger_or_early_warning", "") or ""
+        if raw_trig.strip() == DEFAULT_RAID_TRIGGER:
+            raw_trig = ""
+        trig = clean_text_v2(raw_trig)
+        mitig = clean_text_v2(getattr(r_item, "mitigation_or_response", "") or "")
         due_d = getattr(r_item, "due_date", None)
         status_val, status_n = _normalize_status_v2(r_item.status)
         raw_decision_val = clean_text_v2(getattr(r_item, "linked_decision", "") or "")
