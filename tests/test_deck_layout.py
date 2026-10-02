@@ -159,7 +159,7 @@ def test_inv32_passes_when_a_long_cover_title_is_reduced_to_one_line():
 def test_inv32_fails_when_a_cover_placeholder_leaves_its_layout_bounds():
     prs, s = _cover_deck("Acme Genomics Platform")
     s.placeholders[1].top = s.placeholders[1].top + Inches(0.5)
-    assert any("cover subtitle" in m and "outside its layout placeholder" in m for m in _inv32(prs))
+    assert any("cover subtitle" in m and "outside the cover layout placeholder region" in m for m in _inv32(prs))
 
 
 def test_inv32_flags_runs_without_an_explicit_font_size():
@@ -189,17 +189,43 @@ def _cards(slide):
     return [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and s.name.startswith("Card:")]
 
 
-MOCK_COVER_XFAIL = pytest.mark.xfail(
-    strict=True,
-    reason="Rev 11 Part 1: the mock cover title wraps onto the subtitle (Appendix M2). The Part 2 cover-fit fix "
-           "(DECK-21 (5)) removes this marker; strict=True turns an unexpected pass into a failure so it cannot be forgotten.",
-)
-
-
-@pytest.mark.parametrize("name", [pytest.param(n, marks=MOCK_COVER_XFAIL) if n == "mock_sow" else n for n in FIXTURES])
+@pytest.mark.parametrize("name", FIXTURES)
 def test_inv32_passes_on_every_content_slide_of_every_fixture(name, tmp_path):
     bundle = build_bundle(tmp_path / name, name)
     assert [str(v) for v in deck_checks.check_inv32(bundle["prs"])] == [], name
+
+
+def _cover_of(tmp_path, project_name):
+    from tests.deck_bundle import load_baseline
+
+    baseline = load_baseline("mock_sow")
+    baseline.project_name = project_name
+    prs = build_bundle(tmp_path, baseline=baseline)["prs"]
+    slide = prs.slides[0]
+    return prs, slide.placeholders[0], slide.placeholders[1]
+
+
+def test_cover_title_shrinks_to_one_line_for_the_mock_project(tmp_path):
+    """DECK-21 (5): the 38-character mock title is reduced below the layout's 43 pt, not below 28 pt, and stays on one line."""
+    prs, title, sub = _cover_of(tmp_path, "Pfizer Analytics & Cloud Modernization")
+    size = title.text_frame.paragraphs[0].runs[0].font.size.pt
+    assert 28 <= size < 43
+    assert deck_checks.cover_title_lines(title.text_frame.text, title.width / 914400.0, size) == 1
+    assert [str(v) for v in deck_checks.check_inv32(prs)] == []
+
+
+def test_cover_title_keeps_the_layout_size_when_it_fits(tmp_path):
+    _, title, _ = _cover_of(tmp_path, "ARC Genomics Platform")
+    assert title.text_frame.paragraphs[0].runs[0].font.size is None
+
+
+def test_cover_title_that_cannot_fit_at_28_pt_wraps_and_pushes_the_subtitle_down(tmp_path):
+    name = "Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing and Supply Planning"
+    prs, title, sub = _cover_of(tmp_path, name)
+    assert title.text_frame.paragraphs[0].runs[0].font.size.pt == 28
+    assert deck_checks.cover_title_lines(name, title.width / 914400.0, 28.0) == 2
+    assert sub.top >= title.top + title.height - 1
+    assert [str(v) for v in deck_checks.check_inv32(prs)] == []
 
 
 def test_card_text_frames_follow_deck_21_1(arc_bundle):

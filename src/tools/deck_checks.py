@@ -738,7 +738,28 @@ def _inherited_insets_in(sh: Any) -> Tuple[float, float]:
     return out[0], out[1]
 
 
-COVER_TITLE_WIDTH_SAFETY = 1.15  # cover title only; see the comment in _cover_violations
+COVER_TITLE_WIDTH_SAFETY = 1.15  # cover title only; see cover_title_usable_width_in
+
+
+def cover_title_usable_width_in(frame_width_in: float) -> float:
+    """Width the cover title estimate treats as available. This is the SINGLE source of truth for the cover margin: the
+    writer's cover fit (DECK-21 (5)) and INV-32 both go through it, so they cannot disagree.
+
+    COVER-ONLY SAFETY MARGIN. The shared estimator (L.text_height_pt, used unchanged by every other DECK-21 fit
+    check) assumes an average character width of 0.5 x font size. At the cover's 43 pt Proxima Nova renders WIDER
+    than that average, so a 38-character title that the estimate puts exactly on one line wraps in a real render
+    (LibreOffice, Appendix M2) and runs into the subtitle. Dividing the frame width by COVER_TITLE_WIDTH_SAFETY has
+    the same effect as multiplying the character width by it. Do not remove this and do not move it into the shared
+    estimator: body text is calibrated against the 0.5 average and must not change."""
+    return frame_width_in / COVER_TITLE_WIDTH_SAFETY
+
+
+def cover_title_lines(text: str, frame_width_in: float, size_pt: float) -> int:
+    return L.wrap_lines(text, cover_title_usable_width_in(frame_width_in), size_pt)
+
+
+def cover_title_height_in(text: str, frame_width_in: float, size_pt: float) -> float:
+    return L.text_height_pt(text, cover_title_usable_width_in(frame_width_in), size_pt) / 72.0
 
 
 def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
@@ -753,11 +774,16 @@ def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
     if title is None or sub is None or 0 not in layout_by_idx or 1 not in layout_by_idx:
         return [_inv("INV-32", "Slide 1 (CUSTOM_1) must have a title placeholder (idx 0) and a subtitle placeholder (idx 1)")]
     v: List[InvariantViolation] = []
+    # The cover text region is the bounding box of the two layout placeholders. A title that wraps to a second line
+    # grows downward and pushes the subtitle down inside that region (DECK-21 (5)), so each shape is held to the
+    # region, and the overlap check below keeps them apart.
+    boxes = [_rect(layout_by_idx[0]), _rect(layout_by_idx[1])]
+    lx0, ly0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    lx1, ly1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
     for label, sh in (("title", title), ("subtitle", sub)):
         x0, y0, x1, y1 = _rect(sh)
-        lx0, ly0, lx1, ly1 = _rect(layout_by_idx[sh.placeholder_format.idx])
         if x0 < lx0 - EPS or y0 < ly0 - EPS or x1 > lx1 + EPS or y1 > ly1 + EPS:
-            v.append(_inv("INV-32", f"Slide 1 cover {label} (x {x0:.2f}-{x1:.2f}, y {y0:.2f}-{y1:.2f}) is outside its layout placeholder (x {lx0:.2f}-{lx1:.2f}, y {ly0:.2f}-{ly1:.2f})"))
+            v.append(_inv("INV-32", f"Slide 1 cover {label} (x {x0:.2f}-{x1:.2f}, y {y0:.2f}-{y1:.2f}) is outside the cover layout placeholder region (x {lx0:.2f}-{lx1:.2f}, y {ly0:.2f}-{ly1:.2f})"))
     size = _inherited_size_pt(title)
     if size is None:
         v.append(_inv("INV-32", "Slide 1 cover title has no font size on its runs or in its layout placeholder"))
@@ -766,14 +792,8 @@ def _cover_violations(prs: Any, slide: Any) -> List[InvariantViolation]:
         v.append(_inv("INV-32", f"Slide 1 cover title font {size:g} pt is below the {L.TITLE_PT:g} pt minimum"))
     inset_l, inset_r = _inherited_insets_in(title)
     text = title.text_frame.text
-    # COVER-ONLY SAFETY MARGIN. The shared estimator (L.text_height_pt, used unchanged by every other DECK-21 fit
-    # check) assumes an average character width of 0.5 x font size. At the cover's 43 pt Proxima Nova renders WIDER
-    # than that average, so a 38-character title that the estimate puts exactly on one line wraps in a real render
-    # (LibreOffice, Appendix M2) and runs into the subtitle. Dividing the frame width by COVER_TITLE_WIDTH_SAFETY has
-    # the same effect as multiplying the character width by it. Do not remove this and do not move it into the shared
-    # estimator: body text is calibrated against the 0.5 average and must not change.
-    usable_in = (_in(title.width) - inset_l - inset_r) / COVER_TITLE_WIDTH_SAFETY
-    bottom = _rect(title)[1] + L.text_height_pt(text, usable_in, size) / 72.0
+    # the cover-only margin (COVER_TITLE_WIDTH_SAFETY) is applied inside cover_title_height_in
+    bottom = _rect(title)[1] + cover_title_height_in(text, _in(title.width) - inset_l - inset_r, size)
     sub_top = _rect(sub)[1]
     if bottom > sub_top + EPS:
         v.append(_inv("INV-32", f"Slide 1 cover title ('{text}') at {size:g} pt is estimated to end at y {bottom:.2f} in, below the subtitle's top at y {sub_top:.2f} in"))

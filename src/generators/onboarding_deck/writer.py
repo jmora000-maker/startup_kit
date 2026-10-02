@@ -331,6 +331,37 @@ def _style_title(slide: Any, title: str, kicker: str) -> None:
     _style_plain(r, FONT_HEAD, L.KICKER_PT, True, MUTED_GRAY)
 
 
+def _fit_cover(slide: Any) -> None:
+    """DECK-21 (5): keep the cover title on one line by reducing its size from the layout's down to L.TITLE_PT. If it
+    still wraps, let it take the lines it needs and move the subtitle down, inside the layout's placeholder region.
+
+    The line estimate is the one INV-32 uses (the cover-only margin lives in src.tools.deck_checks, the single source
+    of truth for it). It is imported here, not at module level, because deck_checks imports this package."""
+    from src.tools.deck_checks import _inherited_insets_in, _inherited_size_pt, cover_title_height_in, cover_title_lines
+
+    title, sub = slide.placeholders[0], slide.placeholders[1]
+    layout = {ph.placeholder_format.idx: ph for ph in slide.slide_layout.placeholders}
+    lt, ls = layout[0], layout[1]
+    text = title.text_frame.text
+    base = _inherited_size_pt(title)
+    if base is None or not text.strip():
+        return
+    inset_l, inset_r = _inherited_insets_in(title)
+    width_in = lt.width / 914400.0 - inset_l - inset_r
+    size = base
+    while size > L.TITLE_PT and cover_title_lines(text, width_in, size) > 1:
+        size -= 1.0
+    if size != base:
+        for run in title.text_frame.paragraphs[0].runs:
+            run.font.size = Pt(size)
+    if cover_title_lines(text, width_in, size) > 1:
+        title_h = int(round(cover_title_height_in(text, width_in, size) * 914400))
+        title.left, title.top, title.width, title.height = lt.left, lt.top, lt.width, title_h
+        sub_top = lt.top + title_h
+        sub.left, sub.top, sub.width = ls.left, sub_top, ls.width
+        sub.height = max(0, (ls.top + ls.height) - sub_top)
+
+
 def write_onboarding_deck(
     model: DeckModel,
     target_path: Path,
@@ -361,6 +392,7 @@ def write_onboarding_deck(
     s1 = prs.slides.add_slide(layouts["CUSTOM_1"])
     s1.placeholders[0].text = model.cover.title.text
     s1.placeholders[1].text = "".join(r.text for r in model.cover.subtitle_runs)
+    _fit_cover(s1)
     s1.placeholders[0].name = "Cover title"
     s1.placeholders[1].name = "Cover subtitle"
     s1.notes_slide.notes_text_frame.text = model.cover.notes
