@@ -9457,5 +9457,365 @@
         ""
       ]
     ]
-  }
+  },
+  "deck_slides": [
+    {
+      "slide_index": 1,
+      "title": "ARC Genomics Platform",
+      "kicker": "Talent Team Onboarding · Syngenta · Start 2026-10-05",
+      "text_frames": [
+        [
+          "ARC Genomics Platform"
+        ],
+        [
+          "Talent Team Onboarding · Syngenta · Start 2026-10-05"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Welcome the Talent PM and Talent Project Team to onboarding.\n• Engagement for Syngenta starting 2026-10-05 (Assumed - first Monday after generation date; confirm).\n• Review delivery charter, milestone commitments, acceptance criteria, and governance cadence.\n\nSOURCES: Startup Kit · Project Charter; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 2,
+      "title": "Project Charter",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Project Charter"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Key facts"
+        ],
+        [
+          "Purpose and delivery model",
+          "Project Purpose",
+          "Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.",
+          "Delivery Model & Governance",
+          "Toptal Talent Team (Agile/Milestone Hybrid)",
+          "Escalation Path",
+          "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+        ],
+        [
+          "Phases and boundaries",
+          "Delivery Phases",
+          "• P1 Foundation",
+          "• P2a Services and Data",
+          "• P2b Application Surface",
+          "• P3 Launch",
+          "Out of Scope",
+          "• Platform infrastructure and DevOps: environment/IaC strategy, Terraform, CI/CD pipelines, monitoring and alerting, and shell telemetry.",
+          "• Security design, threat modeling, platform hardening, and RBAC/secrets implementation.",
+          "• Architecture and design work: shell architecture, frontend component architecture, API/OpenAPI design, OneGWAS output contract",
+          "• Snowflake data model design, schema DDL, haplotype schema extensions, and data governance design and controls.",
+          "• +4 more (see Startup Kit)"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Client Sponsor",
+            "Syngenta"
+          ],
+          [
+            "Contract Type",
+            "Fixed Bid"
+          ],
+          [
+            "Governance Tier",
+            "Partnered"
+          ],
+          [
+            "Start Date",
+            "2026-10-05 (Assumed - first Monday after generation date; confirm)"
+          ],
+          [
+            "Talent PM",
+            "To be confirmed"
+          ],
+          [
+            "Delivery Manager",
+            "To be confirmed"
+          ],
+          [
+            "PMO Lead",
+            "To be confirmed"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Project operates under Fixed Bid contract terms and Partnered governance.\n• Delivery leadership: PMO Lead To be confirmed, Delivery Manager To be confirmed, Talent PM To be confirmed.\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform..\n• Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• Delivery spans 4 phases from 2026-10-05 to 2027-04-02.\n\nSOURCES: Startup Kit · Project Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 3,
+      "title": "Workstreams, Milestones, Deliverables and Dates",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Workstreams, Milestones, Deliverables and Dates"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Workstream",
+            "Milestone",
+            "Dates",
+            "Deliverables"
+          ],
+          [
+            "P1 Foundation",
+            "M1: P1 Foundation accepted",
+            "2026-10-05 – 2026-11-13",
+            "DEL-01 Micro-Frontend Shell and Azure AD/MSAL Authentication\nDEL-02 Shell and Authentication E2E Test Harness\nDEL-03 Pipeline Quality Gates and Deployment Smoke\nDEL-04 Authentication Negative-Test Suite and Security Scan\nDEL-05 Snowflake Data Model and Data Governance"
+          ],
+          [
+            "P2a Services and Data",
+            "M2: P2a Services and Data accepted",
+            "2026-11-16 – 2027-01-22",
+            "DEL-06 FastAPI Search/Detail Endpoints and Asynchronous Query\nDEL-07 Backend Integration/Load Tests and Performance Engineering\nDEL-08 OneGWAS Direct-Write Integration and Test Suite\nDEL-09 Data Ingestion and Migration Validation\nDEL-10 PubMed Extraction and Trait Taxonomy Validation"
+          ],
+          [
+            "P2b Application Surface",
+            "M3: P2b Application Surface accepted",
+            "2027-01-25 – 2027-02-26",
+            "DEL-11 ARC Faceted Search\nDEL-12 Haplotype Search, Visualization and API\nDEL-13 Nomenclature Service\nDEL-14 P2b Test Suites (Frontend, Haplotype, Nomenclature)"
+          ],
+          [
+            "P3 Launch",
+            "CP-01: P3 Launch integration, performance, security and cross-browser testing completed",
+            "To be confirmed",
+            "—"
+          ],
+          [
+            "",
+            "CP-02: UAT execution completed with Client scientist groups (at most two",
+            "To be confirmed",
+            "—"
+          ],
+          [
+            "",
+            "CP-03: Production smoke tests and 48-hour defect watch completed",
+            "To be confirmed",
+            "—"
+          ],
+          [
+            "",
+            "M4: P3 Launch accepted",
+            "2027-03-01 – 2027-04-02",
+            "DEL-15 Launch Test Suites and Test Data/Fixtures\nDEL-16 UAT Execution and Pre-Launch Hardening\nDEL-17 Production Smoke Tests and 48-Hour Defect\nDEL-18 MTA Store Parity and Usage-Zero Confirmation\nDEL-19 Training Materials and User Documentation"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• The project runs in 4 phases, from 2026-10-05 to 2027-04-02.\n• Delivery commits to 4 milestones and 3 checkpoints across 4 workstreams.\n• All 19 deliverables are mapped to baseline milestone dates.\n• Date basis: SOW estimate, weeks 1–6.\n\nSOURCES: Project Delivery Workbook · Project Schedule; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 4,
+      "title": "Acceptance Criteria",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Acceptance Criteria"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "How acceptance works",
+          "Milestone Acceptance Process",
+          "1. Confirm: Client provides design system access (code library, tokens, design files, guidelines, named contact) by the...",
+          "2. Confirm: Client IdP team available for Azure AD / MSAL authentication",
+          "3. Confirm: Client-owned stories and code dependencies completed before related Toptal work begins",
+          "4. Confirm: Coding and delivery documentation standards provided on or before the start date",
+          "5. Confirm: P1 Foundation deliverables completed",
+          "6. Confirm: Client designated approver available for acceptance review",
+          "Governance Parameters",
+          "Review Window: Not specified; reviewed at the Milestone Acceptance Review",
+          "Client Approver: Client's designated Milestone Sign-Off approver (name not specified)"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Acceptance Criteria",
+            "Gate"
+          ],
+          [
+            "DEL-01",
+            "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s",
+            "M1"
+          ],
+          [
+            "DEL-02",
+            "E2E coverage of composition, navigation and authentication with 100% critical-path pass.",
+            "M1"
+          ],
+          [
+            "DEL-03",
+            "Quality gates block on fail and deployment smoke checks pass 100% before promotion.",
+            "M1"
+          ],
+          [
+            "DEL-04",
+            "Negative tests pass and the scan is clean. Findings in Toptal-built components are remediated",
+            "M1"
+          ],
+          [
+            "DEL-05",
+            "Targets are referential integrity 100%, representative query patterns validated, controls audited",
+            "M1"
+          ],
+          [
+            "DEL-06",
+            "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms.",
+            "M2"
+          ],
+          [
+            "DEL-07",
+            "Search P95 < 1s under load. p95 targets are defined",
+            "M2"
+          ],
+          [
+            "DEL-08",
+            "100% of completed runs are written, retryable errors recovered and write P95 < 60s.",
+            "M2"
+          ],
+          [
+            "DEL-09",
+            "Targets are ≥90% GWAS Atlas import coverage with schema-change handling verified",
+            "M2"
+          ],
+          [
+            "DEL-10",
+            "Targets are ≥85% precision on key fields with a green E2E run",
+            "M2"
+          ],
+          [
+            "DEL-11",
+            "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
+            "M3"
+          ],
+          [
+            "DEL-12",
+            "Filtered results P90 < 1s, interval visualization P95 < 1.5s and comparison works.",
+            "M3"
+          ],
+          [
+            "DEL-13",
+            "Resolution is correct for all mapped traits and lookup P95 < 200ms.",
+            "M3"
+          ],
+          [
+            "+6 more: DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19 (see Startup Kit · Deliverables and Acceptance Matrix)",
+            "",
+            ""
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Acceptance is conducted at milestone level following defined quality review gates.\n• Milestone review window is Not specified; reviewed at the Milestone Acceptance Review with client approver Client's designated Milestone Sign-Off approver (name not specified).\n• All 19 deliverable acceptance criteria must be verified with required completion evidence.\n• Submissions follow standard verification and rework remediation workflows.\n\nSOURCES: Project Delivery Workbook · WBS; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 5,
+      "title": "High-Risk Items",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "High-Risk Items"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Item",
+            "Rating",
+            "Owner",
+            "Response",
+            "Phase"
+          ],
+          [
+            "RAID-01 (RSK-01)",
+            "Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing,",
+            "High",
+            "Toptal Delivery Manager",
+            "",
+            "Cross-phase"
+          ],
+          [
+            "RAID-02 (RSK-02)",
+            "Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%",
+            "High",
+            "Client",
+            "",
+            "Cross-phase"
+          ],
+          [
+            "RAID-05 (RSK-05)",
+            "Milestones run sequentially as acceptance gates",
+            "High",
+            "Toptal Delivery Manager",
+            "",
+            "Cross-phase"
+          ],
+          [
+            "RAID-07 (ISS-01)",
+            "The number of ARC-specific design system components included in the estimate is still undefined ([N]),",
+            "High",
+            "To be confirmed",
+            "",
+            "Cross-phase"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Active RAID tracking monitors 4 items rated High severity.\n• First priority risk is RAID-01: Latency and render-time targets may be missed because they depend.\n• Mitigations and proactive response ownership are assigned across delivery phases.\n• New risks or issues should be raised via the delivery escalation path.\n\nSOURCES: Project Delivery Workbook · RAID Log; Startup Kit · Project Charter"
+    },
+    {
+      "slide_index": 6,
+      "title": "Client Collaboration",
+      "kicker": "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Client Collaboration"
+        ],
+        [
+          "ARC GENOMICS PLATFORM · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Client roles and approvers",
+          "• Client Contact (designated) (Client Sponsor / Approver): Gives timely written responses to decision requests flagged",
+          "• Client Designated Milestone Approvers (Client Approver): Accept or reject each of the four sequential",
+          "• Client Platform and Data Tier Owners (Client Delivery Counterpart): Own the platform layer (Terraform",
+          "• Client Domain Experts and Domain Users (Client Subject Matter Experts): Provide trait taxonomy approvals and domain-user comparison sign-off",
+          "• Client Scientist UAT Groups (UAT Participants): Run UAT after each milestone (limited to two",
+          "• +1 more (see Startup Kit)"
+        ],
+        [
+          "Working rhythm",
+          "• Kickoff Call: One-time",
+          "• Daily Standups: Daily",
+          "• Biweekly Sprint Demo: Biweekly (every sprint)",
+          "• Weekly Status Meeting: Weekly",
+          "• Weekly Status Report: Weekly",
+          "• Milestone Acceptance Review: At the end of each milestone (4 milestones)",
+          "• Ad-Hoc Working Sessions: As needed"
+        ],
+        [
+          "What we need from the client",
+          "• M1: Client provides design system access (code library, tokens, design files, guidelines",
+          "• M2: Client completes Snowflake data model story (HS-4781) before P2a begins",
+          "• M3: Client provides UI/UX designs for the Milestone 3 screens by the Start",
+          "• M4: Client scientist UAT groups available; Client maintains staging and production environments"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Engagement governance establishes regular cadence with 6 client stakeholders.\n• Communications rhythm includes 7 scheduled governance touchpoints.\n• First client prerequisite is required by M1: Client provides design system access (code library.\n• Active alignment ensures clear decision rights and rapid resolution of open items.\n\nSOURCES: Startup Kit · Stakeholder and Responsibility Model, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+    }
+  ]
 }

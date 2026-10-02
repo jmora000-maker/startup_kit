@@ -4793,5 +4793,280 @@
         ""
       ]
     ]
-  }
+  },
+  "deck_slides": [
+    {
+      "slide_index": 1,
+      "title": "Core Ledger Modernization",
+      "kicker": "Talent Team Onboarding · Horizon Financial Services · Start 2026-10-05",
+      "text_frames": [
+        [
+          "Core Ledger Modernization"
+        ],
+        [
+          "Talent Team Onboarding · Horizon Financial Services · Start 2026-10-05"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Welcome the Talent PM and Talent Project Team to onboarding.\n• Engagement for Horizon Financial Services starting 2026-10-05 (Assumed - first Monday after award; confirm).\n• Review delivery charter, milestone commitments, acceptance criteria, and governance cadence.\n\nSOURCES: Startup Kit · Project Charter; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 2,
+      "title": "Project Charter",
+      "kicker": "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Project Charter"
+        ],
+        [
+          "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Key facts"
+        ],
+        [
+          "Purpose and delivery model",
+          "Project Purpose",
+          "Migrate legacy ledger databases into a modern event-driven cloud ledger on AWS.",
+          "Delivery Model & Governance",
+          "Toptal Talent Team (Agile/Milestone Hybrid)",
+          "Escalation Path",
+          "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+        ],
+        [
+          "Phases and boundaries",
+          "Delivery Phases",
+          "• Build & Configuration",
+          "• Data & Integration",
+          "• Deployment & Release",
+          "Out of Scope",
+          "• Custom infrastructure outside documented cloud provider scope",
+          "• Unapproved out-of-scope feature requests without formal Change Order"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Client Sponsor",
+            "Horizon Financial Services"
+          ],
+          [
+            "Contract Type",
+            "Fixed Bid"
+          ],
+          [
+            "Governance Tier",
+            "Elevated"
+          ],
+          [
+            "Start Date",
+            "2026-10-05 (Assumed - first Monday after award; confirm)"
+          ],
+          [
+            "Talent PM",
+            "To be confirmed"
+          ],
+          [
+            "Delivery Manager",
+            "To be confirmed"
+          ],
+          [
+            "PMO Lead",
+            "To be confirmed"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Project operates under Fixed Bid contract terms and Elevated governance.\n• Delivery leadership: PMO Lead To be confirmed, Delivery Manager To be confirmed, Talent PM To be confirmed.\n• Purpose: Migrate legacy ledger databases into a modern event-driven cloud ledger on AWS..\n• Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• Delivery spans 3 phases from 2026-10-05 to 2027-01-08.\n\nSOURCES: Startup Kit · Project Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 3,
+      "title": "Workstreams, Milestones, Deliverables and Dates",
+      "kicker": "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Workstreams, Milestones, Deliverables and Dates"
+        ],
+        [
+          "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Workstream",
+            "Milestone",
+            "Dates",
+            "Deliverables"
+          ],
+          [
+            "Build & Configuration",
+            "M1: Phase 1 (Ingestion Setup, weeks 1-4) complete",
+            "2026-10-05 – 2026-10-30",
+            "DEL-01 Cloud Data Landing Zone Architecture and\nDEL-02 Security and Encryption Controls"
+          ],
+          [
+            "Data & Integration",
+            "M2: Phase 2 (Data Pipeline and Transformation, weeks 5-10) complete",
+            "2026-11-02 – 2026-12-11",
+            "DEL-03 Kafka Ingestion Pipelines and Transformation Workers\nDEL-04 Historical Ledger Data Cleansing and Migration"
+          ],
+          [
+            "Deployment & Release",
+            "M3: Phase 3 (Reconciliation and Final Cutover, weeks 11-14) complete",
+            "2026-12-14 – 2027-01-08",
+            "DEL-05 Dual-Run Automated Ledger Balance Reconciliation Tool\nDEL-06 Production Cutover Runbook and Operator Handoff"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• The project runs in 3 phases, from 2026-10-05 to 2027-01-08.\n• Delivery commits to 3 milestones across 3 workstreams.\n• All 6 deliverables are mapped to baseline milestone dates.\n• Date basis: SOW estimate, weeks 1–4.\n\nSOURCES: Project Delivery Workbook · Project Schedule; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 4,
+      "title": "Acceptance Criteria",
+      "kicker": "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Acceptance Criteria"
+        ],
+        [
+          "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "How acceptance works",
+          "Milestone Acceptance Process",
+          "1. Confirm: Client provides schema specifications for legacy DB2 databases by week 2.",
+          "2. Refine stories and acceptance criteria",
+          "3. Build Deliverable 1.1",
+          "4. Peer review and unit test",
+          "5. Demo completed work to the client",
+          "6. Assemble acceptance evidence",
+          "Governance Parameters",
+          "Review Window: Not specified; reviewed at the Milestone Acceptance Review",
+          "Client Approver: To be confirmed"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Acceptance Criteria",
+            "Gate"
+          ],
+          [
+            "DEL-01",
+            "To be confirmed",
+            "M1"
+          ],
+          [
+            "DEL-02",
+            "To be confirmed",
+            "M1"
+          ],
+          [
+            "DEL-03",
+            "To be confirmed",
+            "M2"
+          ],
+          [
+            "DEL-04",
+            "To be confirmed",
+            "M2"
+          ],
+          [
+            "DEL-05",
+            "To be confirmed",
+            "M3"
+          ],
+          [
+            "DEL-06",
+            "To be confirmed",
+            "M3"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Acceptance is conducted at milestone level following defined quality review gates.\n• Milestone review window is Not specified; reviewed at the Milestone Acceptance Review with client approver To be confirmed.\n• All 6 deliverable acceptance criteria must be verified with required completion evidence.\n• Submissions follow standard verification and rework remediation workflows.\n\nSOURCES: Project Delivery Workbook · WBS; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 5,
+      "title": "High-Risk Items",
+      "kicker": "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "High-Risk Items"
+        ],
+        [
+          "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Item",
+            "Rating",
+            "Owner",
+            "Response",
+            "Phase"
+          ],
+          [
+            "RAID-01 (RSK-01)",
+            "High-volume batch reconciliation during month-end close may require dedicated compute capacity.",
+            "High",
+            "To be confirmed",
+            "",
+            "Cross-phase"
+          ],
+          [
+            "RAID-04 (AMB-01)",
+            "Ambiguous Acceptance: Phases and Milestones: each phase requires deliverables \"completed and accepted\".",
+            "Medium",
+            "Talent PM",
+            "Can the Client confirm written acceptance criteria, the named approver",
+            "Cross-phase"
+          ],
+          [
+            "RAID-05 (AMB-02)",
+            "Unclear SLA: Risks and Dependencies: \"Assumption",
+            "Medium",
+            "Talent PM",
+            "Will the Client commit to the 5-business-day sign-off as a contractual obligation",
+            "Deployment & Release"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Active RAID tracking monitors 1 items rated High severity.\n• First priority risk is RAID-01: High-volume batch reconciliation during month-end close may require dedicated compute.\n• Mitigations and proactive response ownership are assigned across delivery phases.\n• New risks or issues should be raised via the delivery escalation path.\n\nSOURCES: Project Delivery Workbook · RAID Log; Startup Kit · Project Charter"
+    },
+    {
+      "slide_index": 6,
+      "title": "Client Collaboration",
+      "kicker": "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Client Collaboration"
+        ],
+        [
+          "CORE LEDGER MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Client roles and approvers",
+          "• Client Audit Committee (Client Approver): Signs off on Deliverable 3.1 (dual-run ledger balance",
+          "• Horizon Financial Services Client Counterpart (Client Counterpart (Sponsor / Approver not named)): Not specified"
+        ],
+        [
+          "Working rhythm",
+          "• Phase Deliverable Acceptance Review: End of each phase (P1 week 4, P2 week 10, P3 week 14)",
+          "• Audit Committee Sign-off for Reconciliation Tool (Deliverable 3.1): One-time, within 5 business days of Deliverable 3.1 submission",
+          "• Legacy DB2 Schema Specification Checkpoint: One-time"
+        ],
+        [
+          "What we need from the client",
+          "• M1: Client provides schema specifications for legacy DB2 databases by week 2.",
+          "• M2: Phase 1 completed and accepted.; Client provides schema specifications for legacy DB2",
+          "• M3: Phase 2 completed and accepted.; Client audit committee sign-off for the reconciliation"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Engagement governance establishes regular cadence with 2 client stakeholders.\n• Communications rhythm includes 3 scheduled governance touchpoints.\n• First client prerequisite is required by M1: Client provides schema specifications for legacy DB2 databases.\n• Active alignment ensures clear decision rights and rapid resolution of open items.\n\nSOURCES: Startup Kit · Stakeholder and Responsibility Model, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+    }
+  ]
 }

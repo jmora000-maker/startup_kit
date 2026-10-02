@@ -2492,5 +2492,255 @@
         ""
       ]
     ]
-  }
+  },
+  "deck_slides": [
+    {
+      "slide_index": 1,
+      "title": "Pfizer Analytics & Cloud Modernization",
+      "kicker": "Talent Team Onboarding · Pfizer Inc. · Start 2026-10-05",
+      "text_frames": [
+        [
+          "Pfizer Analytics & Cloud Modernization"
+        ],
+        [
+          "Talent Team Onboarding · Pfizer Inc. · Start 2026-10-05"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Welcome the Talent PM and Talent Project Team to onboarding.\n• Engagement for Pfizer Inc. starting 2026-10-05 (Assumed - first Monday after award; confirm).\n• Review delivery charter, milestone commitments, acceptance criteria, and governance cadence.\n\nSOURCES: Startup Kit · Project Charter; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 2,
+      "title": "Project Charter",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Project Charter"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Key facts"
+        ],
+        [
+          "Purpose and delivery model",
+          "Project Purpose",
+          "Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.",
+          "Delivery Model & Governance",
+          "Toptal Talent Team (Agile/Milestone Hybrid)",
+          "Escalation Path",
+          "Talent PM / Delivery Manager -> PMO Lead -> Director, PMO"
+        ],
+        [
+          "Phases and boundaries",
+          "Delivery Phases",
+          "• Design & Architecture",
+          "• Deployment & Release",
+          "Out of Scope",
+          "• Legacy on-premise hardware decommissioning",
+          "• Pre-migration data cleansing and enrichment"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Client Sponsor",
+            "Pfizer Inc."
+          ],
+          [
+            "Contract Type",
+            "Time and Materials"
+          ],
+          [
+            "Governance Tier",
+            "Partnered"
+          ],
+          [
+            "Start Date",
+            "2026-10-05 (Assumed - first Monday after award; confirm)"
+          ],
+          [
+            "Talent PM",
+            "John Smith"
+          ],
+          [
+            "Delivery Manager",
+            "Jane Doe"
+          ],
+          [
+            "PMO Lead",
+            "Sarah Connor"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Project operates under Time and Materials contract terms and Partnered governance.\n• Delivery leadership: PMO Lead Sarah Connor, Delivery Manager Jane Doe, Talent PM John Smith.\n• Purpose: Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance..\n• Escalation path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• Delivery spans 2 phases from 2026-10-05 to 2026-11-30.\n\nSOURCES: Startup Kit · Project Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+    },
+    {
+      "slide_index": 3,
+      "title": "Workstreams, Milestones, Deliverables and Dates",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Workstreams, Milestones, Deliverables and Dates"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "Workstream",
+            "Milestone",
+            "Dates",
+            "Deliverables"
+          ],
+          [
+            "Design & Architecture",
+            "M1: Project Kickoff & Architecture Baseline",
+            "2026-10-05 – 2026-10-15",
+            "DEL-01 Cloud Architecture & Security Design"
+          ],
+          [
+            "Deployment & Release",
+            "M2: Data Pipeline Production Go-Live",
+            "2026-10-16 – 2026-11-30",
+            "DEL-02 Automated CI/CD Data Ingestion Pipeline\nDEL-03 Validation and Compliance Documentation"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n• Delivery commits to 2 milestones across 2 workstreams.\n• All 3 deliverables are mapped to baseline milestone dates.\n• Date basis: Contract date.\n\nSOURCES: Project Delivery Workbook · Project Schedule; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 4,
+      "title": "Acceptance Criteria",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Acceptance Criteria"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "How acceptance works",
+          "Milestone Acceptance Process",
+          "1. Confirm: AWS IAM provisioning",
+          "2. Refine stories and acceptance criteria",
+          "3. Build Section 3.1",
+          "4. Peer review and unit test",
+          "5. Demo completed work to the client",
+          "6. Assemble acceptance evidence",
+          "Governance Parameters",
+          "Review Window: Formal written approval from Pfizer Engineering Lead within",
+          "Client Approver: Pfizer Chief Architect"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Acceptance Criteria",
+            "Gate"
+          ],
+          [
+            "DEL-01",
+            "Approved by Pfizer Enterprise Architecture Board",
+            "M1"
+          ],
+          [
+            "DEL-02",
+            "Passing automated test suite report & pipeline run logs approved by Pfizer Data Engineering Lead",
+            "M2"
+          ],
+          [
+            "DEL-03",
+            "Signed off by Compliance Lead",
+            "M2"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Acceptance is conducted at milestone level following defined quality review gates.\n• Milestone review window is Formal written approval from Pfizer Engineering Lead within with client approver Pfizer Chief Architect.\n• All 3 deliverable acceptance criteria must be verified with required completion evidence.\n• Submissions follow standard verification and rework remediation workflows.\n\nSOURCES: Project Delivery Workbook · WBS; Startup Kit · Deliverables and Acceptance Matrix"
+    },
+    {
+      "slide_index": 5,
+      "title": "High-Risk Items",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "High-Risk Items"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ]
+      ],
+      "tables": [
+        [
+          [
+            "ID",
+            "Item",
+            "Rating",
+            "Owner",
+            "Response",
+            "Phase"
+          ],
+          [
+            "RAID-01 (RSK-01)",
+            "Client IAM and AWS account provisioning delays",
+            "High",
+            "Delivery Manager",
+            "",
+            "Cross-phase"
+          ],
+          [
+            "RAID-04 (AMB-01)",
+            "Ambiguous Acceptance: Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated",
+            "Medium",
+            "Talent PM",
+            "Align contractual acceptance criteria to objective automated test passing metrics.",
+            "Cross-phase"
+          ],
+          [
+            "RAID-05 (CONF-01)",
+            "Date Conflict: Proposal schedule commits Milestone 2 delivery by 2026-11-15",
+            "Medium",
+            "Talent PM",
+            "Confirm 2026-11-30 as the binding contractual date for M2 Production Go-Live.",
+            "Deployment & Release"
+          ]
+        ]
+      ],
+      "notes": "TALKING POINTS:\n• Active RAID tracking monitors 1 items rated High severity.\n• First priority risk is RAID-01: Client IAM and AWS account provisioning delays.\n• Mitigations and proactive response ownership are assigned across delivery phases.\n• New risks or issues should be raised via the delivery escalation path.\n\nSOURCES: Project Delivery Workbook · RAID Log; Startup Kit · Project Charter"
+    },
+    {
+      "slide_index": 6,
+      "title": "Client Collaboration",
+      "kicker": "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING",
+      "text_frames": [
+        [
+          "Client Collaboration"
+        ],
+        [
+          "PFIZER ANALYTICS & CLOUD MODERNIZATION · TALENT TEAM ONBOARDING"
+        ],
+        [
+          "Client roles and approvers",
+          "• Pfizer VP Sponsor (Client Sponsor / Approver): Contractual approvals, deliverable sign-offs, change orders"
+        ],
+        [
+          "Working rhythm",
+          "• Weekly Project Status Report (PSR): Weekly (Fridays)",
+          "• Monthly Business Review (MBR): Monthly"
+        ],
+        [
+          "What we need from the client",
+          "• M1: AWS IAM provisioning",
+          "• M2: Sample clinical dataset delivery"
+        ]
+      ],
+      "tables": [],
+      "notes": "TALKING POINTS:\n• Engagement governance establishes regular cadence with 1 client stakeholders.\n• Communications rhythm includes 2 scheduled governance touchpoints.\n• First client prerequisite is required by M1: AWS IAM provisioning.\n• Active alignment ensures clear decision rights and rapid resolution of open items.\n\nSOURCES: Startup Kit · Stakeholder and Responsibility Model, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+    }
+  ]
 }
