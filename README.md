@@ -1,9 +1,10 @@
 # PMO Startup Kit Generator
 
-The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kickoff materials to extract structured project management baselines via LLMs. It produces three core project delivery documents:
+The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kickoff materials to extract structured project management baselines via LLMs. It produces four core project delivery documents:
 - the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, and RAID items;
 - the **Startup Readiness Checklist** (`.docx`), containing the G-01 executive gateway dashboard, 15-row readiness checklist, commercial guardrails, actionable clarification questions, and contract ambiguities;
-- the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log.
+- the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log;
+- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), containing an executive 6-slide briefing deck for talent onboarding, built with strict traceability back to the Kit and Workbook.
 
 For detailed specification rules and background, see [spec/PMO_Startup_Kit_Consolidated_Spec.md](spec/PMO_Startup_Kit_Consolidated_Spec.md) and [spec/Review_Loop_Reference.md](spec/Review_Loop_Reference.md).
 
@@ -11,10 +12,11 @@ For detailed specification rules and background, see [spec/PMO_Startup_Kit_Conso
 
 ## 1. Purpose
 
-The tool reads a Statement of Work (SOW) and produces three standardized project management documents:
+The tool reads a Statement of Work (SOW) and produces four standardized project management documents:
 - the **Startup Kit** (`.docx`);
 - the **Startup Readiness Checklist** (`.docx`);
-- the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log.
+- the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
+- the **Talent Team Onboarding Deck** (`.pptx`), with executive onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
 
 ---
 
@@ -56,6 +58,7 @@ Create a `.env` file in the project root to configure application paths and API 
 - `MAX_TOKENS`: Maximum output tokens allowed per LLM response.
 - `LLM_CACHE_MODE`: Default LLM caching mode (`off`, `record`, or `replay`).
 - `LLM_CACHE_DIR`: Directory path where LLM request/response cache fixtures are stored.
+- `DECK_TEMPLATE_PATH`: Path to PowerPoint presentation template (default: `templates/Toptal_Presentation_Template.pptx`).
 
 ---
 
@@ -66,7 +69,11 @@ By default, when no output flag is provided, only the Project Delivery Workbook 
 - `--export-tools`: Write the Project Delivery Workbook Excel workbook (`.xlsx`) (default when no output flag is given).
 - `--kit`: Write the Startup Kit Word document (`.docx`).
 - `--checklist`: Write the Startup Readiness Checklist Word document (`.docx`).
-- `--all`: Write the Startup Kit, the Readiness Checklist, and the Project Delivery Workbook.
+- `--slides`: Write the Talent Team Onboarding Deck (`.pptx`) and its trace manifest (`.trace.json`). Writing the deck automatically generates its source Kit and Workbook.
+- `--all`: Write all four outputs: the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck.
+
+### Re-ingestion Workflow
+When updating an existing project, re-ingesting an approved `*_Startup_Kit.docx` via `--reingest-docx <path>` is recommended over regenerating from the raw SOW. The input Kit serves as the source of truth; it is not rewritten unless `--kit` or `--all` is explicitly passed.
 
 ### CLI Options Reference
 All options as provided by `python main.py --help`:
@@ -91,6 +98,11 @@ All options as provided by `python main.py --help`:
 - `--mock`: Run using offline deterministic Mock LLM client (no API keys required).
 - `--llm-cache {off,record,replay}`: LLM cache mode (`off`, `record`, `replay`; default from `LLM_CACHE_MODE` or `off`).
 - `--start-date START_DATE`: Project Start Date in ISO format (`YYYY-MM-DD`); planned dates are derived from this date.
+- `--export-tools`: Write the Project Delivery Workbook Excel workbook (default when no output flag is given).
+- `--kit`: Write the Startup Kit Word document.
+- `--checklist`: Write the Startup Readiness Checklist Word document.
+- `--slides`: Write the Talent Team Onboarding Deck PowerPoint presentation.
+- `--all`: Write the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck.
 - `-v, --verbose`: Enable verbose debug logging.
 
 ### Input and Output Paths

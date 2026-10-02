@@ -6,6 +6,7 @@ import pytest
 from src.core.models import StartupKitBaseline
 from src.generators.docx_generator import DocxGenerator
 from src.generators.pmo_workbook import export_pmo_workbook
+from src.generators.onboarding_deck import export_onboarding_deck
 from src.tools.normalizers import normalize_artifacts
 from src.llm.validation import validate_and_repair_baseline
 
@@ -24,13 +25,15 @@ def test_artifact_snapshots(name, tmp_path, update_snapshots):
     validate_and_repair_baseline(baseline)
 
     # Generate documents into tmp_path
-    writer = DocxGenerator()
+    writer = DocxGenerator(generated_date="2026-10-01")
     kit_path = writer.write_kit_docx(baseline, tmp_path)
     chk_path = writer.write_checklist_docx(baseline, tmp_path)
     wb_res = export_pmo_workbook(baseline, tmp_path)
     wb_path = wb_res.file_path
+    deck_res = export_onboarding_deck(baseline, tmp_path)
+    deck_path = deck_res.file_path
 
-    current_normalized = normalize_artifacts(kit_path, chk_path, wb_path)
+    current_normalized = normalize_artifacts(kit_path, chk_path, wb_path, deck_path)
 
     # QA-03 (Rev 2): Always write proposed snapshots to tests/snapshots_proposed/
     proposed_dir = Path("tests/snapshots_proposed") / name

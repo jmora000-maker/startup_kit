@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import docx
 import openpyxl
+import pptx
 
 DATE_REGEX = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
 GENERATED_DATE_REGEX = re.compile(r'Generated\s+\d{4}-\d{2}-\d{2}', re.IGNORECASE)
@@ -77,12 +78,58 @@ def normalize_xlsx_workbook(xlsx_path: Path) -> Dict[str, List[List[Any]]]:
     return sheets_data
 
 
+def normalize_pptx_deck(deck_path: Path) -> List[Dict[str, Any]]:
+    """Extract and normalize all slides, shapes, tables, and notes from a .pptx file (DECK-17)."""
+    if not deck_path.exists():
+        return []
+    prs = pptx.Presentation(str(deck_path))
+    slides_data = []
+
+    for s_idx, slide in enumerate(prs.slides, start=1):
+        title = ""
+        kicker = ""
+        if len(slide.placeholders) > 0:
+            title = normalize_text_excluding_dates(slide.placeholders[0].text)
+        if len(slide.placeholders) > 1:
+            kicker = normalize_text_excluding_dates(slide.placeholders[1].text)
+
+        text_frames = []
+        tables = []
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                paragraphs = [normalize_text_excluding_dates(p.text) for p in shape.text_frame.paragraphs if p.text.strip()]
+                if paragraphs:
+                    text_frames.append(paragraphs)
+            if shape.has_table:
+                table_rows = []
+                for row in shape.table.rows:
+                    cells = [normalize_text_excluding_dates(c.text) for c in row.cells]
+                    table_rows.append(cells)
+                tables.append(table_rows)
+
+        notes_text = ""
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+            notes_text = normalize_text_excluding_dates(slide.notes_slide.notes_text_frame.text)
+
+        slides_data.append({
+            "slide_index": s_idx,
+            "title": title,
+            "kicker": kicker,
+            "text_frames": text_frames,
+            "tables": tables,
+            "notes": notes_text,
+        })
+
+    return slides_data
+
+
 def normalize_artifacts(
     kit_path: Optional[Path] = None,
     checklist_path: Optional[Path] = None,
     workbook_path: Optional[Path] = None,
+    deck_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Normalize Kit tables, Checklist tables, and Workbook sheets into a single JSON-serializable dictionary."""
+    """Normalize Kit tables, Checklist tables, Workbook sheets, and Deck slides into a JSON dict."""
     result: Dict[str, Any] = {}
     if kit_path and kit_path.exists():
         result["kit_tables"] = normalize_docx_tables(kit_path)
@@ -90,4 +137,6 @@ def normalize_artifacts(
         result["checklist_tables"] = normalize_docx_tables(checklist_path)
     if workbook_path and workbook_path.exists():
         result["workbook_sheets"] = normalize_xlsx_workbook(workbook_path)
+    if deck_path and deck_path.exists():
+        result["deck_slides"] = normalize_pptx_deck(deck_path)
     return result
