@@ -884,8 +884,11 @@ def _build_collaboration(ctx: _Ctx, kicker: str) -> SlideSpec:
 
     prereqs: List[ParaSpec] = []
     for g in _gates(wb):
-        if g.client_prerequisites and g.client_prerequisites.strip():
-            shown = clause_prefix(g.client_prerequisites, MAX_BULLET_WORDS)
+        # DECK-07: a cell holds several prerequisites separated by "; "; each is its own bullet
+        for one in (g.client_prerequisites or "").split("; "):
+            if not one.strip():
+                continue
+            shown = clause_prefix(one, MAX_BULLET_WORDS)
             prereqs.append(para(BULLET,
                                 traced(g.milestone_id, T(WORKBOOK, PS, g.milestone_id, "Milestone ID"), element="Gate"),
                                 plain(": "),

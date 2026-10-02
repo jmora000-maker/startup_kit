@@ -185,7 +185,11 @@ class SourceIndex:
                     cell = r[headers[field]]
                     if cell.startswith("="):
                         return None, f"field '{field}' of '{key}' is a formula cell with no stored value; trace its input cells"
-                    return source_units(cell) or [""], None
+                    units = source_units(cell) or [""]
+                    if field == "Client Prerequisites":
+                        # DECK-07: each "; "-separated prerequisite is its own source item (only this field is split)
+                        units += [u for u in (normalize_text(p) for p in cell.split("; ")) if u and u not in units]
+                    return units, None
         if key_seen:
             return None, f"field '{field}' not found for key '{key}' in Workbook sheet '{locator}'"
         return None, f"key '{key}' not found in Workbook sheet '{locator}'"
