@@ -38,6 +38,12 @@ FIXTURES_TO_RECORD = [
         "is_mock": False,
         "is_synthetic": True,
     },
+    {
+        "name": "arc_application_implementation",
+        "input_dir": Path("tests/fixtures/sow/arc_application_implementation/inputs"),
+        "is_mock": False,
+        "is_synthetic": False,
+    },
 ]
 
 
@@ -77,10 +83,10 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
             temperature=0.0
         )
     
-    # Wrap in caching client recording to both local and global cache
+    # Wrap in caching client recording to local cache
     caching_client = CachingLLMClient(
         inner_client=raw_client,
-        cache_dir=global_cache_dir,
+        cache_dir=local_cache_dir,
         mode="record" if not is_mock else "record",
         model_id=config.anthropic_model if not is_mock else "mock-client"
     )
@@ -177,19 +183,25 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
     with open(baseline_json_path, "w", encoding="utf-8") as f:
         json.dump(baseline.model_dump(mode="json"), f, indent=2, ensure_ascii=False)
     
-    # Also copy all cached json files from global_cache_dir into local_cache_dir
-    for f in global_cache_dir.glob("*.json"):
-        shutil.copy(f, local_cache_dir / f.name)
+    # Also copy all cached json files from local_cache_dir into global_cache_dir
+    for f in local_cache_dir.glob("*.json"):
+        shutil.copy(f, global_cache_dir / f.name)
         
     logger.info(f"Successfully recorded fixture {name} to {fixture_dir}")
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Record fixtures")
+    parser.add_argument("--fixture", type=str, default=None, help="Name of specific fixture to record")
+    args = parser.parse_args()
+
     global_cache_dir = Path("tests/fixtures/llm_cache")
     global_cache_dir.mkdir(parents=True, exist_ok=True)
     target_base_dir = Path("tests/fixtures/sow")
     
-    for fix in FIXTURES_TO_RECORD:
+    fixtures = [f for f in FIXTURES_TO_RECORD if args.fixture is None or f["name"] == args.fixture]
+    for fix in fixtures:
         record_fixture(fix, global_cache_dir, target_base_dir)
 
 
