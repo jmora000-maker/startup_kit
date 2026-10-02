@@ -9,210 +9,210 @@
       {
         "anomaly_id": "AMB-01",
         "category": "Date Conflict",
-        "conflicting_clauses": "Schedule: \"Estimated Start Date October 7, 2026\" and fixed milestone dates from Nov 17, 2026 to Apr 6, 2027. Internal scope notes: \"No date has been agreed with Syngenta, and the phase sequence hangs off it.\"",
-        "risk_impact": "All four milestone dates and billing dates depend on a start date that may not be confirmed, creating schedule and cash-flow risk. The start date is also the same day the agreement takes effect.",
-        "recommended_clarification": "Can Client confirm in writing that October 7, 2026 is the agreed start date, with Client onboarding items (access, design system, standards) ready by then?",
+        "conflicting_clauses": "Contract states: 'Estimated Start Date October 7, 2026' with completion April 6, 2027. Internal delivery plan states: 'No date has been agreed with Syngenta, and the phase sequence hangs off it.'",
+        "risk_impact": "All four milestone dates and fee timing depend on a start date the client may not have confirmed. A slip would move every milestone and invoice.",
+        "recommended_clarification": "Can Syngenta confirm in writing that October 7, 2026 is the agreed start date, and that the milestone dates shift with any start change?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 3 (Schedule); Section 2.B; phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 2",
-          "confidence_score": 0.85
+          "clause_or_slide": "Section 3 (Schedule); related open item in phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 2",
+          "confidence_score": 0.9
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-02",
         "category": "Date Conflict",
-        "conflicting_clauses": "Assumptions: \"The schedule and cost were created considering that no breaks or stoppages due to holidays will occur.\" The 26-week plan from Oct 7, 2026 to Apr 6, 2027 spans Thanksgiving, Christmas and New Year.",
-        "risk_impact": "Holiday shutdowns on either side are unaccounted for and could push milestone dates without a clear right to adjust the schedule or fees.",
-        "recommended_clarification": "Will Client confirm that no holiday or shutdown periods apply, or agree an adjusted calendar and the treatment of Client-side unavailability?",
+        "conflicting_clauses": "Contract states the schedule assumes 'no breaks or stoppages due to holidays', but the 26-week plan from October 7, 2026 to April 6, 2027 spans Thanksgiving, year-end holidays and other holidays.",
+        "risk_impact": "The fixed milestone dates (Nov 17, Jan 26, Mar 2, Apr 6) have no holiday buffer. Client availability gaps could cause delay disputes.",
+        "recommended_clarification": "Should the holiday assumption be replaced with an agreed holiday calendar, or should the milestone dates be adjusted for known holiday periods?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Section 7 (Assumptions & Dependencies); Section 3",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Section 7 (Assumptions & Dependencies); Section 2.B (Fees table)",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-03",
-        "category": "Date Conflict",
-        "conflicting_clauses": "Assumptions: milestones run sequentially as acceptance gates, with P2b starting \"upon acceptance of P2a\" and P3 \"upon acceptance of P2b\". UAT runs after each milestone. Acceptance: 5 business days for review. Schedule: fixed back-to-back week ranges (1–6, 7–16, 17–21, 22–26) with no time for review, UAT or rework between gates.",
-        "risk_impact": "Acceptance periods, two UAT runs and rework between gates are not built into the fixed week ranges, so any slippage in Client review delays all later milestones.",
-        "recommended_clarification": "Is the acceptance and UAT time for each milestone inside or outside the stated week ranges, and does the next milestone start only after formal acceptance?",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Contract states Client-owned work must be 'completed before the related Toptal-owned Work can begin', and P2a begins on completion of HS-4781 (Snowflake schema). No due dates are given for Client-built work, yet Toptal milestone dates are fixed.",
+        "risk_impact": "Client-side delays (especially the schema) would compress Toptal's work against fixed dates, with a risk of disputed delay and unrecoverable margin.",
+        "recommended_clarification": "Can Syngenta commit to dated delivery of Client-built dependencies (starting with HS-4781), with a defined schedule and fee adjustment if they are late?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Section 7; Section 7 (Acceptance); Exhibit A Section 1",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Section 6 (Client Responsibilities) and Section 7 (Assumptions & Dependencies)",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-04",
         "category": "Ambiguous Acceptance",
-        "conflicting_clauses": "Acceptance: a criterion \"(including one expressed as 100%) is deemed satisfied if the Work Output materially conforms… and any deviation does not materially affect its functionality, performance, security, or usability.\" Exhibit A criteria include \"Authentication success 100%\" and \"100% critical-path pass\".",
-        "risk_impact": "Numeric targets can be read as absolute or as material-conformance, which invites disputes about milestone acceptance and the invoice. Rejection tests such as \"within Client's reasonable discretion\" are subjective.",
-        "recommended_clarification": "Will Client confirm in writing that the materiality standard applies to all numeric and 100% criteria, and define how \"material\" and \"reasonable discretion\" are assessed?",
+        "conflicting_clauses": "Contract states Client has 5 business days to accept each milestone, with deemed acceptance on silence. It also states UAT runs after each milestone, with up to two runs covering all UAT, and that the next milestone starts 'upon acceptance' of the prior one.",
+        "risk_impact": "It is unclear whether acceptance happens before or after UAT. This could stall milestone sign-off, billing and the start of the next phase.",
+        "recommended_clarification": "Does the 5-business-day acceptance window run alongside or after the two UAT runs, and is UAT completion a condition for milestone acceptance?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Section 7 (Acceptance); Exhibit A Section 4",
+          "clause_or_slide": "Section 7 (Acceptance); Exhibit A Section 7 (UAT assumption)",
           "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-05",
-        "category": "Ownership Gap",
-        "conflicting_clauses": "Acceptance: deemed acceptance after 5 business days of silence, yet \"Client will sign and deliver… a certification of milestone acceptance\". Fees: invoiced \"upon completion of the milestone\". Client Contact is Mike Magwire only; internal notes say sign-off comes from \"Mike Magwire and Satya\".",
-        "risk_impact": "It is unclear whether invoicing follows completion, deemed acceptance or signed certification, and who the authorized approvers are. This risks delayed or disputed milestone payments.",
-        "recommended_clarification": "Who are the named approvers for each milestone, and is the invoice triggered at completion notice, deemed acceptance or signed certification?",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Contract states criteria 'expressed as 100%' are met if the output 'materially conforms' and any deviation 'does not materially affect' functionality, performance, security or usability. Remediation failure is judged 'within Client's reasonable discretion', with a termination right after three attempts.",
+        "risk_impact": "Numeric 100% targets can be read as absolute or as 'material'. The subjective judgment could lead to rejected milestones, delayed payment or termination.",
+        "recommended_clarification": "Can the parties agree objective pass/fail thresholds, and who decides 'material' deviation and 'reasonable discretion'?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Sections 2.A, 6, 7; phase-scope-and-acceptance-syngenta-arc.docx Section 1",
-          "confidence_score": 0.75
+          "clause_or_slide": "Section 7 (Acceptance)",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-06",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "Activities: Toptal will \"Build automated pipeline quality gates and deployment smoke checks (HS-4770)\". Work Output: HS-4770 is typed \"Certification\", meaning a Client-built component that Toptal only tests. CI/CD pipelines (HS-4768) are Client-owned and out of scope for Toptal.",
-        "risk_impact": "It is unclear whether Toptal builds the quality gates or only tests Client-built ones, which affects effort, acceptance and responsibility for failures.",
-        "recommended_clarification": "Does Toptal build the HS-4770 gates and smoke checks inside Client's pipeline, or only write and run tests against gates Client builds?",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Contract states a missed latency target 'will be treated as met' if telemetry 'may show' the cause is a Client-owned component, data volumes or 'environmental conditions outside Toptal's reasonable control'. It does not say who determines attribution or how.",
+        "risk_impact": "Performance acceptance depends on a subjective attribution call. This invites disputes over milestone acceptance and the defect remediation owner.",
+        "recommended_clarification": "What objective method, evidence and decision-maker will be used to attribute a latency miss to Toptal-built versus Client-owned components?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 2.1, 4, 9; phase-scope-and-acceptance-syngenta-arc.docx P1 tables",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Section 4 (Latency Acceptance Criteria)",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-07",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "QA principles: \"Testing ARC means testing against the full platform. SSO and the external integrations are within the test scope.\" Assumptions: \"Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.\"",
-        "risk_impact": "The test boundary is unclear. Full-platform testing could expand effort beyond the fixed fee, or Client could expect broader coverage than the listed deliverables.",
-        "recommended_clarification": "Is test scope limited to the listed test deliverables, or does it cover all platform components touched by ARC flows? If the latter, please list those components.",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "Latency targets state 'search P95 < 1s' with no concurrency, data volume or 'production-like volume' defined, and HS-4775 states 'search < 1s' with no percentile. The delivery plan lists HS-4942 as 'p95 targets defined & met', while the contract only requires 'p95 targets defined'.",
+        "risk_impact": "Untestable or inconsistent performance criteria could lead to disputed pass/fail results and rework.",
+        "recommended_clarification": "Can the parties define the concurrency, data volume, percentile and environment for each performance target, and confirm whether HS-4942 requires targets to be 'defined' only or also 'met'?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 3 and 7; phase-scope-and-acceptance-syngenta-arc.docx Section 2",
+          "clause_or_slide": "Exhibit A Section 4 (Work Output table: HS-4779, HS-4775, HS-4825, HS-4942)",
           "confidence_score": 0.8
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-08",
-        "category": "Ownership Gap",
-        "conflicting_clauses": "QA principles: failures in Client-built components are Client's to fix, and Toptal re-executes tests \"in accordance with the Assumptions\"; \"Additional re-runs will be addressed by Change Order.\" Internal notes: \"the remediation path has not been written down.\"",
-        "risk_impact": "No agreed number of free re-tests, response times or escalation path for Client-owned failures. Retests and idle time could erode margin and delay milestone acceptance.",
-        "recommended_clarification": "How many re-test cycles are included per Certification item, within what timeframe must Client remediate, and what happens to the milestone date if remediation is late?",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Internal plan states 'Toptal delivers the QA test automation for every piece of work in the programme' and that testing ARC means 'testing against the full platform'. Contract states 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
+        "risk_impact": "The QA boundary is open to broad reading by the client. This could add unpriced testing effort under a fixed fee.",
+        "recommended_clarification": "Can the parties confirm that QA scope is limited to the listed Toptal-built and Certification stories, with all other Client-built testing handled by Change Order?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 3, 6; phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 5",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Sections 3 and 7; related wording in phase-scope-and-acceptance-syngenta-arc.docx Section 2",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-09",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "Latency criteria: a missed target is treated as met if telemetry \"may show\" it is attributable to a Client-owned component or environmental conditions. Search P95 < 1s is fixed in milestone 2, while HS-4942 (same milestone) is where \"p95 targets defined\" and observability is built.",
-        "risk_impact": "Latency acceptance depends on a subjective attribution finding and on observability delivered in the same milestone. Client could dispute a \"met\" finding, or targets could be redefined after commitment.",
-        "recommended_clarification": "Who decides whether a latency miss is attributable to Client-owned components, on what evidence, and are the listed P95 targets final or subject to revision after HS-4942?",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Contract states remediation of failures in Client-built components is Client's responsibility, and Toptal re-executes tests 'in accordance with the Assumptions' with additional re-runs by Change Order. The internal plan states the remediation path 'has not been written down', and the number of included re-runs is not defined.",
+        "risk_impact": "Without a defined remediation process and re-test allowance, Client fixes may be late and re-test effort may be disputed, delaying certification stories and milestone acceptance.",
+        "recommended_clarification": "What are the Client's remediation turnaround expectations and the number of included re-test cycles per Certification story before a Change Order applies?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Section 4 (Latency Acceptance Criteria; HS-4777, HS-4942)",
-          "confidence_score": 0.75
+          "clause_or_slide": "Exhibit A Section 3 (Remediation, Re-testing); open item 5 in phase-scope-and-acceptance-syngenta-arc.docx Section 4",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-10",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "Criteria cite \"production-like volume\", \"target concurrency\" (internal notes), \"search < 1s\" and \"a11y pass\" without defining data volume, concurrency, test environment sizing or an accessibility standard.",
-        "risk_impact": "Pass/fail cannot be objectively tested, which risks rework, repeated test runs and disputed acceptance of performance and accessibility deliverables.",
-        "recommended_clarification": "Please define the load profile (data volume, concurrent users, environment sizing) and the accessibility standard and level that apply to acceptance.",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Milestones include Certification stories whose tests run against Client-built pipelines and datasets (e.g. GWAS Atlas ETL, PubMed ingestion, MTA migration). Milestone fees are invoiced on completion, yet those components have no committed Client readiness dates. The delivery plan also lists HS-4777, HS-4942 and HS-4803 as 'Built by Syngenta' although they are Toptal deliverables.",
+        "risk_impact": "Milestone completion and billing could be blocked by Client-built readiness. Unclear build ownership could cause disputes over who must fix defects.",
+        "recommended_clarification": "Can the parties confirm the builder of HS-4777, HS-4942 and HS-4803, and agree that a milestone is complete when test scripts, execution and the defect report are delivered, even if Client-built targets are unmet?",
         "status": "Open",
         "source_reference": {
           "document_name": "phase-scope-and-acceptance-syngenta-arc.docx",
-          "clause_or_slide": "P2a.4, P2b.4, P3.2 acceptance tables; Exhibit A Section 4 (HS-4775, HS-4825)",
-          "confidence_score": 0.7
+          "clause_or_slide": "P2a 'What has to be in place first' table; Exhibit A Section 3 (Certification)",
+          "confidence_score": 0.75
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-11",
-        "category": "Ownership Gap",
-        "conflicting_clauses": "Assumptions: estimates include \"building up to [N] ARC-specific components\" (placeholder unfilled). Client provides UI/UX designs for the Milestone 3 screens. Internal notes: \"Who covers the design work… No design or UX role appears anywhere.\"",
-        "risk_impact": "The cap on custom components is undefined and design ownership is unassigned. P2b UI effort, rework and Change Order exposure are unquantified.",
-        "recommended_clarification": "What is the maximum number of ARC-specific components, and will Client supply final UI/UX designs for all P2b screens by the start date?",
+        "category": "Scope Contradiction",
+        "conflicting_clauses": "Contract states estimates include 'building up to [N] ARC-specific components', and the N placeholder is unfilled. Client must provide UI/UX designs for the Milestone 3 screens, while the internal plan notes no design or UX role exists on either side.",
+        "risk_impact": "An undefined component cap and an unassigned design owner create unpriced frontend scope, with Change Order disputes likely.",
+        "recommended_clarification": "What is the maximum number of ARC-specific components in scope, and who provides UI/UX designs and by what date?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Section 7; Section 6; phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 1",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Section 7 (design system assumptions); open item 1 in phase-scope-and-acceptance-syngenta-arc.docx Section 4",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-12",
         "category": "Unclear SLA",
-        "conflicting_clauses": "Assumptions: Cogen API \"assumed to be available and stable at approximately 95%, as assessed by Syngenta\"; failures below that go to Change Order. Third-party items: Cogen and Tagasys \"Provided by Client during the engagement. [confirm]\".",
-        "risk_impact": "\"Approximately 95%\" has no measurement window or method, and provisioning of Cogen and Tagasys is unconfirmed. Test failures and retest cycles could become disputed Change Orders.",
-        "recommended_clarification": "How is 95% availability measured (period, source, who records it), and does Client confirm it will provide Cogen and Tagasys access and environments?",
+        "conflicting_clauses": "Contract states the Cogen API is 'assumed to be available and stable at approximately 95%, as assessed by Syngenta', and failures below that level are handled by Change Order. The measurement window and method are undefined, and the contract flags Cogen/Tagasys provision as '[confirm]'.",
+        "risk_impact": "A client-assessed, approximate threshold gives no objective trigger for Change Orders. Unconfirmed provisioning of Cogen and Tagasys could block integration testing.",
+        "recommended_clarification": "How, over what period and by whom will Cogen availability be measured, and who provisions Cogen and Tagasys access?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 7 and 8",
-          "confidence_score": 0.8
+          "clause_or_slide": "Exhibit A Section 7 and Section 8 (Third Party Items)",
+          "confidence_score": 0.85
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-13",
-        "category": "Scope Contradiction",
-        "conflicting_clauses": "Assumptions: UAT is included in the fixed price, \"limited to two (2) runs per Milestone, covering all UAT and not only Toptal-built Work\". P3 acceptance requires \"no open critical defects in Toptal-built Work at exit\", and UAT coordination and sign-off (HS-4827) is Client's. Internal notes: UAT scope boundaries and change-order triggers are \"not yet written\".",
-        "risk_impact": "Two runs may not close critical defects, including those in Client-built work. This risks Change Orders, a delayed P3 exit and disputes over who bears extra cycles.",
-        "recommended_clarification": "What is a UAT \"run\" (duration, scope, retest rules), and what happens to P3 exit if criticals remain open after two runs?",
+        "category": "Ambiguous Acceptance",
+        "conflicting_clauses": "HS-4778 requires 'long queries offloaded' to an async queue, but 'long' is undefined, and the internal plan asks 'what requires the asynchronous task queue' on a platform targeting sub-second search. HS-4829 training materials are accepted when 'delivered and reviewed', with no standard or reviewer named.",
+        "risk_impact": "Criteria that cannot be tested objectively could be rejected or expanded after delivery, creating rework and delay.",
+        "recommended_clarification": "What query duration or condition qualifies as 'long' for async processing, and what format, scope and reviewer apply to training materials and documentation?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 7, 4 (HS-4828), 9; phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 3",
+          "clause_or_slide": "Exhibit A Section 4 (HS-4778, HS-4829); open item 6 in phase-scope-and-acceptance-syngenta-arc.docx Section 4",
           "confidence_score": 0.8
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-14",
-        "category": "Unclear SLA",
-        "conflicting_clauses": "Acceptance: \"48-hour defect watch clean\" (HS-4832) and \"legacy traffic = 0 over watch window\" (HS-4788), with no definition of \"clean\" or the watch window. Hypercare beyond the 48-hour watch is out of scope (HS-4944).",
-        "risk_impact": "Post-launch acceptance has no objective threshold and no stated remediation obligation after cutover, so Client may expect fixes or extended monitoring within the fixed fee.",
-        "recommended_clarification": "What defines a \"clean\" defect watch (severity thresholds), how long is the HS-4788 watch window, and who fixes defects found during the 48 hours?",
+        "category": "Ownership Gap",
+        "conflicting_clauses": "Contract excludes hypercare and post-launch maintenance beyond the 48-hour defect watch. The internal plan describes hypercare with 'reserved bug-fix capacity' (Syngenta-owned), and HS-4788 requires zero legacy traffic 'over watch window' with no window defined.",
+        "risk_impact": "The client may expect Toptal to fix defects after the 48-hour watch. An undefined watch window could leave P3 acceptance open-ended.",
+        "recommended_clarification": "Who fixes Toptal-built defects found after the 48-hour watch, and what is the length of the legacy traffic watch window for HS-4788?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Sections 4 (HS-4832, HS-4788), 9",
-          "confidence_score": 0.75
+          "clause_or_slide": "Exhibit A Section 4 (HS-4832, HS-4788) and Section 9 (Out of Scope)",
+          "confidence_score": 0.8
         },
         "linked_action_id": null
       },
       {
         "anomaly_id": "AMB-15",
         "category": "Ambiguous Acceptance",
-        "conflicting_clauses": "Acceptance: \"Long queries offloaded\" via an async task queue (HS-4778) on a platform targeting sub-second search P95 < 1s; no threshold defines \"long\". Training deliverable (HS-4829) is accepted when \"delivered and reviewed\", with no audience, format or volume defined, although training is otherwise out of scope.",
-        "risk_impact": "Without a threshold for \"long\" queries, acceptance of the async work is subjective and its necessity unclear. Undefined training content invites scope growth under a fixed fee.",
-        "recommended_clarification": "What query duration qualifies as \"long-running\", and what are the exact training audience, format, quantity and review criteria for HS-4829?",
+        "conflicting_clauses": "UAT is 'limited to two (2) runs per Milestone, covering all UAT and not only Toptal-built Work', yet UAT coordination and sign-off (HS-4827) is Client's. Change Orders also apply to 'changes outside Toptal's control' with undefined triggers (the internal plan notes UAT scope boundaries are 'not yet written').",
+        "risk_impact": "Toptal's fixed price covers UAT cycles that include Client-built defects. Without clear Change Order triggers, extra cycles could erode margin.",
+        "recommended_clarification": "Can the parties define UAT scope boundaries, what counts as a run, and the exact Change Order triggers for additional UAT or test cycles?",
         "status": "Open",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A Section 4 (HS-4778, HS-4829); Section 4 (Assumptions); phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 6",
-          "confidence_score": 0.7
+          "clause_or_slide": "Exhibit A Section 7 (UAT assumptions); open item 3 in phase-scope-and-acceptance-syngenta-arc.docx Section 4",
+          "confidence_score": 0.8
         },
         "linked_action_id": null
       }

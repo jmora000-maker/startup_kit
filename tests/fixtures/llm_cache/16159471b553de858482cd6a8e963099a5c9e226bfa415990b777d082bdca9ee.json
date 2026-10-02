@@ -8,74 +8,94 @@
     "deliverables": [
       {
         "id": "DEL-01",
-        "name": "Micro-Frontend Shell with Azure AD / MSAL Authentication",
-        "description": "Micro-frontend shell with global navigation, routing and remote mounting, built on the Client's design system. Azure AD / MSAL authentication is integrated and propagated to remotes.",
+        "name": "Micro-Frontend Shell",
+        "description": "Micro-frontend shell with global navigation, application routing and remote mounting, built on the Client's design system and shared with remotes.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4762, HS-4763)",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4762)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s, and remote mount P95 < 1s. Authentication success is 100%, token acquisition P95 < 800ms, and silent token refresh works.",
-        "sow_reference": "Milestone 1 (P1 Foundation); HS-4762, HS-4763",
-        "evidence_required": "Browser performance telemetry and authentication test results against the stated targets",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s.",
+        "sow_reference": "HS-4762",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2026-11-17",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Client's design-system access and a named design contact must be provided by the start date",
-          "Design role/ownership for UI/UX work is unresolved"
+          "Who covers design work is still open.",
+          "Client design system access must be provided by the start date."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-02",
-        "name": "P1 Test Automation: E2E Harness, Pipeline Gates and Security Testing",
-        "description": "End-to-end test harness for shell composition, navigation and authentication. Also pipeline quality-gate and deployment smoke-check automation, and authentication negative tests with security scanning.",
+        "name": "Azure AD / MSAL Authentication Integration",
+        "description": "Azure AD / MSAL authentication flow integrated into the shell and propagated to remotes.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4765, HS-4770, HS-4938)",
-          "confidence_score": 0.93
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4763)",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "E2E coverage of composition, navigation and authentication with 100% critical-path pass. Negative tests pass and the security scan is clean, with Toptal-built findings remediated and Client-built findings reported. Pipeline gates are executed against target (certification: the target itself is Client's to achieve).",
-        "sow_reference": "Milestone 1 (P1 Foundation); HS-4765, HS-4770, HS-4938",
-        "evidence_required": "Test scripts, execution results, defect report and security scan results",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works.",
+        "sow_reference": "HS-4763",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2026-11-17",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Remediation path for failures in Client-built pipelines is not yet documented"
+          "Depends on availability of the Client's identity provider team."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-03",
-        "name": "Data Model and Data Governance Validation",
-        "description": "Validation scripts, results and defect report for the Client-built Snowflake data model and governance controls. They cover referential integrity, query patterns, audit and classification coverage.",
+        "name": "Shell and Authentication E2E Test Harness",
+        "description": "End-to-end automated test harness covering shell composition, navigation and authentication flows.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4782, HS-4941)",
-          "confidence_score": 0.93
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4765)",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Scripts are executed against target, with referential integrity 100% and representative query patterns validated. Controls are audited, classification coverage is validated and gaps are logged. Achieving the targets is Client's responsibility.",
-        "sow_reference": "Milestone 1 (P1 Foundation); HS-4782, HS-4941",
-        "evidence_required": "Validation scripts, execution results, defect report and gap log",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "E2E coverage of composition, navigation and authentication; 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.",
+        "sow_reference": "HS-4765",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2026-11-17",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [
-          "Remediation path for failures in Client-built data components is not yet documented"
-        ],
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [],
         "linked_action_id": null
       },
       {
         "id": "DEL-04",
-        "name": "FastAPI Faceted Search and Detail Endpoints",
+        "name": "Foundation Pipeline, Security and Data Validation Suites",
+        "description": "Test automation and reports for pipeline quality gates and smoke checks, authentication negative and security scanning, Snowflake data model validation, and data governance validation.",
+        "source_reference": {
+          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4770, HS-4938, HS-4782, HS-4941)",
+          "confidence_score": 0.9
+        },
+        "owner": "Toptal",
+        "acceptance_criteria": "Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report; the targets themselves are Client's to achieve.",
+        "sow_reference": "HS-4770, HS-4938, HS-4782, HS-4941",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
+        "submission_target_date": "2026-11-17",
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Remediation path for failures in Client-built components has not been written down."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-05",
+        "name": "Faceted Search and Detail API Endpoints",
         "description": "FastAPI faceted search, filter and detail endpoints over the Snowflake ARC tables.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
@@ -83,20 +103,20 @@
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. A miss attributable to Client-owned platform components is treated as met and logged in the defect report.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4777",
-        "evidence_required": "Load test and API telemetry results against the latency targets",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.",
+        "sow_reference": "HS-4777",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-01-26",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Work can only start once the Client's Snowflake schema (HS-4781) is deployed"
+          "Work cannot start until the Client's Snowflake schema (HS-4781) is deployed."
         ],
         "linked_action_id": null
       },
       {
-        "id": "DEL-05",
+        "id": "DEL-06",
         "name": "Asynchronous Long-Running Query Processing",
         "description": "Task queue (Celery/RQ) that offloads long-running queries, with health checks.",
         "source_reference": {
@@ -105,263 +125,259 @@
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Long queries are offloaded, status poll P95 < 200ms, the queue drains and health checks are green.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4778",
-        "evidence_required": "Queue metrics, worker telemetry and health check results",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green.",
+        "sow_reference": "HS-4778",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-01-26",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "What requires the async task queue on a platform targeting sub-second search is still an open question"
+          "What requires the async task queue on a sub-second search platform is still an open question."
         ],
         "linked_action_id": null
       },
       {
-        "id": "DEL-06",
-        "name": "Backend Integration and Load Test Suites",
-        "description": "Backend integration test suite against the Snowflake development environment and load test suite against the sub-second search SLA, with results.",
-        "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4779)",
-          "confidence_score": 0.95
-        },
-        "owner": "Toptal",
-        "acceptance_criteria": "Search P95 < 1s. Test-suite acceptance requires delivery of scripts, execution in the target environment and a results report against the stated targets.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4779",
-        "evidence_required": "Test scripts, execution in the target environment and a results report",
-        "client_approver": "Mike Magwire (Client Contact)",
-        "submission_target_date": "2027-01-26",
-        "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [],
-        "linked_action_id": null
-      },
-      {
         "id": "DEL-07",
-        "name": "Performance Engineering Spike",
-        "description": "Performance engineering output covering benchmarks, query observability, p95 latency definitions and a tuning backlog.",
+        "name": "Backend Integration, Load Tests and Performance Spike",
+        "description": "Backend integration and load test suites against Snowflake dev, plus a performance engineering spike delivering benchmarks, query observability, p95 definitions and a tuning backlog.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4942)",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4779, HS-4942)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "p95 targets are defined, query instrumentation is implemented and the tuning backlog is triaged.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4942",
-        "evidence_required": "Benchmark report, query observability instrumentation and triaged tuning backlog",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Search P95 < 1s under load; p95 targets defined, query instrumentation implemented and tuning backlog triaged.",
+        "sow_reference": "HS-4779, HS-4942",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-01-26",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [],
         "linked_action_id": null
       },
       {
         "id": "DEL-08",
         "name": "OneGWAS Direct-Write Integration and Tests",
-        "description": "Integration that writes completed OneGWAS results (variant and PHG/GATSBY) to Snowflake ARC with retryable error handling. Includes an end-to-end and failure/retry test suite.",
+        "description": "Integration that writes completed OneGWAS results (variant and PHG/GATSBY) to Snowflake ARC with retryable error handling, plus E2E and failure/retry test suite.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4803, HS-4804)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "100% of completed runs are written, retryable errors are recovered and write P95 < 60s. Completion to ARC-searchable P95 < 5 min, with failure/retry validated.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4803, HS-4804",
-        "evidence_required": "Pipeline logs, Snowflake write telemetry and E2E/failure-retry test results",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "100% of completed runs written; retryable errors recovered; write P95 < 60s; completion-to-searchable P95 < 5 min; failure/retry validated.",
+        "sow_reference": "HS-4803, HS-4804",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-01-26",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "OneGWAS-to-ARC output contract is Client-owned and must be agreed first"
+          "Depends on the Client-agreed OneGWAS output contract."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-09",
-        "name": "Data Ingestion, Migration and Taxonomy Validation",
-        "description": "Validation scripts, results and defect reports for Client-built data work: GWAS Atlas ETL, MTA Store migration, PHG/GATSBY ingestion, PubMed extraction and trait taxonomy.",
+        "name": "Data Ingestion and Migration Validation Suites",
+        "description": "Validation scripts, results and defect reports for GWAS Atlas ETL, MTA Store migration, PHG/GATSBY ingestion, PubMed/literature extraction and trait taxonomy.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4797, HS-4785, HS-4807, HS-4801, HS-4791)",
-          "confidence_score": 0.93
+          "confidence_score": 0.9
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Executed against target: GWAS Atlas import coverage ≥90%; MTA domain-user comparison sign-off and issue log triaged/closed; 100% of sampled PHG/GATSBY keys match; PubMed precision ≥85% with E2E run green; taxonomy coverage ≥80% with approvals captured. Achieving the targets is Client's responsibility.",
-        "sow_reference": "Milestone 2 (P2a Services and Data); HS-4797, HS-4785, HS-4807, HS-4801, HS-4791",
-        "evidence_required": "Validation scripts, execution results, defect reports and data-quality issue log",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.",
+        "sow_reference": "HS-4797, HS-4785, HS-4807, HS-4801, HS-4791",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-01-26",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Remediation path for failures in Client-built pipelines and datasets is not yet documented",
-          "Domain experts are needed for taxonomy validation",
-          "Upstream schema or taxonomy changes that force script rework require a change order"
+          "Remediation path for failures in Client-built pipelines has not been written down.",
+          "Availability of domain users and taxonomy experts is required."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-10",
-        "name": "ARC Micro-Frontend: Faceted Search, Results Table and Result Detail View",
-        "description": "ARC micro-frontend with faceted search (crop, trait, marker, significance, source, haplotype type) and a paginated, sortable results table. Also a result detail view and PHG/GATSBY interval-based visualization.",
+        "name": "ARC Faceted Search and Results Table",
+        "description": "ARC micro-frontend faceted search (crop, trait, marker, significance, source, haplotype type) with a paginated, sortable results table.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4772, HS-4773)",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4772)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network). Detail view P90 < 1s and interval visualization render P95 < 1.5s.",
-        "sow_reference": "Milestone 3 (P2b Application Surface); HS-4772, HS-4773",
-        "evidence_required": "Browser performance telemetry and synthetic/E2E performance test results",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
+        "sow_reference": "HS-4772",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-03-02",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Client must provide UI/UX designs for the Milestone 3 screens by the start date",
-          "Design role/ownership is unresolved",
-          "The number of ARC-specific components covered by the estimate is not yet defined"
+          "Client must provide UI/UX designs for Milestone 3 screens by the start date."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-11",
-        "name": "Haplotype Search, Filter, Visualization and API",
-        "description": "Haplotype-type filter, result indicator, interval-based detail and variant-versus-pangenome comparison. Includes supporting search/filter endpoints and backend haplotype association API and data access.",
+        "name": "Result Detail View and Interval Visualization",
+        "description": "Result detail view (markers, trials, haplotypes, study) with PHG/GATSBY interval-based visualization.",
+        "source_reference": {
+          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4773)",
+          "confidence_score": 0.95
+        },
+        "owner": "Toptal",
+        "acceptance_criteria": "Detail view P90 < 1s; interval visualization render P95 < 1.5s.",
+        "sow_reference": "HS-4773",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
+        "submission_target_date": "2027-03-02",
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Number of ARC-specific design components covered by the estimate is still a placeholder."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-12",
+        "name": "Haplotype Filtering, Comparison and Backend Support",
+        "description": "Haplotype-type filter, result indicator, interval detail and variant-versus-pangenome comparison, with supporting search/filter endpoints and haplotype association API and data access.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4809, HS-4810, HS-4813)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Filtered results P90 < 1s, interval visualization P95 < 1.5s and comparison works. Filter endpoint P95 < 1s, and haplotype endpoints P95 < 1s with correct results against fixtures.",
-        "sow_reference": "Milestone 3 (P2b Application Surface); HS-4809, HS-4810, HS-4813",
-        "evidence_required": "Load test and API telemetry results; fixture-based correctness test results",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works; filter and haplotype endpoints P95 < 1s with correct results against fixtures.",
+        "sow_reference": "HS-4809, HS-4810, HS-4813",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-03-02",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Depends on Client's haplotype ingestion pipeline and schema extensions"
-        ],
-        "linked_action_id": null
-      },
-      {
-        "id": "DEL-12",
-        "name": "Nomenclature Service",
-        "description": "Nomenclature service providing trait resolution, synonym lookup and unmapped-term handling, integrated with the ARC backend.",
-        "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4793)",
-          "confidence_score": 0.95
-        },
-        "owner": "Toptal",
-        "acceptance_criteria": "Resolution is correct for all mapped traits and lookup P95 < 200ms.",
-        "sow_reference": "Milestone 3 (P2b Application Surface); HS-4793",
-        "evidence_required": "Load test and API telemetry results; trait resolution test results",
-        "client_approver": "Mike Magwire (Client Contact)",
-        "submission_target_date": "2027-03-02",
-        "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [
-          "Depends on Client's canonical trait list, ontology map and synonym tables",
-          "API taxonomy shifts that cause rework require a change order"
+          "Depends on Client-built haplotype ingestion and schema extensions."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-13",
-        "name": "P2b Test Suites (Frontend, Haplotype Backend, Nomenclature, Visualization)",
-        "description": "Frontend unit, integration, accessibility and performance tests, backend haplotype integration tests, nomenclature service tests, and haplotype search and visualization tests, with results.",
+        "name": "Nomenclature Service",
+        "description": "Nomenclature service for trait resolution, synonym lookup and unmapped-term handling, integrated with the ARC backend, with its test suite and results.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4775, HS-4815, HS-4794, HS-4811)",
-          "confidence_score": 0.93
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4793, HS-4794)",
+          "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Frontend unit coverage ≥80%, key-flow integration green and search < 1s. Haplotype integration tests green (100% of critical paths). 100% mapped-trait resolution correct with lookup P95 < 200ms. Filters, comparison and rendering validated across haplotype types.",
-        "sow_reference": "Milestone 3 (P2b Application Surface); HS-4775, HS-4815, HS-4794, HS-4811",
-        "evidence_required": "Test scripts, execution in the target environment and a results report against the stated targets",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Resolution correct for all mapped traits (100% in tests); lookup P95 < 200ms.",
+        "sow_reference": "HS-4793, HS-4794",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-03-02",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [],
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Depends on the Client-built canonical trait list and synonyms."
+        ],
         "linked_action_id": null
       },
       {
         "id": "DEL-14",
-        "name": "Integration, Performance, Security and Cross-Browser Test Suites with Test Data",
-        "description": "Test suites covering all data flows and UI/API critical paths in staging at production-like volume, validated on Chrome and Edge. Includes test data, fixtures and environment support.",
+        "name": "Frontend and Haplotype Test Suites",
+        "description": "Frontend unit, integration, accessibility and performance test suites, backend haplotype endpoint integration tests, and haplotype search and visualization tests, with results.",
+        "source_reference": {
+          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4775, HS-4815, HS-4811)",
+          "confidence_score": 0.95
+        },
+        "owner": "Toptal",
+        "acceptance_criteria": "Unit coverage ≥80%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.",
+        "sow_reference": "HS-4775, HS-4815, HS-4811",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
+        "submission_target_date": "2027-03-02",
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-15",
+        "name": "Integration, Performance, Security and Cross-Browser Test Suites",
+        "description": "Test suites covering all data flows and UI/API critical paths in staging at production-like volume, including Chrome and Edge, with test data, fixtures and environment support.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4825, HS-4826)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "All flows are executed at production-like volume with search P95 < 1s, authentication/security pass and Chrome and Edge validated. Client-built component failures are recorded in the defect report. Test data and fixtures cover all integration scenarios and environments are supported.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4825, HS-4826",
-        "evidence_required": "Test scripts, execution results, defect report, and test data and fixtures",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.",
+        "sow_reference": "HS-4825, HS-4826",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-04-06",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Integration test plan (HS-4824) is a Client responsibility and is required as input",
-          "Cogen API availability is assumed at about 95%; test failures below that level require a change order"
-        ],
-        "linked_action_id": null
-      },
-      {
-        "id": "DEL-15",
-        "name": "UAT Execution Records and Defect Log",
-        "description": "UAT cycles run with the Client's scientist groups, with defects triaged and tracked. UAT runs after each milestone.",
-        "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4828); Section 7",
-          "confidence_score": 0.92
-        },
-        "owner": "Toptal",
-        "acceptance_criteria": "UAT cycles are run, defects are triaged and tracked, and no critical defects remain open in Toptal-built work at exit.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4828",
-        "evidence_required": "UAT execution records and defect log",
-        "client_approver": "Mike Magwire (Client Contact)",
-        "submission_target_date": "2027-04-06",
-        "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [
-          "UAT is limited to two runs per milestone; additional runs require a change order",
-          "UAT scope boundaries and change-order triggers are agreed verbally but not yet written",
-          "UAT coordination and sign-off (HS-4827) is a Client responsibility"
+          "Integration test plan is Client-owned and must be available."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-16",
-        "name": "Pre-Launch Hardening and Stabilization Iteration",
-        "description": "Hardening iteration after integration testing and UAT that closes critical and high defects before cutover, including a full regression run.",
+        "name": "UAT Execution Records and Defect Log",
+        "description": "UAT cycles run with Client's scientist groups, with defects triaged and tracked.",
+        "source_reference": {
+          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4828)",
+          "confidence_score": 0.95
+        },
+        "owner": "Toptal",
+        "acceptance_criteria": "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built work at exit.",
+        "sow_reference": "HS-4828",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
+        "submission_target_date": "2027-04-06",
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "UAT is limited to two runs per milestone; additional runs require a Change Order.",
+          "UAT scope boundaries and change-order triggers are not yet written."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-17",
+        "name": "Pre-Launch Hardening Iteration",
+        "description": "Hardening and stabilization iteration after integration testing and UAT to close critical and high defects before cutover, including a full regression run.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4943)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "All critical and high defects in Toptal-built work are closed and the full regression is green before cutover.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4943",
-        "evidence_required": "Hardening iteration results and full regression run report",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "All critical and high defects in Toptal-built work closed; full regression green before cutover.",
+        "sow_reference": "HS-4943",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-04-06",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [],
         "linked_action_id": null
       },
       {
-        "id": "DEL-17",
-        "name": "Production Smoke Test Results and 48-Hour Defect Watch Report",
+        "id": "DEL-18",
+        "name": "Production Smoke Test Results and 48-Hour Defect Watch",
         "description": "Production smoke tests and post-deployment validation, including a 48-hour defect watch report.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
@@ -369,58 +385,57 @@
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Production smoke tests pass 100% and the 48-hour defect watch is clean.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4832",
-        "evidence_required": "Production smoke test results and 48-hour defect watch report",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Production smoke 100% pass; 48-hour defect watch clean.",
+        "sow_reference": "HS-4832",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-04-06",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [
-          "Production deployment is performed by the Client; support beyond the 48-hour watch is out of scope"
-        ],
-        "linked_action_id": null
-      },
-      {
-        "id": "DEL-18",
-        "name": "MTA Store Parity and Usage-Zero Confirmation Report",
-        "description": "Report confirming MTA Store feature parity and zero legacy traffic before decommission.",
-        "source_reference": {
-          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-          "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4788)",
-          "confidence_score": 0.93
-        },
-        "owner": "Toptal",
-        "acceptance_criteria": "Executed against target: parity confirmed and legacy traffic = 0 over the watch window before decommission. Achieving the target is Client's responsibility.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4788",
-        "evidence_required": "Parity test scripts, execution results and usage-zero confirmation report",
-        "client_approver": "Mike Magwire (Client Contact)",
-        "submission_target_date": "2027-04-06",
-        "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
-        "unresolved_acceptance_clarifications": [
-          "Decommission planning and legacy teardown are Client responsibilities",
-          "Remediation path if parity or traffic checks fail is not yet documented"
+          "Production deployment is Client-owned; hypercare beyond the 48-hour watch is out of scope."
         ],
         "linked_action_id": null
       },
       {
         "id": "DEL-19",
+        "name": "MTA Store Parity and Usage-Zero Confirmation Report",
+        "description": "Report confirming MTA Store feature parity and zero legacy traffic before decommission.",
+        "source_reference": {
+          "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+          "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4788)",
+          "confidence_score": 0.95
+        },
+        "owner": "Toptal",
+        "acceptance_criteria": "Scripts executed and report issued against the target: parity confirmed; legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.",
+        "sow_reference": "HS-4788",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
+        "submission_target_date": "2027-04-06",
+        "review_window": "5 business days",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+        "unresolved_acceptance_clarifications": [
+          "Remediation path if parity or usage-zero fails has not been written down."
+        ],
+        "linked_action_id": null
+      },
+      {
+        "id": "DEL-20",
         "name": "Training Materials and User Documentation",
-        "description": "Training materials and user documentation for ARC.",
+        "description": "Training materials and user documentation for the ARC application.",
         "source_reference": {
           "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
           "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4829)",
           "confidence_score": 0.95
         },
         "owner": "Toptal",
-        "acceptance_criteria": "Training materials and user documentation are delivered and reviewed.",
-        "sow_reference": "Milestone 4 (P3 Launch); HS-4829",
-        "evidence_required": "Delivered training materials and user documentation",
-        "client_approver": "Mike Magwire (Client Contact)",
+        "acceptance_criteria": "Training materials and user documentation delivered and reviewed.",
+        "sow_reference": "HS-4829",
+        "evidence_required": "[CONFIRMATION REQUIRED]",
+        "client_approver": "Mike Magwire and Satya",
         "submission_target_date": "2027-04-06",
         "review_window": "5 business days",
-        "rejection_rework_path": "Client issues written nonconformance notice; Toptal remediates and resubmits (termination right after 3 failed attempts)",
+        "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
         "unresolved_acceptance_clarifications": [],
         "linked_action_id": null
       }

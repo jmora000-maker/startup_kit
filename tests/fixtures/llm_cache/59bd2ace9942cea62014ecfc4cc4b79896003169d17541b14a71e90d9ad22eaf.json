@@ -16,60 +16,62 @@
         {
           "role": "Delivery Manager",
           "name": "Saadia Iqbal",
-          "required_skills": "Weekly status reporting, milestone governance, client escalation",
+          "required_skills": "Weekly status reporting, milestone acceptance management, dispute escalation (Level One contact)",
           "status": "Staffed",
           "linked_action_id": null
         },
         {
-          "role": "Frontend Engineer (micro-frontend shell and ARC micro-frontend)",
+          "role": "Frontend Engineer (micro-frontend shell and ARC app)",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "React/Next.js, micro-frontend composition, Azure AD/MSAL",
-          "status": "Unstaffed",
+          "required_skills": "React/Next.js, micro-frontends, Azure AD/MSAL",
+          "status": "Not yet assigned",
           "linked_action_id": null
         },
         {
           "role": "Backend Engineer (FastAPI services and nomenclature service)",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "Python/FastAPI, Snowflake, Celery/RQ",
-          "status": "Unstaffed",
+          "required_skills": "Python/FastAPI, Celery/RQ, Snowflake",
+          "status": "Not yet assigned",
           "linked_action_id": null
         },
         {
           "role": "QA Test Automation Engineer",
           "name": "[UNASSIGNED - TO BE CONFIRMED]",
-          "required_skills": "Playwright, Jest, React Testing Library, Pytest, load and performance testing",
-          "status": "Unstaffed",
+          "required_skills": "Playwright, Jest, React Testing Library, Pytest",
+          "status": "Not yet assigned",
           "linked_action_id": null
         }
       ],
       "required_roles": [
         "Delivery Manager",
-        "Talent PM",
-        "Frontend Engineer (micro-frontend shell and ARC micro-frontend)",
-        "Backend Engineer (FastAPI services, nomenclature service, OneGWAS integration)",
-        "QA Test Automation Engineer (scripts, execution, defect reports)",
-        "UX/Design role (not yet assigned to either party)"
+        "Frontend Engineer (micro-frontend shell and ARC application)",
+        "Backend Engineer (FastAPI services, OneGWAS direct-write integration)",
+        "Nomenclature Service Engineer (Python)",
+        "QA Test Automation Engineer (frontend and backend suites)",
+        "Data Validation Test Engineer (Snowflake and ingestion validation)",
+        "Performance/Load Test Engineer (latency benchmarking and query observability)",
+        "UAT and Defect Triage Lead",
+        "Technical Writer (training materials and user documentation)"
       ],
       "required_skills": [
         "React/Next.js",
-        "Micro-frontend composition",
+        "Micro-frontend architecture",
         "Azure AD / MSAL authentication",
-        "Python / FastAPI",
+        "Python/FastAPI",
         "Celery/RQ task queues",
         "Snowflake",
         "Playwright",
         "Jest and React Testing Library",
         "Pytest",
-        "Load and performance testing"
+        "Performance and load testing"
       ],
       "staffing_gaps": [
-        "No Talent PM or PMO Lead is named yet.",
-        "No design or UX role is assigned on either the Toptal or client side, although the scope has a scientist-facing interface, a design system and interval visualization.",
-        "No individual engineers or QA talent are named for the delivery roles.",
-        "The start date is not yet agreed with the client, so talent availability and start timing are unconfirmed.",
-        "Coding standards and delivery documentation (merge request process, code review gates, test requirements) are needed before onboarding but are not yet provided."
+        "Talent PM and PMO Lead are not yet named.",
+        "No design or UX role is covered on either side, although the work includes a scientist-facing interface built on a design system, faceted search and interval visualization.",
+        "No individual delivery talent (engineers, QA) is named yet.",
+        "The project start date is not yet agreed with the client, so talent availability dates cannot be confirmed."
       ],
-      "replacement_plan": "Toptal will promptly notify the client of any change to the Delivery Manager. No replacement protocol for other talent is defined, and the client has agreed not to buy out any delivery talent during the engagement.",
+      "replacement_plan": "Toptal will promptly notify the client of any change to the Delivery Manager during the engagement. No further talent replacement protocol is specified; the client has agreed not to buy out any talent working on this scope during the engagement.",
       "team_baseline_review_confirmation": false
     }
   }
