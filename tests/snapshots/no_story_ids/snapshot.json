@@ -4928,8 +4928,8 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: sow.txt, Sections 2 and 4: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
-        "Not cited",
+        "Date Conflict: Phases and Milestones: Phase 1 runs 'weeks 1-4' and Phase 2 starts in 'weeks 5-12'. Dependencies: 'Client provides access to legacy ERP product catalog feeds prior to week 5.' No calendar start date or ERP access date is given.",
+        "sow.txt | Sections: 2, 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4950,13 +4950,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-01",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-06",
         "Issue",
-        "Ambiguous Acceptance: sow.txt, Section 2: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
-        "Sections: 2",
+        "Ambiguous Acceptance: Phases and Milestones: each phase lists items 'accepted' (e.g. 'infrastructure provisioning accepted', 'payment gateway integration accepted'). No acceptance criteria, approver, or review period is defined.",
+        "sow.txt | Sections: 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -4982,8 +4982,8 @@
       [
         "RAID-07",
         "Issue",
-        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
-        "Not cited",
+        "Scope Contradiction: Phase 2 includes 'basket management, pricing engine'. The contracted deliverables list only a 'Basket and checkout orchestration service' and no pricing engine.",
+        "sow.txt | Sections: 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5004,13 +5004,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-03",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-08",
         "Issue",
-        "Scope Contradiction: sow.txt, Sections 1, 2 and 3: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
-        "Not cited",
+        "Scope Contradiction: Executive Summary: scope includes a 'mobile web interface'. Contracted Deliverables list a 'Responsive web customer store application', and Phase 3 lists a 'Web store front-end'.",
+        "sow.txt | Sections: 1, 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5031,13 +5031,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-04",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-09",
         "Issue",
-        "Scope Contradiction: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
-        "Not cited",
+        "Scope Contradiction: Phase 3 includes 'user acceptance testing, production rollout, and training material delivery'. The contracted deliverables list only a 'deployment runbook and operational documentation' and a regression test suite, with no training, UAT, or rollout deliverable.",
+        "sow.txt | Sections: 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5058,13 +5058,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-05",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-10",
         "Issue",
-        "Unclear SLA: sow.txt, Section 4: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
-        "Sections: 4",
+        "Unclear SLA: Assumptions: 'Client security team will complete compliance review within 5 business days of submission.' No consequence is stated for a late review, and no review points are scheduled within the phases.",
+        "sow.txt | Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5090,8 +5090,8 @@
       [
         "RAID-11",
         "Issue",
-        "Ambiguous Acceptance: sow.txt, Section 4: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
-        "Sections: 4",
+        "Ambiguous Acceptance: Risks: 'Third-party payment provider sandbox API response latency may impact performance testing.' No performance targets, load profile, or performance testing deliverable is defined.",
+        "sow.txt | Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5117,8 +5117,8 @@
       [
         "RAID-12",
         "Issue",
-        "Scope Contradiction: sow.txt, Header and Section 2: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
-        "Sections: 2",
+        "Scope Contradiction: Contract Type: 'Time and Materials'. Phases are fixed to specific weeks (1-4, 5-12, 13-18) with every milestone item to be 'accepted'. No budget cap, rate basis, or change process is stated.",
+        "sow.txt | Sections: Header, 2",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5144,8 +5144,8 @@
       [
         "RAID-13",
         "Issue",
-        "Date Conflict: sow.txt, Sections 2, 3 and 4: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
-        "Not cited",
+        "Date Conflict: Assumptions: 'Work executes sequentially across the three defined delivery phases.' Phase 3 includes end-to-end testing and a web front-end after Phase 2, and the regression suite has no assigned phase.",
+        "sow.txt | Sections: 2, 3, 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5166,13 +5166,13 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-09",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-14",
         "Issue",
-        "Ownership Gap: sow.txt, Section 4: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
-        "Sections: 4",
+        "Ownership Gap: Dependencies and Risks: client is to provide 'legacy ERP product catalog feeds' and a third-party payment provider sandbox is relied on. No named owners, credentials process, or environment readiness dates are given.",
+        "sow.txt | Sections: 4",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5198,8 +5198,8 @@
       [
         "RAID-15",
         "Issue",
-        "Ownership Gap: sow.txt, Sections 2 and 3: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
-        "Not cited",
+        "Ownership Gap: Phase 3 includes 'user acceptance testing' and 'production rollout'. Deliverables include only a 'deployment runbook and operational documentation'. No UAT participants, go-live approval owner, or post-launch support responsibility is defined.",
+        "sow.txt | Sections: 2, 3",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -5220,7 +5220,7 @@
         "",
         "Baseline - Contract Clarifications",
         "AMB-11",
-        "No clause reference in baseline"
+        ""
       ],
       [
         "RAID-16",

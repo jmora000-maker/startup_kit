@@ -2441,7 +2441,7 @@
         "RAID-04",
         "Issue",
         "Ambiguous Acceptance: Section 4.2 states acceptance requires 'complete client satisfaction' whereas Section 2.1 defines automated pytest validation suite.",
-        "Sections: 4.2, 2.1",
+        "SOW_Document.pdf | Sections: 3.1, 4.2, 2.1",
         "Contract Clarification",
         "Cross-phase",
         "",
@@ -2467,7 +2467,7 @@
       [
         "RAID-05",
         "Issue",
-        "Date Conflict: SOW_Document.pdf, Section 3.1: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
+        "Date Conflict: Proposal schedule commits Milestone 2 delivery by 2026-11-15, but SOW Table 3 lists 2026-11-30.",
         "SOW_Document.pdf | Sections: 3.1",
         "Contract Clarification",
         "Deployment & Release",
