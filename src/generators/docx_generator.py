@@ -271,8 +271,9 @@ def sanitize_filename(name: str) -> str:
 class DocxGenerator(IDocumentWriter):
     """Generates the standardized Toptal PMO Startup Kit Word documents following Section 4 structure."""
 
-    def __init__(self, checklist_renderer: G01ChecklistRenderer = None):
+    def __init__(self, checklist_renderer: G01ChecklistRenderer = None, generated_date: Optional[str] = None):
         self.checklist_renderer = checklist_renderer or G01ChecklistRenderer()
+        self.generated_date = generated_date
 
     def _resolve_output_paths(self, baseline: StartupKitBaseline, output_path: Path) -> tuple[Path, Path]:
         """Resolve output paths for both the Startup Kit and Startup Readiness Checklist documents."""
@@ -388,11 +389,12 @@ class DocxGenerator(IDocumentWriter):
         pmo_meta = (ctx.pmo_lead if ctx and ctx.pmo_lead else None) or (charter.pmo_lead if charter and charter.pmo_lead else None) or (talent_rec.pmo_lead if talent_rec and talent_rec.pmo_lead else None) or (baseline.author_name if baseline.author_name else None) or "[UNASSIGNED - TO BE CONFIRMED]"
         client_meta = (ctx.client_name if ctx and ctx.client_name else None) or (charter.client_name if charter and charter.client_name else None) or "N/A"
 
+        gen_d = self.generated_date or datetime.now().strftime("%Y-%m-%d")
         meta_data = [
             ("Project Name", baseline.project_name, "Client Sponsor", client_meta),
             ("Governance Tier", baseline.governance_tier, "Contract Type", baseline.contract_type),
             ("Delivery Manager", dm_meta, "Talent PM", tpm_meta),
-            ("PMO Lead", pmo_meta, "Generated Date", datetime.now().strftime("%Y-%m-%d")),
+            ("PMO Lead", pmo_meta, "Generated Date", gen_d),
             ("1-Day SLA Status", sla_status_str, "Workflow State", baseline.workflow_state),
         ]
 
