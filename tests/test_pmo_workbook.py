@@ -96,13 +96,13 @@ def test_output_selection_defaults_and_flags():
     sel = OutputSelection.from_flags(all_=False, kit=False, checklist=True, export_tools=True)
     assert sel == OutputSelection(kit=False, checklist=True, workbook=True)
 
-    # 8. --all -> All three
+    # 8. --all -> All four
     sel = OutputSelection.from_flags(all_=True, kit=False, checklist=False, export_tools=False)
-    assert sel == OutputSelection(kit=True, checklist=True, workbook=True)
+    assert sel == OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
 
-    # 9. --all with other flags -> All three
+    # 9. --all with other flags -> All four
     sel = OutputSelection.from_flags(all_=True, kit=True, checklist=False, export_tools=False)
-    assert sel == OutputSelection(kit=True, checklist=True, workbook=True)
+    assert sel == OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
 
 
 def test_controller_run_output_matrix(populated_inputs_dir, tmp_path):

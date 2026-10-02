@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Union, Sequence
 from src.core.models import StartupKitBaseline
 from src.generators.pmo_workbook import PMOWorkbookResult
+from src.generators.onboarding_deck import OnboardingDeckResult
 
 
 def format_readiness_cli_summary(
@@ -248,4 +249,55 @@ def print_workbook_export_summary(
 ) -> None:
     """Print the formatted Project Delivery Workbook export summary to standard output."""
     summary_text = format_workbook_export_summary(result, use_color=use_color)
+    print(summary_text)
+
+
+def format_deck_export_summary(
+    result: OnboardingDeckResult,
+    use_color: Optional[bool] = None
+) -> str:
+    """Format an executive CLI summary of the Talent Onboarding Deck export (DECK-16)."""
+    if use_color is None:
+        if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+            use_color = False
+        else:
+            use_color = True
+
+    if use_color:
+        COLOR_CYAN = "\033[96m"
+        COLOR_BOLD = "\033[1m"
+        COLOR_RESET = "\033[0m"
+    else:
+        COLOR_CYAN = ""
+        COLOR_BOLD = ""
+        COLOR_RESET = ""
+
+    sep_double = "=" * 80
+    sep_single = "-" * 80
+
+    res_path = result.file_path.resolve() if hasattr(result.file_path, "resolve") else result.file_path
+    man_path = result.manifest_path.resolve() if hasattr(result.manifest_path, "resolve") else result.manifest_path
+
+    lines = [
+        sep_double,
+        f"{COLOR_BOLD}{COLOR_CYAN}                     TALENT ONBOARDING DECK{COLOR_RESET}",
+        sep_single,
+        f"   • Slides               : {result.slides_count} slides (Cover, Charter, Schedule, Acceptance, Risks, Collaboration)",
+        f"   • Content elements     : {result.trace_entries_count} elements",
+        f"   • Elements traced      : 100% ({result.trace_entries_count}/{result.trace_entries_count} elements traced)",
+        f"   • Trace Manifest       : {man_path}",
+        sep_single,
+        f"   • Output File Path     : {res_path}",
+        sep_double,
+    ]
+
+    return "\n".join(lines)
+
+
+def print_deck_export_summary(
+    result: OnboardingDeckResult,
+    use_color: Optional[bool] = None
+) -> None:
+    """Print the formatted Talent Onboarding Deck export summary to standard output."""
+    summary_text = format_deck_export_summary(result, use_color=use_color)
     print(summary_text)

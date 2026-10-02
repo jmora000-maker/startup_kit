@@ -11,7 +11,13 @@ from src.core.models import (
     ActionRequiredItem,
     GovernanceContext,
 )
-from src.scoring.cli_reporter import format_readiness_cli_summary, print_readiness_cli_summary
+from src.scoring.cli_reporter import (
+    format_readiness_cli_summary,
+    print_readiness_cli_summary,
+    format_deck_export_summary,
+    print_deck_export_summary,
+)
+from src.generators.onboarding_deck import OnboardingDeckResult
 
 
 @pytest.fixture
@@ -115,3 +121,20 @@ def test_cli_summary_plain_fallback(sample_baseline: StartupKitBaseline, capsys)
     captured = capsys.readouterr().out
     assert "\033[" not in captured
     assert "COMPOSITE READINESS SCORE: 74.2%" in captured
+
+
+def test_deck_cli_summary_formatting():
+    """Verify format_deck_export_summary output contains expected headers, slide count, and trace elements (DECK-16)."""
+    res = OnboardingDeckResult(
+        file_path=Path("output/ARC_Talent_Onboarding_Deck.pptx"),
+        manifest_path=Path("output/ARC_Talent_Onboarding_Deck.trace.json"),
+        slides_count=6,
+        trace_entries_count=42,
+        project_name="ARC Genomics",
+    )
+    summary = format_deck_export_summary(res, use_color=False)
+    assert "TALENT ONBOARDING DECK" in summary
+    assert "6 slides" in summary
+    assert "42 elements" in summary
+    assert "100% (42/42 elements traced)" in summary
+    assert "ARC_Talent_Onboarding_Deck.pptx" in summary

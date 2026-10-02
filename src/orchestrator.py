@@ -37,9 +37,11 @@ from src.llm.parsers import (
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
 from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
+from src.generators.onboarding_deck import export_onboarding_deck, OnboardingDeckResult
 from src.scoring.cli_reporter import (
     print_readiness_cli_summary,
     print_workbook_export_summary,
+    print_deck_export_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -259,11 +261,15 @@ class StartupKitController:
         logger.info("Running extraction validation layer and reconciliation...")
         validation_report = validate_and_repair_baseline(baseline)
 
-        # 4. Document & Workbook Generation according to outputs selection
+        # 4. Document & Workbook & Deck Generation according to outputs selection
         kit_path: Optional[Path] = None
         checklist_path: Optional[Path] = None
         wb_result: Optional[PMOWorkbookResult] = None
+        deck_result: Optional[OnboardingDeckResult] = None
         written_paths: List[Path] = []
+
+        if outputs.slides and not outputs.checklist:
+            logger.info("Deck sources: Startup Kit and Project Delivery Workbook also written")
 
         if outputs.kit:
             logger.info("Generating Word Startup Kit document in %s...", out_path)
@@ -284,16 +290,26 @@ class StartupKitController:
             wb_result = export_pmo_workbook(baseline, out_path, start_date=start_date)
             written_paths.append(wb_result.file_path)
 
+        if outputs.slides:
+            logger.info("Exporting Talent Onboarding Deck to %s", out_path)
+            deck_result = export_onboarding_deck(baseline, out_path, start_date=start_date)
+            written_paths.append(deck_result.file_path)
+            written_paths.append(deck_result.manifest_path)
+
         # 5. CLI Telemetry Summary
         print_readiness_cli_summary(baseline, written_paths if written_paths else [out_path])
         if wb_result is not None:
             print_workbook_export_summary(wb_result)
+        if deck_result is not None:
+            print_deck_export_summary(deck_result)
 
         logger.info("Startup Kit execution complete! Readiness score: %.1f%%", baseline.readiness_score)
         return RunResult(
             kit_path=kit_path,
             checklist_path=checklist_path,
             workbook=wb_result,
+            slides=deck_result,
+            slides_path=deck_result.file_path if deck_result else None,
             readiness_score=baseline.readiness_score
         )
 
@@ -424,13 +440,22 @@ class StartupKitController:
             wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
             written_paths.append(wb_result.file_path)
 
+        deck_result: Optional[OnboardingDeckResult] = None
+        if outputs.slides:
+            logger.info("Exporting Talent Onboarding Deck to %s", export_dir)
+            deck_result = export_onboarding_deck(baseline, export_dir, start_date=start_date)
+            written_paths.append(deck_result.file_path)
+            written_paths.append(deck_result.manifest_path)
+
         if output_file is not None and not (outputs.kit or outputs.checklist):
-            logger.warning("--output-file was provided but neither the Startup Kit nor the Readiness Checklist was selected; it only sets the destination folder for the workbook.")
+            logger.warning("--output-file was provided but neither the Startup Kit nor the Readiness Checklist was selected; it only sets the destination folder for the workbook and deck.")
 
         # Output CLI Telemetry Summary
         print_readiness_cli_summary(baseline, written_paths if written_paths else [target_path])
         if wb_result is not None:
             print_workbook_export_summary(wb_result)
+        if deck_result is not None:
+            print_deck_export_summary(deck_result)
 
         logger.info(
             "Startup Kit Re-evaluation complete! Readiness Score: %s%%, Status: %s",
@@ -441,5 +466,7 @@ class StartupKitController:
             kit_path=kit_path,
             checklist_path=checklist_path,
             workbook=wb_result,
+            slides=deck_result,
+            slides_path=deck_result.file_path if deck_result else None,
             readiness_score=baseline.readiness_score
         )

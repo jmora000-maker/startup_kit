@@ -578,10 +578,15 @@ def parse_args():
         help="Write the Startup Readiness Checklist Word document"
     )
     parser.add_argument(
+        "--slides",
+        action="store_true",
+        help="Write the Talent Team Onboarding Deck PowerPoint presentation"
+    )
+    parser.add_argument(
         "--all",
         action="store_true",
         dest="all_outputs",
-        help="Write the Startup Kit, the Readiness Checklist, and the Project Delivery Workbook"
+        help="Write the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -739,13 +744,15 @@ def main():
             all_=args.all_outputs,
             kit=args.kit,
             checklist=args.checklist,
-            export_tools=args.export_tools
+            export_tools=args.export_tools,
+            slides=args.slides,
         )
         logger.info(
-            "Outputs -> Kit: %s | Checklist: %s | Workbook: %s",
+            "Outputs -> Kit: %s | Checklist: %s | Workbook: %s | Slides: %s",
             "yes" if outputs.kit else "no",
             "yes" if outputs.checklist else "no",
-            "yes" if outputs.workbook else "no"
+            "yes" if outputs.workbook else "no",
+            "yes" if outputs.slides else "no",
         )
 
         if mode == "2":
@@ -796,6 +803,8 @@ def main():
                 logger.info("Readiness Checklist Word Document: %s", run_result.checklist_path.resolve())
             if run_result.workbook:
                 logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
+            if run_result.slides:
+                logger.info("Talent Onboarding Deck: %s", run_result.slides.file_path.resolve())
             return 0
 
         # Mode 1: Initial Generation
@@ -925,6 +934,8 @@ def main():
             logger.info("Readiness Checklist Word Document: %s", run_result.checklist_path.resolve())
         if run_result.workbook:
             logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
+        if run_result.slides:
+            logger.info("Talent Onboarding Deck: %s", run_result.slides.file_path.resolve())
         return 0
 
     except Exception as exc:
