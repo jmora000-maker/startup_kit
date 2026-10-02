@@ -128,13 +128,25 @@ def test_deck_cli_summary_formatting():
     res = OnboardingDeckResult(
         file_path=Path("output/ARC_Talent_Onboarding_Deck.pptx"),
         manifest_path=Path("output/ARC_Talent_Onboarding_Deck.trace.json"),
-        slides_count=6,
+        slides_count=7,
         trace_entries_count=42,
         project_name="ARC Genomics",
+        overflow_rows=3,
+        elements_total=50,
+        elements_traced=50,
     )
     summary = format_deck_export_summary(res, use_color=False)
     assert "TALENT ONBOARDING DECK" in summary
-    assert "6 slides" in summary
-    assert "42 elements" in summary
-    assert "100% (42/42 elements traced)" in summary
+    assert "7 slides" in summary and "Your Project Kit" in summary
+    assert "50 elements" in summary
+    assert "100% (50/50 elements traced)" in summary
+    assert "Omitted-ID rows used : 3" in summary
     assert "ARC_Talent_Onboarding_Deck.pptx" in summary
+
+
+def test_deck_cli_summary_reports_less_than_100_percent_when_elements_are_untraced():
+    res = OnboardingDeckResult(
+        file_path=Path("a.pptx"), manifest_path=Path("a.trace.json"), slides_count=7,
+        trace_entries_count=40, project_name="P", overflow_rows=0, elements_total=50, elements_traced=45,
+    )
+    assert "90% (45/50 elements traced)" in format_deck_export_summary(res, use_color=False)

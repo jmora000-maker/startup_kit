@@ -26,6 +26,7 @@ from src.generators.formatting import (
     COLOR_WARNING_BG_HEX,
 )
 from src.generators.checklist import G01ChecklistRenderer
+from src.generators.kit_values import kit_header_values
 
 logger = logging.getLogger(__name__)
 
@@ -384,10 +385,8 @@ class DocxGenerator(IDocumentWriter):
             sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
         else:
             sla_status_str = "Not determinable - award date not stated"
-        dm_meta = (ctx.delivery_manager if ctx and ctx.delivery_manager else None) or (charter.delivery_manager if charter and charter.delivery_manager else None) or (talent_rec.delivery_manager if talent_rec and talent_rec.delivery_manager else None) or "[UNASSIGNED - TO BE CONFIRMED]"
-        tpm_meta = (ctx.talent_pm if ctx and ctx.talent_pm else None) or (charter.talent_pm if charter and charter.talent_pm else None) or (talent_rec.talent_pm if talent_rec and talent_rec.talent_pm else None) or "[UNASSIGNED - TO BE CONFIRMED]"
-        pmo_meta = (ctx.pmo_lead if ctx and ctx.pmo_lead else None) or (charter.pmo_lead if charter and charter.pmo_lead else None) or (talent_rec.pmo_lead if talent_rec and talent_rec.pmo_lead else None) or (baseline.author_name if baseline.author_name else None) or "[UNASSIGNED - TO BE CONFIRMED]"
-        client_meta = (ctx.client_name if ctx and ctx.client_name else None) or (charter.client_name if charter and charter.client_name else None) or "N/A"
+        header = kit_header_values(baseline)
+        dm_meta, tpm_meta, pmo_meta, client_meta = header["delivery_manager"], header["talent_pm"], header["pmo_lead"], header["client_sponsor"]
 
         gen_d = self.generated_date or datetime.now().strftime("%Y-%m-%d")
         meta_data = [

@@ -1,115 +1,143 @@
-"""Deterministic talking point generators for Onboarding Deck speaker notes (DECK-09, Appendix K.2, K.3)."""
+"""Deterministic talking-point templates for the Onboarding Deck speaker notes (DECK-09, Appendix K.3).
+
+Every template is filled only with traced values; a template whose value is missing is skipped by the
+builder, never filled with a guess. Templates contain no project, client, or SOW names (P-08) and no
+evaluative filler. They are plain sentences built from facts.
+"""
 
 from typing import List, Optional
 
+MAX_TALKING_POINT_WORDS = 30
 
-def build_slide1_talking_points(
-    client_sponsor: str,
-    start_date: str,
-    start_basis: str,
-) -> str:
-    """Speaker notes for Slide 1 (Cover)."""
-    return (
-        "TALKING POINTS:\n"
-        "• Welcome the Talent PM and Talent Project Team to onboarding.\n"
-        f"• Engagement for {client_sponsor} starting {start_date} ({start_basis}).\n"
-        "• Review delivery charter, milestone commitments, acceptance criteria, and governance cadence.\n\n"
-        "SOURCES: Startup Kit · Project Charter; Project Delivery Workbook · Project Schedule"
-    )
+# Fixed guidance sentences (no traced value): allowed only on the cover and Your Project Kit slides (DECK-09)
+COVER_GUIDANCE = (
+    "This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.",
+)
+KIT_SLIDE_GUIDANCE = (
+    "Both files sit in the same folder as this deck.",
+    "The Startup Kit is the approved baseline; changes to it go through the escalation path on slide 2.",
+    "The Project Delivery Workbook is the plan to keep current as work progresses.",
+    "Each slide's SOURCES note says which section or sheet to open for detail.",
+)
 
 
-def build_slide2_talking_points(
-    contract_type: str,
-    governance_tier: str,
-    pmo_lead: str,
-    delivery_manager: str,
-    talent_pm: str,
-    purpose: str,
-    escalation_path: str,
-    phase_count: int,
-    start_date: str,
-    finish_date: str,
-) -> str:
-    """Speaker notes for Slide 2 (Project Charter)."""
-    return (
-        "TALKING POINTS:\n"
-        f"• Project operates under {contract_type} contract terms and {governance_tier} governance.\n"
-        f"• Delivery leadership: PMO Lead {pmo_lead}, Delivery Manager {delivery_manager}, Talent PM {talent_pm}.\n"
-        f"• Purpose: {purpose}.\n"
-        f"• Escalation path: {escalation_path}.\n"
-        f"• Delivery spans {phase_count} phases from {start_date} to {finish_date}.\n\n"
-        "SOURCES: Startup Kit · Project Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
-    )
+def sentence(text: str) -> str:
+    """End `text` with a full stop unless it already ends a sentence (no doubled punctuation)."""
+    text = text.strip()
+    return text if text.endswith((".", "?", "!")) else f"{text}."
 
 
-def build_slide3_talking_points(
-    phase_count: int,
-    first_start: str,
-    last_finish: str,
-    milestones_count: int,
-    checkpoints_count: int,
-    workstreams_count: int,
-    deliverables_count: int,
-    date_basis: str,
-) -> str:
-    """Speaker notes for Slide 3 (Workstreams, Milestones, Deliverables and Dates)."""
-    cp_text = f" and {checkpoints_count} checkpoints" if checkpoints_count > 0 else ""
-    return (
-        "TALKING POINTS:\n"
-        f"• The project runs in {phase_count} phases, from {first_start} to {last_finish}.\n"
-        f"• Delivery commits to {milestones_count} milestones{cp_text} across {workstreams_count} workstreams.\n"
-        f"• All {deliverables_count} deliverables are mapped to baseline milestone dates.\n"
-        f"• Date basis: {date_basis}.\n\n"
-        "SOURCES: Project Delivery Workbook · Project Schedule; Startup Kit · Deliverables and Acceptance Matrix"
-    )
+def spoken(value: str, is_placeholder: bool) -> str:
+    """A value as it reads inside a sentence: a placeholder reads `to be confirmed`."""
+    return "to be confirmed" if is_placeholder else value
 
 
-def build_slide4_talking_points(
-    review_window: str,
-    client_approver: str,
-    deliverables_count: int,
-) -> str:
-    """Speaker notes for Slide 4 (Acceptance Criteria)."""
-    return (
-        "TALKING POINTS:\n"
-        "• Acceptance is conducted at milestone level following defined quality review gates.\n"
-        f"• Milestone review window is {review_window} with client approver {client_approver}.\n"
-        f"• All {deliverables_count} deliverable acceptance criteria must be verified with required completion evidence.\n"
-        "• Submissions follow standard verification and rework remediation workflows.\n\n"
-        "SOURCES: Project Delivery Workbook · WBS; Startup Kit · Deliverables and Acceptance Matrix"
-    )
+# --- Slide 1 (Cover): fixed guidance is allowed here ----------------------------------------------
+def cover_project_and_client(project: str, client: str) -> str:
+    return sentence(f"This deck covers {project} for {client}")
 
 
-def build_slide5_talking_points(
-    high_count: int,
-    top_risk_id: str,
-    top_risk_desc: str,
-) -> str:
-    """Speaker notes for Slide 5 (High-Risk Items)."""
-    risk_summary = f"First priority risk is {top_risk_id}: {top_risk_desc}." if top_risk_id else "No critical risks identified in delivery baseline."
-    return (
-        "TALKING POINTS:\n"
-        f"• Active RAID tracking monitors {high_count} items rated High severity.\n"
-        f"• {risk_summary}\n"
-        "• Mitigations and proactive response ownership are assigned across delivery phases.\n"
-        "• New risks or issues should be raised via the delivery escalation path.\n\n"
-        "SOURCES: Project Delivery Workbook · RAID Log; Startup Kit · Project Charter"
-    )
+def cover_start_date(start_date: str, basis: str) -> str:
+    return f"The start date is {start_date}, and it was {basis.lower()}."
 
 
-def build_slide6_talking_points(
-    client_stakeholder_count: int,
-    comms_count: int,
-    first_gate: str,
-    first_prereq: str,
-) -> str:
-    """Speaker notes for Slide 6 (Client Collaboration)."""
-    prereq_summary = f"First client prerequisite is required by {first_gate}: {first_prereq}." if first_prereq else "Client prerequisites are tracked per delivery phase."
-    return (
-        "TALKING POINTS:\n"
-        f"• Engagement governance establishes regular cadence with {client_stakeholder_count} client stakeholders.\n"
-        f"• Communications rhythm includes {comms_count} scheduled governance touchpoints.\n"
-        f"• {prereq_summary}\n"
-        "• Active alignment ensures clear decision rights and rapid resolution of open items.\n\n"
-        "SOURCES: Startup Kit · Stakeholder and Responsibility Model, Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
-    )
+# --- Slide 2: Project Charter -----------------------------------------------------------------------
+def charter_purpose(purpose_sentence: str) -> str:
+    return sentence(f"Purpose: {purpose_sentence}")
+
+
+def charter_contract_and_tier(contract_type: str, tier: str) -> str:
+    return sentence(f"The contract type is {contract_type}, and the governance tier is {tier}")
+
+
+def charter_leads(delivery_manager: str, talent_pm: str, pmo_lead: str) -> str:
+    return sentence(f"Delivery Manager: {delivery_manager}; Talent PM: {talent_pm}; PMO Lead: {pmo_lead}")
+
+
+def charter_escalation(path: str) -> str:
+    return sentence(f"Issues escalate along this path: {path}")
+
+
+def charter_start_date(start_date: str, basis: str) -> str:
+    return f"The start date is {start_date}, and it was {basis.lower()}."
+
+
+def phases_and_span(phase_count: int, first_start: str, last_finish: str) -> str:
+    return sentence(f"The project runs in {phase_count} phases, from {first_start} to {last_finish}")
+
+
+# --- Slide 3: Workstreams, Milestones, Deliverables and Dates -----------------------------------------
+def gate_due(gate_id: str, phase: str, planned_finish: str, predecessor: Optional[str]) -> str:
+    base = f"{gate_id} ({phase}) is due {planned_finish}"
+    return f"{base}; it starts after {predecessor} is accepted." if predecessor else f"{base}."
+
+
+def date_basis(gate_id: str, basis: str) -> str:
+    return sentence(f"The dates for {gate_id} are based on: {basis}")
+
+
+def checkpoints(count: int, ids: List[str]) -> str:
+    return sentence(f"{count} checkpoints sit inside phases: {', '.join(ids)}")
+
+
+# --- Slide 4: Acceptance Criteria ----------------------------------------------------------------------
+def acceptance_mode(mode: str, gate_id: str, step_count: int, first_step: str) -> str:
+    return f"Acceptance is {mode}; the {gate_id} acceptance package has {step_count} steps, starting with: {first_step}."
+
+
+def acceptance_review(review_window: str, approver: str) -> str:
+    return sentence(f"Review window: {review_window}; client approver: {approver}")
+
+
+def acceptance_evidence(deliverable_id: str, evidence: str) -> str:
+    return sentence(f"Evidence expected for {deliverable_id}: {evidence}")
+
+
+def criteria_to_confirm(count: int, ids: List[str]) -> str:
+    return sentence(f"{count} deliverables have acceptance criteria still to be confirmed: {', '.join(ids)}")
+
+
+# --- Slide 5: High-Risk Items ---------------------------------------------------------------------------
+def high_risks(high_count: int, raid_id: str, first_clause: Optional[str]) -> str:
+    base = f"{high_count} risks and issues are rated High; the first to watch is {raid_id}"
+    return sentence(f"{base}: {first_clause}") if first_clause else f"{base}."
+
+
+def early_warning(raid_id: str, trigger: str) -> str:
+    return sentence(f"Early warning for {raid_id}: {trigger}")
+
+
+def item_owner(raid_id: str, owner: str) -> str:
+    return sentence(f"Owner of {raid_id}: {owner}")
+
+
+def raise_new_risks(path: str) -> str:
+    return sentence(f"Raise new risks and issues along this path: {path}")
+
+
+# --- Slide 6: Client Collaboration ----------------------------------------------------------------------
+def sign_off(stakeholder: str) -> str:
+    return sentence(f"Milestone sign-off sits with {stakeholder}")
+
+
+def meeting_cadence(name: str, cadence: str) -> str:
+    return sentence(f"{name}: {cadence}")
+
+
+def first_prerequisite(phase: str, planned_start: str, prerequisite: str) -> str:
+    return sentence(f"Before {phase} starts on {planned_start}, the client prerequisite is: {prerequisite}")
+
+
+def first_prerequisite_short(phase: str, planned_start: str) -> str:
+    return f"Before {phase} starts on {planned_start}, the client has prerequisites to provide (see the Project Schedule)."
+
+
+def open_questions(count: int, first_raid_id: str) -> str:
+    return sentence(f"{count} open questions are waiting on the client; the first is {first_raid_id}")
+
+
+# --- Notes assembly --------------------------------------------------------------------------------------
+def build_notes(points: List[str], sources_line: str) -> str:
+    """Speaker notes: a TALKING POINTS section and a SOURCES line (DECK-09)."""
+    body = "\n".join(f"• {p}" for p in points)
+    return f"TALKING POINTS:\n{body}\n\nSOURCES: {sources_line}"

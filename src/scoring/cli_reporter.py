@@ -278,13 +278,18 @@ def format_deck_export_summary(
     res_path = result.file_path.resolve() if hasattr(result.file_path, "resolve") else result.file_path
     man_path = result.manifest_path.resolve() if hasattr(result.manifest_path, "resolve") else result.manifest_path
 
+    total = result.elements_total or result.trace_entries_count
+    traced = result.elements_traced if result.elements_total else result.trace_entries_count
+    pct = f"{100.0 * traced / total:.0f}" if total else "100"
+
     lines = [
         sep_double,
         f"{COLOR_BOLD}{COLOR_CYAN}                     TALENT ONBOARDING DECK{COLOR_RESET}",
         sep_single,
-        f"   • Slides               : {result.slides_count} slides (Cover, Charter, Schedule, Acceptance, Risks, Collaboration)",
-        f"   • Content elements     : {result.trace_entries_count} elements",
-        f"   • Elements traced      : 100% ({result.trace_entries_count}/{result.trace_entries_count} elements traced)",
+        f"   • Slides               : {result.slides_count} slides (Cover, Charter, Schedule, Acceptance, Risks, Collaboration, Your Project Kit)",
+        f"   • Content elements     : {total} elements",
+        f"   • Elements traced      : {pct}% ({traced}/{total} elements traced)",
+        f"   • Omitted-ID rows used : {result.overflow_rows}",
         f"   • Trace Manifest       : {man_path}",
         sep_single,
         f"   • Output File Path     : {res_path}",

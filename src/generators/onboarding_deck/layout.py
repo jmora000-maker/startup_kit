@@ -23,7 +23,7 @@ THREE_ACROSS_X = (0.83, 4.81, 8.79)
 THREE_ACROSS_W = 3.71
 TWO_ACROSS_X = (0.83, 6.75)
 TWO_ACROSS_W = 5.75
-CARD_H = CONTENT_HEIGHT
+CARD_H = 4.58  # the template's card height; a card may grow to CONTENT_HEIGHT when its text needs it
 
 # --- Table geometry (inches) -------------------------------------------------------------------
 TABLE_HEADER_H = 0.40
@@ -59,28 +59,12 @@ LINE_HEIGHT_FACTOR = 1.2
 
 
 def wrap_lines(text: str, width_in: float, size_pt: float) -> int:
-    """Estimated rendered line count: greedy word wrap at an average character width of 0.5 x font size."""
+    """Estimated rendered line count (DECK-21 (5)): characters per line from the frame width at an average
+    character width of 0.5 x font size; a paragraph's lines are its characters divided by that, rounded up."""
     chars_per_line = max(1, int((width_in * 72.0) / (AVG_CHAR_WIDTH_FACTOR * size_pt)))
     total = 0
-    for raw_line in str(text).split("\n"):
-        words = raw_line.split()
-        if not words:
-            total += 1
-            continue
-        lines, cur = 1, 0
-        for w in words:
-            wl = len(w)
-            if cur == 0:
-                cur = wl
-            elif cur + 1 + wl <= chars_per_line:
-                cur += 1 + wl
-            else:
-                lines += 1
-                cur = wl
-            while cur > chars_per_line:  # an unbreakable word longer than a line wraps by character
-                lines += 1
-                cur -= chars_per_line
-        total += lines
+    for raw_line in str(text).splitlines() or [""]:
+        total += max(1, math.ceil(len(raw_line.strip()) / chars_per_line))
     return total
 
 

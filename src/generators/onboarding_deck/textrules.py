@@ -10,7 +10,7 @@ from typing import List, Optional
 from src.generators.formatting import ACTION_TAG_REGEX
 
 ELLIPSIS_REGEX = re.compile(r"\.\.\.|…")
-DOUBLED_PUNCT_REGEX = re.compile(r"\.\.|,,|;;|::|!!|\?\?|,\.|\.,(?!\w)")
+DOUBLED_PUNCT_REGEX = re.compile(r"\.\.|,,|;;|::|!!|\?\?")
 SENTENCE_END_CHARS = ".?!"
 BOUNDARY_CHARS = ".?!;:"
 BRACKET_PAIRS = {")": "(", "]": "[", "}": "{"}
@@ -117,25 +117,62 @@ def prefix_violation(shown: str, source: str) -> Optional[str]:
 
 
 MIN_CLAUSE_WORDS = 3
+PLACEHOLDER_TEXT_REGEX = re.compile(
+    r"^\[?(?:CONFIRMATION REQUIRED|TBD|UNDEFINED|UNASSIGNED(?: - TO BE CONFIRMED)?|TO BE CONFIRMED)\]?$", re.IGNORECASE
+)
 
 
-def clause_prefix(text: str, max_words: int) -> str:
-    """The first clause of `text`: its shortest boundary-ended prefix (DECK-05, DECK-08).
-
-    Text that already fits in `max_words` is returned whole. When the first compliant cut is longer than
-    the limit, or no compliant cut exists, the whole text is returned: DECK-05 forbids any cut that is
-    not at a boundary, so the element is shown whole and sized by DECK-21 instead.
-    """
+def is_placeholder_text(text: Optional[str]) -> bool:
+    """DECK-10: empty, or a bare placeholder such as [CONFIRMATION REQUIRED], UNASSIGNED, [TBD] (after tag removal)."""
     clean = normalize_text(text)
-    if not clean or word_count(clean) <= max_words:
-        return clean
+    return not clean or PLACEHOLDER_TEXT_REGEX.match(clean) is not None
+
+
+def _candidates(clean: str):
+    """(candidate prefix, strong) for every compliant cut of `clean`, shortest first.
+
+    Strong cuts end at a sentence or clause mark (. ? ! ; :) or before ' - '; weak cuts end at the close
+    of a complete parenthetical.
+    """
     for i in range(1, len(clean)):
         if clean[i:i + 1] in tuple(SENTENCE_END_CHARS) and clean[i + 1:i + 2] in ("", " "):
             continue  # keep the sentence's own full stop
         head = clean[:i].rstrip()
         candidate = head[:-1].rstrip() if head and head[-1] in ";:" else head
-        if candidate and word_count(candidate) >= MIN_CLAUSE_WORDS and prefix_violation(candidate, clean) is None:
-            return candidate if word_count(candidate) <= max_words else clean
+        if not candidate or word_count(candidate) < MIN_CLAUSE_WORDS or prefix_violation(candidate, clean) is not None:
+            continue
+        strong = candidate[-1] in SENTENCE_END_CHARS or head[-1] in BOUNDARY_CHARS or clean[i:i + 1] in tuple(BOUNDARY_CHARS) or clean[i:i + 3] == " - "
+        yield candidate, strong
+
+
+def clause_prefix(text: str, max_words: int) -> str:
+    """The first clause of `text` (DECK-05, DECK-08).
+
+    Text that already fits in `max_words` is returned whole. Otherwise the first sentence or clause is
+    returned when it fits; failing that, the longest prefix that ends at the close of a complete
+    parenthetical and fits. When no compliant cut fits the limit, the shortest compliant cut is returned
+    even though it is longer than the limit: DECK-05 forbids any cut that is not at a boundary, so the
+    element is sized by DECK-21 instead of cut again.
+    """
+    clean = normalize_text(text)
+    if not clean or word_count(clean) <= max_words:
+        return clean
+    weak_best = ""
+    for candidate, strong in _candidates(clean):
+        if strong:
+            # a first clause longer than the limit still beats showing more text: it is the shortest compliant cut
+            return candidate if (word_count(candidate) <= max_words or not weak_best) else weak_best
+        if word_count(candidate) <= max_words:
+            weak_best = candidate
+    return weak_best or clean
+
+
+def first_sentence(text: str) -> str:
+    """The first sentence of `text` (whole text when it is a single sentence), per DECK-05."""
+    clean = normalize_text(text)
+    for candidate, strong in _candidates(clean):
+        if strong and candidate[-1] in SENTENCE_END_CHARS:
+            return candidate
     return clean
 
 

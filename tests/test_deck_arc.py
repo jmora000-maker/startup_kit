@@ -1,103 +1,126 @@
-"""Tests asserting Appendix K.4 expected ARC results on the ARC Genomics fixture."""
+"""Tests asserting every Appendix K.4 expected ARC result on the ARC Genomics fixture (Rev 10)."""
 
-from datetime import date
-import json
-from pathlib import Path
+import re
+
 import pytest
-import pptx
 
-from src.core.models import StartupKitBaseline
-from src.generators.docx_generator import DocxGenerator
-from src.generators.pmo_workbook import export_pmo_workbook
-from src.generators.onboarding_deck import export_onboarding_deck, build_deck_model
-from src.llm.validation import validate_and_repair_baseline
+from src.tools.check_artifacts import check_artifacts_directory
+from tests.deck_bundle import card_texts, notes_points, slide_tables, slide_text
 
-
-@pytest.fixture
-def arc_deck_result(tmp_path):
-    fixture_dir = Path("tests/fixtures/sow/arc_genomics")
-    with open(fixture_dir / "baseline.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    baseline = StartupKitBaseline.model_validate(data)
-    validate_and_repair_baseline(baseline)
-
-    start_d = date(2026, 10, 5)
-    DocxGenerator().write_kit_docx(baseline, tmp_path)
-    export_pmo_workbook(baseline, tmp_path, start_date=start_d)
-    return export_onboarding_deck(baseline, tmp_path, start_date=start_d)
+KIT_FILE = "ARC_Genomics_Platform_Startup_Kit.docx"
+WB_FILE = "ARC_Genomics_Platform_Project_Delivery_Workbook.xlsx"
 
 
-def test_deck_arc_appendix_k4(arc_deck_result):
-    """Verify all Appendix K.4 expected results for ARC Genomics."""
-    prs = pptx.Presentation(str(arc_deck_result.file_path))
-    slides = list(prs.slides)
-    assert len(slides) == 6
+def _rows(table_shape):
+    return [[c.text.strip() for c in r.cells] for r in table_shape.table.rows]
 
-    # Slide 1 (Cover)
-    assert slides[0].placeholders[0].text == "ARC Genomics Platform"
-    assert slides[0].placeholders[1].text == "Talent Team Onboarding · Syngenta · Start 2026-10-05"
 
-    # Slide 2 (Charter)
-    # Check key facts table
-    s2_tables = [sh.table for sh in slides[1].shapes if sh.has_table]
-    assert len(s2_tables) > 0
-    kf_map = {row.cells[0].text.strip(): row.cells[1].text.strip() for row in s2_tables[0].rows}
+def test_slide_1_cover(arc_bundle):
+    slide = arc_bundle["prs"].slides[0]
+    assert slide.placeholders[0].text == "ARC Genomics Platform"
+    assert slide.placeholders[1].text == "Talent Team Onboarding · Syngenta · Start 2026-10-05"
 
-    assert kf_map["Client Sponsor"] == "Syngenta"
-    assert kf_map["Contract Type"] == "Fixed Bid"
-    assert kf_map["Governance Tier"] == "Partnered"
-    assert kf_map["Start Date"] == "2026-10-05 (Provided)"
-    assert kf_map["Talent PM"] == "To be confirmed"
-    assert kf_map["Delivery Manager"] == "To be confirmed"
-    assert kf_map["PMO Lead"] == "To be confirmed"
 
-    s2_text = " ".join(sh.text_frame.text for sh in slides[1].shapes if sh.has_text_frame)
-    for phase_name in ["P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"]:
-        assert phase_name in s2_text
+def test_slide_2_charter(arc_bundle):
+    slide = arc_bundle["prs"].slides[1]
+    facts = {r[0]: r[1] for r in _rows(slide_tables(slide)[0])}
+    assert facts["Client Sponsor"] == "Syngenta"
+    assert facts["Contract Type"] == "Fixed Bid"
+    assert facts["Governance Tier"] == "Partnered"
+    assert facts["Start Date"] == "2026-10-05 (Provided)"
+    assert facts["Talent PM"] == facts["Delivery Manager"] == facts["PMO Lead"] == "To be confirmed"
+    text = slide_text(slide)
+    for phase in ("P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"):
+        assert phase in text
+    phases_card = card_texts(slide)["Card text: Phases & scope"]
+    assert phases_card[2:6] == ["P1 Foundation", "P2a Services and Data", "P2b Application Surface", "P3 Launch"]
 
-    # Slide 3 (Schedule)
-    s3_tables = [sh.table for sh in slides[2].shapes if sh.has_table]
-    assert len(s3_tables) > 0
-    s3_tab = s3_tables[0]
-    s3_text = " ".join(c.text for row in s3_tab.rows for c in row.cells)
-    for m_id in ["M1", "M2", "M3", "M4"]:
-        assert m_id in s3_text
 
-    # Check deliverables in Slide 3 / Slide 4
-    for d_idx in range(1, 20):
-        d_id = f"DEL-{d_idx:02d}"
-        assert d_id in s3_text or "DEL-" in s3_text
+def test_slide_3_gates_dates_and_every_deliverable_once(arc_bundle):
+    slide = arc_bundle["prs"].slides[2]
+    rows = _rows(slide_tables(slide)[0])[1:]
+    assert [r[1].split(":")[0] for r in rows] == ["M1", "M2", "M3", "M4"]
+    assert rows[0][2].startswith("2026-10-05") and rows[-1][2].endswith("2027-04-02")
+    text = slide_text(slide)
+    for n in range(1, 20):
+        assert len(re.findall(rf"DEL-{n:02d}\b", text)) == 1, f"DEL-{n:02d} must appear exactly once on slide 3"
 
-    # Slide 5 (High-Risk Items)
-    s5_tables = [sh.table for sh in slides[4].shapes if sh.has_table]
-    assert len(s5_tables) > 0
-    s5_tab = s5_tables[0]
-    s5_ids = [row.cells[0].text.strip() for row in list(s5_tab.rows)[1:]]
 
-    assert any("RAID-01" in sid and "RSK-01" in sid for sid in s5_ids)
-    assert any("RAID-02" in sid and "RSK-02" in sid for sid in s5_ids)
-    assert any("RAID-05" in sid and "RSK-05" in sid for sid in s5_ids)
-    assert any("RAID-07" in sid and "ISS-01" in sid for sid in s5_ids)
+def test_names_shown_whole_on_slide_3(arc_bundle):
+    text = slide_text(arc_bundle["prs"].slides[2])
+    assert "DEL-07 Backend Integration/Load Tests and Performance Engineering Spike" in text
+    assert "DEL-17 Production Smoke Tests and 48-Hour Defect Watch" in text
 
-    # Slide 6 (Collaboration)
-    s6_text = " ".join(sh.text_frame.text for sh in slides[5].shapes if sh.has_text_frame)
-    assert "+1 more" in s6_text  # 6 client stakeholders (5 shown + 1 overflow)
-    for com_id in ["COM-01", "Daily Standup", "Weekly", "Sprint Demo", "Kickoff"]:
-        assert any(c in s6_text for c in ["Daily Standup", "Weekly", "Demo", "Kickoff"])
 
-    # Everywhere: No ACT- tags, no readiness score, no G-01
-    full_deck_text = ""
-    for s in slides:
-        for sh in s.shapes:
-            if sh.has_text_frame:
-                full_deck_text += sh.text_frame.text + " "
-            if sh.has_table:
-                for r in sh.table.rows:
-                    full_deck_text += " ".join(c.text for c in r.cells) + " "
-        if s.has_notes_slide:
-            full_deck_text += s.notes_slide.notes_text_frame.text + " "
+def test_slide_4_every_deliverable_once_and_milestone_level(arc_bundle):
+    slide = arc_bundle["prs"].slides[3]
+    text = slide_text(slide)
+    for n in range(1, 20):
+        assert len(re.findall(rf"DEL-{n:02d}\b", text)) == 1, f"DEL-{n:02d} must appear exactly once on slide 4"
+    assert any("milestone-level" in p for p in notes_points(slide))
 
-    assert "ACT-" not in full_deck_text
-    assert "G01-" not in full_deck_text
-    assert "G-01" not in full_deck_text
-    assert "readiness score" not in full_deck_text.lower()
+
+def test_slide_4_steps_are_the_six_tasks_of_wbs_1_1_7(arc_bundle):
+    slide = arc_bundle["prs"].slides[3]
+    card = card_texts(slide)["Card text: How acceptance works"]
+    steps = card[2:8]
+    assert steps[0] == "Prepare milestone acceptance package and evidence"
+    # the same six names, in order, as WBS 1.1.7.1 to 1.1.7.6 in the written Workbook
+    ws = arc_bundle["wb"]["WBS"]
+    header = [c.value for c in ws[5]]
+    code, name = header.index("WBS Code"), header.index("Name")
+    expected = [r[name] for r in ws.iter_rows(min_row=6, values_only=True) if r[code] and str(r[code]).startswith("1.1.7.")]
+    assert len(expected) == 6 and steps == expected
+    parent = next(r for r in ws.iter_rows(min_row=6, values_only=True) if str(r[code]) == "1.1.7")
+    assert parent[name] == "M1 Milestone Acceptance"
+    assert not any(p.startswith("Confirm:") or p.startswith("Build HS-") for p in card)
+
+
+def test_slide_5_high_risks_and_responses(arc_bundle):
+    slide = arc_bundle["prs"].slides[4]
+    rows = _rows(slide_tables(slide)[0])[1:]
+    assert [r[0] for r in rows] == ["RAID-01 (RSK-01)", "RAID-02 (RSK-02)", "RAID-05 (RSK-05)", "RAID-07 (ISS-01)"]
+    assert all(r[2] == "High" for r in rows)
+    assert rows[0][4].startswith("Use query observability (HS-4942)")
+    # each Response is the Kit mitigation, in full or a clause-boundary prefix
+    kit = arc_bundle["kit"]
+    mitigation = {}
+    for t in kit.tables:
+        if t.rows[0].cells[0].text == "Item ID" and t.rows[0].cells[4].text == "Probability":
+            for r in t.rows[1:]:
+                mitigation[r.cells[0].text] = r.cells[7].text
+    for r in rows:
+        kit_id = r[0].split("(")[1].rstrip(")")
+        assert mitigation[kit_id].startswith(r[4]), (kit_id, r[4])
+        assert r[4], "Response must not be empty"
+    # RAID-07 is High probability, Medium impact
+    ws = arc_bundle["wb"]["RAID Log"]
+    header = [c.value for c in ws[5]]
+    raid07 = next(r for r in ws.iter_rows(min_row=6, values_only=True) if r[0] == "RAID-07")
+    assert (raid07[header.index("Probability")], raid07[header.index("Impact")]) == ("High", "Medium")
+
+
+def test_slide_6_client_stakeholders_and_communications(arc_bundle):
+    cards = card_texts(arc_bundle["prs"].slides[5])
+    roles = cards["Card text: Client roles"][1:]
+    assert len(roles) == 6 and roles[-1].startswith("+1 more")
+    rhythm = cards["Card text: Working rhythm"][1:]
+    assert len(rhythm) == 7
+    assert rhythm[0] == "Kickoff Call: One-time"
+
+
+def test_slide_7_project_kit(arc_bundle):
+    slide = arc_bundle["prs"].slides[6]
+    text = slide_text(slide)
+    assert KIT_FILE in text and WB_FILE in text
+    for sheet in ("Project Schedule", "WBS", "RAID Log"):
+        assert sheet in text
+    assert (arc_bundle["dir"] / KIT_FILE).exists() and (arc_bundle["dir"] / WB_FILE).exists()
+
+
+def test_no_readiness_content_and_fully_traced(arc_bundle):
+    deck_text = "\n".join(slide_text(s) + s.notes_slide.notes_text_frame.text for s in arc_bundle["prs"].slides)
+    assert "ACT-" not in deck_text and "G-01" not in deck_text and "readiness" not in deck_text.lower()
+    assert arc_bundle["result"].elements_total > 0
+    assert arc_bundle["result"].elements_traced == arc_bundle["result"].elements_total  # 100% traced
+    assert [str(v) for v in check_artifacts_directory(arc_bundle["dir"])] == []

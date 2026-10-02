@@ -1,54 +1,46 @@
-"""Tests for Deck builder and determinism (DECK-03, DECK-14)."""
+"""Tests for the Deck builder and determinism (DECK-03, DECK-14)."""
 
 import json
-from pathlib import Path
-import pytest
 
-from src.core.models import StartupKitBaseline
 from src.generators.onboarding_deck import build_deck_model, export_onboarding_deck
-from src.llm.validation import validate_and_repair_baseline
+from tests.deck_bundle import load_baseline
 
 
-@pytest.fixture
-def arc_baseline():
-    fixture_dir = Path("tests/fixtures/sow/arc_genomics")
-    with open(fixture_dir / "baseline.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    baseline = StartupKitBaseline.model_validate(data)
-    validate_and_repair_baseline(baseline)
-    return baseline
-
-
-def test_deck_builder_model_structure(arc_baseline):
-    """DeckModel builds pure data structure with 6 slides and manifest."""
-    model = build_deck_model(arc_baseline)
+def test_deck_builder_model_structure():
+    """The DeckModel is pure data: a cover, slides 2 to 7 in order, and a manifest."""
+    model = build_deck_model(load_baseline())
     assert model.project_name == "ARC Genomics Platform"
-    assert model.cover_slide.title == "ARC Genomics Platform"
-    assert model.charter_slide.title == "Project Charter"
-    assert model.schedule_slide.title == "Workstreams, Milestones, Deliverables and Dates"
-    assert model.acceptance_slide.title == "Acceptance Criteria"
-    assert model.risks_slide.title == "High-Risk Items"
-    assert model.collaboration_slide.title == "Client Collaboration"
+    assert model.cover.title.text == "ARC Genomics Platform"
+    assert [s.title for s in model.slides] == [
+        "Project Charter",
+        "Workstreams, Milestones, Deliverables and Dates",
+        "Acceptance Criteria",
+        "High-Risk Items",
+        "Client Collaboration",
+        "Your Project Kit",
+    ]
+    assert [s.number for s in model.slides] == [2, 3, 4, 5, 6, 7]
+    assert model.kit_file_name == "ARC_Genomics_Platform_Startup_Kit.docx"
     assert len(model.manifest.entries) > 0
 
 
-def test_deck_builder_determinism(arc_baseline, tmp_path):
-    """DECK-14: Two independent builds produce identical deck model text and identical manifest."""
-    model1 = build_deck_model(arc_baseline)
-    model2 = build_deck_model(arc_baseline)
+def test_deck_builder_is_pure_and_deterministic(tmp_path):
+    """DECK-14: two builds give an identical model and manifest; two exports give an identical manifest."""
+    baseline = load_baseline()
+    m1, m2 = build_deck_model(baseline), build_deck_model(baseline)
+    assert m1.cover == m2.cover
+    assert m1.slides == m2.slides
+    assert m1.manifest.to_dict() == m2.manifest.to_dict()
 
-    assert model1.cover_slide == model2.cover_slide
-    assert model1.charter_slide == model2.charter_slide
-    assert model1.schedule_slide == model2.schedule_slide
-    assert model1.acceptance_slide == model2.acceptance_slide
-    assert model1.risks_slide == model2.risks_slide
-    assert model1.collaboration_slide == model2.collaboration_slide
-    assert model1.manifest.to_dict() == model2.manifest.to_dict()
+    res1 = export_onboarding_deck(baseline, tmp_path / "run1")
+    res2 = export_onboarding_deck(baseline, tmp_path / "run2")
+    assert json.loads(res1.manifest_path.read_text(encoding="utf-8")) == json.loads(res2.manifest_path.read_text(encoding="utf-8"))
 
-    dir1 = tmp_path / "run1"
-    dir2 = tmp_path / "run2"
-    res1 = export_onboarding_deck(arc_baseline, dir1)
-    res2 = export_onboarding_deck(arc_baseline, dir2)
 
-    with open(res1.manifest_path, "r", encoding="utf-8") as f1, open(res2.manifest_path, "r", encoding="utf-8") as f2:
-        assert json.load(f1) == json.load(f2)
+def test_manifest_has_shape_names_traces_and_talking_points():
+    model = build_deck_model(load_baseline())
+    entries = model.manifest.entries
+    assert all(e.traces for e in entries)
+    assert all(e.shape for e in entries)
+    for slide_no in range(2, 7):
+        assert any(e.slide == slide_no and e.element.startswith("Talking point") for e in entries)

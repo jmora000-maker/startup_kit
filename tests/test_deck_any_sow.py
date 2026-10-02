@@ -1,51 +1,44 @@
-"""Tests verifying that the Onboarding Deck builds without error for all fixtures (DECK-15)."""
+"""Tests that the Onboarding Deck builds for every fixture and for SOWs with missing sections (DECK-15)."""
 
-import json
-from pathlib import Path
 import pytest
-import docx
-import openpyxl
 
-from src.core.models import StartupKitBaseline
-from src.generators.docx_generator import DocxGenerator
-from src.generators.pmo_workbook import export_pmo_workbook
-from src.generators.onboarding_deck import export_onboarding_deck
-from src.tools.check_artifacts import check_deck_invariants
-from src.llm.validation import validate_and_repair_baseline
-
-FIXTURE_PATHS = [
-    Path("tests/fixtures/sow/arc_genomics/baseline.json"),
-    Path("tests/fixtures/sow/arc_overextracted/baseline.json"),
-    Path("tests/fixtures/sow/mock_sow/baseline.json"),
-    Path("tests/fixtures/sow/no_story_ids/baseline.json"),
-    Path("tests/fixtures/sow/numbered_deliverables/baseline.json"),
-]
+from src.tools.check_artifacts import check_artifacts_directory
+from tests.deck_bundle import FIXTURES, build_bundle, load_baseline, slide_text
 
 
-@pytest.mark.parametrize("baseline_file", FIXTURE_PATHS)
-def test_deck_builds_and_passes_invariants_for_all_fixtures(baseline_file, tmp_path):
-    """DECK-15: Deck builds and passes invariant checks across all five fixtures."""
-    with open(baseline_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    baseline = StartupKitBaseline.model_validate(data)
-    validate_and_repair_baseline(baseline)
+@pytest.mark.parametrize("name", FIXTURES)
+def test_deck_builds_and_passes_all_checks_for_every_fixture(name, tmp_path):
+    bundle = build_bundle(tmp_path, name)
+    assert bundle["deck_path"].exists() and bundle["manifest_path"].exists()
+    assert bundle["result"].slides_count == 7
+    assert [str(v) for v in check_artifacts_directory(tmp_path)] == []
 
-    kit_path = DocxGenerator().write_kit_docx(baseline, tmp_path)
-    wb_res = export_pmo_workbook(baseline, tmp_path)
-    deck_res = export_onboarding_deck(baseline, tmp_path)
 
-    assert deck_res.file_path.exists()
-    assert deck_res.manifest_path.exists()
-    assert deck_res.slides_count == 6
+def _without(attr):
+    baseline = load_baseline("arc_genomics")
+    setattr(baseline, attr, [])
+    return baseline
 
-    kit_doc = docx.Document(str(kit_path))
-    wb = openpyxl.load_workbook(str(wb_res.file_path), data_only=False)
 
-    violations = check_deck_invariants(
-        deck_res.file_path,
-        deck_res.manifest_path,
-        kit_doc,
-        wb,
-    )
-    # Check that there are no invariant violations
-    assert len(violations) == 0, f"Invariant violations on {baseline_file.parent.name}: {violations}"
+@pytest.mark.parametrize("attr", ["stakeholders", "communications_plan", "raid_items", "deliverables", "dependencies_assumptions"])
+def test_deck_builds_when_a_section_is_empty(attr, tmp_path):
+    bundle = build_bundle(tmp_path, baseline=_without(attr))
+    assert bundle["result"].slides_count == 7
+    violations = [str(v) for v in check_artifacts_directory(tmp_path) if v.inv_id in ("INV-26", "INV-27", "INV-29", "INV-31", "INV-32")]
+    assert violations == []
+
+
+def test_empty_sections_show_one_fixed_line(tmp_path):
+    bundle = build_bundle(tmp_path / "a", baseline=_without("stakeholders"))
+    assert "None recorded in the Startup Kit" in slide_text(bundle["prs"].slides[5])
+    bundle = build_bundle(tmp_path / "b", baseline=_without("communications_plan"))
+    assert "None recorded in the Startup Kit" in slide_text(bundle["prs"].slides[5])
+
+
+def test_deck_builds_with_no_charter_and_no_sow_summary(tmp_path):
+    baseline = load_baseline("arc_genomics")
+    baseline.charter = None
+    baseline.sow_interpretation = None
+    bundle = build_bundle(tmp_path, baseline=baseline)
+    assert bundle["result"].slides_count == 7
+    assert [str(v) for v in check_artifacts_directory(tmp_path) if v.inv_id in ("INV-26", "INV-31", "INV-32")] == []

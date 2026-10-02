@@ -16,6 +16,7 @@ from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
 
 from src.generators.onboarding_deck import layout as L
 from src.generators.onboarding_deck import fixed_text as FT
+from src.generators.onboarding_deck.coverage import coverage
 from src.generators.onboarding_deck.textrules import (
     normalize_text,
     source_units,
@@ -66,7 +67,9 @@ def _cell_str(value: Any) -> str:
 class SourceIndex:
     """Lookup of Kit sections and Workbook sheets, built from the written files."""
 
-    def __init__(self, kit_doc: Optional[Any], wb: Optional[Any]):
+    def __init__(self, kit_doc: Optional[Any], wb: Optional[Any], file_names: Sequence[str] = ()):
+        self.file_names = set(file_names)
+        self.kit_headings: set = set()
         self.kit_sections: Dict[str, List[List[List[str]]]] = {}
         self.sheets: Dict[str, Dict[str, Any]] = {}
         self.has_kit = kit_doc is not None
@@ -88,6 +91,7 @@ class SourceIndex:
                 p = docx_par.Paragraph(el, kit_doc)
                 if p.style is not None and p.style.name.startswith("Heading") and p.text.strip():
                     current = p.text.strip()
+                    self.kit_headings.add(current)
             elif el.tag == qn("w:tbl"):
                 t = docx_table.Table(el, kit_doc)
                 rows = [[c.text for c in r.cells] for r in t.rows]
@@ -116,11 +120,24 @@ class SourceIndex:
     # ---- Resolution -------------------------------------------------------------------------
     def resolve(self, artifact: str, locator: str, key: str, field: str) -> Tuple[Optional[List[str]], Optional[str]]:
         """The source units for a TraceRef, or (None, reason) when the locator, key, or field is not in the source."""
+        if artifact not in (KIT_ARTIFACT, WORKBOOK_ARTIFACT):
+            return None, f"unknown artifact '{artifact}'"
+        # facts about the documents themselves: a file in the output folder, a Kit heading, a Workbook sheet
+        if field == "File name":
+            if locator == "File name" and key in self.file_names:
+                return [key], None
+            return None, f"file '{key}' is not in the output folder"
+        if field == "Section heading":
+            if artifact == KIT_ARTIFACT and key == locator and key in self.kit_headings:
+                return [key], None
+            return None, f"Kit section heading '{key}' not found"
+        if field == "Sheet name":
+            if artifact == WORKBOOK_ARTIFACT and key == locator and key in self.sheets:
+                return [key], None
+            return None, f"Workbook sheet '{key}' not found"
         if artifact == KIT_ARTIFACT:
             return self._resolve_kit(locator, key, field)
-        if artifact == WORKBOOK_ARTIFACT:
-            return self._resolve_workbook(locator, key, field)
-        return None, f"unknown artifact '{artifact}'"
+        return self._resolve_workbook(locator, key, field)
 
     def _resolve_kit(self, locator: str, key: str, field: str) -> Tuple[Optional[List[str]], Optional[str]]:
         tables = self.kit_sections.get(locator)
@@ -382,12 +399,14 @@ def check_inv26(
             if not values:
                 v.append(_inv("INV-26", f"{where} contains no traced value (DECK-09)"))
             pool = [u for _, units in resolved for u in units]
-            for val in values:
+            aligned = len(values) == len(resolved)
+            for vi, val in enumerate(values):
+                own = list(resolved[vi][1]) if aligned else pool
                 if normalize_text(val).lower() not in disp.lower():
                     v.append(_inv("INV-26", f"{where}: traced value '{val}' does not appear in the talking point"))
-                elif normalize_text(val) != FT.PLACEHOLDER_TEXT and not _value_in_units(val, pool) and not DATE_RE.fullmatch(normalize_text(val)):
+                elif normalize_text(val) != FT.PLACEHOLDER_TEXT and not _value_in_units(val, own):
                     v.append(_inv("INV-26", f"{where}: traced value '{val}' is not in its source"))
-                elif normalize_text(val) == FT.PLACEHOLDER_TEXT and not _is_placeholder_source(pool):
+                elif normalize_text(val) == FT.PLACEHOLDER_TEXT and not _is_placeholder_source(own):
                     v.append(_inv("INV-26", f"{where}: placeholder value but the source holds a value"))
             continue
 
@@ -406,52 +425,64 @@ def check_inv26(
     return v
 
 
-def _unit_texts(slide: Any, slide_no: int) -> List[Tuple[str, str]]:
-    """(shape name, text unit) for every content text on a slide: paragraphs, table cell lines."""
-    out: List[Tuple[str, str]] = []
-    for sh in slide.shapes:
-        if sh.is_placeholder and slide_no > 1:
-            continue  # title and kicker are fixed labels
-        if sh.has_text_frame:
-            for p in sh.text_frame.paragraphs:
-                if p.text.strip():
-                    out.append((sh.name, p.text.strip()))
-        if getattr(sh, "has_table", False) and sh.has_table:
-            for r in sh.table.rows:
-                for c in r.cells:
-                    for line in c.text.splitlines():
-                        if line.strip():
-                            out.append((sh.name, line.strip()))
-    return out
-
-
 def _coverage_violations(entries: List[Dict[str, Any]], prs: Any) -> List[InvariantViolation]:
     """DECK-05 (1): every text on slides must be a traced value or a fixed label."""
     v: List[InvariantViolation] = []
-    by_slide: Dict[int, List[str]] = {}
-    shape_names: Dict[int, set] = {}
-    for e in entries:
-        if str(e.get("element", "")).startswith("Talking point"):
-            continue
-        by_slide.setdefault(e.get("slide"), []).append(normalize_text(e.get("displayed_value")))
-    fixed = FT.fixed_phrases()
-    for idx, slide in enumerate(prs.slides, start=1):
-        shape_names[idx] = {sh.name for sh in slide.shapes}
-        values = sorted({x for x in by_slide.get(idx, []) if x}, key=len, reverse=True)
-        for shape_name, text in _unit_texts(slide, idx):
-            s = text
-            for val in values:
-                s = s.replace(val, "\x00")
-            for ph in fixed:
-                s = s.replace(ph, "\x00")
-            s = FT.OVERFLOW_PATTERN.sub("\x00", s)
-            residue = re.sub(r"[\s\x00•·:;,()\[\]\-–—/&.+]|->", "", s)
-            if residue:
-                v.append(_inv("INV-26", f"Slide {idx} shape '{shape_name}' text has no TraceRef: '{text}'"))
+    _content, uncovered = coverage(entries, prs)
+    for idx, shape_name, text in uncovered:
+        v.append(_inv("INV-26", f"Slide {idx} shape '{shape_name}' text has no TraceRef: '{text}'"))
+    shape_names = {idx: {sh.name for sh in slide.shapes} for idx, slide in enumerate(prs.slides, start=1)}
     for e in entries:
         shape, slide_no = e.get("shape"), e.get("slide")
         if shape and slide_no in shape_names and shape not in shape_names[slide_no] and not str(e.get("element", "")).startswith("Talking point"):
             v.append(_inv("INV-26", f"Slide {slide_no} manifest entry '{e.get('element')}' names shape '{shape}', which is not on the slide"))
+    return v
+
+
+# =================================================================================================
+# INV-27: completeness
+# =================================================================================================
+ID_TOKEN_RE = re.compile(r"[A-Z]+-?\d+")
+
+
+def _slide_text(slide: Any) -> str:
+    parts: List[str] = []
+    for sh in slide.shapes:
+        if sh.has_text_frame:
+            parts.append(sh.text_frame.text)
+        if getattr(sh, "has_table", False) and sh.has_table:
+            for r in sh.table.rows:
+                parts.extend(c.text for c in r.cells)
+    return " ".join(parts)
+
+
+def check_inv27_completeness(prs: Any, index: SourceIndex) -> List[InvariantViolation]:
+    """INV-27 (DECK-07): slide 3 holds every gate, checkpoint, and deliverable ID of the Project Schedule; slide 4 every deliverable ID."""
+    v: List[InvariantViolation] = []
+    slides = list(prs.slides)
+    ps = index.sheets.get("Project Schedule")
+    sched_ids: List[str] = []
+    if ps and ps["header_idx"] is not None and len(slides) >= 3:
+        h = ps["headers"]
+        for r in ps["rows"][ps["header_idx"] + 1:]:
+            if h.get("Row Type") is None or r[h["Row Type"]] not in ("Milestone", "Checkpoint"):
+                continue
+            for col in ("Milestone ID", "Linked Deliverables"):
+                if col in h and h[col] < len(r):
+                    sched_ids.extend(ID_TOKEN_RE.findall(r[h[col]]))
+        text3 = _slide_text(slides[2])
+        for i in dict.fromkeys(sched_ids):
+            if not re.search(r"(?<![A-Za-z0-9-])" + re.escape(i) + r"(?![A-Za-z0-9])", text3):
+                v.append(_inv("INV-27", f"Slide 3 does not contain {i}, which is in the Workbook Project Schedule"))
+    deliv_ids: List[str] = []
+    for t in index.kit_sections.get("Deliverables and Acceptance Matrix", []):
+        if t and normalize_text(t[0][0]) == "ID":
+            deliv_ids.extend(normalize_text(r[0]) for r in t[1:] if r and normalize_text(r[0]))
+    if deliv_ids and len(slides) >= 4:
+        text4 = _slide_text(slides[3])
+        for i in deliv_ids:
+            if not re.search(r"(?<![A-Za-z0-9-])" + re.escape(i) + r"(?![A-Za-z0-9])", text4):
+                v.append(_inv("INV-27", f"Slide 4 does not contain {i}, which is in the Kit Deliverables and Acceptance Matrix"))
     return v
 
 
@@ -650,7 +681,14 @@ def check_inv32(prs: Any) -> List[InvariantViolation]:
                     v.append(_inv("INV-32", f"Slide {idx} card heading '{first.text}' wraps to more than one line"))
                 cx0, cy0, cx1, cy1 = _rect(in_card)
                 sx0, sy0, sx1, sy1 = _rect(sh)
-                inset_ok = all(abs(a - b) <= 0.015 for a, b in ((sx0 - cx0, L.CARD_INSET), (sy0 - cy0, L.CARD_INSET), (cx1 - sx1, L.CARD_INSET), (cy1 - sy1, L.CARD_INSET)))
+                shares_card = any(
+                    getattr(t, "has_table", False) and t.has_table and _rect(t)[0] >= cx0 - EPS and _rect(t)[2] <= cx1 + EPS and _rect(t)[1] >= cy0 - EPS and _rect(t)[3] <= cy1 + EPS
+                    for t in content
+                )
+                edges = [(sx0 - cx0, L.CARD_INSET), (sy0 - cy0, L.CARD_INSET), (cx1 - sx1, L.CARD_INSET)]
+                if not shares_card:
+                    edges.append((cy1 - sy1, L.CARD_INSET))
+                inset_ok = all(abs(a - b) <= 0.015 for a, b in edges)
                 if not inset_ok:
                     v.append(_inv("INV-32", f"Slide {idx} card text frame '{sh.name}' is not inset {L.CARD_INSET} in from its card"))
                 if not tf.word_wrap or tf.auto_size not in (MSO_AUTO_SIZE.NONE,) or tf.vertical_anchor != MSO_ANCHOR.TOP:

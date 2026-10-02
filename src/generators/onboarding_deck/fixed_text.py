@@ -49,6 +49,32 @@ TABLE_HEADERS = {
     5: ("ID", "Item", "Rating", "Owner", "Response", "Phase"),
 }
 
+# Slide 2 Key facts labels (the field labels shown in the Kit header table)
+KEY_FACT_LABELS = (
+    "Client Sponsor",
+    "Contract Type",
+    "Governance Tier",
+    "Start Date",
+    "Talent PM",
+    "Delivery Manager",
+    "PMO Lead",
+)
+
+# Kit section headings in Kit order, and Workbook sheets in Workbook order (slide 7 lists them in these orders)
+KIT_SECTION_ORDER = (
+    "Project Startup Charter",
+    "SOW Interpretation Summary",
+    "Milestone Delivery Plan",
+    "Scope Decomposition / Backlog Seed",
+    "Deliverables and Acceptance Matrix",
+    "Dependency and Assumption Log",
+    "RAID Log",
+    "Communications and Reporting Plan",
+    "Stakeholder and Responsibility Model",
+)
+SHEET_ORDER = ("Project Schedule", "WBS", "RAID Log")
+HEADER_TABLE = "Header table"
+
 # Labels placed in front of a traced value inside a card paragraph
 INLINE_LABELS = ("Review window:", "Client approver:")
 
@@ -69,17 +95,6 @@ TRACE_STATEMENT = "Every fact in this deck traces to these two documents. Each s
 KIT_LABEL = "Startup Kit"
 WORKBOOK_LABEL = "Project Delivery Workbook"
 
-# Fixed guidance sentences allowed only on the cover and Your Project Kit slides (DECK-09)
-COVER_GUIDANCE = (
-    "This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.",
-)
-KIT_SLIDE_GUIDANCE = (
-    "Both files sit in the same folder as this deck.",
-    "The Startup Kit is the approved baseline; changes to it go through the escalation path on slide 2.",
-    "The Project Delivery Workbook is the plan to keep current as work progresses.",
-    "Each slide's SOURCES note says which section or sheet to open for detail.",
-)
-
 # Residue patterns allowed in text that is otherwise fully covered by traced values
 OVERFLOW_PATTERN = re.compile(
     r"\+\d+ more(?::)?|\(see (?:Startup Kit|Project Delivery Workbook)(?: · [A-Za-z /&]+)?\)"
@@ -88,7 +103,7 @@ OVERFLOW_PATTERN = re.compile(
 
 def fixed_phrases() -> List[str]:
     """Every fixed phrase that may appear on slides 2 to 7 without a TraceRef, longest first."""
-    phrases = set(CARD_HEADINGS) | set(SUBHEADINGS) | set(INLINE_LABELS)
+    phrases = set(CARD_HEADINGS) | set(SUBHEADINGS) | set(INLINE_LABELS) | set(KEY_FACT_LABELS)
     phrases |= {NONE_IN_KIT, NONE_IN_WORKBOOK, KIT_DESCRIPTION, WORKBOOK_DESCRIPTION, TRACE_STATEMENT, PLACEHOLDER_TEXT}
     phrases |= set(SLIDE_TITLES.values())
     for hdrs in TABLE_HEADERS.values():

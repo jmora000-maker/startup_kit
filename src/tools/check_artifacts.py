@@ -14,6 +14,7 @@ import pptx
 
 from src.tools.invariant_violation import InvariantViolation
 from src.tools import deck_checks
+from src.generators.onboarding_deck.textrules import has_compliant_cut
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +88,8 @@ def check_deck_invariants(
     # Check zip parts and template text (INV-29)
     with zipfile.ZipFile(deck_path, "r") as z:
         slide_parts = [n for n in z.namelist() if n.startswith("ppt/slides/slide") and n.endswith(".xml")]
-        if len(slide_parts) != 6:
-            violations.append(InvariantViolation("INV-29", f"Deck contains {len(slide_parts)} slide parts, expected exactly 6", "Deck"))
+        if len(slide_parts) != 7:
+            violations.append(InvariantViolation("INV-29", f"Deck contains {len(slide_parts)} slide parts, expected exactly 7", "Deck"))
 
         for n in z.namelist():
             if n.startswith("ppt/slides/"):
@@ -97,9 +98,12 @@ def check_deck_invariants(
                     violations.append(InvariantViolation("INV-29", f"Template text 'DELIVERY GOVERNANCE' remains in '{n}'", "Deck"))
 
     prs = pptx.Presentation(str(deck_path))
+    file_names = [p.name for p in deck_path.parent.glob("*") if p.suffix in (".docx", ".xlsx") and "Checklist" not in p.name]
+    index = deck_checks.SourceIndex(kit_doc, wb, file_names)
+    known_names = index.names()
     slides_list = list(prs.slides)
-    if len(slides_list) != 6:
-        violations.append(InvariantViolation("INV-28", f"Deck has {len(slides_list)} slides, expected exactly 6", "Deck"))
+    if len(slides_list) != 7:
+        violations.append(InvariantViolation("INV-28", f"Deck has {len(slides_list)} slides, expected exactly 7", "Deck"))
 
     if len(slides_list) > 0 and slides_list[0].slide_layout.name != "CUSTOM_1":
         violations.append(InvariantViolation("INV-29", f"Slide 1 layout is '{slides_list[0].slide_layout.name}', expected 'CUSTOM_1'", "Deck"))
@@ -115,6 +119,7 @@ def check_deck_invariants(
         4: "Acceptance Criteria",
         5: "High-Risk Items",
         6: "Client Collaboration",
+        7: "Your Project Kit",
     }
 
     # Check slide texts, notes, and limits (INV-04, INV-28)
@@ -129,9 +134,9 @@ def check_deck_invariants(
 
         # Bullet count and word limits in notes
         tp_lines = [line.strip().lstrip("•").strip() for line in notes_text.splitlines() if line.strip().startswith("•")]
-        if s_idx == 1 and not (2 <= len(tp_lines) <= 4):
-            violations.append(InvariantViolation("INV-28", f"Slide 1 has {len(tp_lines)} talking points, expected 2 to 4", "Deck"))
-        elif s_idx > 1 and not (3 <= len(tp_lines) <= 6):
+        if s_idx in (1, 7) and not (2 <= len(tp_lines) <= 4):
+            violations.append(InvariantViolation("INV-28", f"Slide {s_idx} has {len(tp_lines)} talking points, expected 2 to 4", "Deck"))
+        elif 1 < s_idx < 7 and not (3 <= len(tp_lines) <= 6):
             violations.append(InvariantViolation("INV-28", f"Slide {s_idx} has {len(tp_lines)} talking points, expected 3 to 6", "Deck"))
 
         for tp in tp_lines:
@@ -168,9 +173,12 @@ def check_deck_invariants(
                         if c_txt in ("[UNASSIGNED]", "[TBD]", "[CONFIRMATION REQUIRED]", "None", "null", "NULL"):
                             violations.append(InvariantViolation("INV-28", f"Slide {s_idx} table cell contains raw placeholder: '{c_txt}'", "Deck"))
                         if r_idx > 0 and len(c_txt.split()) > 15 and not c_txt.startswith("+"):
-                            # If cell contains multiple lines (e.g. deliverables list), check each line
+                            # If cell contains multiple lines (e.g. deliverables list), check each line.
+                            # A line over 15 words is accepted only when DECK-05 allows no shorter cut: it holds a
+                            # whole name (names are never cut) or has no sentence or clause boundary within its
+                            # first 15 words (DECK-05 wins).
                             lines = [ln.strip() for ln in c_txt.splitlines() if ln.strip()]
-                            if lines and all(len(ln.split()) <= 15 for ln in lines):
+                            if lines and all(len(ln.split()) <= 15 or not has_compliant_cut(ln, 15) or any(n in ln for n in known_names) for ln in lines):
                                 pass
                             else:
                                 violations.append(InvariantViolation("INV-28", f"Slide {s_idx} table cell R{r_idx}C{c_idx} exceeds 15 words: '{c_txt}'", "Deck"))
@@ -204,14 +212,13 @@ def check_deck_invariants(
                 violations.append(InvariantViolation("INV-27", f"Slide 5 risks table has {len(s5_tab.rows)-1} rows, exceeding capacity of 6", "Deck"))
 
     # INV-26 (strict), INV-31, INV-32: read the written files back (DECK-04, DECK-05, DECK-09, DECK-21)
-    index = deck_checks.SourceIndex(kit_doc, wb)
     if not manifest_path or not manifest_path.exists():
         violations.append(InvariantViolation("INV-26", "Trace manifest file is missing beside the deck", "Deck"))
         entries: List[Dict[str, Any]] = []
     else:
         entries, manifest_error = deck_checks.load_manifest_entries(manifest_path)
         violations.extend(deck_checks.check_inv26(entries, index, prs, manifest_error))
-    file_names = [p.name for p in deck_path.parent.glob("*") if p.suffix in (".docx", ".xlsx") and "Checklist" not in p.name]
+    violations.extend(deck_checks.check_inv27_completeness(prs, index))
     violations.extend(deck_checks.check_inv31(prs, entries, index.names(), file_names))
     violations.extend(deck_checks.check_inv32(prs))
 

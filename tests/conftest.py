@@ -2105,3 +2105,11 @@ def arc_overextracted() -> StartupKitBaseline:
     with open(baseline_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return StartupKitBaseline.model_validate(data)
+
+
+@pytest.fixture(scope="module")
+def arc_bundle(tmp_path_factory):
+    """Kit, Workbook, and deck for the ARC fixture, built once per test module (Rev 10 deck tests)."""
+    from tests.deck_bundle import build_bundle
+
+    return build_bundle(tmp_path_factory.mktemp("arc_bundle"), "arc_genomics")

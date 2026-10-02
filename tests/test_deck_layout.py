@@ -107,3 +107,150 @@ def test_inv32_flags_runs_without_an_explicit_font_size():
     b = slides[1].shapes.add_textbox(Inches(0.83), Inches(1.7), Inches(3), Inches(1))
     b.text_frame.text = "Text with no explicit size"
     assert any("no explicit font size" in m for m in _inv32(prs))
+
+
+# ---------------------------------------------------------------------------------------------
+# DECK-21 on the written ARC deck
+# ---------------------------------------------------------------------------------------------
+import pytest
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
+from pptx.oxml.ns import qn
+
+from src.generators.onboarding_deck import layout as L
+from tests.deck_bundle import FIXTURES, build_bundle, card_texts, slide_tables
+
+
+def _inches(emu):
+    return emu / 914400.0
+
+
+def _cards(slide):
+    return [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and s.name.startswith("Card:")]
+
+
+def test_inv32_passes_on_every_content_slide_of_every_fixture(tmp_path):
+    for name in FIXTURES:
+        bundle = build_bundle(tmp_path / name, name)
+        assert [str(v) for v in deck_checks.check_inv32(bundle["prs"])] == [], name
+
+
+def test_card_text_frames_follow_deck_21_1(arc_bundle):
+    checked = 0
+    for idx in range(1, 7):
+        slide = arc_bundle["prs"].slides[idx]
+        for card in _cards(slide):
+            frame = next(s for s in slide.shapes if s.name == card.name.replace("Card:", "Card text:"))
+            tf = frame.text_frame
+            assert tf.word_wrap is True and tf.auto_size == MSO_AUTO_SIZE.NONE and tf.vertical_anchor == MSO_ANCHOR.TOP
+            assert abs(_inches(frame.left - card.left) - 0.20) < 0.015
+            assert abs(_inches(frame.top - card.top) - 0.20) < 0.015
+            assert abs(_inches((card.left + card.width) - (frame.left + frame.width)) - 0.20) < 0.015
+            heading = tf.paragraphs[0]
+            assert L.wrap_lines(heading.text, _inches(frame.width), heading.runs[0].font.size.pt) == 1
+            assert heading.space_after.pt == 8
+            checked += 1
+    assert checked == 9  # 3 + 1 + 3 + 2 cards on slides 2, 4, 6, and 7
+
+
+def test_bullets_are_paragraph_bullets_not_typed_characters(arc_bundle):
+    slide = arc_bundle["prs"].slides[5]
+    bullets = 0
+    for sh in slide.shapes:
+        if sh.has_text_frame and sh.name.startswith("Card text:"):
+            for p in sh.text_frame.paragraphs[1:]:
+                assert not p.text.startswith("•"), "no typed bullet character"
+                pPr = p._p.pPr
+                if pPr is not None and pPr.find(qn("a:buChar")) is not None:
+                    assert pPr.find(qn("a:buChar")).get("char") == "•"
+                    assert pPr.get("marL") == str(round(0.17 * 914400)) and pPr.get("indent") == str(-round(0.17 * 914400))
+                    bullets += 1
+    assert bullets >= 10
+
+
+def test_body_spacing_and_minimum_fonts_in_cards(arc_bundle):
+    for idx in range(1, 7):
+        for sh in arc_bundle["prs"].slides[idx].shapes:
+            if sh.has_text_frame and sh.name.startswith("Card text:"):
+                for p in sh.text_frame.paragraphs[1:]:
+                    size = p.runs[0].font.size.pt
+                    assert size >= 10.5
+                    if size != 11 or p.runs[0].font.name != "Proxima Nova Semibold":
+                        pass
+                    if p.runs[0].font.name == "Calibri":
+                        assert p.space_after.pt == 4
+
+
+@pytest.mark.parametrize("idx, widths", [
+    (2, [2.00, 2.60, 1.90, 5.17]),
+    (3, [0.80, 6.00, 0.89]),
+    (4, [1.50, 3.70, 0.85, 1.60, 3.00, 1.02]),
+])
+def test_table_column_widths_header_and_row_heights(arc_bundle, idx, widths):
+    table = slide_tables(arc_bundle["prs"].slides[idx])[0].table
+    assert [round(_inches(c.width), 2) for c in table.columns] == widths
+    assert abs(_inches(table.rows[0].height) - 0.40) < 0.005
+    assert all(_inches(r.height) >= 0.30 - 0.005 for r in list(table.rows)[1:])
+    for cell in (table.cell(1, 0), table.cell(1, 1)):
+        assert round(_inches(cell.margin_left), 2) == 0.06 and round(_inches(cell.margin_right), 2) == 0.06
+        assert round(_inches(cell.margin_top), 2) == 0.04 and round(_inches(cell.margin_bottom), 2) == 0.04
+        assert cell.vertical_anchor == MSO_ANCHOR.TOP
+
+
+def test_key_facts_table_widths_and_key_value_style(arc_bundle):
+    shape = slide_tables(arc_bundle["prs"].slides[1])[0]
+    table = shape.table
+    assert [round(_inches(c.width), 2) for c in table.columns] == [1.35, 1.96]
+    assert table.first_row is False, "a key-value table has no header row"
+    label, value = table.cell(0, 0), table.cell(0, 1)
+    assert label.fill.fore_color.rgb == L_BAND and value.fill.fore_color.rgb == L_WHITE
+    assert (label.text_frame.paragraphs[0].runs[0].font.name, label.text_frame.paragraphs[0].runs[0].font.size.pt, label.text_frame.paragraphs[0].runs[0].font.bold) == ("Proxima Nova", 10, True)
+    assert (value.text_frame.paragraphs[0].runs[0].font.name, value.text_frame.paragraphs[0].runs[0].font.size.pt) == ("Calibri", 10)
+
+
+L_BAND = __import__("pptx.dml.color", fromlist=["RGBColor"]).RGBColor(0xF8, 0xFA, 0xFC)
+L_WHITE = __import__("pptx.dml.color", fromlist=["RGBColor"]).RGBColor(0xFF, 0xFF, 0xFF)
+
+
+@pytest.mark.parametrize("idx", [1, 2, 3, 4])
+def test_built_in_table_style_is_removed(arc_bundle, idx):
+    table = slide_tables(arc_bundle["prs"].slides[idx])[0].table
+    assert table._tbl.tblPr.find(qn("a:tableStyleId")) is None
+    assert table.horz_banding is False
+
+
+def test_overflow_row_is_one_merged_cell_across_all_columns(arc_bundle):
+    table = slide_tables(arc_bundle["prs"].slides[3])[0].table
+    last = list(table.rows)[-1]
+    origin = last.cells[0]
+    assert origin.is_merge_origin and origin.span_width == len(table.columns)
+    assert origin.text.startswith("+") and "more:" in origin.text
+    assert all(c.is_spanned for c in list(last.cells)[1:])
+
+
+def test_slide_3_deliverables_column_font_is_ten_or_nine(arc_bundle):
+    table = slide_tables(arc_bundle["prs"].slides[2])[0].table
+    sizes = {r.font.size.pt for row in list(table.rows)[1:] for p in row.cells[3].text_frame.paragraphs for r in p.runs}
+    assert sizes <= {9.0, 10.0}
+
+
+def test_estimate_matches_the_k_capacities_on_arc(arc_bundle):
+    """Slide 4: 1 sentence + 6 steps + 2 facts fit the left card; slide 6 shows 5 client roles then +N more."""
+    card = card_texts(arc_bundle["prs"].slides[3])["Card text: How acceptance works"]
+    assert len(card) == 1 + 1 + 6 + 2
+    roles = card_texts(arc_bundle["prs"].slides[5])["Card text: Client roles"]
+    assert len(roles) == 1 + 5 + 1
+
+
+def test_fit_falls_back_to_plus_n_more_never_to_overflow():
+    """DECK-21 (5): when text cannot fit at the minimum font, bullets move into a `+N more` line."""
+    from src.generators.onboarding_deck.builder import Block, bullet_block, fit_card, para, see_more
+    from src.generators.onboarding_deck.spec import BULLET, CardSpec, Run
+
+    items = [para(BULLET, Run("A long bullet about delivery scope, the client approver, and each milestone gate " * 2)) for _ in range(12)]
+    card = CardSpec("Client roles", 0.83, 1.70, 3.71, L.CARD_H)
+    fit_card(card, [bullet_block([], items, 12, lambda n: see_more(n, "Startup Kit"))])
+    assert card.body_pt >= 10.5
+    assert card.paras[-1].text.startswith("+") and "more" in card.paras[-1].text
+    inner_w, inner_h = L.card_inner(card.w, card.h)
+    assert L.frame_height_pt([L.Para(card.heading, card.heading_pt, 0, 8)] + [L.Para(p.text, card.body_pt, 0, 4, 0.17) for p in card.paras], inner_w) <= inner_h * 72

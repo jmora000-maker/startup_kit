@@ -1,43 +1,55 @@
-"""Traceability models and manifest utilities for Talent Team Onboarding Deck (DECK-04, DECK-05)."""
+"""Traceability models and manifest utilities for the Talent Team Onboarding Deck (DECK-04 to DECK-06)."""
 
-from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Any, Optional
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+KIT = "Kit"
+WORKBOOK = "Workbook"
 
 
-@dataclass
+@dataclass(frozen=True)
 class TraceRef:
-    """Trace reference linking a deck element back to a source artifact (DECK-04)."""
-    artifact: str  # "Startup Kit" | "Project Delivery Workbook"
-    locator: str   # Table name or Sheet name
-    key: str       # Row key, ID, or item label
-    field: str     # Field or column name
+    """Trace reference linking a deck element to a cell or row in the written Kit or Workbook (DECK-04).
+
+    artifact: `Kit` or `Workbook`. locator: the Kit section heading (or `Header table`) or the Workbook
+    sheet name. key: the row ID as it appears in the source, or the field label for single-value facts.
+    field: the column or field name.
+    """
+    artifact: str
+    locator: str
+    key: str
+    field: str
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "artifact": self.artifact,
-            "locator": self.locator,
-            "key": self.key,
-            "field": self.field,
-        }
+        return {"artifact": self.artifact, "locator": self.locator, "key": self.key, "field": self.field}
 
 
 @dataclass
 class TraceManifestEntry:
-    """Entry in the deck trace manifest for a displayed element."""
+    """One displayed element (a traced value, or a talking point) in the manifest (DECK-06)."""
     slide: int
+    shape: str
     element: str
     displayed_value: str
-    trace: TraceRef
+    traces: List[TraceRef]
+    values: Optional[List[str]] = None  # talking points: the traced values placed in the sentence
+    derived: Optional[str] = None  # "rating": recomputed from the traced Probability and Impact (DECK-20)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "slide": self.slide,
+            "shape": self.shape,
             "element": self.element,
             "displayed_value": self.displayed_value,
-            "trace": self.trace.to_dict(),
+            "traces": [t.to_dict() for t in self.traces],
         }
+        if self.values is not None:
+            d["values"] = list(self.values)
+        if self.derived:
+            d["derived"] = self.derived
+        return d
 
 
 @dataclass
@@ -46,16 +58,18 @@ class DeckTraceManifest:
     project_name: str
     entries: List[TraceManifestEntry] = field(default_factory=list)
 
-    def add_entry(self, slide: int, element: str, displayed_value: str, trace: Optional[TraceRef]) -> None:
-        if trace is not None and displayed_value != "":
-            self.entries.append(
-                TraceManifestEntry(
-                    slide=slide,
-                    element=element,
-                    displayed_value=displayed_value,
-                    trace=trace,
-                )
-            )
+    def add(
+        self,
+        slide: int,
+        shape: str,
+        element: str,
+        displayed_value: str,
+        traces: List[TraceRef],
+        values: Optional[List[str]] = None,
+        derived: Optional[str] = None,
+    ) -> None:
+        if traces and displayed_value != "":
+            self.entries.append(TraceManifestEntry(slide, shape, element, displayed_value, list(traces), values, derived))
 
     def to_dict(self) -> Dict[str, Any]:
         return {

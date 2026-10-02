@@ -1,199 +1,115 @@
-"""Tests for Deck traceability, manifest generation, and INV-26 verification (DECK-04, DECK-05, DECK-06, DECK-19, DECK-20, INV-26)."""
+"""Tests for deck traceability, the manifest, and INV-26 (DECK-04, DECK-05, DECK-06, DECK-10, DECK-19, DECK-20, DECK-22, INV-26)."""
 
+import copy
 import json
-from pathlib import Path
+
 import pytest
-import docx
-import openpyxl
 
-from src.core.models import StartupKitBaseline
-from src.generators.docx_generator import DocxGenerator
-from src.generators.pmo_workbook import export_pmo_workbook
-from src.generators.onboarding_deck import export_onboarding_deck, build_deck_model, write_onboarding_deck
-from src.generators.onboarding_deck.trace import TraceRef
-from src.tools.check_artifacts import check_deck_invariants, check_artifacts_directory
-from src.llm.validation import validate_and_repair_baseline
+from src.tools.check_artifacts import check_artifacts_directory, check_deck_invariants
+from tests.deck_bundle import FIXTURES, build_bundle
 
 
-@pytest.fixture
-def arc_artifacts(tmp_path):
-    """Generate Kit, Workbook, and Deck for ARC Genomics fixture."""
-    fixture_dir = Path("tests/fixtures/sow/arc_genomics")
-    baseline_file = fixture_dir / "baseline.json"
-    with open(baseline_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    baseline = StartupKitBaseline.model_validate(data)
-    validate_and_repair_baseline(baseline)
-
-    writer = DocxGenerator()
-    kit_path = writer.write_kit_docx(baseline, tmp_path)
-    wb_res = export_pmo_workbook(baseline, tmp_path)
-    deck_res = export_onboarding_deck(baseline, tmp_path)
-
-    return {
-        "baseline": baseline,
-        "tmp_path": tmp_path,
-        "kit_path": kit_path,
-        "wb_path": wb_res.file_path,
-        "deck_path": deck_res.file_path,
-        "manifest_path": deck_res.manifest_path,
-    }
+def _manifest(bundle):
+    return json.loads(bundle["manifest_path"].read_text(encoding="utf-8"))
 
 
-def test_inv26_passes_on_valid_deck(arc_artifacts):
-    """INV-26 passes on cleanly generated artifacts."""
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
-
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        arc_artifacts["manifest_path"],
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) == 0, f"Unexpected INV-26 violations: {inv26_violations}"
+def _check_with(bundle, manifest_data, tmp_path, name="broken.trace.json"):
+    path = tmp_path / name
+    path.write_text(json.dumps(manifest_data), encoding="utf-8")
+    out = check_deck_invariants(bundle["deck_path"], path, bundle["kit"], bundle["wb"])
+    return [str(v) for v in out if v.inv_id == "INV-26"]
 
 
-def test_inv26_fails_when_displayed_value_altered_by_one_word(arc_artifacts, tmp_path):
-    """INV-26 fails when a displayed value in the manifest is modified by one word."""
-    manifest_path = arc_artifacts["manifest_path"]
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest_data = json.load(f)
-
-    # Alter one entry's displayed value
-    for entry in manifest_data["entries"]:
-        if entry["trace"]["artifact"] == "Startup Kit" and len(entry["displayed_value"]) > 10:
-            entry["displayed_value"] = entry["displayed_value"] + " ExtraWord"
-            break
-
-    broken_manifest_path = tmp_path / "broken_value.trace.json"
-    with open(broken_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f)
-
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
-
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        broken_manifest_path,
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) > 0, "Expected INV-26 violation for altered displayed value"
-    assert "not found in Startup Kit" in str(inv26_violations[0])
+# --- the written manifest (DECK-04, DECK-06) -----------------------------------------------------
+def test_inv26_passes_on_a_valid_deck(arc_bundle):
+    assert [str(v) for v in check_deck_invariants(arc_bundle["deck_path"], arc_bundle["manifest_path"], arc_bundle["kit"], arc_bundle["wb"]) if v.inv_id == "INV-26"] == []
 
 
-def test_inv26_fails_when_trace_ref_points_to_missing_sheet(arc_artifacts, tmp_path):
-    """INV-26 fails when a TraceRef points to a non-existent sheet/locator."""
-    manifest_path = arc_artifacts["manifest_path"]
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest_data = json.load(f)
-
-    for entry in manifest_data["entries"]:
-        if entry["trace"]["artifact"] == "Project Delivery Workbook":
-            entry["trace"]["locator"] = "NonExistentSheet"
-            break
-
-    broken_manifest_path = tmp_path / "broken_sheet.trace.json"
-    with open(broken_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f)
-
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
-
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        broken_manifest_path,
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) > 0, "Expected INV-26 violation for missing workbook sheet"
+@pytest.mark.parametrize("name", FIXTURES)
+def test_inv26_passes_on_every_fixture(name, tmp_path):
+    bundle = build_bundle(tmp_path, name)
+    assert [str(v) for v in check_artifacts_directory(tmp_path) if v.inv_id == "INV-26"] == []
 
 
-def test_inv26_fails_when_element_has_no_trace_ref(arc_artifacts, tmp_path):
-    """INV-26 fails when an element entry has an empty/null TraceRef."""
-    manifest_path = arc_artifacts["manifest_path"]
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest_data = json.load(f)
-
-    manifest_data["entries"][0]["trace"] = None
-
-    broken_manifest_path = tmp_path / "missing_ref.trace.json"
-    with open(broken_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f)
-
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
-
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        broken_manifest_path,
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) > 0, "Expected INV-26 violation for missing TraceRef"
-    assert "has no TraceRef" in str(inv26_violations[0])
+def test_manifest_uses_real_keys_and_the_two_artifact_names(arc_bundle):
+    """L10: no invented keys such as 'M1 Step 1' or 'Title Row 3'; artifact is Kit or Workbook."""
+    data = _manifest(arc_bundle)
+    for e in data["entries"]:
+        assert e["shape"] and e["traces"]
+        for t in e["traces"]:
+            assert t["artifact"] in ("Kit", "Workbook")
+            assert not t["key"].startswith(("M1 Step", "Title Row"))
+    keys = {t["key"] for e in data["entries"] for t in e["traces"]}
+    assert {"M1", "DEL-07", "RAID-01", "COM-03", "1.1.7.1", "Client Sponsor", "Start Date"} <= keys
 
 
-def test_inv26_fails_when_text_is_paraphrased(arc_artifacts, tmp_path):
-    """INV-26 fails when text is paraphrased rather than a clause-boundary prefix."""
-    manifest_path = arc_artifacts["manifest_path"]
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest_data = json.load(f)
-
-    for entry in manifest_data["entries"]:
-        if entry["trace"]["artifact"] == "Startup Kit" and "Project Purpose" in entry["element"]:
-            entry["displayed_value"] = "This project aims to modernize genomic pipelines completely."
-            break
-
-    broken_manifest_path = tmp_path / "paraphrased.trace.json"
-    with open(broken_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f)
-
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
-
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        broken_manifest_path,
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) > 0, "Expected INV-26 violation for paraphrased text"
+def test_manifest_lists_every_talking_point_on_slides_2_to_6(arc_bundle):
+    data = _manifest(arc_bundle)
+    for slide in range(2, 7):
+        points = [e for e in data["entries"] if e["slide"] == slide and e["element"].startswith("Talking point")]
+        assert 3 <= len(points) <= 6
 
 
-def test_inv26_fails_when_rating_differs_from_deck20(arc_artifacts, tmp_path):
-    """INV-26 fails when a displayed rating disagrees with the DECK-20 rule."""
-    manifest_path = arc_artifacts["manifest_path"]
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest_data = json.load(f)
+def test_placeholders_are_traced_to_the_placeholder_in_the_source(arc_bundle):
+    """DECK-10: 'To be confirmed' carries its TraceRef and is accepted against the source placeholder."""
+    data = _manifest(arc_bundle)
+    tbc = [e for e in data["entries"] if e["displayed_value"] == "To be confirmed"]
+    assert tbc and all(e["traces"] for e in tbc)
 
-    for entry in manifest_data["entries"]:
-        if entry["trace"]["artifact"] == "Project Delivery Workbook" and entry["displayed_value"] == "High":
-            entry["displayed_value"] = "Low"  # Falsify rating
-            break
 
-    broken_manifest_path = tmp_path / "broken_rating.trace.json"
-    with open(broken_manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f)
+def test_only_displayed_kit_content_is_a_source(arc_bundle):
+    """DECK-19: delivery objectives and success criteria are in the model but not displayed by the Kit tables."""
+    data = _manifest(arc_bundle)
+    assert not any(t["field"] in ("Delivery Objectives", "Success Criteria") for e in data["entries"] for t in e["traces"])
 
-    kit_doc = docx.Document(str(arc_artifacts["kit_path"]))
-    wb = openpyxl.load_workbook(str(arc_artifacts["wb_path"]), data_only=False)
 
-    violations = check_deck_invariants(
-        arc_artifacts["deck_path"],
-        broken_manifest_path,
-        kit_doc,
-        wb,
-    )
-    inv26_violations = [v for v in violations if v.inv_id == "INV-26"]
-    assert len(inv26_violations) > 0, "Expected INV-26 violation for incorrect DECK-20 rating"
-    assert "differs from DECK-20" in str(inv26_violations[0])
+# --- broken manifests --------------------------------------------------------------------------
+def test_inv26_fails_when_a_displayed_value_is_altered_by_one_word(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    entry = next(e for e in data["entries"] if e["traces"][0]["artifact"] == "Kit" and len(e["displayed_value"]) > 10 and not e["element"].startswith("Talking"))
+    entry["displayed_value"] += " ExtraWord"
+    assert _check_with(arc_bundle, data, tmp_path)
+
+
+def test_inv26_fails_when_a_trace_points_to_a_missing_sheet(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    next(e for e in data["entries"] if e["traces"][0]["artifact"] == "Workbook")["traces"][0]["locator"] = "NonExistentSheet"
+    assert any("NonExistentSheet" in m for m in _check_with(arc_bundle, data, tmp_path))
+
+
+def test_inv26_fails_when_an_element_has_no_traceref(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    data["entries"][0]["traces"] = []
+    assert any("has no TraceRef" in m for m in _check_with(arc_bundle, data, tmp_path))
+
+
+def test_inv26_fails_when_text_is_paraphrased(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    next(e for e in data["entries"] if e["element"] == "Purpose")["displayed_value"] = "This project aims to modernize genomic pipelines completely."
+    assert _check_with(arc_bundle, data, tmp_path)
+
+
+def test_inv26_fails_when_the_rating_differs_from_deck_20(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    next(e for e in data["entries"] if e["element"] == "Rating")["displayed_value"] = "Low"
+    assert any("DECK-20" in m for m in _check_with(arc_bundle, data, tmp_path))
+
+
+def test_inv26_fails_on_an_invented_key(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    next(e for e in data["entries"] if e["element"].startswith("Acceptance step"))["traces"][0]["key"] = "M1 Step 1"
+    assert any("M1 Step 1" in m for m in _check_with(arc_bundle, data, tmp_path))
+
+
+def test_inv26_fails_when_the_manifest_is_missing(arc_bundle, tmp_path):
+    out = check_deck_invariants(arc_bundle["deck_path"], tmp_path / "absent.trace.json", arc_bundle["kit"], arc_bundle["wb"])
+    assert any(v.inv_id == "INV-26" and "missing" in str(v) for v in out)
+
+
+def test_inv26_fails_when_a_talking_point_entry_is_removed(arc_bundle, tmp_path):
+    data = copy.deepcopy(_manifest(arc_bundle))
+    data["entries"] = [e for e in data["entries"] if not (e["slide"] == 3 and e["element"] == "Talking point 1")]
+    assert any("talking point has no trace manifest entry" in m for m in _check_with(arc_bundle, data, tmp_path))
 
 
 # ---------------------------------------------------------------------------------------------

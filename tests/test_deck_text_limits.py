@@ -97,3 +97,31 @@ def test_inv28_fails_when_speaker_note_bullet_too_long(arc_baseline, tmp_path):
     inv28_violations = [v for v in violations if v.inv_id == "INV-28"]
     assert len(inv28_violations) > 0
     assert any("exceeds 30 words" in str(v) for v in inv28_violations)
+
+
+def test_inv28_accepts_a_cell_over_15_words_only_when_deck_05_allows_no_shorter_cut(arc_baseline, tmp_path):
+    """DECK-05 wins over the 15-word guide: a first clause with no earlier boundary is shown whole, not cut again."""
+    deck_res = export_onboarding_deck(arc_baseline, tmp_path)
+    prs = pptx.Presentation(str(deck_res.file_path))
+    table = [sh for sh in prs.slides[3].shapes if getattr(sh, "has_table", False) and sh.has_table][0].table
+    cell_run = table.cell(1, 1).text_frame.paragraphs[0].runs[0]
+    # a 20-word text with a boundary after its eighth word: the builder must have used that boundary
+    cell_run.text = "Negative tests pass and the scan is clean. Findings in Toptal-built components are remediated; findings in Client-built components are reported to the Client."
+    broken = tmp_path / "late_boundary.pptx"
+    prs.save(str(broken))
+    kit_doc = docx.Document(str(DocxGenerator().write_kit_docx(arc_baseline, tmp_path)))
+    wb = openpyxl.load_workbook(str(export_pmo_workbook(arc_baseline, tmp_path).file_path), data_only=False)
+    violations = [v for v in check_deck_invariants(broken, deck_res.manifest_path, kit_doc, wb) if v.inv_id == "INV-28"]
+    assert any("exceeds 15 words" in str(v) for v in violations)
+
+
+def test_inv28_expects_the_project_kit_title_and_talking_points_on_slide_7(arc_baseline, tmp_path):
+    deck_res = export_onboarding_deck(arc_baseline, tmp_path)
+    prs = pptx.Presentation(str(deck_res.file_path))
+    prs.slides[6].placeholders[0].text = "Something Else"
+    broken = tmp_path / "title7.pptx"
+    prs.save(str(broken))
+    kit_doc = docx.Document(str(DocxGenerator().write_kit_docx(arc_baseline, tmp_path)))
+    wb = openpyxl.load_workbook(str(export_pmo_workbook(arc_baseline, tmp_path).file_path), data_only=False)
+    violations = [str(v) for v in check_deck_invariants(broken, deck_res.manifest_path, kit_doc, wb) if v.inv_id == "INV-28"]
+    assert any("expected 'Your Project Kit'" in v for v in violations)
