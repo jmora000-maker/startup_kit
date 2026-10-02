@@ -71,12 +71,12 @@ WORKSTREAM_NAMES = {code: name for code, name, _ in TAXONOMY}
 WORKSTREAM_CODES = [code for code, _, _ in TAXONOMY]
 
 PHASE_LABEL_REGEX = re.compile(
-    r"^\s*(?P<code>P\d+[a-z]?)\s+(?P<name>[^:]*?)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?\s*:\s*(?P<scope>.+)$",
+    r"^\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)\s+(?P<name>[^:]*?)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?\s*:\s*(?P<scope>.+)$",
     re.IGNORECASE
 )
 
 WRAPPED_PHASE_LABEL_REGEX = re.compile(
-    r"^\s*(?:Milestone\s+\d+\s+)?\(\s*(?P<code>P\d+[a-z]?)\s+(?P<name>[^():]*?)\s*\)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?(?:[,;]?\s*[\w\s,;-]*?)?\s*:\s*(?P<scope>.+)$",
+    r"^\s*(?:Milestone\s+\d+\s+)?\(\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)\s+(?P<name>[^():]*?)\s*\)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?(?:\s+\w[\w\s]*?)?\s*:\s*(?P<scope>.+)$",
     re.IGNORECASE
 )
 
@@ -112,6 +112,8 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
     if match:
         code = match.group("code")
         raw_name = match.group("name").strip()
+        raw_name = re.sub(r'^\((.*)\)$', r'\1', raw_name).strip()
+        raw_name = re.sub(r',?\s*weeks?\s*[\d–— -]+', '', raw_name).strip()
         workstream = f"{code} {raw_name}" if raw_name else code
         milestone_name = clean_desc.split(":", 1)[0].strip()
         scope = match.group("scope").strip()

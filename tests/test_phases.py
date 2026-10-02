@@ -68,10 +68,16 @@ def test_week_range_parsing():
 
 
 def test_start_date_calculation(arc_baseline):
-    # With award date 2026-09-29 (Tuesday) -> first Monday on or after is 2026-10-05
-    calc_start, basis = calculate_start_date(arc_baseline, user_start_date=None)
+    # With no award date and today=2026-10-02 -> first Monday on or after is 2026-10-05
+    baseline_no_award = arc_baseline.model_copy(update={"sow_awarded_date": None})
+    calc_start, basis = calculate_start_date(baseline_no_award, user_start_date=None, today=date(2026, 10, 2))
     assert calc_start == date(2026, 10, 5)
     assert "Assumed" in basis
+
+    # With stated award date
+    calc_start_award, basis_award = calculate_start_date(arc_baseline, user_start_date=None)
+    assert calc_start_award == date(2026, 9, 29)
+    assert basis_award == "Provided"
 
     # With user start date override
     user_start = date(2026, 11, 2)
