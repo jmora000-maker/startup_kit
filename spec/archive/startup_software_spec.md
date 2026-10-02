@@ -1,7 +1,7 @@
 # Software Specification: Toptal PMO Startup Kit Generator
 
 ## 1. Executive Summary
-This application is a Python-based backend/CLI tool designed to automate the creation of the Toptal PMO Project Startup Kit. It ingests Statement of Work (SOW) documents (PDF, DOCX), pre-sales presentations (PPTX), and optional context files (TXT). Utilizing a Large Language Model (LLM) for textual fluency, data extraction, and synthesis, it generates standardized project management artifacts in Microsoft Word (`.docx`) format, saved to a designated `output/` directory.
+This application is a Python-based backend/CLI tool designed to automate the creation of the Toptal PMO Project Startup Kit. It ingests Statement of Work (SOW) documents (PDF, DOCX), pre-sales presentations (PPTX), and optional context files (TXT). Utilizing a Large Language Model (LLM) for textual fluency, data extraction, and synthesis, it generates standardized project management artifacts in Microsoft Word (`.docx`) format, saved to a designated `../../output` directory.
 
 This specification is explicitly driven by the business and functional requirements defined in the `startup_1.md` file, incorporating governance context from `PMO_Governance_Dual_Audience_v3_review.pptx` and the procedural format of the `G-01_On-Board_Talent_PM_DM_PMO_Checklist.docx`.
 
@@ -42,7 +42,7 @@ project_root/
 ```
 
 ## 5. Core Data Models (Pydantic)
-Based on `startup_1.md` Section 6, the following Pydantic models must be implemented in `src/core/models.py`.
+Based on `startup_1.md` Section 6, the following Pydantic models must be implemented in `../../src/core/models.py`.
 
 ```python
 from pydantic import BaseModel, Field
@@ -88,7 +88,7 @@ class StartupKitBaseline(BaseModel):
 ## 6. System Workflow & LLM Integration
 
 ### 6.1. Ingestion Phase
-*   The `IngestionService` scans the `inputs/` directory.
+* The `IngestionService` scans the `../../inputs` directory.
 *   **PDF/DOCX Extractor:** Extracts raw text from SOWs.
 *   **PPTX Extractor:** Specifically targets files like `PMO_Governance_Dual_Audience_v3_review.pptx` to extract governance context, speaker notes, and slide text.
 *   **TXT Extractor:** Reads `context.txt` for ad-hoc instructions or clarifications.
@@ -98,10 +98,10 @@ class StartupKitBaseline(BaseModel):
 *   **System Prompt:** Must instruct the LLM to act as a PMO Startup Kit generator, strictly adhering to the extraction rules from `startup_1.md`. It must prioritize finding missing data and explicitly tagging it as placeholders rather than hallucinating details.
 *   The LLM must be forced to output valid JSON matching the Pydantic `StartupKitBaseline` schema (using function calling or JSON mode).
 
-### 6.3. Generation Phase (`output/` directory)
+### 6.3. Generation Phase (`../../output` directory)
 *   The `DocumentGenerator` implements `IDocumentWriter`.
 *   It takes the validated Pydantic models and uses `python-docx` to generate formatted Word documents.
-*   **Output File:** The system generates a single, consolidated Word document in the `output/` directory named `[Project_Name]_Startup_Kit.docx`.
+* **Output File:** The system generates a single, consolidated Word document in the `../../output` directory named `[Project_Name]_Startup_Kit.docx`.
 *   **Checklist Alignment:** The generated document must include a formatted section mirroring the `G-01_On-Board_Talent_PM_DM_PMO_Checklist.docx` to facilitate the On-Board Talent PM / DM gate review.
 
 ## 7. Business Rules Enforcement

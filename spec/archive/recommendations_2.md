@@ -2,15 +2,15 @@
 
 ## 1. Purpose
 
-This specification defines the second phase of implementation recommendations resulting from a comprehensive audit of the Startup Kit Generator codebase and existing specifications against `spec/startup.md`.
+This specification defines the second phase of implementation recommendations resulting from a comprehensive audit of the Startup Kit Generator codebase and existing specifications against `startup.md`.
 
 The recommendations aim to maximize delivery assurance, eliminate operational ambiguity during the Readiness phase, ensure strict gatekeeping before project mobilization, and establish full compliance with the Toptal PMO Governance Model.
 
 ## 2. Executive Audit Summary & Key Findings
 
-An audit of the current implementation against `spec/startup.md` identified the following critical operational findings:
+An audit of the current implementation against `startup.md` identified the following critical operational findings:
 
-| Audit Domain | Current State | Requirement in `spec/startup.md` | Gap / Recommended Action |
+| Audit Domain | Current State | Requirement in `startup.md` | Gap / Recommended Action |
 |---|---|---|---|
 | **Gate Checklist Placement** | G-01 Checklist rendered at the end of Layer 3 (Assurance Pack). | G-01 is the mandatory Readiness Exit Gate and onboarding instrument (WR-01, WR-03, AR-12). | **Move G-01 Checklist & Gate Decision to the front** as the Executive Readiness Gateway & Gate Review. |
 | **PMO Stakeholder Model** | PMO Lead referenced in leadership fields and RACI matrix, but omitted from primary stakeholder entities. | PMO Lead and Director, PMO hold explicit decision rights, gate ownership, talent replacement authority, and escalation routes (AR-09, AR-10, RR-03, RR-07). | **Explicitly incorporate PMO** (PMO Lead, Director, PMO) as first-class stakeholders in models, extractions, and document tables. |
@@ -45,7 +45,7 @@ Placing the checklist at the front provides immediate visibility for the PMO Lea
 
 ### REC2-01.1 Document Structure Re-Ordering
 
-The Word document generator (`src/generators/docx_generator.py`) shall produce the document in the following revised sequence:
+The Word document generator (`../../src/generators/docx_generator.py`) shall produce the document in the following revised sequence:
 
 1. **Document Header & Metadata Block**
    - Project Name, Client Name, Contract Type, Governance Tier, 1-Day Creation SLA Status.
@@ -97,7 +97,7 @@ Formally integrate the PMO (specifically **PMO Lead** and **Director, PMO**) as 
 
 ## 2.2 Rationale
 
-`spec/startup.md` establishes that the PMO is not merely an external observer, but the primary author, assurance owner, and gatekeeper of project delivery:
+`startup.md` establishes that the PMO is not merely an external observer, but the primary author, assurance owner, and gatekeeper of project delivery:
 - **PMO Lead**: Owns kit creation within 1 day of delivery, delivery assurance, independent weekly health ratings, talent matching/replacement, work-at-risk approvals, and G-01 gate sign-off (RR-03, AR-09, AR-10).
 - **Director, PMO**: Formal escalation authority beyond the PMO Lead and confirming approver for Elevated governance tier engagements and policy exceptions (RR-07).
 
@@ -107,7 +107,7 @@ Omitting the PMO from the Stakeholder and Responsibility Model weakens delivery 
 
 ### REC2-02.1 Stakeholder Model & Defaults
 
-Update `src/core/models.py` and `src/llm/aggregator.py` so that generated stakeholder rosters always include explicit PMO stakeholder entries:
+Update `../../src/core/models.py` and `src/llm/aggregator.py` so that generated stakeholder rosters always include explicit PMO stakeholder entries:
 
 1. **PMO Lead**:
    - Organization: `Toptal PMO`
@@ -127,11 +127,11 @@ Update `src/core/models.py` and `src/llm/aggregator.py` so that generated stakeh
 
 ### REC2-02.2 Stakeholder Extraction & Prompt Updates
 
-Update `src/llm/prompts.py` and `src/llm/parsers.py` (STAKEHOLDERS prompt) to explicitly instruct the LLM to identify named PMO personnel, delivery leadership, customer counterparts, and map them to standard PMO governance decision rights.
+Update `../../src/llm/prompts.py` and `src/llm/parsers.py` (STAKEHOLDERS prompt) to explicitly instruct the LLM to identify named PMO personnel, delivery leadership, customer counterparts, and map them to standard PMO governance decision rights.
 
 ### REC2-02.3 RACI Alignment
 
-Ensure the RACI table strictly enforces the decision rights mandated in `spec/startup.md` Section 4.3.1 (AR-10):
+Ensure the RACI table strictly enforces the decision rights mandated in `startup.md` Section 4.3.1 (AR-10):
 - **Startup readiness (G-01 gate)**: PMO Lead (`R, A`), DM (`C`), Talent PM (`C`), Sales (`C`), Client (`I`).
 - **Talent staffing & replacement**: PMO Lead (`R, A`), DM (`C`), Talent PM (`C`), Sales (`C`), Client (`I`).
 - **Work at risk / commercial exceptions**: PMO Lead (`R, A`), DM (`I`), Talent PM (`I`), Sales (`C`), Client (`I`).
@@ -154,7 +154,7 @@ Implement a deterministic scoring engine that evaluates the completed baseline m
 
 ## 3.2 Rationale
 
-`spec/startup.md` NFR-04 mandates an objective readiness score to inform PMO Lead review without replacing human judgment. A quantitative score enables portfolio-level tracking and highlights high-risk areas (such as unassigned deliverable owners or missing acceptance criteria) before gate approval.
+`startup.md` NFR-04 mandates an objective readiness score to inform PMO Lead review without replacing human judgment. A quantitative score enables portfolio-level tracking and highlights high-risk areas (such as unassigned deliverable owners or missing acceptance criteria) before gate approval.
 
 ## 3.3 Functional Requirements
 
@@ -241,13 +241,13 @@ Implement explicit data structures and validation logic for the 9 Readiness work
 
 ## 5.2 Rationale
 
-`spec/startup.md` Section 5 defines a rigorous governance lifecycle within Readiness. Enforcing drafting SLAs and segregation of duties prevents unreviewed single-person approvals and guarantees independent oversight by Delivery Management and the PMO.
+`startup.md` Section 5 defines a rigorous governance lifecycle within Readiness. Enforcing drafting SLAs and segregation of duties prevents unreviewed single-person approvals and guarantees independent oversight by Delivery Management and the PMO.
 
 ## 5.3 Functional Requirements
 
 ### REC2-05.1 Readiness Workflow State Machine
 
-Model the 9 discrete workflow states in `src/core/models.py`:
+Model the 9 discrete workflow states in `../../src/core/models.py`:
 1. `Awarded`
 2. `Drafting in Progress` (PMO, within 1 day)
 3. `Review in Progress` (DM & Tech Lead review)
@@ -310,7 +310,7 @@ Implement `src/generators/export_payloads.py` to generate structured JSON and CS
 
 ### REC2-06.2 CLI Integration
 
-Add `--export-tools` flag to `main.py` allowing users to export the `.docx` document and all associated CSV/JSON toolkit seed files into `output/`.
+Add `--export-tools` flag to `../../main.py` allowing users to export the `.docx` document and all associated CSV/JSON toolkit seed files into `output/`.
 
 ## 6.4 Acceptance Criteria
 
@@ -343,13 +343,13 @@ The system shall never invent unstated contractual facts. Unconfirmed items must
 
 To maintain continuous delivery and test stability, implement the recommendations in the following sequential order:
 
-1. **Move G-01 Checklist & Gate Decision to Document Beginning** (`src/generators/docx_generator.py`).
-2. **Incorporate PMO Stakeholders & RACI Enhancements** (`src/core/models.py`, `src/llm/aggregator.py`, `src/llm/prompts.py`).
-3. **Implement Automated Startup Readiness Scoring Engine** (`src/core/models.py`, `src/llm/aggregator.py`).
-4. **Implement Contract Ambiguity & Conflict Detection Engine** (`src/llm/prompts.py`, `src/llm/parsers.py`, `src/core/models.py`).
-5. **Implement Readiness Workflow States & 1-Day SLA Tracking** (`src/core/models.py`, `src/llm/aggregator.py`).
-6. **Implement Downstream PMO Toolkit Export Payloads & CLI Options** (`src/generators/export_payloads.py`, `main.py`).
-7. **Comprehensive Unit & Integration Test Suite Validation** (`tests/`).
+1. **Move G-01 Checklist & Gate Decision to Document Beginning** (`../../src/generators/docx_generator.py`).
+2. **Incorporate PMO Stakeholders & RACI Enhancements** (`../../src/core/models.py`, `src/llm/aggregator.py`, `src/llm/prompts.py`).
+3. **Implement Automated Startup Readiness Scoring Engine** (`../../src/core/models.py`, `src/llm/aggregator.py`).
+4. **Implement Contract Ambiguity & Conflict Detection Engine** (`../../src/llm/prompts.py`, `src/llm/parsers.py`, `src/core/models.py`).
+5. **Implement Readiness Workflow States & 1-Day SLA Tracking** (`../../src/core/models.py`, `src/llm/aggregator.py`).
+6. **Implement Downstream PMO Toolkit Export Payloads & CLI Options** (`src/generators/export_payloads.py`, `../../main.py`).
+7. **Comprehensive Unit & Integration Test Suite Validation** (`../../tests`).
 
 ---
 

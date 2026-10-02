@@ -2,7 +2,7 @@
 
 Status: Proposed implementation specification (Enhanced & Ready for Implementation)
 Date: 2026-09-27
-Target: `src/extractors/pdf_extractor.py`, `src/core/models.py`, and `src/core/pdf_models.py`
+Target: `../../src/extractors/pdf_extractor.py`, `src/core/models.py`, and `src/core/pdf_models.py`
 Baseline application version: 0.1.1
 
 ---
@@ -19,8 +19,8 @@ This specification defines the complete technical design, reference models, vali
 
 ## 2. Current behavior & Problem Statement
 
-- `requirements.txt` specifies `pydantic>=2.0`.
-- `src/core/models.py` defines `DocumentSection` and `ExtractedDocument` as standard dataclasses with unrestricted `Dict[str, Any]` metadata dictionaries.
+- `../../requirements.txt` specifies `pydantic>=2.0`.
+- `../../src/core/models.py` defines `DocumentSection` and `ExtractedDocument` as standard dataclasses with unrestricted `Dict[str, Any]` metadata dictionaries.
 - `PDFExtractor.extract()` checks the input file via `_validate_file()`, opens it with PyMuPDF (`fitz.open()`), creates one `DocumentSection` per page, and joins nonempty page texts with `--- Page N ---` markers.
 - Each PDF section stores `page_number` and a four-element `rect` coordinate list. Document metadata stores `total_pages`, `title`, `author`, and `subject`.
 - Missing PyMuPDF metadata keys receive empty-string defaults; explicit `None` values are currently preserved as `None` or omitted.
@@ -39,8 +39,8 @@ This specification defines the complete technical design, reference models, vali
 
 ### Required (In Scope)
 
-1. **Typed PDF Metadata Schemas**: Define `PDFPageMetadata` and `PDFDocumentMetadata` in `src/core/pdf_models.py` with strict Pydantic v2 constraints.
-2. **Pydantic Extraction Models**: Migrate `DocumentSection` and `ExtractedDocument` in `src/core/models.py` from dataclasses to `BaseModel` with `ConfigDict(extra="forbid")`.
+1. **Typed PDF Metadata Schemas**: Define `PDFPageMetadata` and `PDFDocumentMetadata` in `../../src/core/pdf_models.py` with strict Pydantic v2 constraints.
+2. **Pydantic Extraction Models**: Migrate `DocumentSection` and `ExtractedDocument` in `../../src/core/models.py` from dataclasses to `BaseModel` with `ConfigDict(extra="forbid")`.
 3. **Authoritative PDF Invariant Validation**: Enforce document-level consistency (page count alignment, strict 1-based page sequence, and metadata schema validation) inside `ExtractedDocument` via a `@model_validator(mode="after")`.
 4. **Side-Effect-Free Failure Isolation**: Ensure failed validation leaves caller inputs unmutated.
 5. **Metadata Dictionary Compatibility**: Maintain `dict[str, Any]` interface on extraction models populated with validated, normalized metadata.
@@ -58,9 +58,9 @@ This specification defines the complete technical design, reference models, vali
 
 ---
 
-## 4. Shared Extraction Models (`src/core/models.py`)
+## 4. Shared Extraction Models (`../../src/core/models.py`)
 
-Convert `DocumentSection` and `ExtractedDocument` in `src/core/models.py` from `@dataclass` to Pydantic `BaseModel`. Preserve their class names, module location, field names, and export interfaces.
+Convert `DocumentSection` and `ExtractedDocument` in `../../src/core/models.py` from `@dataclass` to Pydantic `BaseModel`. Preserve their class names, module location, field names, and export interfaces.
 
 ### Model Field Contracts
 
@@ -106,9 +106,9 @@ class ExtractedDocument(BaseModel):
 
 ---
 
-## 5. PDF Metadata Contracts (`src/core/pdf_models.py`)
+## 5. PDF Metadata Contracts (`../../src/core/pdf_models.py`)
 
-Create `src/core/pdf_models.py` defining isolated, typed metadata models. This module MUST NOT import `src/core/models.py`, preventing circular dependencies.
+Create `../../src/core/pdf_models.py` defining isolated, typed metadata models. This module MUST NOT import `src/core/models.py`, preventing circular dependencies.
 
 ### 5.1 `PDFPageMetadata`
 
@@ -213,7 +213,7 @@ When an `ExtractedDocument` instance is validated (via constructor, `model_valid
      - Construct a normalized copy of the section: `s.model_copy(update={"metadata": validated_page_metadata.model_dump()})`.
 5. **Atomic Assignment**: Assign the validated/normalized metadata dict `self.metadata = validated_doc_metadata.model_dump()` and normalized sections list `self.sections = normalized_sections`.
 
-### 6.2 Reference Validator Implementation (`src/core/models.py`)
+### 6.2 Reference Validator Implementation (`../../src/core/models.py`)
 
 ```python
 from pydantic import model_validator
@@ -351,18 +351,18 @@ class ExtractedDocument(BaseModel):
 
 ## 9. Implementation Sequence & Detailed Steps
 
-1. **Phase 1: PDF Metadata Schemas (`src/core/pdf_models.py`)**
-   - Create `src/core/pdf_models.py` with `PDFPageMetadata` and `PDFDocumentMetadata`.
-   - Add unit tests in `tests/test_pdf_models.py` covering all coordinate, page number, string normalization, and extension preservation cases.
-2. **Phase 2: Shared Extraction Models & Validator (`src/core/models.py`)**
+1. **Phase 1: PDF Metadata Schemas (`../../src/core/pdf_models.py`)**
+   - Create `../../src/core/pdf_models.py` with `PDFPageMetadata` and `PDFDocumentMetadata`.
+   - Add unit tests in `../../tests/test_pdf_models.py` covering all coordinate, page number, string normalization, and extension preservation cases.
+2. **Phase 2: Shared Extraction Models & Validator (`../../src/core/models.py`)**
    - Convert `DocumentSection` and `ExtractedDocument` to `BaseModel` with `ConfigDict(extra="forbid")`.
    - Add the `@model_validator(mode="after")` invariant validation method in `ExtractedDocument`.
-   - Update `tests/test_models.py` with shared model validation tests and PDF invariant tests.
+   - Update `../../tests/test_models.py` with shared model validation tests and PDF invariant tests.
 3. **Phase 3: Repository Caller Audit & Fixes**
    - Audit all usages of `DocumentSection`, `ExtractedDocument`, and `dataclasses.asdict`.
-   - Verify `src/extractors/pdf_extractor.py`, `docx_extractor.py`, `pptx_extractor.py`, `txt_extractor.py`, and `service.py`.
+   - Verify `../../src/extractors/pdf_extractor.py`, `docx_extractor.py`, `pptx_extractor.py`, `txt_extractor.py`, and `service.py`.
 4. **Phase 4: Integration, Ingestion, & Error Handling Tests**
-   - Add end-to-end PDF extraction and ingestion tests in `tests/test_extractors.py`.
+   - Add end-to-end PDF extraction and ingestion tests in `../../tests/test_extractors.py`.
    - Verify resource cleanup on validation failure using mocks or temporary corrupted files.
    - Test JSON round-trip serialization and deserialization.
 5. **Phase 5: Full Regression Validation**
@@ -389,9 +389,9 @@ class ExtractedDocument(BaseModel):
 
 ---
 
-## 11. Separate Follow-up: Application Settings Migration (`src/config.py`)
+## 11. Separate Follow-up: Application Settings Migration (`../../src/config.py`)
 
-`src/config.py` currently uses a standard Python dataclass with import-time environment variable evaluation. As an independent follow-up, `AppConfig` can be migrated to `pydantic-settings` to provide centralized type casting, validation, and `.env` support.
+`../../src/config.py` currently uses a standard Python dataclass with import-time environment variable evaluation. As an independent follow-up, `AppConfig` can be migrated to `pydantic-settings` to provide centralized type casting, validation, and `.env` support.
 
 ### Proposed Architecture for Follow-up
 
@@ -437,4 +437,4 @@ class AppSettings(BaseSettings):
         return v
 ```
 
-This follow-up requires adding `pydantic-settings>=2.0` to `requirements.txt` and updating `src/config.py`. It is non-blocking and decoupled from the extraction validation changes.
+This follow-up requires adding `pydantic-settings>=2.0` to `../../requirements.txt` and updating `src/config.py`. It is non-blocking and decoupled from the extraction validation changes.

@@ -6,7 +6,7 @@ This specification defines the architectural design, functional requirements, an
 
 Currently, the generator ingests raw Statement of Work (SOW) documents (PDF, DOCX), presentation decks (PPTX), and context notes (TXT) to produce an initial `[Project_Name]_Startup_Kit.docx` report with an initial Startup Readiness Score and G-01 Gate Decision. In standard PMO governance workflows, the PMO Lead, Delivery Manager, and project stakeholders subsequently review and edit the generated `.docx` file—filling in previously unassigned leadership names, confirming milestone delivery dates, establishing objective acceptance criteria, assigning RAID log owners, and resolving open contract questions.
 
-This feature introduces an execution mode allowing users to re-ingest an updated `*_Startup_Kit.docx` file **exclusively** (bypassing all other input documents in `inputs/`), deterministically parse the updated project baseline, recalculate the Startup Readiness Score and dimensional breakdowns, re-evaluate the G-01 Gate Decision status, and regenerate an updated, fully synchronized Word report and downstream PMO toolkits.
+This feature introduces an execution mode allowing users to re-ingest an updated `*_Startup_Kit.docx` file **exclusively** (bypassing all other input documents in `../../inputs`), deterministically parse the updated project baseline, recalculate the Startup Readiness Score and dimensional breakdowns, re-evaluate the G-01 Gate Decision status, and regenerate an updated, fully synchronized Word report and downstream PMO toolkits.
 
 ---
 
@@ -14,11 +14,11 @@ This feature introduces an execution mode allowing users to re-ingest an updated
 
 ### 2.1 Problem Statement
 1. **Unclosed Feedback Loop**: When teams update the generated `*_Startup_Kit.docx` report to resolve gaps identified during the initial gate review, there is no automated mechanism to re-evaluate the document and recalculate the readiness score without re-ingesting the original input SOWs/decks.
-2. **Redundant Processing & Non-Determinism**: Ingesting the entire `inputs/` folder again causes unnecessary LLM extraction passes, potential token costs, and risks overwriting manual refinements made directly in the Word report.
+2. **Redundant Processing & Non-Determinism**: Ingesting the entire `../../inputs` folder again causes unnecessary LLM extraction passes, potential token costs, and risks overwriting manual refinements made directly in the Word report.
 3. **Workflow Friction**: Delivery teams lack an interactive CLI option to specify a target `*_Startup_Kit.docx` file for rapid re-evaluation during G-01 Mobilization Gate reviews.
 
 ### 2.2 Business & Operational Objectives
-- **Targeted Single-File Ingestion**: Ingest *only* the user-specified `*_Startup_Kit.docx` document without scanning or reading other files in `inputs/`.
+- **Targeted Single-File Ingestion**: Ingest *only* the user-specified `*_Startup_Kit.docx` document without scanning or reading other files in `../../inputs`.
 - **Deterministic Baseline Extraction**: Extract structured data (charter, deliverables, milestones, RAID log, talent roster, checklist items, and open questions) directly from the `.docx` tables and structured sections without mandatory LLM calls.
 - **Accurate Readiness Recalculation**: Recompute the 4 readiness dimensions (`mandatory_g01_controls`, `deliverable_acceptance_rigor`, `talent_staffing_readiness`, `commercial_risk_mitigation`), apply open exception penalties, and determine the updated G-01 Gate mobilization decision (Green, Amber, Red).
 - **Interactive & Headless CLI Support**: Provide an interactive prompt in the CLI to enter the path and name of the file to ingest, alongside non-interactive CLI flags for CI/CD automation.
@@ -108,7 +108,7 @@ When launched in default interactive mode (`python main.py`):
    ```text
    Enter path to updated *_Startup_Kit.docx file [default: output/Project_Startup_Kit.docx]: 
    ```
-   - If the user presses `Enter` on an empty line, the CLI falls back to the default path (or searches `output/` for the most recently modified `*_Startup_Kit.docx`).
+   - If the user presses `Enter` on an empty line, the CLI falls back to the default path (or searches `../../output` for the most recently modified `*_Startup_Kit.docx`).
    - If a valid relative or absolute file path is entered, the CLI resolves and validates the path.
    - If the file does not exist or does not have a `.docx` extension, a clear validation error is displayed and the prompt re-queries or exits gracefully.
 3. **Output Destination Prompt**:
@@ -131,7 +131,7 @@ The CLI shall support dedicated non-interactive command-line arguments:
 
 #### REC-DOCX-03: Single Document Ingestion Constraint
 When re-ingesting a `.docx` file:
-- The system **SHALL NOT** scan or ingest any files from `inputs/`.
+- The system **SHALL NOT** scan or ingest any files from `../../inputs`.
 - The system **SHALL NOT** execute raw document text chunking or multi-pass LLM SOW parsers.
 - Only the single specified `.docx` file is opened and processed.
 
@@ -139,7 +139,7 @@ When re-ingesting a `.docx` file:
 
 ### 5.2 DOCX Extraction & Deserialization Engine (`StartupKitDocxParser`)
 
-A new parser class `StartupKitDocxParser` in `src/extractors/startup_kit_docx_parser.py` shall implement deterministic parsing of the standard Section 4 Word document structure.
+A new parser class `StartupKitDocxParser` in `../../src/extractors/startup_kit_docx_parser.py` shall implement deterministic parsing of the standard Section 4 Word document structure.
 
 #### REC-DOCX-04: Metadata & Header Table Extraction
 - **Location**: Metadata table preceding Layer 1.
@@ -255,13 +255,13 @@ Readiness Score = (0.40 × Dim1 + 0.25 × Dim2 + 0.20 × Dim3 + 0.15 × Dim4) ×
   - Document Title and Metadata Header updated with recalculated workflow state.
   - Executive Readiness Gateway callout box updated with new Readiness Score percentage, dimensional progress bars, and gate status badge.
   - G-01 Checklist table updated with recalculated statuses and exception counts.
-- **PMO Tool Export**: If `--export-tools` is enabled, regenerates the downstream CSV and JSON seed payloads in `output/` with the recalculated data.
+- **PMO Tool Export**: If `--export-tools` is enabled, regenerates the downstream CSV and JSON seed payloads in `../../output` with the recalculated data.
 
 ---
 
 ## 6. Data Models and Interfaces
 
-### 6.1 Parser Interface (`src/core/interfaces.py`)
+### 6.1 Parser Interface (`../../src/core/interfaces.py`)
 
 ```python
 from abc import ABC, abstractmethod
@@ -277,7 +277,7 @@ class IStartupKitDocxParser(ABC):
         pass
 ```
 
-### 6.2 Recalculation Interface (`src/llm/aggregator.py`)
+### 6.2 Recalculation Interface (`../../src/llm/aggregator.py`)
 
 ```python
 class BaselineAggregator:
@@ -307,44 +307,44 @@ class BaselineAggregator:
 ## 8. Implementation Plan & File Modifications
 
 ### Phase 1: Core Models & Interfaces
-1. **`src/core/interfaces.py`**:
+1. **`../../src/core/interfaces.py`**:
    - Add `IStartupKitDocxParser` interface.
-2. **`src/core/models.py`**:
+2. **`../../src/core/models.py`**:
    - Ensure all models support serialization/deserialization with default fallback values.
 
 ### Phase 2: DOCX Deserialization Parser
-3. **`src/extractors/startup_kit_docx_parser.py`** (New File):
+3. **`../../src/extractors/startup_kit_docx_parser.py`** (New File):
    - Implement `StartupKitDocxParser(IStartupKitDocxParser)`.
    - Implement helper methods: `_parse_metadata_table()`, `_parse_g01_table()`, `_parse_deliverables_table()`, `_parse_milestones_table()`, `_parse_raid_table()`, `_parse_talent_table()`, `_parse_open_questions()`.
 
 ### Phase 3: Aggregator Recalculation Logic
-4. **`src/llm/aggregator.py`**:
+4. **`../../src/llm/aggregator.py`**:
    - Add `recalculate_readiness(baseline: StartupKitBaseline) -> StartupKitBaseline` method to isolate scoring logic for both fresh aggregations and re-ingestions.
 
 ### Phase 4: Orchestrator Integration
-5. **`src/orchestrator.py`**:
+5. **`../../src/orchestrator.py`**:
    - Update `StartupKitController` with `run_reingest(docx_path: Path, output_dir: Optional[Path], ...)` method.
    - Enforce single-file ingestion constraint (bypass `IngestionService.ingest_directory()`).
 
 ### Phase 5: CLI & Interactive Prompts
-6. **`main.py`**:
+6. **`../../main.py`**:
    - Add `--reingest-docx` / `--docx-file` argument to `parse_args()`.
    - Update interactive prompt workflow to allow selecting between New Generation Mode and DOCX Re-ingestion Mode.
    - Add `prompt_reingest_file()` helper for path resolution.
 
 ### Phase 6: Documentation & Testing
-7. **`tests/test_docx_reingestion.py`** (New File):
+7. **`../../tests/test_docx_reingestion.py`** (New File):
    - Unit tests for table parsing, empty fields, corrupted rows, and status mapping.
    - Integration tests verifying score increases when unassigned roles/dates/criteria are filled.
    - CLI tests verifying interactive and flag-driven re-ingestion.
-8. **`README.md`**:
+8. **`../../README.md`**:
    - Document the DOCX re-evaluation feature, interactive prompts, and CLI flag examples.
 
 ---
 
 ## 9. Verification & Acceptance Criteria
 
-- [ ] **Single Document Ingestion**: Running re-ingestion does not read any files from `inputs/` or invoke LLM extraction passes.
+- [ ] **Single Document Ingestion**: Running re-ingestion does not read any files from `../../inputs` or invoke LLM extraction passes.
 - [ ] **Interactive CLI**: Interactive prompt allows entering the path/name of `*_Startup_Kit.docx` with default fallback.
 - [ ] **Flag Support**: Non-interactive command `python main.py --reingest-docx output/Project_Startup_Kit.docx --non-interactive` successfully re-evaluates the baseline.
 - [ ] **Deterministic Score Recalculation**:

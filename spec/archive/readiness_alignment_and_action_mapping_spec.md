@@ -2,7 +2,7 @@
 
 **Status**: Proposed Architectural & Governance Specification  
 **Date**: 2026-09-27  
-**Target Modules**: `src/core/models.py`, `src/generators/checklist.py`, `src/generators/docx_generator.py`, `src/llm/aggregator.py`, `src/scoring/readiness_engine.py` (New)  
+**Target Modules**: `../../src/core/models.py`, `src/generators/checklist.py`, `src/generators/docx_generator.py`, `src/llm/aggregator.py`, `src/scoring/readiness_engine.py` (New)  
 **Baseline Application Version**: 0.1.1  
 
 ---
@@ -14,7 +14,7 @@ The **Startup Readiness Gateway (G-01)** is the primary operational filter in th
 ### Core Problems Identified in Current Implementation
 
 1. **Scoring Inconsistency and Duplication**:
-   - Startup Readiness Score calculations are duplicated across `_build_baseline_from_results()` and `recalculate_readiness_score()` in `src/llm/aggregator.py`, risking mathematical drift.
+   - Startup Readiness Score calculations are duplicated across `_build_baseline_from_results()` and `recalculate_readiness_score()` in `../../src/llm/aggregator.py`, risking mathematical drift.
    - Dimension penalties (e.g., open exception deductions and open question penalties) operate on opaque heuristics rather than transparent, reversible mathematical components.
 2. **Action Item Disconnect and Shallow Visibility**:
    - Open clarifications and open exceptions are treated as detached secondary artifacts. `baseline.open_questions` is currently output as a generic bulleted callout box with no mapping to owners, deadlines, or checklist criteria.
@@ -35,7 +35,7 @@ The **Startup Readiness Gateway (G-01)** is the primary operational filter in th
 
 ## 2. Standardized Startup Readiness Scoring Engine
 
-To eliminate calculation drift, all scoring logic is centralized into `src/scoring/readiness_engine.py` (or a dedicated scoring service inside `src/core/`), shared identically by ingestion, baseline aggregation, and Word re-ingestion recalculation.
+To eliminate calculation drift, all scoring logic is centralized into `../../src/scoring/readiness_engine.py` (or a dedicated scoring service inside `src/core/`), shared identically by ingestion, baseline aggregation, and Word re-ingestion recalculation.
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -134,7 +134,7 @@ $$D_4 = \max\left(0.0, \min\left(1.0, S_{\text{raid}} + S_{\text{commercial}} - 
 
 ---
 
-## 3. Data Model Specifications (`src/core/models.py`)
+## 3. Data Model Specifications (`../../src/core/models.py`)
 
 ### 3.1 `ActionRequiredItem` Model
 
@@ -215,7 +215,7 @@ Every possible gap identified during ingestion or review maps deterministically 
 
 ## 5. Document Structure & Rendering Sequence
 
-### 5.1 Revised Word Document Layout (`src/generators/docx_generator.py`)
+### 5.1 Revised Word Document Layout (`../../src/generators/docx_generator.py`)
 
 The layout is restructured to position the **Action Required Table** immediately after the **Gate Decision Dashboard** and before the **15-row Checklist Table**:
 
@@ -364,16 +364,16 @@ To ensure that the document and data structures remain fully synchronized, the s
 
 ## 8. Implementation Plan & Migration Pathway
 
-1. **Step 1: Create Centralized Scoring Engine** (`src/scoring/readiness_engine.py`):
+1. **Step 1: Create Centralized Scoring Engine** (`../../src/scoring/readiness_engine.py`):
    - Encapsulate the 4-dimension scoring formula into a dedicated `ReadinessScoringEngine` class.
-   - Refactor `src/llm/aggregator.py` to delegate `_build_baseline_from_results()` and `recalculate_readiness_score()` to this engine.
-2. **Step 2: Update Data Models** (`src/core/models.py`):
+   - Refactor `../../src/llm/aggregator.py` to delegate `_build_baseline_from_results()` and `recalculate_readiness_score()` to this engine.
+2. **Step 2: Update Data Models** (`../../src/core/models.py`):
    - Add `ActionRequiredItem` model.
    - Add `action_required_items: List[ActionRequiredItem]` to `StartupKitBaseline`.
-3. **Step 3: Implement Action Item Generation Logic** (`src/llm/aggregator.py`):
+3. **Step 3: Implement Action Item Generation Logic** (`../../src/llm/aggregator.py`):
    - Automatically compile `action_required_items` from identified exceptions, open questions, and contract ambiguities during baseline creation.
-4. **Step 4: Update Document Renderer** (`src/generators/checklist.py` and `src/generators/docx_generator.py`):
+4. **Step 4: Update Document Renderer** (`../../src/generators/checklist.py` and `src/generators/docx_generator.py`):
    - Implement `_render_action_required_table()` in `G01ChecklistRenderer`.
    - Reposition the Action Required table before the checklist table and remove the redundant post-checklist callout box in `DocxGenerator`.
 5. **Step 5: Execute Test Validation**:
-   - Create `tests/test_readiness_scoring.py` and update `tests/test_phase2.py`, `tests/test_docx_generator.py`, and `tests/test_docx_reingestion.py`.
+   - Create `tests/test_readiness_scoring.py` and update `../../tests/test_phase2.py`, `tests/test_docx_generator.py`, and `tests/test_docx_reingestion.py`.

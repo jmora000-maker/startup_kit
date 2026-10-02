@@ -2,7 +2,7 @@
 
 **Status**: Authoritative Architecture Specification  
 **Date**: 2026-09-27  
-**Target Modules**: `src/core/models.py`, `src/generators/docx_generator.py`, `src/generators/checklist.py`, `src/extractors/startup_kit_docx_parser.py`, `src/scoring/readiness_engine.py`, `src/scoring/cli_reporter.py`, `src/orchestrator.py`, `main.py`  
+**Target Modules**: `../../src/core/models.py`, `src/generators/docx_generator.py`, `src/generators/checklist.py`, `src/extractors/startup_kit_docx_parser.py`, `src/scoring/readiness_engine.py`, `src/scoring/cli_reporter.py`, `src/orchestrator.py`, `main.py`  
 **Baseline Application Version**: 0.1.1  
 
 ---

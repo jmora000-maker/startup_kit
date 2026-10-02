@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This specification defines five priority implementation recommendations for improving the Startup Kit Generator’s compliance with **Section 4: Artifact Requirements** of `spec/startup.md`.
+This specification defines five priority implementation recommendations for improving the Startup Kit Generator’s compliance with **Section 4: Artifact Requirements** of `startup.md`.
 
 The recommendations are intended to be reviewed before implementation. After review and approval, they should be implemented as incremental enhancements to the application.
 
@@ -733,7 +733,7 @@ The implementation of these recommendations shall be considered complete when:
 - G-01 checklist items map to the full artifact set;
 - dependencies, assumptions, RAID items, and decisions are distinct but linked;
 - source traceability is preserved in generated artifacts;
-- the output can be reviewed against Section 4 of `spec/startup.md` item by item.
+- the output can be reviewed against Section 4 of `startup.md` item by item.
 ```
 
 
