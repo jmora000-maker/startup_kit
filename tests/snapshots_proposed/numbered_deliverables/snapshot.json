@@ -5044,7 +5044,9 @@
           "Client prerequisites",
           "M1: Client provides schema specifications for legacy DB2 databases by week 2.",
           "M2: Phase 1 completed and accepted.",
-          "M3: Phase 2 completed and accepted.; Client audit committee sign-off for the reconciliation tool."
+          "M2: Client provides schema specifications for legacy DB2 databases by week 2.",
+          "M3: Phase 2 completed and accepted.",
+          "M3: Client audit committee sign-off for the reconciliation tool."
         ]
       ],
       "tables": [],

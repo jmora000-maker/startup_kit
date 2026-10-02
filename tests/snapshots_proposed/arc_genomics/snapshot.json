@@ -9234,9 +9234,12 @@
         [
           "Client prerequisites",
           "M1: Client provides design system access (code library, tokens, design files, guidelines, named contact)",
+          "M1: Client IdP team available for Azure AD / MSAL authentication",
+          "M1: Client-owned stories and code dependencies completed before related Toptal work begins",
+          "M1: Coding and delivery documentation standards provided on or before the start date",
           "M2: Client completes Snowflake data model story (HS-4781) before P2a begins",
-          "M3: Client provides UI/UX designs for the Milestone 3 screens by the Start Date",
-          "M4: Client scientist UAT groups available"
+          "M2: Client domain users and domain experts available for trait taxonomy",
+          "+6 more (see Project Delivery Workbook · Project Schedule)"
         ]
       ],
       "tables": [],
