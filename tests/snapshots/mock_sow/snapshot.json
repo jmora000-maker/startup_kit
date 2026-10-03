@@ -30,7 +30,7 @@
         ],
         [
           "1-Day SLA Status",
-          "Met (Drafted <= 1 day)",
+          "Not determinable - award date not stated",
           "Workflow State",
           "Ready for G-01 Gate Review"
         ]
@@ -54,7 +54,7 @@
         ],
         [
           "Turnaround SLA & PMO Authorization",
-          "SLA Met (Yes)"
+          "Not determinable - award date not stated [ACT-REQ-01: Log retroactive PMO waiver for SLA (+2.0% Recovery)]"
         ],
         [
           "Escalation Path & Decision Hierarchy",
@@ -104,7 +104,7 @@
         ],
         [
           "Ambiguities & Clarification Notes",
-          "• Automated pipeline UAT threshold not defined of project baseline."
+          "• Automated pipeline UAT threshold not defined of project baseline. [ACT-REQ-15: Resolve open questions and scope clarifications (+2.0% Recovery)]"
         ],
         [
           "Contract Ambiguities Logged",
@@ -490,7 +490,7 @@
       "rows_count": 1,
       "rows": [
         [
-          "G-01 READINESS GATE DECISION: APPROVED FOR MOBILIZE\nStartup Readiness Score: 98.7% — READY FOR GATE REVIEW (Green)\nScore Breakdown: Controls: 96.7% | Acceptance Rigor: 100.0% | Staffing: 100.0% | Commercial/Risk: 100.0%\n\n• Author / Drafter: Sarah Connor (PMO Lead)\n• Independent Reviewers: Jane Doe, Technical Lead\n• Approval Authority: Sarah Connor\n• 1-Day Creation SLA Status: Met (Drafted within 1 business day)\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 0 | Open Clarifications: 0\n• Workflow State: Ready for G-01 Gate Review\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 0 exceptions noted; open validation items flagged for Mobilize kickoff."
+          "G-01 READINESS GATE DECISION: APPROVED FOR MOBILIZE\nStartup Readiness Score: 98.7% — READY FOR GATE REVIEW (Green)\nScore Breakdown: Controls: 96.7% | Acceptance Rigor: 100.0% | Staffing: 100.0% | Commercial/Risk: 100.0%\n\n• Author / Drafter: Sarah Connor (PMO Lead)\n• Independent Reviewers: Jane Doe, Technical Lead\n• Approval Authority: Sarah Connor\n• 1-Day Creation SLA Status: Not determinable - award date not stated\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 0 | Open Clarifications: 1\n• Workflow State: Ready for G-01 Gate Review\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 0 exceptions noted; open validation items flagged for Mobilize kickoff."
         ]
       ]
     },
@@ -512,11 +512,11 @@
           "G01-01",
           "Startup Kit created within 1 day of delivery handoff (SLA)",
           "Project Startup Charter",
-          "Complete",
+          "Confirmation Required",
           "Sarah Connor",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "Startup Kit drafted on 2026-10-01 (Project awarded 2026-09-30). SLA Met."
+          "Startup Kit drafted on 2026-10-01. Award date not stated in SOW [CONFIRMATION REQUIRED]."
         ],
         [
           "G01-02",
@@ -652,11 +652,11 @@
           "G01-15",
           "Unresolved ambiguities and open questions listed",
           "Startup Readiness Checklist",
-          "Complete",
+          "Review Required",
           "Sarah Connor",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "No open questions flagged for mobilization."
+          "1 validation points logged for mobilization confirmation. [ACT-01]"
         ]
       ]
     },
@@ -738,9 +738,9 @@
         ],
         [
           "Q-01",
-          "No open clarification questions or unconfirmed scope items flagged for mobilization.",
-          "Delivery Leadership",
-          "Closed / Verified"
+          "What is the formal SOW contract award and execution date?",
+          "Delivery Manager / Client Sponsor",
+          "Open"
         ]
       ]
     },
@@ -848,7 +848,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after award; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -1143,7 +1143,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after award; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -2303,7 +2303,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after award; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -2490,6 +2490,33 @@
         "Baseline - Contract Clarifications",
         "CONF-01",
         ""
+      ],
+      [
+        "RAID-06",
+        "Issue",
+        "What is the formal SOW contract award and execution date?",
+        "Not cited",
+        "Open Question",
+        "Cross-phase",
+        "",
+        "",
+        "",
+        "Talent PM",
+        "",
+        "",
+        "=IF(OR(K11=\"\",L11=\"\"),\"\",IF(OR(AND(K11=\"High\",L11=\"High\"),AND(K11=\"High\",L11=\"Medium\"),AND(K11=\"Medium\",L11=\"High\")),\"High\",IF(AND(K11=\"Low\",L11=\"Low\"),\"Low\",\"Medium\")))",
+        "=IF(OR(K11=\"\",L11=\"\"),\"\",(IF(K11=\"High\",3,IF(K11=\"Medium\",2,1)))*(IF(L11=\"High\",3,IF(L11=\"Medium\",2,1))))",
+        "",
+        "",
+        "",
+        "Open",
+        "<DATE>",
+        "<DATE>",
+        "",
+        "",
+        "Baseline - Open Questions",
+        "Q-01",
+        ""
       ]
     ]
   },
@@ -2507,7 +2534,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Pfizer Analytics & Cloud Modernization for Pfizer Inc.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Pfizer Analytics & Cloud Modernization for Pfizer Inc.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 2,
@@ -2558,7 +2585,7 @@
           ],
           [
             "Start Date",
-            "2026-10-05 (Assumed - first Monday after award; confirm)"
+            "2026-10-05 (Assumed - first Monday after generation date; confirm)"
           ],
           [
             "Talent PM",
@@ -2574,7 +2601,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Purpose: Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: Jane Doe; Talent PM: John Smith; PMO Lead: Sarah Connor.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after award; confirm.\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Purpose: Migrate on-premise clinical trial analytics pipelines to AWS with automated CI/CD and SOC2 compliance.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: Jane Doe; Talent PM: John Smith; PMO Lead: Sarah Connor.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n• The project runs in 2 phases, from 2026-10-05 to 2026-11-30.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 3,
@@ -2719,7 +2746,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Monthly Business Review (MBR): Monthly.\n• Weekly Project Status Report (PSR): Weekly (Fridays).\n• Before Design & Architecture starts on 2026-10-05, the client prerequisite is: AWS IAM provisioning.\n• Before Deployment & Release starts on 2026-10-16, the client prerequisite is: Sample clinical dataset delivery.\n\nSOURCES: Startup Kit · Communications and Reporting Plan; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Monthly Business Review (MBR): Monthly.\n• Weekly Project Status Report (PSR): Weekly (Fridays).\n• Before Design & Architecture starts on 2026-10-05, the client prerequisite is: AWS IAM provisioning.\n• Before Deployment & Release starts on 2026-10-16, the client prerequisite is: Sample clinical dataset delivery.\n• 1 open questions are waiting on the client; the first is RAID-06.\n\nSOURCES: Startup Kit · Communications and Reporting Plan; Project Delivery Workbook · Project Schedule, RAID Log"
     },
     {
       "slide_index": 7,
