@@ -34,11 +34,21 @@ that wrote the citing line (git blame) is looked up, and the tool checks
 whether the name existed under tests/ at that commit. This separates a citation
 that was never valid from one that was valid when written and removed later.
 
+The spec's requirements register is checked the same way: in every table whose
+header row is ``| ID | ... | Status | Test |``, the last (Test) cell of each
+requirement row is scanned for ``test_<identifier>`` tokens (so ``test_raid_03.py``
+is checked as ``test_raid_03``), resolved with exactly the same rules as report
+citations. Non-test entries in that column (``Manual``, ``Snapshot``, ``INV-12``,
+``Review`` ...) contain no test name and are not checked. Each spec result is
+printed with its requirement ID and Status, so a test named for a requirement
+that is still ``New`` can be told apart from a wrong citation on a ``Done`` row.
+
 Not part of the default pytest run (reports are not code). Run on demand,
 before approving any final report as "verified":
 
     python -m src.tools.check_report_citations
     python -m src.tools.check_report_citations --history   # classify missing names via git
+    python -m src.tools.check_report_citations --spec ""   # reports only, skip the spec
 
 Exit code 0 = every citation resolves; 1 = at least one cited name is missing or ambiguous.
 """
@@ -59,6 +69,8 @@ MISSING = "MISSING"
 REPORT_SUFFIXES = {".md", ".txt"}
 TEST_NAME_REGEX = re.compile(r"\btest_[A-Za-z0-9_]+")
 CORRECTION_HEADING_REGEX = re.compile(r"^#{1,6}\s+Correction Note\b", re.IGNORECASE)
+SPEC_TABLE_HEADER_REGEX = re.compile(r"^\|\s*ID\s*\|.*\|\s*Test\s*\|\s*$")
+DEFAULT_SPEC = "spec/PMO_Startup_Kit_Consolidated_Spec.md"
 
 
 @dataclass
@@ -70,6 +82,8 @@ class Citation:
     line: str
     status: str = ""
     candidates: Tuple[str, ...] = ()
+    req_id: str = ""
+    req_status: str = ""
 
 
 def collect_known_test_names(tests_dir: Path) -> Set[str]:
@@ -100,6 +114,42 @@ def extract_citations(report: Path) -> List[Citation]:
             following = line[m.end():m.end() + 1]
             is_prefix = following in ("*", "/") or name.endswith("_")
             citations.append(Citation(report, line_no, name, is_prefix, line.strip()))
+    return citations
+
+
+def _table_cells(line: str) -> List[str]:
+    """Split a Markdown table row on unescaped pipes (``\|`` inside a cell is literal text)."""
+    return [cell.strip() for cell in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+
+
+def extract_spec_citations(spec: Path) -> List[Citation]:
+    """Find every test_<identifier> token in the Test column of the spec's requirement tables."""
+    text = spec.read_text(encoding="utf-8", errors="replace")
+    citations: List[Citation] = []
+    in_table = False
+    status_col = -1
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        if SPEC_TABLE_HEADER_REGEX.match(line):
+            in_table = True
+            header = _table_cells(line)
+            status_col = header.index("Status") if "Status" in header else -1
+            continue
+        if not in_table:
+            continue
+        if not line.lstrip().startswith("|"):
+            in_table = False
+            continue
+        cells = _table_cells(line)
+        if all(set(c) <= set("-: ") for c in cells):
+            continue  # separator row
+        test_cell = cells[-1]
+        req_status = cells[status_col] if 0 <= status_col < len(cells) else ""
+        for m in TEST_NAME_REGEX.finditer(test_cell):
+            name = m.group(0)
+            following = test_cell[m.end():m.end() + 1]
+            is_prefix = following in ("*", "/") or name.endswith("_")
+            citations.append(Citation(spec, line_no, name, is_prefix, line.strip(),
+                                      req_id=cells[0], req_status=req_status))
     return citations
 
 
@@ -216,23 +266,33 @@ def git_history_status(citation: Citation, repo_root: Path) -> str:
     return f"{when}: did NOT exist in tests/ when cited" + ever_text
 
 
-def check_reports(reports_dir: Path, tests_dir: Path, by_prefix: Optional[Dict[Path, List[Citation]]] = None):
-    """Return ({report: [missing/ambiguous citations]}, {report: [acknowledged citations]}) for reports with unresolved names.
+def report_files(reports_dir: Path) -> List[Path]:
+    return [p for p in sorted(reports_dir.rglob("*")) if p.is_file() and p.suffix.lower() in REPORT_SUFFIXES]
 
-    If ``by_prefix`` is given, citations resolved by unique prefix are collected into it.
+
+def check_reports(reports_dir: Path, tests_dir: Path, by_prefix: Optional[Dict[Path, List[Citation]]] = None,
+                  spec: Optional[Path] = None, found: Optional[Dict[Path, List[Citation]]] = None):
+    """Return ({file: [missing/ambiguous citations]}, {file: [acknowledged citations]}) for files with unresolved names.
+
+    Scans every report under reports_dir and, if ``spec`` is given, the Test column of
+    the spec's requirement tables. If ``by_prefix`` is given, citations resolved by
+    unique prefix are collected into it; if ``found`` is given, exact matches are too.
     """
     known = collect_known_test_names(tests_dir)
     ever_existed = make_history_lookup(Path.cwd(), tests_dir)
     missing: Dict[Path, List[Citation]] = {}
     acknowledged: Dict[Path, List[Citation]] = {}
-    for report in sorted(reports_dir.rglob("*")):
-        if not report.is_file() or report.suffix.lower() not in REPORT_SUFFIXES:
-            continue
+    sources = [(report, extract_citations(report)) for report in report_files(reports_dir)]
+    if spec is not None:
+        sources.append((spec, extract_spec_citations(spec)))
+    for report, citations in sources:
         bad = []
-        for c in extract_citations(report):
+        for c in citations:
             c.status, c.candidates = resolve_citation(c, known, ever_existed)
             if c.status == FOUND_BY_PREFIX and by_prefix is not None:
                 by_prefix.setdefault(report, []).append(c)
+            elif c.status == FOUND and found is not None:
+                found.setdefault(report, []).append(c)
             elif c.status in (AMBIGUOUS, MISSING):
                 bad.append(c)
         if not bad:
@@ -252,6 +312,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--reports-dir", type=str, default="reports", help="Folder of reports to scan (default: reports)")
     parser.add_argument("--tests-dir", type=str, default="tests", help="Folder of tests to resolve names against (default: tests)")
     parser.add_argument("--history", action="store_true", help="For each missing name, classify it using git history of tests/")
+    parser.add_argument("--spec", type=str, default=DEFAULT_SPEC,
+                        help=f"Spec whose requirement-table Test column is also checked (default: {DEFAULT_SPEC}; '' to skip)")
+    parser.add_argument("--show-found", action="store_true", help="Also list every spec Test-column name that resolved exactly")
     args = parser.parse_args(argv)
 
     reports_dir = Path(args.reports_dir)
@@ -260,10 +323,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not d.is_dir():
             print(f"Error: Directory '{d}' does not exist.", file=sys.stderr)
             return 2
+    spec = Path(args.spec) if args.spec else None
+    if spec is not None and not spec.is_file():
+        print(f"Error: Spec file '{spec}' does not exist.", file=sys.stderr)
+        return 2
 
     by_prefix: Dict[Path, List[Citation]] = {}
-    missing, acknowledged = check_reports(reports_dir, tests_dir, by_prefix)
-    scanned = sum(1 for p in reports_dir.rglob("*") if p.is_file() and p.suffix.lower() in REPORT_SUFFIXES)
+    found: Dict[Path, List[Citation]] = {}
+    missing, acknowledged = check_reports(reports_dir, tests_dir, by_prefix, spec, found)
+    scanned = len(report_files(reports_dir)) + (1 if spec is not None else 0)
+    if spec is not None:
+        n_spec = len(extract_spec_citations(spec))
+        print(f"Spec: {n_spec} test name(s) found in the Test column of '{spec.as_posix()}'.")
 
     def _print(groups: Dict[Path, List[Citation]]) -> None:
         for report, cites in groups.items():
@@ -272,13 +343,19 @@ def main(argv: Optional[List[str]] = None) -> int:
                 kind = " (prefix)" if c.is_prefix else ""
                 quoted = " (inside quoted text)" if c.line.startswith(">") else ""
                 status = f" [{c.status}]" if c.status in (AMBIGUOUS, FOUND_BY_PREFIX) else ""
-                print(f"  line {c.line_no}: {c.name}{kind}{quoted}{status}")
+                req = f" (requirement {c.req_id}, Status: {c.req_status})" if c.req_id else ""
+                print(f"  line {c.line_no}: {c.name}{kind}{quoted}{status}{req}")
                 if c.status == FOUND_BY_PREFIX:
                     print(f"      resolved to: {c.candidates[0]}")
                 elif c.status == AMBIGUOUS:
                     print(f"      {len(c.candidates)} candidates: {', '.join(c.candidates)}")
                 if args.history and c.status in (AMBIGUOUS, MISSING):
                     print(f"      history: {git_history_status(c, Path.cwd())}")
+
+    if args.show_found and spec is not None and spec in found:
+        print(f"FOUND (exact): {len(found[spec])} spec Test-column name(s):")
+        _print({spec: found[spec]})
+        print()
 
     if by_prefix:
         total_prefix = sum(len(v) for v in by_prefix.values())
@@ -293,12 +370,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print()
 
     if not missing:
-        print(f"PASSED: every other test name cited in {scanned} report(s) under '{reports_dir}' exists under '{tests_dir}'.")
+        print(f"PASSED: every other test name cited in {scanned} file(s) (reports under '{reports_dir}'"
+              f"{' and the spec' if spec is not None else ''}) exists under '{tests_dir}'.")
         return 0
 
     total = sum(len(v) for v in missing.values())
     n_ambiguous = sum(1 for v in missing.values() for c in v if c.status == AMBIGUOUS)
-    print(f"FAILED: {total} cited test name(s) in {len(missing)} of {scanned} report(s) do not resolve under '{tests_dir}' "
+    print(f"FAILED: {total} cited test name(s) in {len(missing)} of {scanned} file(s) do not resolve under '{tests_dir}' "
           f"({total - n_ambiguous} missing, {n_ambiguous} ambiguous):")
     _print(missing)
     return 1
