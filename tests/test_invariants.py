@@ -59,8 +59,6 @@ def test_invariants_on_fixtures(name, tmp_path):
 
     oracle = load_oracle(name)
     violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
-    # Filter pending Revision 12 violations on unimproved baselines (fixed in Part 2)
-    violations = [v for v in violations if v.inv_id not in ("INV-33", "INV-34", "INV-35")]
     assert not violations, f"Invariant violations found for fixture '{name}': {[str(v) for v in violations]}"
 
 
