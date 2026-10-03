@@ -236,3 +236,25 @@ c700ffd chore(release): bump version to 0.7.0
 9d42cc7 updated oracle
 75383d6 DECK-21 (5): test and writeup for the cover title/subtitle boundary cases
 ```
+
+
+---
+
+## Correction Note (added 2026-10-03)
+
+*This note was appended after the original report. The content above is left unchanged so the history stays visible.*
+
+The report cited three test function names as passing evidence for INV-33, INV-34 and INV-35. They appear in "1. Summary of Revision 12 Fixes & Passing Evidence" (lines 17, 30 and 40) and in the "6. Verification Status of Spec Requirements" table (lines 213–215):
+
+- `test_invariants.py::test_inv_33_passes_on_phase_workstreams`
+- `test_invariants.py::test_inv_34_passes_when_stated_award_date_reflected`
+- `test_invariants.py::test_inv_35_passes_when_all_deliverables_have_review_window`
+
+**None of these tests has ever existed in the codebase.** Running `git log --all -S <name>` for each name returns exactly one commit, `e84792c` ("docs: add Rev 12 final report"), which is this report. No test code with any of these names has ever been committed.
+
+When this report was written, the real INV-33/34/35 checks were also filtered out of the default suite. `tests/test_invariants.py::test_invariants_on_fixtures` dropped every INV-33, INV-34 and INV-35 violation for every fixture. That filter came from commit `1fbbd6d`, with the comment "Filter pending Revision 12 violations on unimproved baselines (fixed in Part 2)". It stayed in place after Part 2 landed. Because INV-34 and INV-35 only run when an oracle sets `award_date_stated_in_sow: true` or `contract_wide_review_window`, and only `arc_application_implementation`'s oracle sets these keys, the default suite never checked real output against INV-34 or INV-35, and never checked `arc_application_implementation` against INV-33. The only automated coverage was the broken-input tests (`test_inv_33/34/35_fails_*`). They prove the checks can fire, not that real output passes them. So the "Verified" status given for INV-33/34/35 above was not backed by any automated evidence at the time.
+
+**Resolution:** the filter stayed in place until this correction.
+- Commit `eeeb513` removed it on 2026-10-03.
+- `test_invariants_on_fixtures` now checks all three invariants, unfiltered, on all six fixtures (`arc_genomics`, `arc_overextracted`, `arc_application_implementation`, `mock_sow`, `no_story_ids`, `numbered_deliverables`), each against its own oracle. All six pass with 0 violations.
+- This was found during the 2026-10-03 investigation into the INV-33/34/35 exclusion in `test_invariants_on_fixtures`.
