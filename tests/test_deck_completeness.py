@@ -80,3 +80,47 @@ def test_overflow_row_lists_every_omitted_id(arc_bundle):
     listed = [x.strip(" ,") for x in last.split("more:")[1].split("(see")[0].split(",") if x.strip()]
     assert int(last[1:last.index(" ")]) == len(listed)
     assert sorted(shown + listed) == [f"DEL-{n:02d}" for n in range(1, 20)]
+
+
+def test_slide5_capacity_counts_overflow_row_with_eight_risks(tmp_path):
+    """DECK-07, INV-27: 8 qualifying risks must produce 5 real rows + '+3 more' overflow row (6 total rows)."""
+    from src.core.models import StartupKitBaseline, RiskAssumption, ProjectStartupCharter
+    from src.generators.onboarding_deck.builder import build_deck_model
+    from src.generators.pmo_workbook.builder import build_workbook_model
+    from src.generators.onboarding_deck.writer import write_onboarding_deck
+
+    risks = [
+        RiskAssumption(id=f"RSK-0{i}", type="Risk", description=f"Risk number {i} with high impact", probability="High", impact="High", owner="Delivery Manager", mitigation=f"Mitigate {i}", workstream="P1")
+        for i in range(1, 9)
+    ]
+    baseline = StartupKitBaseline(project_name="Capacity Test 8", charter=ProjectStartupCharter(project_name="Capacity Test 8"), raid_items=risks)
+    wb = build_workbook_model(baseline)
+    model = build_deck_model(baseline, wb)
+    deck_path = write_onboarding_deck(model, tmp_path / "deck8.pptx")
+    prs = Presentation(str(deck_path))
+    tbl = slide_tables(prs.slides[4])[0].table
+    body_rows = list(tbl.rows)[1:]
+    assert len(body_rows) == 6, f"Expected 6 total body rows (5 real + 1 overflow), got {len(body_rows)}"
+    assert body_rows[-1].cells[0].text.startswith("+3 more: ")
+
+
+def test_slide5_capacity_boundary_case_with_six_risks(tmp_path):
+    """DECK-07, INV-27: Exactly 6 qualifying risks must show all 6 real rows with NO overflow row."""
+    from src.core.models import StartupKitBaseline, RiskAssumption, ProjectStartupCharter
+    from src.generators.onboarding_deck.builder import build_deck_model
+    from src.generators.pmo_workbook.builder import build_workbook_model
+    from src.generators.onboarding_deck.writer import write_onboarding_deck
+
+    risks = [
+        RiskAssumption(id=f"RSK-0{i}", type="Risk", description=f"Risk number {i} with high impact", probability="High", impact="High", owner="Delivery Manager", mitigation=f"Mitigate {i}", workstream="P1")
+        for i in range(1, 7)
+    ]
+    baseline = StartupKitBaseline(project_name="Capacity Test 6", charter=ProjectStartupCharter(project_name="Capacity Test 6"), raid_items=risks)
+    wb = build_workbook_model(baseline)
+    model = build_deck_model(baseline, wb)
+    deck_path = write_onboarding_deck(model, tmp_path / "deck6.pptx")
+    prs = Presentation(str(deck_path))
+    tbl = slide_tables(prs.slides[4])[0].table
+    body_rows = list(tbl.rows)[1:]
+    assert len(body_rows) == 6, f"Expected 6 real body rows, got {len(body_rows)}"
+    assert not body_rows[-1].cells[0].text.startswith("+"), "Boundary case (6 items) should have no overflow row"

@@ -238,7 +238,10 @@ def fit_rows(
 
     Returns the number of rows omitted.
     """
-    n = min(len(all_rows), capacity)
+    if len(all_rows) <= capacity:
+        n = len(all_rows)
+    else:
+        n = max(1, capacity - 1)
     while True:
         shown = all_rows[:n]
         rows = list(shown)
