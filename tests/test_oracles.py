@@ -5,29 +5,31 @@ import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from src.config import ORACLE_ALIAS_MAP
+
 ORACLES_DIR = Path("tests/oracles")
 
 
 def load_oracle(name: str) -> Optional[Dict[str, Any]]:
-    """Load an oracle JSON by fixture name from tests/oracles/ (ignoring drafts)."""
-    # Map common aliases
-    alias_map = {
-        "arc": "arc.json",
-        "arc_genomics": "arc.json",
-        "arc_run1": "arc.json",
-        "arc_run2": "arc.json",
-        "arc_run3": "arc.json",
-        "arc_run4": "arc.json",
-        "arc_overextracted": "arc.json",
-    }
-    filename = alias_map.get(name, f"{name}.json")
-    oracle_path = ORACLES_DIR / filename
-    if not oracle_path.exists():
-        return None
-    with open(oracle_path, "r", encoding="utf-8") as f:
-        content = f.read()
-        cleaned = re.sub(r',\s*([}\]])', r'\1', content)
-        return json.loads(cleaned)
+    """Load an oracle JSON by fixture name from tests/oracles/ (QA-12 exact-match-first, ignoring drafts)."""
+    # 1. Exact match candidate first (QA-12)
+    exact_path = ORACLES_DIR / f"{name}.json"
+    if exact_path.exists():
+        with open(exact_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+            return json.loads(cleaned)
+
+    # 2. Narrow explicit alias fallback (QA-12 / QA-08)
+    if name in ORACLE_ALIAS_MAP:
+        alias_path = ORACLES_DIR / ORACLE_ALIAS_MAP[name]
+        if alias_path.exists():
+            with open(alias_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                cleaned = re.sub(r',\s*([}\]])', r'\1', content)
+                return json.loads(cleaned)
+
+    return None
 
 
 def test_arc_oracle_structure():

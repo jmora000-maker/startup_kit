@@ -12,6 +12,7 @@ import docx
 import openpyxl
 import pptx
 
+from src.config import ORACLE_ALIAS_MAP
 from src.tools.invariant_violation import InvariantViolation
 from src.tools import deck_checks
 from src.generators.onboarding_deck.textrules import has_compliant_cut
@@ -67,21 +68,56 @@ def _resolve_oracle_inheritance(oracle: Optional[Dict[str, Any]]) -> Optional[Di
 
 
 def load_oracle_for_folder(folder_path: Path, project_name: str = "") -> Optional[Dict[str, Any]]:
-    """Load matching oracle from tests/oracles/ if one exists (ignoring drafts)."""
+    """Load matching oracle from tests/oracles/ if one exists (QA-12 exact-match-first, ignoring drafts)."""
     oracles_dir = Path("tests/oracles")
     if not oracles_dir.exists():
         return None
 
-    # Check for arc oracle
-    p_lower = project_name.lower()
-    folder_str = str(folder_path).lower()
-    if "arc" in p_lower or "genomics" in p_lower or "arc" in folder_str:
-        arc_path = oracles_dir / "arc.json"
-        if arc_path.exists():
-            with open(arc_path, "r", encoding="utf-8") as f:
+    def _read_oracle_file(file_path: Path) -> Optional[Dict[str, Any]]:
+        if file_path.exists() and file_path.is_file():
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 cleaned = re.sub(r',\s*([}\]])', r'\1', content)
                 return json.loads(cleaned)
+        return None
+
+    candidates: List[str] = []
+    if project_name:
+        p_clean = project_name.strip()
+        slug = re.sub(r'[^a-zA-Z0-9_\- ]+', '', p_clean)
+        slug = re.sub(r'[ _]+', '_', slug).lower()
+        if slug:
+            candidates.append(slug)
+        if p_clean.lower() not in candidates:
+            candidates.append(p_clean.lower())
+        if p_clean not in candidates:
+            candidates.append(p_clean)
+
+    folder_name = folder_path.name
+    if folder_name not in candidates:
+        candidates.append(folder_name)
+    if folder_name.lower() not in candidates:
+        candidates.append(folder_name.lower())
+
+    # 1. Exact match candidate first (QA-12)
+    for cand in candidates:
+        if not cand:
+            continue
+        oracle_path = oracles_dir / f"{cand}.json"
+        res = _read_oracle_file(oracle_path)
+        if res is not None:
+            return res
+
+    # 2. Narrow explicit alias fallback (QA-12 / QA-08)
+    for cand in candidates:
+        if not cand:
+            continue
+        if cand in ORACLE_ALIAS_MAP:
+            alias_path = oracles_dir / ORACLE_ALIAS_MAP[cand]
+            res = _read_oracle_file(alias_path)
+            if res is not None:
+                return res
+
     return None
 
 

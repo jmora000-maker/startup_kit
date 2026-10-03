@@ -26,6 +26,17 @@ ANTHROPIC_MODEL_ALIASES: dict[str, str] = {
     "claude-3-5-haiku-latest": "claude-haiku-4-5-20251001",
 }
 
+# QA-12 / QA-08: Fixture-to-oracle fallback alias map (used only when no exact fixture oracle file exists)
+ORACLE_ALIAS_MAP: dict[str, str] = {
+    "arc": "arc.json",
+    "arc_genomics": "arc.json",
+    "arc_run1": "arc.json",
+    "arc_run2": "arc.json",
+    "arc_run3": "arc.json",
+    "arc_run4": "arc.json",
+    "arc_overextracted": "arc.json",
+}
+
 
 def resolve_anthropic_model(model_name: Optional[str]) -> str:
     """Resolve legacy/retired model IDs or aliases to supported active model IDs."""
