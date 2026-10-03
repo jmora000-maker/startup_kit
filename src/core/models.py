@@ -51,6 +51,29 @@ def parse_flexible_date(v: Any) -> Optional[date]:
 
 FlexibleDate = Annotated[Optional[date], BeforeValidator(parse_flexible_date)]
 
+# VAL-11 provenance: set only when sow_awarded_date came from an explicit award/start date statement in the SOW.
+AWARD_DATE_SOURCE_STATED = "stated"
+AwardDateSource = Literal["stated"]
+
+
+def has_stated_award_date(baseline: Any) -> bool:
+    """True only when sow_awarded_date is set and carries VAL-11 'stated' provenance."""
+    return (
+        getattr(baseline, "sow_awarded_date", None) is not None
+        and getattr(baseline, "award_date_source", None) == AWARD_DATE_SOURCE_STATED
+    )
+
+
+# Stopgap for Kit re-ingestion: the Kit does not print the award date or its provenance, so a re-ingested Kit
+# keeps its own already-computed SLA verdict and G01-01 status instead of recomputing from an unprovenanced date.
+SLA_VERDICT_SOURCE_KIT_REINGESTED = "kit_reingested"
+SlaVerdictSource = Literal["kit_reingested"]
+
+
+def has_determinate_sla(baseline: Any) -> bool:
+    """VAL-05: SLA status is determinate for a stated award date, or a verdict preserved from a re-ingested Kit."""
+    return has_stated_award_date(baseline) or getattr(baseline, "sla_verdict_source", None) == SLA_VERDICT_SOURCE_KIT_REINGESTED
+
 
 def normalize_governance_tier(v: Any) -> Any:
     if not isinstance(v, str):
@@ -712,6 +735,8 @@ class StartupKitBaseline(BaseModel):
     readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
     workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
     sow_awarded_date: FlexibleDate = None
+    award_date_source: Optional[AwardDateSource] = None
+    sla_verdict_source: Optional[SlaVerdictSource] = None
     kit_drafted_date: FlexibleDate = None
     sla_met: bool = True
     author_name: str = "PMO Lead"

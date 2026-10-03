@@ -74,10 +74,16 @@ def test_start_date_calculation(arc_baseline):
     assert calc_start == date(2026, 10, 5)
     assert "Assumed" in basis
 
-    # With stated award date
-    calc_start_award, basis_award = calculate_start_date(arc_baseline, user_start_date=None)
+    # With stated award date (VAL-11 provenance)
+    baseline_stated = arc_baseline.model_copy(update={"award_date_source": "stated"})
+    calc_start_award, basis_award = calculate_start_date(baseline_stated, user_start_date=None)
     assert calc_start_award == date(2026, 9, 29)
     assert basis_award == "Provided"
+
+    # Award date without VAL-11 provenance is treated as no date
+    calc_start_unprov, basis_unprov = calculate_start_date(arc_baseline, user_start_date=None, today=date(2026, 10, 2))
+    assert calc_start_unprov == date(2026, 10, 5)
+    assert basis_unprov == "Assumed - first Monday after generation date; confirm"
 
     # With user start date override
     user_start = date(2026, 11, 2)

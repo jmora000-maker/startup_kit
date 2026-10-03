@@ -13,7 +13,7 @@ from src.core.interfaces import (
     IDocumentWriter,
     IStartupKitDocxParser,
 )
-from src.core.models import StartupKitBaseline, OutputSelection, RunResult
+from src.core.models import StartupKitBaseline, OutputSelection, RunResult, AWARD_DATE_SOURCE_STATED
 from src.extractors.service import IngestionService
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.extractors.date_extractor import extract_stated_award_date
@@ -262,6 +262,7 @@ class StartupKitController:
             decisions_ext=decisions,
             conflicts_ext=conflicts,
             sow_awarded_date=stated_award_date,
+            award_date_source=AWARD_DATE_SOURCE_STATED if stated_award_date else None,
         )
 
         # 3b. Extraction Validation Layer (Section 4, VAL-01 to VAL-07)

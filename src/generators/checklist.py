@@ -3,7 +3,7 @@
 from typing import List
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from src.core.models import StartupKitBaseline, ReadinessChecklistItem, ActionRequiredItem, CommercialGuardrail, ContractAmbiguityItem
+from src.core.models import StartupKitBaseline, ReadinessChecklistItem, ActionRequiredItem, CommercialGuardrail, ContractAmbiguityItem, has_determinate_sla
 from src.scoring.readiness_engine import ReadinessScoringEngine
 from src.generators.formatting import (
     add_section_heading,
@@ -152,7 +152,7 @@ class G01ChecklistRenderer:
         reviewers_str = ", ".join(baseline.reviewer_names or (gate_dec.reviewer_names if gate_dec else ["Delivery Manager", "Technical Lead"]))
         approver_str = baseline.approver_name or (gate_dec.approver_name if gate_dec else "PMO Lead")
         concurring_str = f" | Concurring Approver: {baseline.concurring_approver_name}" if baseline.concurring_approver_name else ""
-        if baseline.sow_awarded_date:
+        if has_determinate_sla(baseline):
             sla_str = "Met (Drafted within 1 business day)" if baseline.sla_met else "Breached (Exception Logged)"
         else:
             sla_str = "Not determinable - award date not stated"

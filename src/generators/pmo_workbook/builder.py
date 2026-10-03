@@ -14,6 +14,7 @@ from src.config import (
 )
 from src.generators.formatting import ACTION_TAG_REGEX
 from src.core.models import (
+    AWARD_DATE_SOURCE_STATED,
     StartupKitBaseline,
     Milestone,
     Deliverable,
@@ -401,7 +402,9 @@ def calculate_start_date(baseline: StartupKitBaseline, user_start_date: Optional
     if user_start_date is not None:
         return user_start_date, "Provided"
 
-    if baseline.sow_awarded_date is not None:
+    # Only a VAL-11 stated award date counts as provided. An award date without that provenance
+    # (e.g. the retired date.today()-1 aggregator fallback, or a re-ingested Kit) is treated as no date.
+    if baseline.sow_awarded_date is not None and baseline.award_date_source == AWARD_DATE_SOURCE_STATED:
         return baseline.sow_awarded_date, "Provided"
 
     if today is None:

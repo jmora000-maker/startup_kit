@@ -46,6 +46,8 @@ from src.core.models import (
     ContractConflictsExtraction,
     ReadinessWorkflowState,
     ActionRequiredItem,
+    AwardDateSource,
+    AWARD_DATE_SOURCE_STATED,
 )
 from src.scoring.readiness_engine import ReadinessScoringEngine
 
@@ -73,6 +75,7 @@ class BaselineAggregator:
         conflicts_ext: Optional[ContractConflictsExtraction] = None,
         sow_awarded_date: Optional[date] = None,
         kit_drafted_date: Optional[date] = None,
+        award_date_source: Optional[AwardDateSource] = None,
     ) -> StartupKitBaseline:
         """Combine extractions and apply validation and business rules."""
         questions: List[str] = [sanitize_report_text(q) for q in questions_ext.open_questions] if questions_ext else []
@@ -821,14 +824,15 @@ class BaselineAggregator:
 
         # 14. 1-Day Creation SLA Tracking & Segregation of Duties
         drafted_dt = kit_drafted_date or date.today()
-        if sow_awarded_date:
+        # VAL-05: SLA status is determinate only for an award date with VAL-11 'stated' provenance
+        if sow_awarded_date and award_date_source == AWARD_DATE_SOURCE_STATED:
             awarded_dt = sow_awarded_date
             sla_met = (drafted_dt - awarded_dt).days <= 1
             g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')} (Project awarded {awarded_dt.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
             g01_01_status = "Complete" if sla_met else "Exception Required"
             g01_01_approval = "Approved" if sla_met else "Exception Required"
         else:
-            awarded_dt = None
+            awarded_dt = sow_awarded_date
             sla_met = False
             g01_01_evidence = f"Startup Kit drafted on {drafted_dt.strftime('%Y-%m-%d')}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
             g01_01_status = "Confirmation Required"
@@ -1052,6 +1056,7 @@ class BaselineAggregator:
             contract_ambiguities=contract_ambiguities,
             sow_stories_catalogue=sow_stories_catalogue,
             sow_awarded_date=awarded_dt,
+            award_date_source=award_date_source if awarded_dt else None,
             kit_drafted_date=drafted_dt,
             sla_met=sla_met,
             author_name=author_name,

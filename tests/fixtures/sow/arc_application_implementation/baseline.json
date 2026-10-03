@@ -3955,6 +3955,7 @@
   },
   "workflow_state": "Clarification Pending",
   "sow_awarded_date": "2026-10-07",
+  "award_date_source": "stated",
   "kit_drafted_date": "2026-10-02",
   "sla_met": true,
   "author_name": "[UNASSIGNED - TO BE CONFIRMED]",

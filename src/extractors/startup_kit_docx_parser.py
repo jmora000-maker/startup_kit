@@ -11,6 +11,7 @@ from docx.table import Table, _Cell
 
 from src.core.interfaces import IStartupKitDocxParser
 from src.core.models import (
+    SLA_VERDICT_SOURCE_KIT_REINGESTED,
     StartupKitBaseline,
     ProjectStartupCharter,
     Deliverable,
@@ -132,6 +133,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         talent_pm = meta_dict.get("talent_pm") or "[UNASSIGNED - TO BE CONFIRMED]"
         pmo_lead = meta_dict.get("pmo_lead") or "[UNASSIGNED - TO BE CONFIRMED]"
         sla_met = meta_dict.get("sla_met", True)
+        # Stopgap: keep the Kit's own determinate SLA verdict; the Kit does not carry the award date's provenance
+        sla_verdict_source = SLA_VERDICT_SOURCE_KIT_REINGESTED if meta_dict.get("sla_determinate", True) else None
         workflow_state = meta_dict.get("workflow_state") or "Ready for G-01 Gate Review"
 
         src_ref = SourceReference(
@@ -418,6 +421,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             sow_awarded_date=date.today(),
             kit_drafted_date=date.today(),
             sla_met=sla_met,
+            sla_verdict_source=sla_verdict_source,
             author_name=resolved_pmo
         )
         ReadinessScoringEngine.synchronize_checklist_with_artifacts(baseline)
@@ -474,7 +478,9 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         elif "pmo" in label_clean:
             res["pmo_lead"] = value
         elif "1-day sla status" in label_clean or "sla status" in label_clean:
-            res["sla_met"] = not ("breached" in value.lower())
+            determinate = "not determinable" not in value.lower()
+            res["sla_determinate"] = determinate
+            res["sla_met"] = determinate and not ("breached" in value.lower())
         elif "workflow state" in label_clean:
             res["workflow_state"] = value
 

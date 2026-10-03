@@ -265,6 +265,7 @@ def sample_baseline() -> StartupKitBaseline:
         readiness_breakdown=gate_dec.readiness_breakdown,
         workflow_state="Approved for Mobilize",
         sow_awarded_date=date.today(),
+        award_date_source="stated",
         kit_drafted_date=date.today(),
         sla_met=True,
         author_name="Sarah Connor"

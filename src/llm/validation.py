@@ -15,6 +15,7 @@ from src.core.models import (
     TalentMember,
     TalentOnboardingRecord,
     CommercialGuardrail,
+    has_stated_award_date,
 )
 from src.config import (
     config,
@@ -390,12 +391,20 @@ def validate_and_repair_ids(baseline: StartupKitBaseline, findings: List[Validat
 
 
 def validate_award_date(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
-    """VAL-05: Award date provenance verification without synthetic fallback."""
-    if baseline.sow_awarded_date is None:
+    """VAL-05: Award date provenance verification without synthetic fallback.
+
+    Only an award date with VAL-11 'stated' provenance is treated as known; an unprovenanced date
+    (e.g. the retired date.today()-1 fallback) is treated as absent.
+    """
+    if not has_stated_award_date(baseline):
         findings.append(ValidationFinding(
             invariant_id="INV-18",
             severity="warning",
-            message="SOW Award Date is not specified in the contract or inputs."
+            message=(
+                "SOW Award Date is not specified in the contract or inputs."
+                if baseline.sow_awarded_date is None
+                else f"SOW Award Date {baseline.sow_awarded_date.isoformat()} has no stated provenance; treated as not specified."
+            )
         ))
         if baseline.open_questions is not None:
             q = "What is the formal SOW contract award and execution date?"

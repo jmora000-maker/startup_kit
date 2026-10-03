@@ -10,6 +10,8 @@ from src.core.models import (
     GateDecision,
     ActionRequiredItem,
     ReadinessWorkflowState,
+    has_stated_award_date,
+    has_determinate_sla,
 )
 
 
@@ -643,7 +645,7 @@ class ReadinessScoringEngine:
         if "G01-01" in chk_map:
             item = chk_map["G01-01"]
             draft_str = baseline.kit_drafted_date.strftime('%Y-%m-%d') if baseline.kit_drafted_date else date.today().strftime('%Y-%m-%d')
-            if baseline.sow_awarded_date:
+            if has_stated_award_date(baseline):
                 sla_met = baseline.sla_met
                 item.evidence = f"Startup Kit drafted on {draft_str} (Project awarded {baseline.sow_awarded_date.strftime('%Y-%m-%d')}). SLA {'Met' if sla_met else 'Breached'}."
                 if sla_met:
@@ -655,6 +657,9 @@ class ReadinessScoringEngine:
                     item.exception_required = True
                     if not item.exception_details:
                         item.exception_details = "Startup Kit creation exceeded 1 business day SLA."
+            elif has_determinate_sla(baseline):
+                # Re-ingested Kit: keep the Kit's own G01-01 status and evidence (no award date to recompute from)
+                pass
             else:
                 item.evidence = f"Startup Kit drafted on {draft_str}. Award date not stated in SOW [CONFIRMATION REQUIRED]."
                 item.status = "Confirmation Required"

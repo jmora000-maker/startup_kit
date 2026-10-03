@@ -254,6 +254,7 @@ def test_readiness_workflow_states_and_sla_and_segregation(phase2_source_ref):
         milestones_ext=MilestonesExtraction(milestones=[]),
         raid_ext=RAIDExtraction(items=[]),
         sow_awarded_date=awarded,
+        award_date_source="stated",
         kit_drafted_date=drafted
     )
 
@@ -272,6 +273,7 @@ def test_readiness_workflow_states_and_sla_and_segregation(phase2_source_ref):
         milestones_ext=MilestonesExtraction(milestones=[]),
         raid_ext=RAIDExtraction(items=[]),
         sow_awarded_date=awarded,
+        award_date_source="stated",
         kit_drafted_date=drafted_late
     )
 

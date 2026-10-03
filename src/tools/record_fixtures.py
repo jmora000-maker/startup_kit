@@ -5,6 +5,7 @@ import json
 import logging
 from pathlib import Path
 from src.config import config
+from src.core.models import AWARD_DATE_SOURCE_STATED
 from src.extractors.service import IngestionService
 from src.extractors.date_extractor import extract_stated_award_date
 from src.llm.client import LangChainLLMClient, CachingLLMClient, MockLLMClient
@@ -179,6 +180,7 @@ def record_fixture(fixture_info: dict, global_cache_dir: Path, target_base_dir: 
         decisions_ext=decisions,
         conflicts_ext=conflicts,
         sow_awarded_date=stated_award_date,
+        award_date_source=AWARD_DATE_SOURCE_STATED if stated_award_date else None,
     )
     
     # Save baseline JSON

@@ -10,7 +10,7 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 
 from src.core.interfaces import IDocumentWriter
-from src.core.models import StartupKitBaseline, ActionRequiredItem
+from src.core.models import StartupKitBaseline, ActionRequiredItem, has_determinate_sla
 from src.config import sanitize_report_text
 from src.generators.formatting import (
     add_section_heading,
@@ -376,7 +376,7 @@ class DocxGenerator(IDocumentWriter):
 
         # Metadata Header Table
         meta_table = doc.add_table(rows=5, cols=4)
-        if baseline.sow_awarded_date:
+        if has_determinate_sla(baseline):
             sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
         else:
             sla_status_str = "Not determinable - award date not stated"
@@ -433,7 +433,7 @@ class DocxGenerator(IDocumentWriter):
             g01_01_act = find_cell_action(baseline, "Project Startup Charter", "Turnaround SLA & PMO Authorization", used_actions=used_actions) if (not baseline.sla_met or any(a.checklist_id == "G01-01" for a in baseline.action_required_items)) else None
             g01_02_act = find_cell_action(baseline, "Project Startup Charter", "Delivery Model & Governance Tier", used_actions=used_actions)
 
-            if baseline.sow_awarded_date:
+            if has_determinate_sla(baseline):
                 sla_val = f"SLA Met ({'Yes' if baseline.sla_met else 'No - Retroactive PMO Waiver Required'})"
             else:
                 sla_val = "Not determinable - award date not stated [CONFIRMATION REQUIRED]"

@@ -148,6 +148,7 @@ def test_val_11_award_date_recognition():
     baseline = StartupKitBaseline(
         project_name="Stated Award Date Test",
         sow_awarded_date=date(2026, 10, 7),
+        award_date_source="stated",
         kit_drafted_date=date(2026, 10, 8),
         open_questions=[]
     )
