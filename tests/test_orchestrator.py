@@ -17,6 +17,8 @@ import sys
 
 from src.core.models import OutputSelection, RunResult
 
+MOCK_SOW_INPUTS_DIR = Path(__file__).parent / "fixtures" / "sow" / "mock_sow" / "inputs"
+
 
 def test_startup_kit_controller_e2e(populated_inputs_dir, tmp_path):
     output_dir = tmp_path / "output"
@@ -138,15 +140,15 @@ def test_controller_default_mock_inputs_dir(tmp_path, monkeypatch):
     )
 
     from src.config import config
-    # Run using the tracked mock inputs dir (tests/fixtures/sow/mock_sow/inputs)
-    if config.mock_inputs_dir.exists():
-        result = controller.run(
-            inputs_dir=None,
-            output_dir=output_dir,
-            outputs=OutputSelection(kit=True)
-        )
-        assert captured_inputs["dir"] == config.mock_inputs_dir
-        assert result.kit_path.exists()
+    # Point the default at the tracked fixture via an absolute path so the test is independent of the CWD
+    monkeypatch.setattr(config, "mock_inputs_dir", MOCK_SOW_INPUTS_DIR)
+    result = controller.run(
+        inputs_dir=None,
+        output_dir=output_dir,
+        outputs=OutputSelection(kit=True)
+    )
+    assert captured_inputs["dir"] == MOCK_SOW_INPUTS_DIR
+    assert result.kit_path.exists()
 
 
 def test_controller_default_mock_output_dir(tmp_path, monkeypatch):
@@ -172,10 +174,9 @@ def test_controller_default_mock_output_dir(tmp_path, monkeypatch):
     )
 
     from src.config import config
-    if config.mock_inputs_dir.exists():
-        controller.run(
-            inputs_dir=config.mock_inputs_dir,
-            output_dir=None,
-            outputs=OutputSelection(kit=True)
-        )
-        assert captured_paths["out"] == config.mock_output_dir
+    controller.run(
+        inputs_dir=MOCK_SOW_INPUTS_DIR,
+        output_dir=None,
+        outputs=OutputSelection(kit=True)
+    )
+    assert captured_paths["out"] == config.mock_output_dir
