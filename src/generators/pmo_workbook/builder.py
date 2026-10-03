@@ -1597,11 +1597,9 @@ def build_workbook_model(
                 accept_tasks.append(("Prepare milestone acceptance package and evidence", "Talent PM", "PM Best Practice", ""))
                 accept_tasks.append(("Support client user acceptance testing", "Delivery Manager", "PM Best Practice", ""))
                 
-                # Review task (v3 A6)
+                # Review task (v3 A6, WBS-05)
                 if per_ms_comm_item:
-                    c_name = clean_text_v2(per_ms_comm_item.name)
-                    c_aud = clean_text_v2(per_ms_comm_item.audience)
-                    t_name = f"{c_name} for {c_aud}" if c_aud else c_name
+                    t_name = clean_text_v2(per_ms_comm_item.name)
                     accept_tasks.append((t_name, "Delivery Manager", "Baseline - Communications Plan", per_ms_comm_item.id or ""))
                 else:
                     accept_tasks.append(("Hold milestone acceptance review with client approvers", "Delivery Manager", "PM Best Practice", ""))
