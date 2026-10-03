@@ -36,4 +36,5 @@ htmlcov/
 .ps1
 review_uploads/
 .output.txt
+review_ui_scratch/
 
