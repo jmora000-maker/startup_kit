@@ -10,7 +10,7 @@ from src.generators.onboarding_deck import export_onboarding_deck
 from src.tools.normalizers import normalize_artifacts
 from src.llm.validation import validate_and_repair_baseline
 
-FIXTURE_NAMES = ["arc_genomics", "arc_overextracted", "mock_sow", "no_story_ids", "numbered_deliverables"]
+FIXTURE_NAMES = ["arc_genomics", "arc_overextracted", "arc_application_implementation", "mock_sow", "no_story_ids", "numbered_deliverables"]
 
 
 @pytest.mark.parametrize("name", FIXTURE_NAMES)
