@@ -338,6 +338,9 @@ def _fit_cover(slide: Any) -> None:
     layout's. If that slack is not enough, the subtitle stops at the limit and INV-32 reports the overlap; the writer
     does not loosen anything.
 
+    The cover subtitle has its own shrink-to-fit rule (DECK-21 (5)): if the subtitle's own text does not fit on one line
+    at its default 23 pt, reduce it down to a minimum of 16 pt before any title-driven move-down is applied.
+
     The line estimate is the one INV-32 uses (the cover-only margin lives in src.tools.deck_checks, the single source
     of truth for it). It is imported here, not at module level, because deck_checks imports this package."""
     from src.tools.deck_checks import _inherited_insets_in, _inherited_size_pt, cover_title_height_in, cover_title_lines
@@ -357,11 +360,23 @@ def _fit_cover(slide: Any) -> None:
     if size != base:
         for run in title.text_frame.paragraphs[0].runs:
             run.font.size = Pt(size)
+
+    # DECK-21 (5): cover subtitle shrink-to-fit from layout size (23 pt) down to 16 pt
+    sub_text = sub.text_frame.text
+    sub_base = _inherited_size_pt(sub) or 23.0
+    sub_size = sub_base
+    sl, sr = _inherited_insets_in(sub)
+    sub_width_in = ls.width / 914400.0 - sl - sr
+    while sub_size > 16.0 and L.wrap_lines(sub_text, sub_width_in, sub_size) > 1:
+        sub_size -= 1.0
+    if sub_size != sub_base:
+        for p in sub.text_frame.paragraphs:
+            for run in p.runs:
+                run.font.size = Pt(sub_size)
+
     if cover_title_lines(text, width_in, size) > 1:
         wanted_top = lt.top + int(round(cover_title_height_in(text, width_in, size) * 914400))
-        sub_size = _inherited_size_pt(sub)
-        sl, sr = _inherited_insets_in(sub)
-        sub_need = int(round(L.text_height_pt(sub.text_frame.text, ls.width / 914400.0 - sl - sr, sub_size) / 72.0 * 914400)) if sub_size else 0
+        sub_need = int(round(L.text_height_pt(sub_text, sub_width_in, sub_size) / 72.0 * 914400))
         sub_bottom = ls.top + ls.height
         sub_top = max(ls.top, min(wanted_top, sub_bottom - sub_need))
         sub.left, sub.top, sub.width, sub.height = ls.left, sub_top, ls.width, sub_bottom - sub_top

@@ -250,6 +250,25 @@ def test_cover_title_needing_more_than_the_subtitle_slack_is_a_genuine_failure(t
     assert not any("outside its layout placeholder" in m for m in msgs), msgs
 
 
+def test_cover_subtitle_shrinks_to_fit_for_longer_client_name(tmp_path):
+    """DECK-21 (5), INV-32: subtitle shrinks down from 23 pt (to min 16 pt) to fit on one line for longer client names."""
+    from tests.deck_bundle import load_baseline
+    baseline = load_baseline("arc_application_implementation")
+    baseline.charter.client_name = "Syngenta Crop Protection, LLC"
+    prs = build_bundle(tmp_path, baseline=baseline)["prs"]
+    assert [str(v) for v in deck_checks.check_inv32(prs)] == []
+
+
+def test_cover_title_two_line_and_subtitle_shrink_compose_correctly(tmp_path):
+    """DECK-21 (5), INV-32: 2-line title and shrunk subtitle compose correctly on the cover without overlap or overflow."""
+    from tests.deck_bundle import load_baseline
+    baseline = load_baseline("arc_application_implementation")
+    baseline.project_name = "Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing and Supply Planning"
+    baseline.charter.client_name = "Syngenta Crop Protection, LLC"
+    prs = build_bundle(tmp_path, baseline=baseline)["prs"]
+    assert [str(v) for v in deck_checks.check_inv32(prs)] == []
+
+
 def test_card_text_frames_follow_deck_21_1(arc_bundle):
     checked = 0
     for idx in range(1, 7):
