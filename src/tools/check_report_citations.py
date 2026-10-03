@@ -43,12 +43,20 @@ citations. Non-test entries in that column (``Manual``, ``Snapshot``, ``INV-12``
 printed with its requirement ID and Status, so a test named for a requirement
 that is still ``New`` can be told apart from a wrong citation on a ``Done`` row.
 
+A ``New`` row describes what will be built, not a claim that something already
+passed. So an unresolved (missing or ambiguous) Test-column name on a row whose
+Status is ``New`` is listed separately as NOT YET BUILT, for information only,
+and never fails the run. ``--ignore-status`` changes which Status values are
+treated this way (repeatable; default ``New``; ``--ignore-status ""`` turns it
+off so every spec row counts). Report citations are not affected.
+
 Not part of the default pytest run (reports are not code). Run on demand,
 before approving any final report as "verified":
 
     python -m src.tools.check_report_citations
     python -m src.tools.check_report_citations --history   # classify missing names via git
     python -m src.tools.check_report_citations --spec ""   # reports only, skip the spec
+    python -m src.tools.check_report_citations --ignore-status ""   # 'New' spec rows fail too
 
 Exit code 0 = every citation resolves; 1 = at least one cited name is missing or ambiguous.
 """
@@ -71,6 +79,7 @@ TEST_NAME_REGEX = re.compile(r"\btest_[A-Za-z0-9_]+")
 CORRECTION_HEADING_REGEX = re.compile(r"^#{1,6}\s+Correction Note\b", re.IGNORECASE)
 SPEC_TABLE_HEADER_REGEX = re.compile(r"^\|\s*ID\s*\|.*\|\s*Test\s*\|\s*$")
 DEFAULT_SPEC = "spec/PMO_Startup_Kit_Consolidated_Spec.md"
+DEFAULT_IGNORE_STATUSES = ("New",)
 
 
 @dataclass
@@ -118,7 +127,7 @@ def extract_citations(report: Path) -> List[Citation]:
 
 
 def _table_cells(line: str) -> List[str]:
-    """Split a Markdown table row on unescaped pipes (``\|`` inside a cell is literal text)."""
+    r"""Split a Markdown table row on unescaped pipes (``\|`` inside a cell is literal text)."""
     return [cell.strip() for cell in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
 
 
@@ -266,18 +275,33 @@ def git_history_status(citation: Citation, repo_root: Path) -> str:
     return f"{when}: did NOT exist in tests/ when cited" + ever_text
 
 
+def _normalise_status(status: str) -> str:
+    return status.strip().strip("*_` ").strip().lower()
+
+
+def is_informational(citation: Citation, ignore_statuses: Set[str]) -> bool:
+    """True if the citation comes from a spec row whose Status marks it as not built yet."""
+    return bool(citation.req_id) and _normalise_status(citation.req_status) in ignore_statuses
+
+
 def report_files(reports_dir: Path) -> List[Path]:
     return [p for p in sorted(reports_dir.rglob("*")) if p.is_file() and p.suffix.lower() in REPORT_SUFFIXES]
 
 
 def check_reports(reports_dir: Path, tests_dir: Path, by_prefix: Optional[Dict[Path, List[Citation]]] = None,
-                  spec: Optional[Path] = None, found: Optional[Dict[Path, List[Citation]]] = None):
+                  spec: Optional[Path] = None, found: Optional[Dict[Path, List[Citation]]] = None,
+                  not_built: Optional[Dict[Path, List[Citation]]] = None,
+                  ignore_statuses=DEFAULT_IGNORE_STATUSES):
     """Return ({file: [missing/ambiguous citations]}, {file: [acknowledged citations]}) for files with unresolved names.
 
     Scans every report under reports_dir and, if ``spec`` is given, the Test column of
     the spec's requirement tables. If ``by_prefix`` is given, citations resolved by
     unique prefix are collected into it; if ``found`` is given, exact matches are too.
+    Unresolved spec citations on rows whose Status is in ``ignore_statuses`` (default
+    ``New``) are informational only: they go into ``not_built`` (if given), never into
+    the returned failures.
     """
+    ignored = {_normalise_status(s) for s in ignore_statuses if s and s.strip()}
     known = collect_known_test_names(tests_dir)
     ever_existed = make_history_lookup(Path.cwd(), tests_dir)
     missing: Dict[Path, List[Citation]] = {}
@@ -294,7 +318,11 @@ def check_reports(reports_dir: Path, tests_dir: Path, by_prefix: Optional[Dict[P
             elif c.status == FOUND and found is not None:
                 found.setdefault(report, []).append(c)
             elif c.status in (AMBIGUOUS, MISSING):
-                bad.append(c)
+                if is_informational(c, ignored):
+                    if not_built is not None:
+                        not_built.setdefault(report, []).append(c)
+                else:
+                    bad.append(c)
         if not bad:
             continue
         corrected = corrected_names(report)
@@ -315,7 +343,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--spec", type=str, default=DEFAULT_SPEC,
                         help=f"Spec whose requirement-table Test column is also checked (default: {DEFAULT_SPEC}; '' to skip)")
     parser.add_argument("--show-found", action="store_true", help="Also list every spec Test-column name that resolved exactly")
+    parser.add_argument("--ignore-status", action="append", default=None, metavar="STATUS",
+                        help="Spec Status whose unresolved Test-column names are informational only, never a failure "
+                             "(repeatable; default: New; pass '' to treat every Status as a failure)")
     args = parser.parse_args(argv)
+    ignore_statuses = list(DEFAULT_IGNORE_STATUSES) if args.ignore_status is None else args.ignore_status
 
     reports_dir = Path(args.reports_dir)
     tests_dir = Path(args.tests_dir)
@@ -330,7 +362,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     by_prefix: Dict[Path, List[Citation]] = {}
     found: Dict[Path, List[Citation]] = {}
-    missing, acknowledged = check_reports(reports_dir, tests_dir, by_prefix, spec, found)
+    not_built: Dict[Path, List[Citation]] = {}
+    missing, acknowledged = check_reports(reports_dir, tests_dir, by_prefix, spec, found,
+                                          not_built, ignore_statuses)
     scanned = len(report_files(reports_dir)) + (1 if spec is not None else 0)
     if spec is not None:
         n_spec = len(extract_spec_citations(spec))
@@ -369,6 +403,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         _print(acknowledged)
         print()
 
+    if not_built:
+        total_nb = sum(len(v) for v in not_built.values())
+        shown = ", ".join(s for s in ignore_statuses if s and s.strip())
+        print(f"NOT YET BUILT (informational, not an error): {total_nb} spec Test-column name(s) on rows "
+              f"with Status {shown} do not resolve yet:")
+        _print(not_built)
+        print()
+
     if not missing:
         print(f"PASSED: every other test name cited in {scanned} file(s) (reports under '{reports_dir}'"
               f"{' and the spec' if spec is not None else ''}) exists under '{tests_dir}'.")
@@ -376,8 +418,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     total = sum(len(v) for v in missing.values())
     n_ambiguous = sum(1 for v in missing.values() for c in v if c.status == AMBIGUOUS)
+    n_spec_bad = len(missing.get(spec, [])) if spec is not None else 0
     print(f"FAILED: {total} cited test name(s) in {len(missing)} of {scanned} file(s) do not resolve under '{tests_dir}' "
-          f"({total - n_ambiguous} missing, {n_ambiguous} ambiguous):")
+          f"({total - n_ambiguous} missing, {n_ambiguous} ambiguous; spec: {n_spec_bad}, reports: {total - n_spec_bad}):")
     _print(missing)
     return 1
 
