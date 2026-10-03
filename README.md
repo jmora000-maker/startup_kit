@@ -79,7 +79,7 @@ When updating an existing project, re-ingesting an approved `*_Startup_Kit.docx`
 All options as provided by `python main.py --help`:
 
 - `-h, --help`: Show help message and exit.
-- `--inputs-dir INPUTS_DIR`: Path to inputs directory containing SOWs and decks (default: `inputs/`, or `inputs/SOWs/Test` when `--mock` is used).
+- `--inputs-dir INPUTS_DIR`: Path to inputs directory containing SOWs and decks (default: `inputs/`, or `tests/fixtures/sow/mock_sow/inputs` when `--mock` is used).
 - `--output-dir OUTPUT_DIR`: Path to output directory for generated Word reports (default: `output/`, or `output/Reports/Test` when `--mock` is used).
 - `--output-file OUTPUT_FILE`: Explicit destination file path for regenerated Word report.
 - `--reingest-docx, --docx-file REINGEST_DOCX`: Path to existing `*_Startup_Kit.docx` to re-ingest and recalculate readiness score.

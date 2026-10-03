@@ -1,0 +1,1 @@
+Mock SOW placeholder used by offline tests. The mock LLM client supplies all extracted content.

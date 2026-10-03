@@ -444,7 +444,7 @@ def parse_args():
         "--inputs-dir",
         type=Path,
         default=None,
-        help="Path to inputs directory containing SOWs and decks (default: inputs/, or inputs/SOWs/Test when --mock is used)"
+        help="Path to inputs directory containing SOWs and decks (default: inputs/, or tests/fixtures/sow/mock_sow/inputs when --mock is used)"
     )
     parser.add_argument(
         "--output-dir",

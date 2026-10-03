@@ -138,7 +138,7 @@ def test_controller_default_mock_inputs_dir(tmp_path, monkeypatch):
     )
 
     from src.config import config
-    # Run using the real inputs/SOWs/Test or mock inputs dir
+    # Run using the tracked mock inputs dir (tests/fixtures/sow/mock_sow/inputs)
     if config.mock_inputs_dir.exists():
         result = controller.run(
             inputs_dir=None,

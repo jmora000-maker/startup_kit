@@ -3,10 +3,13 @@
 import re
 import copy
 from datetime import date
+from pathlib import Path
 from src.generators.pmo_workbook.builder import build_workbook_model
 from src.generators.pmo_workbook.writer import write_workbook
 from src.llm.client import MockLLMClient
 from src.orchestrator import StartupKitController
+
+MOCK_SOW_INPUTS_DIR = Path(__file__).parent / "fixtures" / "sow" / "mock_sow" / "inputs"
 
 
 def test_synthetic_references_for_arc_without_stories(arc_run3, tmp_path):
@@ -60,7 +63,7 @@ def test_mock_baseline_uses_section_sow_references(tmp_path):
     mock_client = create_mock_llm_client()
 
     controller = StartupKitController(llm_client=mock_client)
-    res = controller.run(output_dir=tmp_path)
+    res = controller.run(inputs_dir=MOCK_SOW_INPUTS_DIR, output_dir=tmp_path)
 
     assert res.workbook is not None and res.workbook.file_path.exists()
     trace = res.workbook.traceability["SOW References"]
@@ -84,7 +87,7 @@ def test_mock_baseline_without_references_generates_synthetic(tmp_path):
                 a.sow_reference = None
 
     controller = StartupKitController(llm_client=mock_client)
-    res = controller.run(output_dir=tmp_path)
+    res = controller.run(inputs_dir=MOCK_SOW_INPUTS_DIR, output_dir=tmp_path)
 
     assert res.workbook is not None and res.workbook.file_path.exists()
 

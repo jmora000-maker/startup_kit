@@ -100,7 +100,7 @@ def sanitize_report_text(text: Optional[str]) -> str:
 @dataclass
 class AppConfig:
     inputs_dir: Path = Path(os.getenv("INPUTS_DIR", "inputs"))
-    mock_inputs_dir: Path = Path(os.getenv("MOCK_INPUTS_DIR", "inputs/SOWs/Test"))
+    mock_inputs_dir: Path = Path(os.getenv("MOCK_INPUTS_DIR", "tests/fixtures/sow/mock_sow/inputs"))
     output_dir: Path = Path(os.getenv("OUTPUT_DIR", "output"))
     mock_output_dir: Path = Path(os.getenv("MOCK_OUTPUT_DIR", "output/Reports/Test"))
     default_provider: str = os.getenv("LLM_PROVIDER", "anthropic").lower()
