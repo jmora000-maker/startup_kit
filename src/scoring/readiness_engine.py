@@ -733,9 +733,10 @@ class ReadinessScoringEngine:
                 if not item.exception_details:
                     item.exception_details = "Deliverables pending acceptance criteria confirmation, owner assignment, or client approver."
 
-        # G01-04: Milestones with external dates and internal buffers
+        # G01-04: Milestones with external dates and internal buffers (CHK-07: counts gates only, matching Kit)
         if "G01-04" in chk_map:
             item = chk_map["G01-04"]
+            item.evidence = f"{len(baseline.milestones)} milestones mapped with external dates and internal buffer calculations."
             has_ms_defects = False
             if not baseline.milestones:
                 has_ms_defects = False
