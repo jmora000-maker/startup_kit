@@ -25,8 +25,10 @@ import streamlit as st  # noqa: E402
 
 from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
+from src.review_ui import state_persistence  # noqa: E402
 
 GOVERNANCE_TIERS = ["Guided", "Partnered", "Elevated"]
+FACT_REVIEW_STORE = "fact_review_values"
 
 
 @st.cache_resource
@@ -36,7 +38,7 @@ def _load():
     return baseline, review.build_fact_categories(baseline)
 
 
-def _render_field(field: review.FactField) -> str:
+def _render_field(field: review.FactField) -> None:
     st.markdown(f"**{field.label}**")
     if field.context:
         st.caption(field.context)
@@ -50,12 +52,19 @@ def _render_field(field: review.FactField) -> str:
     if field.source_location:
         st.caption(f"Source location (not a quote): {field.source_location}")
 
+    widget_key = f"edit::{field.key}"
+    # Each field's current value is persisted (see state_persistence) the instant it changes, so an
+    # edit survives switching away to the other page and back, even before "Save review" is clicked.
+    current = state_persistence.persisted_value(FACT_REVIEW_STORE, field.key, field.value)
+    on_change = lambda fk=field.key: state_persistence.sync_to_store(FACT_REVIEW_STORE, f"edit::{fk}", fk)  # noqa: E731
+
     if field.key == "project_identity.governance_tier" and field.value in GOVERNANCE_TIERS:
-        return st.selectbox("Your value", GOVERNANCE_TIERS, index=GOVERNANCE_TIERS.index(field.value),
-                            key=f"edit::{field.key}")
-    if field.self_describing:
-        return st.text_area("Your value", value=field.value, key=f"edit::{field.key}")
-    return st.text_input("Your value", value=field.value, key=f"edit::{field.key}")
+        index = GOVERNANCE_TIERS.index(current) if current in GOVERNANCE_TIERS else GOVERNANCE_TIERS.index(field.value)
+        st.selectbox("Your value", GOVERNANCE_TIERS, index=index, key=widget_key, on_change=on_change)
+    elif field.self_describing:
+        st.text_area("Your value", value=current, key=widget_key, on_change=on_change)
+    else:
+        st.text_input("Your value", value=current, key=widget_key, on_change=on_change)
 
 
 def _render_fact_review_page() -> None:
@@ -68,20 +77,34 @@ def _render_fact_review_page() -> None:
     )
     st.subheader(baseline.project_name)
 
-    submitted: dict = {}
-    notes: dict = {}
-    with st.form("fact_review"):
-        for cat in categories:
-            with st.expander(cat.title, expanded=cat.key in ("award_date", "named_roles")):
-                if cat.note:
-                    st.info(cat.note)
-                for field in cat.fields:
-                    with st.container(border=True):
-                        submitted[field.key] = _render_field(field)
-                notes[cat.key] = st.text_input("Reviewer note for this category (optional)", key=f"note::{cat.key}")
-        saved = st.form_submit_button("Save review")
+    # NOTE (regression fix, see INVESTIGATE 1): this screen used to render every field inside a
+    # single st.form, whose widgets only commit their edited value to st.session_state when the
+    # form's own submit button is pressed. Since the HTL-17 two-page router conditionally mounts
+    # only one page's widgets at a time, navigating to the other page and back unmounts this form
+    # entirely -- and Streamlit clears a widget's own st.session_state entry the moment it isn't
+    # rendered, so the not-yet-submitted edit is lost even for a plain (non-form) widget. Each
+    # field's value is now mirrored into state_persistence's own store on every change (see
+    # _render_field), and it's that persisted store -- not the widgets' own session_state keys --
+    # that Save reads from, so an edit survives switching pages before "Save review" is clicked.
+    for cat in categories:
+        with st.expander(cat.title, expanded=cat.key in ("award_date", "named_roles")):
+            if cat.note:
+                st.info(cat.note)
+            for field in cat.fields:
+                with st.container(border=True):
+                    _render_field(field)
+            note_widget_key = f"note::{cat.key}"
+            note_current = state_persistence.persisted_value(FACT_REVIEW_STORE, note_widget_key, "")
+            note_on_change = lambda nk=note_widget_key: state_persistence.sync_to_store(  # noqa: E731
+                FACT_REVIEW_STORE, nk, nk)
+            st.text_input("Reviewer note for this category (optional)", value=note_current,
+                         key=note_widget_key, on_change=note_on_change)
+    saved = st.button("Save review")
 
     if saved:
+        store = state_persistence.get_store(FACT_REVIEW_STORE)
+        submitted = {f.key: store.get(f.key, f.value) for cat in categories for f in cat.fields}
+        notes = {cat.key: store.get(f"note::{cat.key}", "") for cat in categories}
         try:
             audit, baseline_path, audit_path = review.review_and_save(baseline, categories, submitted, notes)
         except ValueError as exc:
