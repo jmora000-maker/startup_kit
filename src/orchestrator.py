@@ -6,7 +6,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from pathlib import Path
-from typing import BinaryIO, Optional, List, Tuple, Union
+from typing import BinaryIO, Callable, Optional, List, Tuple, Union
 
 from src.config import config, normalize_person_name
 from src.core.interfaces import (
@@ -48,6 +48,16 @@ from src.scoring.cli_reporter import (
 )
 
 logger = logging.getLogger(__name__)
+
+# HTL-28: on_progress(stage, detail="") reports real stage boundaries as they actually happen --
+# "ingesting", "extracting", "validating", "generating" (once per document type actually being
+# written). Defaults to a no-op everywhere so existing callers (the CLI today) are unaffected
+# unless they choose to pass a real callback (e.g. the Streamlit app's live status display).
+ProgressCallback = Callable[[str, str], None]
+
+
+def _noop_progress(stage: str, detail: str = "") -> None:
+    pass
 
 
 def build_llm_client(
@@ -311,6 +321,7 @@ class StartupKitController:
         talent_pm: Optional[str] = None,
         outputs: Optional[OutputSelection] = None,
         start_date: Optional[date] = None,
+        on_progress: Optional[ProgressCallback] = None,
     ) -> RunResult:
         """Execute the end-to-end startup kit generation pipeline.
 
@@ -319,11 +330,18 @@ class StartupKitController:
         pairs), for a caller (such as a future Streamlit upload) that has no inputs directory
         at all. Passing ``inputs_dir`` keeps the CLI's existing directory-based behavior
         completely unchanged.
+
+        HTL-28: ``on_progress(stage, detail="")`` is called at real stage boundaries
+        (``"ingesting"``, ``"extracting"``, ``"validating"``, ``"generating"`` once per document
+        type actually written) as they actually happen. Defaults to a no-op, so this is a pure
+        addition with no effect on any existing caller that doesn't pass one.
         """
         if outputs is None:
             outputs = OutputSelection()
+        progress = on_progress or _noop_progress
 
         if input_documents is not None:
+            progress("ingesting", f"{len(input_documents)} provided source(s)")
             logger.info("Starting PMO Startup Kit generation from %d provided source(s)", len(input_documents))
             documents = self.ingestion_service.ingest_sources(input_documents)
             if not documents:
@@ -342,6 +360,7 @@ class StartupKitController:
                 output_dir=output_dir,
             )
 
+            progress("ingesting", str(in_path))
             logger.info("Starting PMO Startup Kit generation from directory: %s", in_path)
 
             # 1. Ingest Documents
@@ -360,6 +379,7 @@ class StartupKitController:
             logger.info("Extracted stated SOW award/start date: %s", stated_award_date)
 
         # 2. Multi-Pass LLM Extraction (Concurrent Execution)
+        progress("extracting")
         logger.info("Executing concurrent multi-pass LLM extractions (12 domain passes)...")
         with ThreadPoolExecutor(max_workers=14) as executor:
             future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
@@ -467,6 +487,7 @@ class StartupKitController:
         )
 
         # 3b. Extraction Validation Layer (Section 4, VAL-01 to VAL-07)
+        progress("validating")
         logger.info("Running extraction validation layer and reconciliation...")
         validation_report = validate_and_repair_baseline(baseline, date_conflict_warning=date_warning)
 
@@ -481,6 +502,7 @@ class StartupKitController:
             logger.info("Deck sources: Startup Kit and Project Delivery Workbook also written")
 
         if outputs.kit:
+            progress("generating", "Startup Kit")
             logger.info("Generating Word Startup Kit document in %s...", out_path)
             if hasattr(self.doc_writer, "write_kit_docx"):
                 kit_path = self.doc_writer.write_kit_docx(baseline, out_path)
@@ -489,17 +511,20 @@ class StartupKitController:
             written_paths.append(kit_path)
 
         if outputs.checklist:
+            progress("generating", "Readiness Checklist")
             logger.info("Generating Word Startup Readiness Checklist document in %s...", out_path)
             if hasattr(self.doc_writer, "write_checklist_docx"):
                 checklist_path = self.doc_writer.write_checklist_docx(baseline, out_path)
                 written_paths.append(checklist_path)
 
         if outputs.workbook:
+            progress("generating", "Delivery Workbook")
             logger.info("Exporting Project Delivery Workbook to %s", out_path)
             wb_result = export_pmo_workbook(baseline, out_path, start_date=start_date)
             written_paths.append(wb_result.file_path)
 
         if outputs.slides:
+            progress("generating", "Onboarding Deck")
             logger.info("Exporting Talent Onboarding Deck to %s", out_path)
             deck_result = export_onboarding_deck(baseline, out_path, start_date=start_date)
             written_paths.append(deck_result.file_path)
@@ -549,6 +574,7 @@ class StartupKitController:
         start_date: Optional[date] = None,
         create_backup: bool = True,
         always_write_new_file: bool = False,
+        on_progress: Optional[ProgressCallback] = None,
     ) -> RunResult:
         """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report.
 
@@ -566,9 +592,16 @@ class StartupKitController:
         default (``always_write_new_file=False``) is unchanged; a future app always passes
         ``always_write_new_file=True`` for its uploads (HTL-23), which already pairs naturally
         with ``docx_source`` always requiring an explicit output destination above.
+
+        HTL-28: ``on_progress(stage, detail="")`` reports real stage boundaries -- re-ingestion
+        has no LLM extraction pass of its own (it parses an existing Kit document rather than
+        re-running extraction), so only ``"ingesting"``, ``"validating"`` (the readiness
+        recalculation), and ``"generating"`` (once per document type actually written) fire here.
+        Defaults to a no-op, so this is a pure addition with no effect on any existing caller.
         """
         if outputs is None:
             outputs = OutputSelection()
+        progress = on_progress or _noop_progress
         if always_write_new_file:
             create_backup = False
 
@@ -594,6 +627,7 @@ class StartupKitController:
         else:
             raise ValueError("Either docx_path or docx_source must be provided.")
 
+        progress("ingesting", str(docx_file))
         logger.info("Executing Single-Document Ingestion for: %s", docx_file)
         baseline = self.docx_parser.parse_startup_kit_docx(docx_file)
 
@@ -653,6 +687,7 @@ class StartupKitController:
                 baseline.governance_context.contract_type = contract_type_override
 
         # Recalculate readiness and gate decision
+        progress("validating")
         logger.info("Recalculating Startup Readiness Score and G-01 Gate Decision...")
         baseline = self.aggregator.recalculate_readiness(baseline)
 
@@ -687,6 +722,7 @@ class StartupKitController:
                 except Exception as e:
                     logger.warning("Could not create backup of %s: %s", docx_file, e)
 
+            progress("generating", "Startup Kit")
             logger.info("Regenerating updated Word Startup Kit document at: %s", target_path)
             if hasattr(self.doc_writer, "write_kit_docx"):
                 kit_path = self.doc_writer.write_kit_docx(baseline, target_path)
@@ -697,6 +733,7 @@ class StartupKitController:
             logger.info("Readiness recalculated; the Startup Kit .docx was not rewritten. Add --kit or --all to update it.")
 
         if outputs.checklist:
+            progress("generating", "Readiness Checklist")
             logger.info("Regenerating updated Word Startup Readiness Checklist document at: %s", target_path)
             if hasattr(self.doc_writer, "write_checklist_docx"):
                 checklist_path = self.doc_writer.write_checklist_docx(baseline, target_path)
@@ -704,12 +741,14 @@ class StartupKitController:
 
         export_dir = target_path.parent
         if outputs.workbook:
+            progress("generating", "Delivery Workbook")
             logger.info("Exporting Project Delivery Workbook to %s", export_dir)
             wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
             written_paths.append(wb_result.file_path)
 
         deck_result: Optional[OnboardingDeckResult] = None
         if outputs.slides:
+            progress("generating", "Onboarding Deck")
             logger.info("Exporting Talent Onboarding Deck to %s", export_dir)
             deck_result = export_onboarding_deck(baseline, export_dir, start_date=start_date)
             written_paths.append(deck_result.file_path)

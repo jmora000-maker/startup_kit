@@ -9,6 +9,7 @@ from pptx import Presentation
 
 from src.orchestrator import StartupKitController
 from src.extractors.service import IngestionService
+from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.llm.client import MockLLMClient
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
@@ -119,6 +120,88 @@ def test_concurrent_extraction_all_domain_passes(populated_inputs_dir, tmp_path)
     assert "Sarah Connor" in full_text
     assert "John Connor" in full_text
     assert "Kyle Reese" in full_text
+
+
+def test_on_progress_fires_expected_stage_sequence_for_run(populated_inputs_dir, tmp_path):
+    """HTL-28: on_progress(stage, detail="") must fire, in order, at the real stage boundaries
+    of run() -- "ingesting", "extracting", "validating", then "generating" once per document
+    type actually produced -- for a real run through the mock client, not a simulated sequence.
+    """
+    output_dir = tmp_path / "progress_output"
+    mock_llm = create_mock_llm_client()
+
+    controller = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=mock_llm,
+        aggregator=BaselineAggregator(),
+        doc_writer=DocxGenerator()
+    )
+
+    calls = []
+
+    def on_progress(stage, detail=""):
+        calls.append((stage, detail))
+
+    result = controller.run(
+        inputs_dir=populated_inputs_dir,
+        output_dir=output_dir,
+        outputs=OutputSelection(kit=True, checklist=True, workbook=True, slides=True),
+        on_progress=on_progress,
+    )
+
+    assert result.kit_path.exists()
+    stages = [stage for stage, _ in calls]
+    assert stages == [
+        "ingesting",
+        "extracting",
+        "validating",
+        "generating",  # Startup Kit
+        "generating",  # Readiness Checklist
+        "generating",  # Delivery Workbook
+        "generating",  # Onboarding Deck
+    ]
+    generating_details = [detail for stage, detail in calls if stage == "generating"]
+    assert generating_details == ["Startup Kit", "Readiness Checklist", "Delivery Workbook", "Onboarding Deck"]
+
+
+def test_on_progress_fires_expected_stage_sequence_for_run_reingest(sample_baseline, tmp_path):
+    """HTL-28: on_progress must fire, in order, at run_reingest()'s real stage boundaries --
+    "ingesting" (parsing the existing Kit docx), "validating" (the readiness recalculation; no
+    "extracting" stage exists here since re-ingestion never re-runs LLM extraction), then
+    "generating" once per document type actually produced.
+    """
+    writer = DocxGenerator()
+    original_docx = writer.write_docx(sample_baseline, tmp_path / "ProgressProject_Startup_Kit.docx")
+
+    controller = StartupKitController(
+        doc_writer=writer,
+        aggregator=BaselineAggregator(),
+        docx_parser=StartupKitDocxParser()
+    )
+
+    calls = []
+
+    def on_progress(stage, detail=""):
+        calls.append((stage, detail))
+
+    result = controller.run_reingest(
+        docx_path=original_docx,
+        outputs=OutputSelection(kit=True, checklist=True, workbook=True),
+        create_backup=False,
+        on_progress=on_progress,
+    )
+
+    assert result.kit_path.exists()
+    stages = [stage for stage, _ in calls]
+    assert stages == [
+        "ingesting",
+        "validating",
+        "generating",  # Startup Kit
+        "generating",  # Readiness Checklist
+        "generating",  # Delivery Workbook
+    ]
+    generating_details = [detail for stage, detail in calls if stage == "generating"]
+    assert generating_details == ["Startup Kit", "Readiness Checklist", "Delivery Workbook"]
 
 
 def test_controller_default_mock_inputs_dir(tmp_path, monkeypatch):
