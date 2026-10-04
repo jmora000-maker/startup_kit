@@ -20,6 +20,7 @@ from src.review_ui.constants import (
 from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
+    format_run_error,
     collect_download_targets,
     is_admin_unlocked,
     progress_status_label,
@@ -233,3 +234,42 @@ def test_progress_status_label_includes_detail_when_present():
 def test_progress_status_label_unrecognized_stage_falls_back_gracefully():
     assert progress_status_label("some_future_stage") == "Some_future_stage"
     assert progress_status_label("") == "Working"
+
+
+# HTL-26: on a failed run, the app must show a clear, specific error message -- "{stage or
+# operation} failed: {concise reason}" -- never a bare generic message and never a raw
+# traceback. format_run_error(exc, last_stage) is the pure logic behind the generic
+# except-Exception branch in both the Generate and Re-ingest tabs.
+
+
+def test_format_run_error_names_the_real_stage_reached():
+    assert format_run_error(Exception("Anthropic API returned an error"), "extracting") == (
+        "extraction failed: Anthropic API returned an error"
+    )
+    assert format_run_error(ValueError("bad schema"), "validating") == "validation failed: bad schema"
+    assert format_run_error(OSError("disk full"), "generating") == "document generation failed: disk full"
+    assert format_run_error(Exception("no source docs"), "ingesting") == "ingestion failed: no source docs"
+
+
+def test_format_run_error_falls_back_to_run_when_no_stage_was_reached():
+    # A failure before any on_progress call ever fired (e.g. client construction itself, before
+    # run()/run_reingest() is even entered) has no stage to name.
+    assert format_run_error(Exception("boom"), None) == "run failed: boom"
+
+
+def test_format_run_error_unrecognized_stage_falls_back_to_run():
+    assert format_run_error(Exception("boom"), "some_future_stage") == "run failed: boom"
+
+
+def test_format_run_error_never_includes_a_traceback():
+    try:
+        raise AttributeError("'NoneType' object has no attribute 'some_attribute'")
+    except AttributeError as exc:
+        message = format_run_error(exc, "extracting")
+    assert message == "extraction failed: 'NoneType' object has no attribute 'some_attribute'"
+    assert "Traceback" not in message
+    assert "File \"" not in message
+
+
+def test_format_run_error_blank_exception_message_falls_back_to_class_name():
+    assert format_run_error(ValueError(), "validating") == "validation failed: ValueError"

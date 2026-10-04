@@ -189,6 +189,35 @@ def progress_status_label(stage: str, detail: str = "") -> str:
     return f"{base} ({detail})" if detail else base
 
 
+# HTL-26: on a failed run, the app must show a clear, specific error message -- never a bare
+# generic message like "Something went wrong" and never a raw Python traceback. The real stage
+# reached (as reported by the same on_progress callback used for the status display) names the
+# failure precisely, matching the spec's own example ("extraction failed: Anthropic API returned
+# an error") instead of a flat, un-specific "Run failed: ...".
+STAGE_FAILURE_LABELS = {
+    "ingesting": "ingestion",
+    "extracting": "extraction",
+    "validating": "validation",
+    "generating": "document generation",
+}
+
+
+def format_run_error(exc: BaseException, last_stage: Optional[str] = None) -> str:
+    """Pure function: builds the "{stage or operation} failed: {concise reason}" message shown
+    for any run failure that isn't the specific HTL-20 no-provider-configured case (that one is
+    already a complete, specific message on its own and is shown as-is).
+
+    `str(exc)` alone is used as the reason. For the exceptions this app actually raises/catches
+    (HTL-20's RuntimeError, LLM/API client errors, validation errors), `str(exc)` is a short,
+    human-written description -- never a multi-line traceback -- so it is both safe (no internal
+    file paths/line numbers/stack frames) and specific enough for a user to usefully report. A
+    full traceback is deliberately never surfaced here.
+    """
+    stage_label = STAGE_FAILURE_LABELS.get(last_stage, "run")
+    reason = str(exc).strip() or exc.__class__.__name__
+    return f"{stage_label} failed: {reason}"
+
+
 def _run_generate(
     uploaded_files,
     start_date_text: str,
@@ -468,6 +497,7 @@ def render() -> None:
             if error:
                 st.error(error)
             else:
+                last_stage: List[Optional[str]] = [None]
                 try:
                     outputs = _output_selection_from_checkboxes(kit, checklist, workbook, slides)
                     resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
@@ -479,6 +509,7 @@ def render() -> None:
                     # take a while.
                     with st.status("Starting...", expanded=True) as status_box:
                         def _update_status(stage: str, detail: str = "") -> None:
+                            last_stage[0] = stage
                             label = progress_status_label(stage, detail)
                             status_box.update(label=label)
                             status_box.write(label)
@@ -502,10 +533,12 @@ def render() -> None:
                     st.session_state["generate_run_result"] = result
                 except RuntimeError as exc:
                     # HTL-20/HTL-26: no silent mock fall-back; the exact build_llm_client error is
-                    # surfaced as a clear message, never a stack trace.
+                    # already a complete, specific message on its own and is surfaced as-is, never
+                    # a stack trace.
                     st.error(str(exc))
-                except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear message, not a traceback
-                    st.error(f"Run failed: {exc}")
+                except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear, stage-specific message,
+                    # never a bare "something went wrong" and never a raw traceback.
+                    st.error(format_run_error(exc, last_stage[0]))
 
         if st.session_state.get("generate_run_result") is not None:
             _render_results(st.session_state["generate_run_result"])
@@ -574,6 +607,7 @@ def render() -> None:
             if error:
                 st.error(error)
             else:
+                last_stage_r: List[Optional[str]] = [None]
                 try:
                     outputs_r = _output_selection_from_checkboxes(kit_r, checklist_r, workbook_r, slides_r)
                     resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
@@ -581,6 +615,7 @@ def render() -> None:
                     )
                     with st.status("Starting...", expanded=True) as status_box_r:
                         def _update_status_r(stage: str, detail: str = "") -> None:
+                            last_stage_r[0] = stage
                             label = progress_status_label(stage, detail)
                             status_box_r.update(label=label)
                             status_box_r.write(label)
@@ -604,8 +639,9 @@ def render() -> None:
                     st.session_state["reingest_run_result"] = result_r
                 except RuntimeError as exc:
                     st.error(str(exc))
-                except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear message, not a traceback
-                    st.error(f"Run failed: {exc}")
+                except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear, stage-specific message,
+                    # never a bare "something went wrong" and never a raw traceback.
+                    st.error(format_run_error(exc, last_stage_r[0]))
 
         if st.session_state.get("reingest_run_result") is not None:
             _render_results(st.session_state["reingest_run_result"])
