@@ -360,3 +360,52 @@ def test_orchestrator_exhausted_providers_raises_clear_stage_error(tmp_path):
     formatted = format_run_error(exc_info.value, "extracting")
     assert formatted.startswith("extraction failed:")
     assert not formatted.startswith("extraction failed: extraction failed:")
+
+
+def test_orchestrator_openai_only_truncation_raises_clear_stage_error(tmp_path):
+    """Verify LLM-03 (4b compound case): when OpenAI is the only configured provider and its response truncates,
+    orchestrator raises clear stage error ('extraction failed: ...'), not returning truncated content and not a raw traceback.
+    """
+    from unittest.mock import MagicMock
+    from src.llm.client import LangChainLLMClient
+    from src.review_ui.generate import format_run_error
+
+    mock_openai = MagicMock()
+    mock_openai_response = MagicMock()
+    mock_openai_response.response_metadata = {"finish_reason": "length"}
+    mock_openai_response.content = '{"title": "Truncated Incomplete Payload'
+    mock_openai.invoke.return_value = mock_openai_response
+    mock_openai.with_structured_output.side_effect = RuntimeError(
+        "OpenAI response was truncated due to reaching max_tokens (16384). Payload is incomplete and cannot be parsed safely."
+    )
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        api_key="",
+        chat_model=None,
+        openai_chat_model=mock_openai,
+    )
+
+    inputs_dir = tmp_path / "inputs"
+    inputs_dir.mkdir()
+    (inputs_dir / "sow.txt").write_text("Statement of Work content", encoding="utf-8")
+    output_dir = tmp_path / "output"
+
+    controller = StartupKitController(
+        llm_client=client,
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        controller.run(inputs_dir=inputs_dir, output_dir=output_dir)
+
+    err_str = str(exc_info.value)
+    assert err_str.startswith("extraction failed:")
+    assert "OpenAI response was truncated due to reaching max_tokens" in err_str
+    assert "Payload is incomplete and cannot be parsed safely" in err_str
+    # Verify no raw traceback in error message
+    assert "Traceback (most recent call last)" not in err_str
+
+    # Verify UI formatting preserves the clear stage message without duplicate prefixes
+    formatted = format_run_error(exc_info.value, "extracting")
+    assert formatted.startswith("extraction failed:")
+    assert not formatted.startswith("extraction failed: extraction failed:")

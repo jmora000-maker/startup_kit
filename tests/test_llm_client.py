@@ -515,3 +515,42 @@ def test_both_providers_fail_generate_structured_exhaustion():
 
     with pytest.raises(RuntimeError, match="OpenAI text 429 InsufficientQuota"):
         client.generate_structured("Extract project", SampleSchema)
+
+
+def test_env_var_llm_provider_openai_routes_through_build_llm_client(monkeypatch):
+    """Verify LLM-02/LLM-01: setting LLM_PROVIDER=openai in environment and routing through build_llm_client
+    (a) configures primary_provider as 'openai', and
+    (b) ensures calls through that exact path use the clamped 16384 token ceiling (even when MAX_TOKENS=32768).
+    """
+    import src.config
+    from src.orchestrator import build_llm_client
+
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("MAX_TOKENS", "32768")
+    monkeypatch.setattr(src.config.config, "default_provider", "openai")
+    monkeypatch.setattr(src.config.config, "max_tokens", 32768)
+
+    client = build_llm_client(
+        provider=src.config.config.default_provider,
+        anthropic_api_key="sk-ant-test",
+        openai_api_key="sk-proj-test",
+        mock=False,
+    )
+
+    inner = client.inner_client
+    # (a) Check primary_provider is correctly "openai"
+    assert inner.primary_provider == "openai"
+    assert inner.max_tokens == 32768
+
+    # (b) Check clamped token ceiling on OpenAI chat model
+    assert inner.openai_max_tokens == 16384
+    assert inner._openai_chat_model.max_tokens == 16384
+
+    # Verify faithful invocation through this exact path
+    mock_resp = MagicMock()
+    mock_resp.content = "OpenAI response from primary provider with clamped ceiling"
+    mock_resp.response_metadata = {"finish_reason": "stop"}
+
+    monkeypatch.setattr("langchain_openai.ChatOpenAI.invoke", MagicMock(return_value=mock_resp))
+    result = client.generate_text("Test prompt")
+    assert result == "OpenAI response from primary provider with clamped ceiling"
