@@ -12,7 +12,7 @@ from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
 from src.llm.mock_responses import create_mock_llm_client
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
-from src.orchestrator import StartupKitController, build_llm_client
+from src.orchestrator import StartupKitController, build_llm_client, resolve_role_for_reingest
 from src.core.models import (
     SourceReference,
     Deliverable,
@@ -409,13 +409,15 @@ def main():
                 aggregator=BaselineAggregator()
             )
 
+            # HTL-25: the "blank role on re-ingest" decision lives in the shared
+            # resolve_role_for_reingest function now, not inline here.
             run_result = controller.run_reingest(
                 docx_path=target_docx,
                 output_dir=args.output_dir,
                 output_file=args.output_file,
-                pmo_lead=pmo_lead if (args.pmo_lead is not None or (is_interactive and pmo_lead != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
-                delivery_lead=delivery_lead if (args.delivery_lead is not None or (is_interactive and delivery_lead != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
-                talent_pm=talent_pm if (args.talent_pm is not None or (is_interactive and talent_pm != "[UNASSIGNED - TO BE CONFIRMED]")) else None,
+                pmo_lead=resolve_role_for_reingest(args.pmo_lead, pmo_lead, is_interactive),
+                delivery_lead=resolve_role_for_reingest(args.delivery_lead, delivery_lead, is_interactive),
+                talent_pm=resolve_role_for_reingest(args.talent_pm, talent_pm, is_interactive),
                 tier_override=args.tier,
                 contract_type_override=args.contract_type,
                 outputs=outputs,

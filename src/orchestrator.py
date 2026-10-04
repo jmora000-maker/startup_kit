@@ -150,6 +150,35 @@ def build_llm_client(
     )
 
 
+def resolve_role_for_reingest(
+    flag_value: Optional[str],
+    prompted_value: str,
+    interactive: bool,
+    placeholder: str = "[UNASSIGNED - TO BE CONFIRMED]",
+) -> Optional[str]:
+    """HTL-25: decide whether a role override should be applied on re-ingestion.
+
+    Re-ingestion recalculates readiness against an *existing* baseline that may already carry a
+    previously-confirmed name; unlike a fresh run (where a blank role always becomes the
+    placeholder, with no carry-over from any earlier run -- KIT-10), a role here is applied only
+    when a person actually supplied a value for THIS re-ingestion: the CLI flag was given
+    explicitly, or the interactive prompt was shown and the user did not simply accept the
+    unassigned placeholder. Otherwise ``None`` is returned, meaning "leave the existing value in
+    the re-ingested baseline untouched."
+
+    This is the one place the "what happens when a role is blank" decision lives: ``main.py``'s
+    interactive terminal prompting (``input()``) stays CLI-only, but the decision of whether a
+    prompted value counts as "the user actually provided it" is this shared, importable
+    function -- the same one a future app's call (always with ``interactive=False``, since a web
+    form has no interactive/non-interactive distinction, HTL-25/U-7) goes through as well.
+    """
+    if flag_value is not None:
+        return prompted_value
+    if interactive and prompted_value != placeholder:
+        return prompted_value
+    return None
+
+
 class StartupKitController:
     """Orchestrates end-to-end extraction from input files to generated Word report."""
 
@@ -467,6 +496,7 @@ class StartupKitController:
         outputs: Optional[OutputSelection] = None,
         start_date: Optional[date] = None,
         create_backup: bool = True,
+        always_write_new_file: bool = False,
     ) -> RunResult:
         """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report.
 
@@ -475,9 +505,20 @@ class StartupKitController:
         upload has nothing to overwrite in place, ``output_dir`` or ``output_file`` is required
         when using ``docx_source``. Passing ``docx_path`` keeps the CLI's existing
         in-place-with-backup default completely unchanged.
+
+        HTL-23: ``always_write_new_file`` is the ALTERNATIVE to the CLI's default
+        in-place-overwrite-with-timestamped-backup behavior. When True, the Kit document is
+        never written back over ``docx_path`` -- if no ``output_file``/``output_dir`` is given
+        either, a new, timestamped file name is generated next to the input instead of
+        overwriting it, and no backup is created (there is nothing to back up). The CLI's
+        default (``always_write_new_file=False``) is unchanged; a future app always passes
+        ``always_write_new_file=True`` for its uploads (HTL-23), which already pairs naturally
+        with ``docx_source`` always requiring an explicit output destination above.
         """
         if outputs is None:
             outputs = OutputSelection()
+        if always_write_new_file:
+            create_backup = False
 
         _upload_temp_dir: Optional[str] = None
         if docx_source is not None:
@@ -569,6 +610,10 @@ class StartupKitController:
         elif output_dir is not None:
             target_dir = Path(output_dir)
             target_path = target_dir / docx_file.name
+        elif always_write_new_file:
+            # HTL-23: never overwrite the input Kit in place; synthesize a new file name.
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            target_path = docx_file.with_name(f"{docx_file.stem}_{timestamp}{docx_file.suffix}")
         else:
             target_path = docx_file
 
