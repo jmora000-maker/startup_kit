@@ -94,7 +94,7 @@ def build_llm_client(
     )
 
     if provider_normalized == "openai":
-        if not openai_api_key:
+        if not openai_api_key and not anthropic_api_key:
             if require_provider:
                 raise RuntimeError(
                     "No LLM provider is configured: OPENAI_API_KEY is not set and mock mode was not "
@@ -102,9 +102,15 @@ def build_llm_client(
                 )
             logger.warning("OPENAI_API_KEY is not set; building an inert LLM client with no active model.")
         openai_model = model if (model and model != config.anthropic_model) else config.openai_model
-        logger.info("Using OpenAI LangChain client with model: %s", openai_model)
+        anthropic_model = config.anthropic_model
+        if openai_api_key and anthropic_api_key:
+            logger.info("Using OpenAI client (%s) with Anthropic fallback (%s)", openai_model, anthropic_model)
+        elif openai_api_key:
+            logger.info("Using OpenAI LangChain client with model: %s", openai_model)
         inner = LangChainLLMClient(
-            api_key="",
+            primary_provider="openai",
+            api_key=anthropic_api_key,
+            model_name=anthropic_model,
             openai_api_key=openai_api_key,
             openai_model_name=openai_model,
             temperature=config.temperature,
@@ -128,6 +134,7 @@ def build_llm_client(
     if not anthropic_api_key and openai_api_key:
         logger.info("ANTHROPIC_API_KEY is not set; using OpenAI LangChain client with model: %s", config.openai_model)
         inner = LangChainLLMClient(
+            primary_provider="openai",
             api_key="",
             openai_api_key=openai_api_key,
             openai_model_name=config.openai_model,
@@ -146,6 +153,7 @@ def build_llm_client(
     elif anthropic_api_key:
         logger.info("Using Anthropic Claude LangChain client with model: %s", anthropic_model)
     inner = LangChainLLMClient(
+        primary_provider="anthropic",
         api_key=anthropic_api_key,
         model_name=anthropic_model,
         temperature=config.temperature,

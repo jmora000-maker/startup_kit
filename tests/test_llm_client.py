@@ -375,3 +375,78 @@ def test_fallback_domains_tracking():
     result = client.generate_structured("Extract", SampleSchema)
     assert result.title == "OpenAI Tracked"
     assert "SampleSchema" in client.fallback_domains
+
+
+def test_openai_primary_falls_back_to_anthropic_structured():
+    """Verify LLM-02: when OpenAI is primary and fails, client falls back to Anthropic."""
+    mock_openai = MagicMock()
+    mock_openai.with_structured_output.side_effect = RuntimeError("OpenAI 429 Quota Exceeded")
+    mock_openai.invoke.side_effect = RuntimeError("OpenAI text 429")
+
+    mock_anthropic = MagicMock()
+    mock_structured_anthropic = MagicMock()
+    mock_structured_anthropic.invoke.return_value = SampleSchema(title="Anthropic Reverse Fallback", score=95)
+    mock_anthropic.with_structured_output.return_value = mock_structured_anthropic
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    assert client.fallback_domains == []
+    result = client.generate_structured("Extract project", SampleSchema)
+    assert result.title == "Anthropic Reverse Fallback"
+    assert result.score == 95
+    assert "SampleSchema" in client.fallback_domains
+
+
+def test_openai_primary_falls_back_to_anthropic_text():
+    """Verify LLM-02: text generation falls back to Anthropic when OpenAI primary fails."""
+    mock_openai = MagicMock()
+    mock_openai.invoke.side_effect = RuntimeError("OpenAI RateLimitError")
+
+    mock_anthropic = MagicMock()
+    mock_anthropic_resp = MagicMock()
+    mock_anthropic_resp.content = "Anthropic fallback text response"
+    mock_anthropic.invoke.return_value = mock_anthropic_resp
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    assert client.fallback_domains == []
+    result = client.generate_text("Summarize project")
+    assert result == "Anthropic fallback text response"
+    assert "TextGeneration" in client.fallback_domains
+    mock_openai.invoke.assert_called_once()
+    mock_anthropic.invoke.assert_called_once()
+
+
+def test_build_llm_client_configures_symmetric_fallback():
+    """Verify LLM-02: orchestrator build_llm_client configures fallback models in both directions."""
+    from src.orchestrator import build_llm_client
+
+    # Case 1: Anthropic primary with OpenAI key provided -> Anthropic primary with OpenAI fallback
+    c_anthropic = build_llm_client(
+        provider="anthropic",
+        anthropic_api_key="sk-ant-test",
+        openai_api_key="sk-openai-test",
+        mock=False,
+    )
+    assert c_anthropic.inner_client.primary_provider == "anthropic"
+    assert c_anthropic.inner_client._chat_model is not None
+    assert c_anthropic.inner_client._openai_chat_model is not None
+
+    # Case 2: OpenAI primary with Anthropic key provided -> OpenAI primary with Anthropic fallback
+    c_openai = build_llm_client(
+        provider="openai",
+        anthropic_api_key="sk-ant-test",
+        openai_api_key="sk-openai-test",
+        mock=False,
+    )
+    assert c_openai.inner_client.primary_provider == "openai"
+    assert c_openai.inner_client._chat_model is not None
+    assert c_openai.inner_client._openai_chat_model is not None

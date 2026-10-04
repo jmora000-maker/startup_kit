@@ -460,7 +460,8 @@ def test_cli_main_openai_provider_routing(monkeypatch):
     assert client is not None
     assert client.openai_api_key == "sk-proj-test-openai"
     assert client.openai_model_name == "gpt-4o-mini"
-    assert client._chat_model is None
+    assert client.primary_provider == "openai"
+    assert client._openai_chat_model is not None
 
 
 def test_cli_main_anthropic_default_provider_routing(monkeypatch):
