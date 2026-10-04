@@ -232,6 +232,8 @@ def test_max_tokens_configuration(monkeypatch):
         openai_chat_model=None,
     )
     assert client.max_tokens == 16384
+    assert client.anthropic_max_tokens == 16384
+    assert client.openai_max_tokens == 16384
 
     client_custom = LangChainLLMClient(
         api_key="",
@@ -241,6 +243,40 @@ def test_max_tokens_configuration(monkeypatch):
         max_tokens=32768,
     )
     assert client_custom.max_tokens == 32768
+    assert client_custom.anthropic_max_tokens == 32768
+    assert client_custom.openai_max_tokens == 16384
+
+
+def test_provider_specific_token_limit_clamping():
+    """Verify LLM-01: OpenAI models are clamped to 16384 while Anthropic retains up to 64000."""
+    from src.llm.client import get_clamped_max_tokens
+
+    # OpenAI gpt-4o clamped to 16384
+    assert get_clamped_max_tokens("openai", "gpt-4o", 32768) == 16384
+    assert get_clamped_max_tokens("openai", "gpt-4o-mini", 32768) == 16384
+    assert get_clamped_max_tokens("openai", "gpt-4o", 8192) == 8192
+
+    # OpenAI gpt-4-turbo clamped to 4096
+    assert get_clamped_max_tokens("openai", "gpt-4-turbo", 32768) == 4096
+
+    # OpenAI o1/o3 support up to 65536
+    assert get_clamped_max_tokens("openai", "o1-preview", 32768) == 32768
+    assert get_clamped_max_tokens("openai", "o3-mini", 70000) == 65536
+
+    # Anthropic models support up to 64000
+    assert get_clamped_max_tokens("anthropic", "claude-sonnet-5-5", 32768) == 32768
+    assert get_clamped_max_tokens("anthropic", "claude-sonnet-5-5", 70000) == 64000
+
+    # Client instantiation clamps internal model parameters
+    client = LangChainLLMClient(
+        api_key="sk-ant-test",
+        model_name="claude-sonnet-5-5",
+        openai_api_key="sk-openai-test",
+        openai_model_name="gpt-4o",
+        max_tokens=32768,
+    )
+    assert client._chat_model.max_tokens == 32768
+    assert client._openai_chat_model.max_tokens == 16384
 
 
 def test_anthropic_truncation_raises_runtime_error_and_falls_back_to_openai():

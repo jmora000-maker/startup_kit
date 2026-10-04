@@ -116,6 +116,33 @@ def parse_json_response_to_schema(text: Any, schema: Type[T], parser: Optional[P
         return parser.parse(raw_str)
 
 
+def get_clamped_max_tokens(provider: str, model_name: Optional[str], requested_tokens: int) -> int:
+    """Clamp requested max_tokens to provider and model specific ceilings (LLM-01).
+
+    Anthropic models retain the configured token ceiling (up to Anthropic's supported 64000/128000).
+    OpenAI models (specifically gpt-4o / gpt-4o-mini) are capped at 16384, preventing 400 Bad Request
+    validation errors when falling back from Anthropic configurations (e.g. MAX_TOKENS=32768).
+    """
+    provider_norm = (provider or "").lower().strip()
+    model_norm = (model_name or "").lower().strip()
+
+    if provider_norm in ("openai", "open-ai", "gpt"):
+        if model_norm.startswith(("o1", "o3")):
+            ceiling = 65536
+        elif model_norm.startswith(("gpt-4-turbo", "gpt-4-0125", "gpt-4-1106", "gpt-4-0613", "gpt-3.5")):
+            ceiling = 4096
+        else:
+            # gpt-4o, gpt-4o-mini, and default OpenAI chat models
+            ceiling = 16384
+        return min(requested_tokens, ceiling)
+
+    if provider_norm in ("anthropic", "claude"):
+        ceiling = 64000
+        return min(requested_tokens, ceiling)
+
+    return requested_tokens
+
+
 class LangChainLLMClient(ILLMClient):
     """LangChain wrapper client supporting Anthropic Claude with OpenAI fallback and structured outputs."""
 
@@ -137,6 +164,8 @@ class LangChainLLMClient(ILLMClient):
         self.openai_api_key = openai_api_key if openai_api_key is not None else config.openai_api_key
         self.openai_model_name = openai_model_name or config.openai_model
         self.max_tokens = max_tokens if max_tokens is not None else getattr(config, "max_tokens", 16384)
+        self.anthropic_max_tokens = get_clamped_max_tokens("anthropic", self.model_name, self.max_tokens)
+        self.openai_max_tokens = get_clamped_max_tokens("openai", self.openai_model_name, self.max_tokens)
         self.fallback_domains: list[str] = []
 
         # Primary Anthropic model
@@ -150,7 +179,7 @@ class LangChainLLMClient(ILLMClient):
                 model=self.model_name,
                 temperature=None,
                 api_key=self.api_key,
-                max_tokens=self.max_tokens,
+                max_tokens=self.anthropic_max_tokens,
             )
         else:
             self._chat_model = None
@@ -163,7 +192,7 @@ class LangChainLLMClient(ILLMClient):
                 model=self.openai_model_name,
                 temperature=self.temperature,
                 api_key=self.openai_api_key,
-                max_tokens=self.max_tokens,
+                max_tokens=self.openai_max_tokens,
             )
         else:
             self._openai_chat_model = None
