@@ -258,13 +258,20 @@ def _render_results(run_result: RunResult) -> None:
 
     targets = collect_download_targets(run_result)
     if targets:
-        st.caption("Download generated files")
+        # INVESTIGATE 2: st.download_button genuinely pushes bytes straight to the browser's own
+        # save dialog (data is bytes here, so Streamlit uses the "application/octet-stream" MIME
+        # type, which every major browser downloads rather than displays inline) -- there is no
+        # separate server-side save the user needs to go find. The actual gap was that the label
+        # never showed the real generated file name, so after a silent, successful download a user
+        # had no way to know what file to look for. The label now always includes it.
+        st.caption("Download generated files (each button saves the named file via your browser's own download)")
         for target in targets:
             if target.path.exists():
                 st.download_button(
-                    label=f"Download {target.label}",
+                    label=f"Download {target.label}: {target.path.name}",
                     data=target.path.read_bytes(),
                     file_name=target.path.name,
+                    mime="application/octet-stream",
                     key=f"download::{target.path}",
                 )
 
