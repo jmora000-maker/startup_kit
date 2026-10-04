@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 33 · October 3, 2026
+Revision 34 · October 3, 2026
 
 ## 0. Document control
 
@@ -111,6 +111,7 @@ A single module, `src/llm/validation.py`, runs after `BaselineAggregator` and be
 | MS-06 | Workstreams and gates are ordered by delivery sequence: planned start, then external date, then natural sort of ID. There is exactly one workstream per SOW phase, and nothing else. | Done (with MS-02 Pending) | INV-02 |
 | MS-07 | A defensive filter drops any milestone, deliverable, work package, or RAID item matching the readiness pattern (Appendix C). Drops are counted in `excluded_items`. | Done | `test_no_readiness_content.py` |
 | MS-08 | If the baseline has no milestones, create placeholder `MS-TBC` "Delivery milestones to be confirmed", with Source `PM Best Practice` and a warning note. | Done | `test_empty_catalogue.py` |
+| MS-09 | **Milestone scope enrichment when the description is terse and colon-less.** When a milestone's own description has no colon-delimited scope sentence (confirmed, Appendix AA: real GPT-4o output phrases descriptions as a bare label, e.g. `"P1 Foundation completion."`, with the actual functional scope placed in `key_dependencies` and `critical_path_assumptions` instead), the milestone's rendered scope text should draw from those fields (and/or mapped deliverable titles) rather than repeating the bare label as both name and scope. Confirmed provider-independent: the same gap would affect any sufficiently terse, colon-less description regardless of which model produced it; it has simply never surfaced before because Claude's own phrasing habits happened to always include a colon. | Pending (found during `MS-02`'s Rev 32/33 investigation; not part of that fix's scope, which is phase attachment, not scope-text richness; logged here for later) | None yet |
 
 ## 7. Dates and predecessors
 
@@ -404,6 +405,7 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | 31 | Adds `HTL-31`: closes the one documented exception left by `HTL-17`'s form-state persistence fix -- a Streamlit file uploader's own widget state cannot be persisted, so the uploaded SOW was still lost on a page switch even after every other field was fixed. The fix stores the uploaded file's bytes at the application level (the same `state_persistence.py` store already used elsewhere), with a clear "using previously uploaded" indicator, rather than relying on the widget itself to remember anything. |
 | 32 | Revises `MS-02`: a real test run under `gpt-4o` (after switching `LLM_PROVIDER=openai`, Appendix X) showed the old fallback workstream categories (`Build & Configuration`, `Data & Integration`, `Deployment & Release`) reappearing, because `MS-02`'s phase attachment only ever inspected the free-text milestone description for a colon-delimited pattern tuned to Claude's prose style. GPT-4o phrases the same information without a colon, failing the pattern and triggering the same keyword-classifier fallback `MS-02` was built to replace. The fix (Appendix Y) is a real robustness improvement, not a provider patch: both providers already reliably populate the schema's own structured `phase` field via the shared extraction instruction, so `MS-02` now prefers that field first, falling back to text-pattern matching only when it is absent. |
 | 33 | Reopens and corrects `MS-02` (Appendix Z): Revision 32's fix was caught before promotion, since reviewing its proposed snapshots showed it corrupting five fixtures' previously-correct workstream names (`Design & Architecture` to `G_1`; `P2a` to `P2A`). Root cause: `milestone.phase` is a field `VAL-01`'s gate reconciliation always overwrites for its own internal bookkeeping -- a synthetic `G_N` placeholder when no real phase code was stated, or an uppercased copy when one was -- for every milestone, regardless of provider, and never reflects the raw extracted value by the time generation reads it. `MS-02` is revised to read a new, additive `phase_display` field instead, which `VAL-01` now also sets, alongside its own unchanged field, holding the real stated code with its original casing only when one genuinely existed. |
+| 34 | Adds `MS-09`, a deferred finding from `MS-02`'s own investigation (Appendix AA): real GPT-4o output places a milestone's actual functional scope in `key_dependencies`/`critical_path_assumptions` rather than the description, leaving the rendered milestone scope as a bare, repeated label once `MS-02`'s phase-attachment fix correctly stops miscategorizing it. Confirmed provider-independent, not a regression from `MS-02`'s own fix, and explicitly out of that fix's scope (phase attachment, not scope-text richness). |
 
 
 ## Appendix A: Workbook column layouts
@@ -1238,3 +1240,25 @@ else:
 So `milestone.phase`, by the time any generator reads it, is never the raw extracted value -- it is always one of two things VAL-01 itself produced: a synthetic, sequential placeholder (`G_1`, `G_2`, ...) when no real phase code was ever stated, or an uppercased copy of a real code when one was. Revision 32's premise -- that both providers reliably populate this field, so it is safe to trust -- was correct about the moment of extraction (confirmed in Appendix Y) and wrong about what survives to the moment generation actually reads it, because a separate, pre-existing, correctly-functioning step overwrites it in between for a purpose unrelated to display.
 
 **The fix (Revision 33).** `VAL-01` gains one new, additive field, `phase_display`, set alongside its existing `phase` assignment, never replacing it: when a real phase code was found, `phase_display` holds it with its original, as-stated casing; when none was found (the synthetic `G_N` case), `phase_display` is left unset. Every other consumer of `milestone.phase` throughout `validation.py`, `mapping.py`, `builder.py`, `docx_generator.py`, and `check_artifacts.py` is untouched -- this is additive, not a rename or a behavior change to `VAL-01` itself. `MS-02` is corrected to read `phase_display`, never `phase` directly, closing both corruptions at once: a synthetic placeholder is simply absent from `phase_display`, so step (1) correctly falls through to the existing fallback chain; a real code's original casing is preserved, so `P2a` never becomes `P2A`.
+
+
+## Appendix AA: Milestone scope terseness, a deferred finding from `MS-02`'s own close-out (the basis for `MS-09`)
+
+**Found while verifying `MS-02`'s real end-to-end fix, not a new bug search.** Reading the real Syngenta SOW's generated output under GPT-4o (after `MS-02`'s phase-attachment fix was confirmed correct) showed every milestone's rendered scope text was a bare, repeated label: `"P1 Foundation completion."` as both the milestone name and its scope, with no actual functional description.
+
+**The real content exists, just not where it was expected.** GPT-4o's raw extraction for `M1`:
+
+```json
+{
+  "description": "P1 Foundation completion.",
+  "key_dependencies": ["Completion of micro-frontend shell and authentication integration."],
+  "critical_path_assumptions": ["Shell load and authentication success metrics met."],
+  "phase": "P1", "phase_display": "P1"
+}
+```
+
+`src/llm/prompts.py`'s `MILESTONES_PROMPT` instructs: *"Keep milestone descriptions concise and direct (1 sentence)."* GPT-4o followed this literally, placing the functional scope in `key_dependencies`/`critical_path_assumptions` instead of folding it into `description`. A new test, `test_phase_display_with_terse_colonless_gpt4o_shape`, locks in this real, current behavior.
+
+**Confirmed provider-independent, not something `MS-02`'s fix introduced.** The existing, unmodified text-pattern fallback path has the identical gap for any colon-less description, regardless of provider: both `PHASE_LABEL_REGEX` and `WRAPPED_PHASE_LABEL_REGEX` require a colon to separate a title from a scope sentence. Claude's own phrasing habits have simply always included one, so this has never surfaced before now -- it is a pre-existing gap in how any terse extraction is handled, uncovered by a provider switch, not caused by one.
+
+**Why this stays out of `MS-02`'s own scope.** `MS-02` governs phase *attachment* -- which workstream a milestone belongs to -- and that is now correctly fixed and verified end-to-end. Enriching a thin scope description by pulling from other fields is a materially different kind of change (deciding how to synthesize a good sentence from multiple source fields, handling cases with several `key_dependencies` entries, deciding whether mapped deliverable titles should also contribute) that deserves its own design and its own review, not a hurried addition to a fix already in flight.
