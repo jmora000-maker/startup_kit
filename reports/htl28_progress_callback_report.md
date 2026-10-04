@@ -137,3 +137,28 @@ to the running server returned **status 200**. The process was then stopped.
   lines and never passes an `on_progress` callback, exactly as HTL-28 specifies ("the CLI's
   existing print/log behavior is unaffected unless `main.py` chooses to pass a callback (it
   doesn't need to for this step)").
+
+---
+
+## Correction Note (added 2026-10-04)
+
+*This note was appended after the original report. The content above is left unchanged so the history stays visible.*
+
+The "Test results" section above (lines 44-51) frames the `638`/`643` numbers as two sequential
+pytest runs separated by a real commit boundary -- "right after the no-op signature change", then
+"after adding the two stage-sequence tests ... and the Streamlit wiring". That framing is
+inaccurate. Checking the actual commit history shows the `on_progress` signature/call-site change
+in `src/orchestrator.py` and the two new `test_orchestrator.py` stage-sequence tests were committed
+**together, in a single commit** (`41f9b26`). No commit in this step's history was ever in a
+638-passing state on its own.
+
+Both numbers are still real and were independently reproduced in a follow-up verification pass,
+but reconstructing the `638` checkpoint required temporarily removing tests from **two separate
+files together** -- the 2 new tests in `tests/test_orchestrator.py` *and* the 3 new
+`progress_status_label` tests in `tests/test_streamlit_app.py` -- not undoing one isolated,
+previously-existing commit step. Removing only the 2 orchestrator tests alone reproduces `641`
+passed, not `638`.
+
+**Resolution:** no code or test changes were needed; this is a correction to the report's
+narrative framing only. The underlying `638` and `643` pytest counts remain accurate and
+reproducible as stated.
