@@ -18,6 +18,7 @@ from src.extractors.service import IngestionService
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.extractors.date_extractor import extract_stated_award_date
 from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
+from src.llm.mock_responses import create_mock_llm_client
 from src.llm.validation import validate_and_repair_baseline
 from src.llm.parsers import (
     CharterDomainExtractor,
@@ -46,6 +47,106 @@ from src.scoring.cli_reporter import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def build_llm_client(
+    provider: str = "anthropic",
+    model: Optional[str] = None,
+    anthropic_api_key: str = "",
+    openai_api_key: str = "",
+    cache_mode: str = "off",
+    mock: bool = False,
+    require_provider: bool = True,
+) -> ILLMClient:
+    """HTL-16 shared LLM client factory (consolidates the audit's C-5 and C-9 findings).
+
+    Builds the right ``ILLMClient`` from explicit parameters only -- it never reads
+    argparse or ``os.environ`` directly. The caller (``main.py``'s argument parsing today,
+    the future Streamlit app tomorrow) is responsible for extracting these values from
+    its own input source and passing them in.
+
+    HTL-19: mock-mode fake data comes from the shared ``create_mock_llm_client`` factory.
+    HTL-20: when no provider is configured and ``mock`` was not explicitly requested, this
+    raises ``RuntimeError`` instead of silently falling back to mock data -- a deliberate
+    behavior change from the CLI's previous silent fall-back. Pass ``require_provider=False``
+    to keep the old non-raising behavior for call sites (such as a lazily-built, possibly
+    unused default collaborator) that may never actually invoke the returned client.
+    HTL-21: API keys are accepted as explicit parameters; this function adds nothing
+    resembling a UI-facing key input.
+    """
+    if mock:
+        logger.info("Using offline Mock LLM client for deterministic generation.")
+        return create_mock_llm_client()
+
+    provider_normalized = (
+        "openai" if provider and provider.lower() in ("openai", "open-ai", "gpt", "chatgpt") else "anthropic"
+    )
+
+    if provider_normalized == "openai":
+        if not openai_api_key:
+            if require_provider:
+                raise RuntimeError(
+                    "No LLM provider is configured: OPENAI_API_KEY is not set and mock mode was not "
+                    "requested. Set OPENAI_API_KEY, choose a different provider, or pass mock=True."
+                )
+            logger.warning("OPENAI_API_KEY is not set; building an inert LLM client with no active model.")
+        openai_model = model if (model and model != config.anthropic_model) else config.openai_model
+        logger.info("Using OpenAI LangChain client with model: %s", openai_model)
+        inner = LangChainLLMClient(
+            api_key="",
+            openai_api_key=openai_api_key,
+            openai_model_name=openai_model,
+            temperature=config.temperature,
+        )
+        return CachingLLMClient(
+            inner_client=inner,
+            cache_dir=config.llm_cache_dir,
+            mode=cache_mode,
+            model_id=openai_model,
+        )
+
+    # anthropic (default)
+    if not anthropic_api_key and not openai_api_key:
+        if require_provider:
+            raise RuntimeError(
+                "No LLM provider is configured: neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set, "
+                "and mock mode was not requested. Set an API key, choose a different provider, or pass mock=True."
+            )
+        logger.warning("No API key is configured; building an inert LLM client with no active model.")
+
+    if not anthropic_api_key and openai_api_key:
+        logger.info("ANTHROPIC_API_KEY is not set; using OpenAI LangChain client with model: %s", config.openai_model)
+        inner = LangChainLLMClient(
+            api_key="",
+            openai_api_key=openai_api_key,
+            openai_model_name=config.openai_model,
+            temperature=config.temperature,
+        )
+        return CachingLLMClient(
+            inner_client=inner,
+            cache_dir=config.llm_cache_dir,
+            mode=cache_mode,
+            model_id=config.openai_model,
+        )
+
+    anthropic_model = model or config.anthropic_model
+    if anthropic_api_key and openai_api_key:
+        logger.info("Using Anthropic Claude client (%s) with OpenAI fallback (%s)", anthropic_model, config.openai_model)
+    elif anthropic_api_key:
+        logger.info("Using Anthropic Claude LangChain client with model: %s", anthropic_model)
+    inner = LangChainLLMClient(
+        api_key=anthropic_api_key,
+        model_name=anthropic_model,
+        temperature=config.temperature,
+        openai_api_key=openai_api_key,
+        openai_model_name=config.openai_model,
+    )
+    return CachingLLMClient(
+        inner_client=inner,
+        cache_dir=config.llm_cache_dir,
+        mode=cache_mode,
+        model_id=anthropic_model,
+    )
 
 
 class StartupKitController:
@@ -77,18 +178,18 @@ class StartupKitController:
         if llm_client:
             self.llm_client = llm_client
         else:
-            inner_client = LangChainLLMClient(
-                api_key=config.anthropic_api_key,
-                model_name=config.anthropic_model,
+            # C-9: same shared factory as the CLI's build_llm_client, with require_provider=False
+            # since this default is only a placeholder collaborator -- callers that only need
+            # run_reingest() (which never touches self.llm_client) must not be forced to configure
+            # an LLM provider just to construct the controller.
+            self.llm_client = build_llm_client(
+                provider="anthropic",
+                model=config.anthropic_model,
+                anthropic_api_key=config.anthropic_api_key,
                 openai_api_key=config.openai_api_key,
-                openai_model_name=config.openai_model,
-                temperature=config.temperature
-            )
-            self.llm_client = CachingLLMClient(
-                inner_client=inner_client,
-                cache_dir=config.llm_cache_dir,
-                mode=config.llm_cache_mode,
-                model_id=config.anthropic_model
+                cache_mode=config.llm_cache_mode,
+                mock=False,
+                require_provider=False,
             )
         self.aggregator = aggregator or BaselineAggregator()
         self.doc_writer = doc_writer or DocxGenerator()
