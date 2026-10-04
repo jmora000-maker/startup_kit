@@ -3,7 +3,7 @@
 import shutil
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional, List
 
