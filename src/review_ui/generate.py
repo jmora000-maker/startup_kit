@@ -215,6 +215,9 @@ def format_run_error(exc: BaseException, last_stage: Optional[str] = None) -> st
     """
     stage_label = STAGE_FAILURE_LABELS.get(last_stage, "run")
     reason = str(exc).strip() or exc.__class__.__name__
+    for label in ("ingestion", "extraction", "validation", "document generation", "run"):
+        if reason.startswith(f"{label} failed:"):
+            return reason
     return f"{stage_label} failed: {reason}"
 
 

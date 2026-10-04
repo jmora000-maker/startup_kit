@@ -450,3 +450,68 @@ def test_build_llm_client_configures_symmetric_fallback():
     assert c_openai.inner_client.primary_provider == "openai"
     assert c_openai.inner_client._chat_model is not None
     assert c_openai.inner_client._openai_chat_model is not None
+
+
+def test_openai_truncation_raises_runtime_error_and_falls_back_to_anthropic():
+    """Verify LLM-03 (4b): finish_reason == 'length' from OpenAI is treated as fatal truncation and falls back to Anthropic."""
+    mock_openai = MagicMock()
+    mock_openai_response = MagicMock()
+    mock_openai_response.response_metadata = {"finish_reason": "length"}
+    mock_openai_response.content = '{"title": "Truncated OpenAI'
+    mock_openai.invoke.return_value = mock_openai_response
+
+    mock_anthropic = MagicMock()
+    mock_anthropic_resp = MagicMock()
+    mock_anthropic_resp.content = '{"title": "Complete Anthropic Title", "score": 100}'
+    mock_anthropic.invoke.return_value = mock_anthropic_resp
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    text = client.generate_text("Summarize project")
+    assert text == '{"title": "Complete Anthropic Title", "score": 100}'
+    assert "TextGeneration" in client.fallback_domains
+    mock_openai.invoke.assert_called_once()
+    mock_anthropic.invoke.assert_called_once()
+
+
+def test_openai_truncation_exhaustion_raises_clear_error():
+    """Verify LLM-03 (4b): finish_reason == 'length' when no fallback is available raises clear RuntimeError, not silently parsed."""
+    mock_openai = MagicMock()
+    mock_openai_response = MagicMock()
+    mock_openai_response.response_metadata = {"finish_reason": "length"}
+    mock_openai_response.content = '{"title": "Truncated OpenAI'
+    mock_openai.invoke.return_value = mock_openai_response
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        api_key="",
+        chat_model=None,
+        openai_chat_model=mock_openai,
+    )
+
+    with pytest.raises(RuntimeError, match="OpenAI response was truncated due to reaching max_tokens"):
+        client.generate_text("Summarize project")
+
+
+def test_both_providers_fail_generate_structured_exhaustion():
+    """Verify LLM-03 (4a): when both providers fail, generate_structured raises the failure exception."""
+    mock_anthropic = MagicMock()
+    mock_anthropic.with_structured_output.side_effect = RuntimeError("Anthropic 429 RateLimit")
+    mock_anthropic.invoke.side_effect = RuntimeError("Anthropic text 429 RateLimit")
+
+    mock_openai = MagicMock()
+    mock_openai.with_structured_output.side_effect = RuntimeError("OpenAI 429 InsufficientQuota")
+    mock_openai.invoke.side_effect = RuntimeError("OpenAI text 429 InsufficientQuota")
+
+    client = LangChainLLMClient(
+        primary_provider="anthropic",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    with pytest.raises(RuntimeError, match="OpenAI text 429 InsufficientQuota"):
+        client.generate_structured("Extract project", SampleSchema)

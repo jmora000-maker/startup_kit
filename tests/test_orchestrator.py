@@ -316,3 +316,47 @@ def test_val_11_date_conflict_reaches_baseline_as_finding_or_open_question(tmp_p
         "which was preferred) to reach the baseline as a validation finding or open question, "
         "but found neither."
     )
+
+
+def test_orchestrator_exhausted_providers_raises_clear_stage_error(tmp_path):
+    """Verify LLM-03 (4a): when extraction fails across all providers, orchestrator raises clear stage error."""
+    from unittest.mock import MagicMock
+    from src.llm.client import LangChainLLMClient
+    from src.review_ui.generate import format_run_error
+
+    mock_anthropic = MagicMock()
+    mock_anthropic.with_structured_output.side_effect = RuntimeError("Anthropic 429 RateLimit")
+    mock_anthropic.invoke.side_effect = RuntimeError("Anthropic 429 RateLimit")
+
+    mock_openai = MagicMock()
+    mock_openai.with_structured_output.side_effect = RuntimeError("OpenAI 429 QuotaExceeded")
+    mock_openai.invoke.side_effect = RuntimeError("OpenAI 429 QuotaExceeded")
+
+    client = LangChainLLMClient(
+        primary_provider="anthropic",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    inputs_dir = tmp_path / "inputs"
+    inputs_dir.mkdir()
+    (inputs_dir / "sow.txt").write_text("Statement of Work content", encoding="utf-8")
+    output_dir = tmp_path / "output"
+
+    controller = StartupKitController(
+        llm_client=client,
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        controller.run(inputs_dir=inputs_dir, output_dir=output_dir)
+
+    err_str = str(exc_info.value)
+    assert err_str.startswith("extraction failed:")
+    assert "OpenAI 429 QuotaExceeded" in err_str
+    # Verify no raw traceback in error message
+    assert "Traceback (most recent call last)" not in err_str
+
+    # Verify that UI's format_run_error formats it cleanly without duplicate stage prefixes
+    formatted = format_run_error(exc_info.value, "extracting")
+    assert formatted.startswith("extraction failed:")
+    assert not formatted.startswith("extraction failed: extraction failed:")

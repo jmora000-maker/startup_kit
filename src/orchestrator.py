@@ -389,64 +389,70 @@ class StartupKitController:
         # 2. Multi-Pass LLM Extraction (Concurrent Execution)
         progress("extracting")
         logger.info("Executing concurrent multi-pass LLM extractions (12 domain passes)...")
-        with ThreadPoolExecutor(max_workers=14) as executor:
-            future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
-            future_deliverables = executor.submit(self.deliverables_extractor.extract, documents, self.llm_client)
-            future_milestones = executor.submit(self.milestones_extractor.extract, documents, self.llm_client)
-            future_raid = executor.submit(self.raid_extractor.extract, documents, self.llm_client)
-            future_questions = executor.submit(self.questions_extractor.extract, documents, self.llm_client)
-            future_sow = (
-                executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)
-                if self.sow_interpretation_extractor else None
-            )
-            future_acceptance = (
-                executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)
-                if self.acceptance_extractor else None
-            )
-            future_stakeholders = (
-                executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)
-                if self.stakeholders_extractor else None
-            )
-            future_comms = (
-                executor.submit(self.communications_extractor.extract, documents, self.llm_client)
-                if self.communications_extractor else None
-            )
-            future_commercial = (
-                executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
-                if self.commercial_extractor else None
-            )
-            future_talent = (
-                executor.submit(self.talent_extractor.extract, documents, self.llm_client)
-                if self.talent_extractor else None
-            )
-            future_decisions = (
-                executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
-                if self.decisions_extractor else None
-            )
-            future_conflicts = (
-                executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
-                if self.conflicts_extractor else None
-            )
+        try:
+            with ThreadPoolExecutor(max_workers=14) as executor:
+                future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
+                future_deliverables = executor.submit(self.deliverables_extractor.extract, documents, self.llm_client)
+                future_milestones = executor.submit(self.milestones_extractor.extract, documents, self.llm_client)
+                future_raid = executor.submit(self.raid_extractor.extract, documents, self.llm_client)
+                future_questions = executor.submit(self.questions_extractor.extract, documents, self.llm_client)
+                future_sow = (
+                    executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)
+                    if self.sow_interpretation_extractor else None
+                )
+                future_acceptance = (
+                    executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)
+                    if self.acceptance_extractor else None
+                )
+                future_stakeholders = (
+                    executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)
+                    if self.stakeholders_extractor else None
+                )
+                future_comms = (
+                    executor.submit(self.communications_extractor.extract, documents, self.llm_client)
+                    if self.communications_extractor else None
+                )
+                future_commercial = (
+                    executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
+                    if self.commercial_extractor else None
+                )
+                future_talent = (
+                    executor.submit(self.talent_extractor.extract, documents, self.llm_client)
+                    if self.talent_extractor else None
+                )
+                future_decisions = (
+                    executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
+                    if self.decisions_extractor else None
+                )
+                future_conflicts = (
+                    executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
+                    if self.conflicts_extractor else None
+                )
 
-            charter = future_charter.result()
-            deliverables = future_deliverables.result()
-            milestones = future_milestones.result()
-            raid = future_raid.result()
-            questions = future_questions.result()
-            sow_interpretation = future_sow.result() if future_sow else None
-            acceptance = future_acceptance.result() if future_acceptance else None
-            stakeholders = future_stakeholders.result() if future_stakeholders else None
-            communications = future_comms.result() if future_comms else None
-            commercial = future_commercial.result() if future_commercial else None
-            talent = future_talent.result() if future_talent else None
-            decisions = future_decisions.result() if future_decisions else None
-            conflicts = future_conflicts.result() if future_conflicts else None
+                charter = future_charter.result()
+                deliverables = future_deliverables.result()
+                milestones = future_milestones.result()
+                raid = future_raid.result()
+                questions = future_questions.result()
+                sow_interpretation = future_sow.result() if future_sow else None
+                acceptance = future_acceptance.result() if future_acceptance else None
+                stakeholders = future_stakeholders.result() if future_stakeholders else None
+                communications = future_comms.result() if future_comms else None
+                commercial = future_commercial.result() if future_commercial else None
+                talent = future_talent.result() if future_talent else None
+                decisions = future_decisions.result() if future_decisions else None
+                conflicts = future_conflicts.result() if future_conflicts else None
 
-        # Backlog extraction passes deliverables
-        backlog = (
-            self.backlog_extractor.extract(documents, self.llm_client, deliverables=deliverables.deliverables)
-            if self.backlog_extractor else None
-        )
+            # Backlog extraction passes deliverables
+            backlog = (
+                self.backlog_extractor.extract(documents, self.llm_client, deliverables=deliverables.deliverables)
+                if self.backlog_extractor else None
+            )
+        except Exception as exc:
+            reason = str(exc).strip() or exc.__class__.__name__
+            if any(reason.startswith(f"{lbl} failed:") for lbl in ("ingestion", "extraction", "validation", "document generation", "run")):
+                raise
+            raise RuntimeError(f"extraction failed: {reason}") from exc
 
         # Apply leadership and governance overrides
         if tier_override and tier_override in ("Guided", "Partnered", "Elevated"):
