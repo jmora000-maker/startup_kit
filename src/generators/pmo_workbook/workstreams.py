@@ -106,6 +106,47 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
     desc = milestone.description if isinstance(milestone, Milestone) else str(milestone or "")
     clean_desc = sanitize_report_text(desc)
 
+    # 1. MS-02: Structured phase_display field check (preserves original casing from SOW)
+    if isinstance(milestone, Milestone) and milestone.phase_display and milestone.phase_display.strip():
+        code = milestone.phase_display.strip()
+        match = PHASE_LABEL_REGEX.match(clean_desc)
+        if not match:
+            match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)
+        if match:
+            raw_name = match.group("name").strip()
+            raw_name = re.sub(r'^\((.*)\)$', r'\1', raw_name).strip()
+            raw_name = re.sub(r',?\s*weeks?\s*[\d–— -]+', '', raw_name).strip()
+            workstream = f"{code} {raw_name}" if raw_name else code
+            milestone_name = clean_desc.split(":", 1)[0].strip()
+            scope = match.group("scope").strip()
+            scope_clean = strip_week_range_parenthetical(scope)
+            return ParsedMilestonePhase(
+                phase_code=code,
+                workstream_name=workstream,
+                milestone_name=milestone_name,
+                milestone_scope=scope,
+                milestone_scope_clean=scope_clean,
+                has_phase_label=True,
+                note=None
+            )
+        else:
+            if ":" in clean_desc:
+                milestone_name = clean_desc.split(":", 1)[0].strip()
+                scope = clean_desc.split(":", 1)[1].strip()
+            else:
+                milestone_name = clean_desc
+                scope = clean_desc
+            scope_clean = strip_week_range_parenthetical(scope)
+            return ParsedMilestonePhase(
+                phase_code=code,
+                workstream_name=code,
+                milestone_name=milestone_name,
+                milestone_scope=scope,
+                milestone_scope_clean=scope_clean,
+                has_phase_label=True,
+                note=None
+            )
+
     match = PHASE_LABEL_REGEX.match(clean_desc)
     if not match:
         match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)

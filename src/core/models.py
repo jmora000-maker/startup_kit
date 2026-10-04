@@ -292,6 +292,10 @@ class Milestone(BaseModel):
         default=None,
         description="Delivery phase code for checkpoint/milestone (e.g. 'P3')"
     )
+    phase_display: Optional[str] = Field(
+        default=None,
+        description="Originally-cased phase code (e.g. 'P2a') if found via regex"
+    )
 
 
 class RiskAssumption(BaseModel):

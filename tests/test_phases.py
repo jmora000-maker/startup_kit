@@ -1,6 +1,7 @@
 """Test phase label parsing, week-range date calculation, delivery ordering, and predecessor links."""
 
 from datetime import date
+from src.core.models import Milestone
 from src.generators.pmo_workbook.workstreams import parse_milestone_phase
 from src.generators.pmo_workbook.builder import (
     build_workbook_model,
@@ -128,3 +129,64 @@ def test_arc_baseline_phases_and_predecessors(arc_baseline):
     assert m4.planned_finish == date(2027, 4, 2)
     assert m4.date_basis == "SOW estimate, weeks 22–26"
     assert m4.predecessor == "M3"
+
+
+def test_phase_display_preferred_over_internal_bookkeeping_field():
+    """Verify phase_display is preferred with original casing, and absence falls through cleanly."""
+    # (a) Milestone with phase_display="P2a" correctly produces "P2a Services and Data" workstream name, not "P2A"
+    ms_stated = Milestone(
+        id="M2",
+        description="P2a Services and Data accepted: FastAPI search and async services (est. weeks 7–16).",
+        phase="P2A",
+        phase_display="P2a",
+    )
+    p_stated = parse_milestone_phase(ms_stated)
+    assert p_stated.phase_code == "P2a"
+    assert p_stated.workstream_name == "P2a Services and Data"
+    assert p_stated.milestone_name == "P2a Services and Data accepted"
+    assert p_stated.has_phase_label is True
+
+    # (b) Milestone with phase=None, phase_display=None (synthetic-placeholder case) falls through to existing behavior, never showing "G_1"
+    ms_synthetic = Milestone(
+        id="M1",
+        description="Initial Kickoff, Architecture Discovery and Workshop",
+        phase=None,
+        phase_display=None,
+    )
+    p_synthetic = parse_milestone_phase(ms_synthetic)
+    assert p_synthetic.phase_code is None
+    assert "G_1" not in p_synthetic.workstream_name
+    assert p_synthetic.workstream_name == "Discovery & Requirements"
+    assert p_synthetic.has_phase_label is False
+
+    # Also verify when internal bookkeeping phase is "G_1" but phase_display is None
+    ms_synth_g1 = Milestone(
+        id="M1",
+        description="Initial Kickoff, Architecture Discovery and Workshop",
+        phase="G_1",
+        phase_display=None,
+    )
+    p_synth_g1 = parse_milestone_phase(ms_synth_g1)
+    assert p_synth_g1.phase_code is None
+    assert "G_1" not in p_synth_g1.workstream_name
+    assert p_synth_g1.workstream_name == "Discovery & Requirements"
+    assert p_synth_g1.has_phase_label is False
+
+
+def test_phase_display_with_terse_colonless_gpt4o_shape():
+    """Verify behavior of parse_milestone_phase for real GPT-4o shape with terse description and no colon."""
+    ms_gpt4o = Milestone(
+        id="M1",
+        description="P1 Foundation completion.",
+        phase="P1",
+        phase_display="P1",
+        key_dependencies=["Completion of micro-frontend shell and authentication integration."],
+        critical_path_assumptions=["Shell load and authentication success metrics met."],
+    )
+    p = parse_milestone_phase(ms_gpt4o)
+    assert p.phase_code == "P1"
+    assert p.workstream_name == "P1"
+    assert p.milestone_name == "P1 Foundation completion."
+    assert p.milestone_scope == "P1 Foundation completion."
+    assert p.milestone_scope_clean == "P1 Foundation completion."
+    assert p.has_phase_label is True

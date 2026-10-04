@@ -91,21 +91,27 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
     # Assign phase to each milestone in Kit order
     has_phase_codes = any(PHASE_CODE_REGEX.search(ms.description or "") for ms in baseline.milestones)
     phase_groups: Dict[str, List[Milestone]] = {}
+    phase_display_groups: Dict[str, Optional[str]] = {}
     if not has_phase_codes:
         for idx, ms in enumerate(baseline.milestones, start=1):
             phase_groups[f"G_{idx}"] = [ms]
     else:
         last_phase = "P1"
+        last_phase_display = "P1"
         for ms in baseline.milestones:
             m_desc = ms.description or ""
             phase_m = PHASE_CODE_REGEX.search(m_desc)
             if phase_m:
-                phase_code = phase_m.group(1).upper()
+                phase_code_raw = phase_m.group(1)
+                phase_code = phase_code_raw.upper()
                 last_phase = phase_code
+                last_phase_display = phase_code_raw
             else:
                 phase_code = last_phase
+                phase_code_raw = last_phase_display
             if phase_code not in phase_groups:
                 phase_groups[phase_code] = []
+                phase_display_groups[phase_code] = phase_code_raw
             phase_groups[phase_code].append(ms)
 
     gates: List[Milestone] = []
@@ -117,6 +123,7 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
     )
 
     for phase_code, ms_list in phase_groups.items():
+        phase_display = phase_display_groups.get(phase_code)
         # MS-03: Identify phase gate (overarching phase acceptance takes precedence over intermediate completion)
         gate_candidate: Optional[Milestone] = None
         for ms in ms_list:
@@ -152,9 +159,11 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
             else:
                 # MS-05: Move non-gate milestone to interim checkpoints
                 ms.phase = phase_code
+                ms.phase_display = phase_display
                 checkpoints.append(ms)
 
         gate_candidate.phase = phase_code
+        gate_candidate.phase_display = phase_display
         gates.append(gate_candidate)
 
     if expected_gate_count and len(gates) < expected_gate_count:
@@ -178,7 +187,12 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
         cp.id = f"CP-{idx:02d}"
         if not cp.phase or cp.phase.strip() == "" or cp.phase.upper() == "N/A":
             phase_m = PHASE_CODE_REGEX.search(cp.description or "")
-            cp.phase = phase_m.group(1).upper() if phase_m else "P3"
+            if phase_m:
+                cp.phase = phase_m.group(1).upper()
+                cp.phase_display = phase_m.group(1)
+            else:
+                cp.phase = "P3"
+                cp.phase_display = None
 
     baseline.milestones = gates
     baseline.interim_checkpoints = checkpoints
