@@ -167,6 +167,28 @@ def _new_run_output_dir() -> Path:
     return Path(tempfile.mkdtemp(prefix="startup_kit_app_run_"))
 
 
+# HTL-28: real per-stage progress. orchestrator.run()/run_reingest() report real stage
+# boundaries ('ingesting', 'extracting', 'validating', 'generating') through an on_progress
+# callback as they actually happen; this maps each real stage to a user-facing label, replacing
+# HTL-17's interim single generic spinner message with text reflecting the actual callback-
+# reported stage, never a simulated or timed sequence.
+STAGE_LABELS = {
+    "ingesting": "Ingesting documents...",
+    "extracting": "Running extraction...",
+    "validating": "Validating...",
+    "generating": "Generating documents...",
+}
+
+
+def progress_status_label(stage: str, detail: str = "") -> str:
+    """Pure function: the live status text for a real on_progress(stage, detail) call. An
+    unrecognized stage still shows something sensible (the raw stage name) rather than failing,
+    since this must never be the reason a real run's progress display breaks.
+    """
+    base = STAGE_LABELS.get(stage, stage.capitalize() if stage else "Working")
+    return f"{base} ({detail})" if detail else base
+
+
 def _run_generate(
     uploaded_files,
     start_date_text: str,
@@ -180,6 +202,7 @@ def _run_generate(
     mock: bool,
     cache_mode: str,
     outputs: OutputSelection,
+    on_progress=None,
 ) -> RunResult:
     llm_client = build_app_llm_client(provider=provider, model=model, mock=mock, cache_mode=cache_mode)
     controller = StartupKitController(llm_client=llm_client)
@@ -196,6 +219,7 @@ def _run_generate(
         talent_pm=talent_pm,
         outputs=outputs,
         start_date=start_date,
+        on_progress=on_progress,
     )
 
 
@@ -212,6 +236,7 @@ def _run_reingest(
     mock: bool,
     cache_mode: str,
     outputs: OutputSelection,
+    on_progress=None,
 ) -> RunResult:
     llm_client = build_app_llm_client(provider=provider, model=model, mock=mock, cache_mode=cache_mode)
     controller = StartupKitController(llm_client=llm_client)
@@ -229,6 +254,7 @@ def _run_reingest(
         contract_type_override=contract_type or None,
         outputs=outputs,
         start_date=start_date,
+        on_progress=on_progress,
     )
 
 
@@ -447,14 +473,16 @@ def render() -> None:
                     resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
                         admin_unlocked_gen, provider=provider, model=model, mock=mock, cache_mode=cache_mode
                     )
-                    # Item 6: a visible progress indicator (at minimum a spinner; the message
-                    # itself lists the stages a run goes through) so the user isn't left wondering
-                    # whether anything is happening during a run that can take a while.
-                    with st.spinner(
-                        "Working: ingesting documents, running extraction, validating, and "
-                        "generating documents... this can take a while depending on document "
-                        "size and the LLM provider."
-                    ):
+                    # Item 6/HTL-28: a visible, live progress indicator that reflects the real
+                    # callback-reported stage (not a simulated or timed sequence) so the user
+                    # isn't left wondering whether anything is happening during a run that can
+                    # take a while.
+                    with st.status("Starting...", expanded=True) as status_box:
+                        def _update_status(stage: str, detail: str = "") -> None:
+                            label = progress_status_label(stage, detail)
+                            status_box.update(label=label)
+                            status_box.write(label)
+
                         result = _run_generate(
                             uploaded_files=uploaded_files,
                             start_date_text=start_date_text,
@@ -468,7 +496,9 @@ def render() -> None:
                             mock=resolved_mock,
                             cache_mode=resolved_cache_mode,
                             outputs=outputs,
+                            on_progress=_update_status,
                         )
+                        status_box.update(label="Run complete.", state="complete")
                     st.session_state["generate_run_result"] = result
                 except RuntimeError as exc:
                     # HTL-20/HTL-26: no silent mock fall-back; the exact build_llm_client error is
@@ -549,10 +579,12 @@ def render() -> None:
                     resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
                         admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
                     )
-                    with st.spinner(
-                        "Working: re-ingesting the uploaded Kit, re-running extraction, "
-                        "validating, and regenerating documents... this can take a while."
-                    ):
+                    with st.status("Starting...", expanded=True) as status_box_r:
+                        def _update_status_r(stage: str, detail: str = "") -> None:
+                            label = progress_status_label(stage, detail)
+                            status_box_r.update(label=label)
+                            status_box_r.write(label)
+
                         result_r = _run_reingest(
                             uploaded_kit_file=uploaded_kit_file,
                             start_date_text=start_date_text_r,
@@ -566,7 +598,9 @@ def render() -> None:
                             mock=resolved_mock_r,
                             cache_mode=resolved_cache_mode_r,
                             outputs=outputs_r,
+                            on_progress=_update_status_r,
                         )
+                        status_box_r.update(label="Run complete.", state="complete")
                     st.session_state["reingest_run_result"] = result_r
                 except RuntimeError as exc:
                     st.error(str(exc))

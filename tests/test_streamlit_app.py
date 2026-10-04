@@ -22,6 +22,7 @@ from src.review_ui.generate import (
     LLM_CACHE_MODES_IN_APP,
     collect_download_targets,
     is_admin_unlocked,
+    progress_status_label,
     resolve_app_role,
     resolve_llm_settings,
     validate_generate_inputs,
@@ -208,3 +209,27 @@ def test_model_options_by_provider_covers_both_providers():
     assert set(MODEL_OPTIONS_BY_PROVIDER) == {"anthropic", "openai"}
     assert config.anthropic_model in MODEL_OPTIONS_BY_PROVIDER["anthropic"]
     assert config.openai_model in MODEL_OPTIONS_BY_PROVIDER["openai"]
+
+
+# HTL-28: progress_status_label(stage, detail) turns a real on_progress(stage, detail) call from
+# orchestrator.run()/run_reingest() into the live status text the app displays -- these tests
+# exercise that pure mapping directly (the Streamlit st.status widget itself is smoke-tested).
+
+
+def test_progress_status_label_known_stages_without_detail():
+    assert progress_status_label("ingesting") == "Ingesting documents..."
+    assert progress_status_label("extracting") == "Running extraction..."
+    assert progress_status_label("validating") == "Validating..."
+    assert progress_status_label("generating") == "Generating documents..."
+
+
+def test_progress_status_label_includes_detail_when_present():
+    assert progress_status_label("generating", "Startup Kit") == "Generating documents... (Startup Kit)"
+    assert progress_status_label("ingesting", "3 provided source(s)") == (
+        "Ingesting documents... (3 provided source(s))"
+    )
+
+
+def test_progress_status_label_unrecognized_stage_falls_back_gracefully():
+    assert progress_status_label("some_future_stage") == "Some_future_stage"
+    assert progress_status_label("") == "Working"
