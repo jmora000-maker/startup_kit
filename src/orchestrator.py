@@ -267,7 +267,7 @@ class StartupKitController:
 
         # 3b. Extraction Validation Layer (Section 4, VAL-01 to VAL-07)
         logger.info("Running extraction validation layer and reconciliation...")
-        validation_report = validate_and_repair_baseline(baseline)
+        validation_report = validate_and_repair_baseline(baseline, date_conflict_warning=date_warning)
 
         # 4. Document & Workbook & Deck Generation according to outputs selection
         kit_path: Optional[Path] = None

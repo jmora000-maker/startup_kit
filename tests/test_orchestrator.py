@@ -2,6 +2,7 @@
 
 import pytest
 from pathlib import Path
+from datetime import date
 import docx
 import pymupdf as fitz
 from pptx import Presentation
@@ -180,3 +181,55 @@ def test_controller_default_mock_output_dir(tmp_path, monkeypatch):
         outputs=OutputSelection(kit=True)
     )
     assert captured_paths["out"] == config.mock_output_dir
+
+
+def test_val_11_date_conflict_reaches_baseline_as_finding_or_open_question(tmp_path):
+    """VAL-11/INV-38: a date-conflict warning from extract_stated_award_date must reach the
+    baseline through orchestrator.run() as a real ValidationFinding or open question naming both
+    disagreeing dates and which one was preferred -- not only a log line that nothing ever reads.
+    """
+    inputs_dir = tmp_path / "inputs"
+    inputs_dir.mkdir()
+    (inputs_dir / "sow.txt").write_text(
+        "This SOW becomes effective on October 7, 2026. "
+        "Section 3: Estimated Start Date October 14, 2026.",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "output"
+
+    captured = {}
+
+    class CapturingDocWriter:
+        def write_kit_docx(self, baseline, output_path):
+            captured["baseline"] = baseline
+            return Path(output_path) / "test.docx"
+
+    controller = StartupKitController(
+        ingestion_service=IngestionService(),
+        llm_client=create_mock_llm_client(),
+        aggregator=BaselineAggregator(),
+        doc_writer=CapturingDocWriter(),
+    )
+    controller.run(
+        inputs_dir=inputs_dir,
+        output_dir=output_dir,
+        outputs=OutputSelection(kit=True),
+    )
+
+    baseline = captured["baseline"]
+    # The preamble date wins per VAL-11's precedence rule; this is the resolved date, not the conflict itself.
+    assert baseline.sow_awarded_date == date(2026, 10, 7)
+
+    conflict_findings = [
+        f for f in (baseline.validation_report.findings if baseline.validation_report else [])
+        if "2026-10-07" in f.message and "2026-10-14" in f.message
+    ]
+    conflict_open_questions = [
+        q for q in baseline.open_questions
+        if "2026-10-07" in q and "2026-10-14" in q
+    ]
+    assert conflict_findings or conflict_open_questions, (
+        "Expected the award-date conflict warning (naming both 2026-10-07 and 2026-10-14, and "
+        "which was preferred) to reach the baseline as a validation finding or open question, "
+        "but found neither."
+    )

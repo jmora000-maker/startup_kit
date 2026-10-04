@@ -435,6 +435,29 @@ def validate_award_date(baseline: StartupKitBaseline, findings: List[ValidationF
                         item.exception_details = None
 
 
+def validate_award_date_conflict(
+    baseline: StartupKitBaseline,
+    findings: List[ValidationFinding],
+    date_conflict_warning: Optional[str] = None,
+) -> None:
+    """VAL-11/INV-38: Surface a disagreeing-dates conflict warning from extract_stated_award_date.
+
+    extract_stated_award_date resolves a conflict between two differing date statements and
+    returns a warning naming both dates and which one was preferred, but that warning previously
+    only reached a log line and was never carried into the baseline. This records it as a real
+    ValidationFinding and open question so a reviewer actually sees it, matching VAL-05's pattern.
+    """
+    if not date_conflict_warning:
+        return
+    findings.append(ValidationFinding(
+        invariant_id="INV-38",
+        severity="warning",
+        message=date_conflict_warning,
+    ))
+    if baseline.open_questions is not None and date_conflict_warning not in baseline.open_questions:
+        baseline.open_questions.append(date_conflict_warning)
+
+
 def validate_contract_ambiguities(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
     """VAL-10: Every contract ambiguity carries a citation or [CITATION MISSING]."""
     for amb in baseline.contract_ambiguities:
@@ -685,7 +708,10 @@ def validate_commercial_guardrails(baseline: StartupKitBaseline, findings: List[
         cg.escalation_threshold = "Milestone slip > 3 days or client acceptance rejection [Standard PMO guardrail - confirm]."
 
 
-def validate_and_repair_baseline(baseline: StartupKitBaseline) -> ValidationReport:
+def validate_and_repair_baseline(
+    baseline: StartupKitBaseline,
+    date_conflict_warning: Optional[str] = None,
+) -> ValidationReport:
     """Main entry point for extraction validation layer (Section 4)."""
     findings: List[ValidationFinding] = []
 
@@ -700,6 +726,9 @@ def validate_and_repair_baseline(baseline: StartupKitBaseline) -> ValidationRepo
 
     # 4. VAL-05: Award date provenance
     validate_award_date(baseline, findings)
+
+    # 4b. VAL-11/INV-38: Award date conflict warning (e.g. preamble date vs. Section 3 date)
+    validate_award_date_conflict(baseline, findings, date_conflict_warning)
 
     # 5. VAL-06: One numbering system
     validate_one_numbering_system(baseline, findings)
