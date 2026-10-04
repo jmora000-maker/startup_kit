@@ -2,10 +2,11 @@
 
 import shutil
 import logging
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from pathlib import Path
-from typing import Optional, List
+from typing import BinaryIO, Optional, List, Tuple, Union
 
 from src.config import config, normalize_person_name
 from src.core.interfaces import (
@@ -14,7 +15,7 @@ from src.core.interfaces import (
     IStartupKitDocxParser,
 )
 from src.core.models import StartupKitBaseline, OutputSelection, RunResult, AWARD_DATE_SOURCE_STATED
-from src.extractors.service import IngestionService
+from src.extractors.service import IngestionService, IngestSource
 from src.extractors.startup_kit_docx_parser import StartupKitDocxParser
 from src.extractors.date_extractor import extract_stated_award_date
 from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
@@ -214,6 +215,7 @@ class StartupKitController:
     def run(
         self,
         inputs_dir: Optional[Path] = None,
+        input_documents: Optional[List[IngestSource]] = None,
         output_dir: Optional[Path] = None,
         tier_override: Optional[str] = None,
         contract_type_override: Optional[str] = None,
@@ -224,33 +226,50 @@ class StartupKitController:
         outputs: Optional[OutputSelection] = None,
         start_date: Optional[date] = None,
     ) -> RunResult:
-        """Execute the end-to-end startup kit generation pipeline."""
+        """Execute the end-to-end startup kit generation pipeline.
+
+        HTL-16 Group 2 (C-11): ``input_documents`` is an alternative to ``inputs_dir`` that
+        accepts a mix of disk paths and in-memory uploads (``(file_name, bytes_or_file_like)``
+        pairs), for a caller (such as a future Streamlit upload) that has no inputs directory
+        at all. Passing ``inputs_dir`` keeps the CLI's existing directory-based behavior
+        completely unchanged.
+        """
         if outputs is None:
             outputs = OutputSelection()
 
-        if inputs_dir is not None:
-            in_path = inputs_dir
-        elif isinstance(self.llm_client, MockLLMClient):
-            in_path = config.mock_inputs_dir
+        if input_documents is not None:
+            logger.info("Starting PMO Startup Kit generation from %d provided source(s)", len(input_documents))
+            documents = self.ingestion_service.ingest_sources(input_documents)
+            if not documents:
+                raise FileNotFoundError(
+                    "No supported documents found in the provided inputs. "
+                    "Please provide SOW PDF/DOCX or presentation PPTX files."
+                )
+            out_path = output_dir if output_dir is not None else config.output_dir
         else:
-            in_path = config.inputs_dir
+            if inputs_dir is not None:
+                in_path = inputs_dir
+            elif isinstance(self.llm_client, MockLLMClient):
+                in_path = config.mock_inputs_dir
+            else:
+                in_path = config.inputs_dir
 
-        if output_dir is not None:
-            out_path = output_dir
-        elif isinstance(self.llm_client, MockLLMClient):
-            out_path = config.mock_output_dir
-        else:
-            out_path = config.output_dir
+            if output_dir is not None:
+                out_path = output_dir
+            elif isinstance(self.llm_client, MockLLMClient):
+                out_path = config.mock_output_dir
+            else:
+                out_path = config.output_dir
 
-        logger.info("Starting PMO Startup Kit generation from directory: %s", in_path)
+            logger.info("Starting PMO Startup Kit generation from directory: %s", in_path)
 
-        # 1. Ingest Documents
-        documents = self.ingestion_service.ingest_directory(in_path)
-        if not documents:
-            raise FileNotFoundError(
-                f"No supported documents found in inputs directory: {in_path}. "
-                "Please place SOW PDF/DOCX or presentation PPTX files into the inputs folder."
-            )
+            # 1. Ingest Documents
+            documents = self.ingestion_service.ingest_directory(in_path)
+            if not documents:
+                raise FileNotFoundError(
+                    f"No supported documents found in inputs directory: {in_path}. "
+                    "Please place SOW PDF/DOCX or presentation PPTX files into the inputs folder."
+                )
 
         logger.info("Ingested %d document(s): %s", len(documents), [d.file_name for d in documents])
 
@@ -413,18 +432,27 @@ class StartupKitController:
             print_deck_export_summary(deck_result)
 
         logger.info("Startup Kit execution complete! Readiness score: %.1f%%", baseline.readiness_score)
+        # HTL-24: structured result fields -- the validated baseline (which already carries the
+        # VAL-11/INV-38 award-date conflict warning in its open_questions/findings), the
+        # validation report, and any OpenAI fallback-model notice -- so a UI can render its own
+        # presentation from the same data the CLI prints, instead of only reading stdout/logs.
+        fallback_domains = list(getattr(self.llm_client, "fallback_domains", []) or [])
         return RunResult(
             kit_path=kit_path,
             checklist_path=checklist_path,
             workbook=wb_result,
             slides=deck_result,
             slides_path=deck_result.file_path if deck_result else None,
-            readiness_score=baseline.readiness_score
+            readiness_score=baseline.readiness_score,
+            baseline=baseline,
+            validation_report=validation_report,
+            fallback_domains=fallback_domains,
         )
 
     def run_reingest(
         self,
-        docx_path: Path,
+        docx_path: Optional[Path] = None,
+        docx_source: Optional[Tuple[str, Union[bytes, BinaryIO]]] = None,
         output_dir: Optional[Path] = None,
         output_file: Optional[Path] = None,
         pmo_lead: Optional[str] = None,
@@ -437,16 +465,47 @@ class StartupKitController:
         start_date: Optional[date] = None,
         create_backup: bool = True,
     ) -> RunResult:
-        """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report."""
+        """Re-ingest an updated *_Startup_Kit.docx file, recalculate readiness, and regenerate report.
+
+        HTL-16 Group 2 (C-12): ``docx_source`` is an alternative to ``docx_path`` for an
+        uploaded Kit that has no disk path (``(file_name, bytes_or_file_like)``). Since an
+        upload has nothing to overwrite in place, ``output_dir`` or ``output_file`` is required
+        when using ``docx_source``. Passing ``docx_path`` keeps the CLI's existing
+        in-place-with-backup default completely unchanged.
+        """
         if outputs is None:
             outputs = OutputSelection()
 
-        docx_file = Path(docx_path)
-        if not docx_file.exists():
-            raise FileNotFoundError(f"Target Startup Kit Word document not found at: {docx_file}")
+        _upload_temp_dir: Optional[str] = None
+        if docx_source is not None:
+            if output_dir is None and output_file is None:
+                raise ValueError(
+                    "output_dir or output_file is required when re-ingesting from docx_source: "
+                    "an uploaded document has no disk location to overwrite in place."
+                )
+            file_name, content = docx_source
+            _upload_temp_dir = tempfile.mkdtemp(prefix="startup_kit_reingest_")
+            docx_file = Path(_upload_temp_dir) / Path(file_name).name
+            data = content.read() if hasattr(content, "read") else content
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            docx_file.write_bytes(data)
+            create_backup = False  # nothing to back up; this is a disposable temp copy
+        elif docx_path is not None:
+            docx_file = Path(docx_path)
+            if not docx_file.exists():
+                raise FileNotFoundError(f"Target Startup Kit Word document not found at: {docx_file}")
+        else:
+            raise ValueError("Either docx_path or docx_source must be provided.")
 
         logger.info("Executing Single-Document Ingestion for: %s", docx_file)
         baseline = self.docx_parser.parse_startup_kit_docx(docx_file)
+
+        if _upload_temp_dir is not None:
+            # The parser has already read everything it needs; nothing later in this method
+            # re-reads the uploaded file's bytes (create_backup is forced False above, and
+            # docx_file.name below is a pure Path operation that needs no existing file).
+            shutil.rmtree(_upload_temp_dir, ignore_errors=True)
 
         # Apply leadership overrides if supplied
         dm = delivery_lead or delivery_manager
@@ -577,5 +636,7 @@ class StartupKitController:
             workbook=wb_result,
             slides=deck_result,
             slides_path=deck_result.file_path if deck_result else None,
-            readiness_score=baseline.readiness_score
+            readiness_score=baseline.readiness_score,
+            baseline=baseline,
+            validation_report=getattr(baseline, "validation_report", None),
         )

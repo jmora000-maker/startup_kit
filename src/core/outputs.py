@@ -1,12 +1,13 @@
 """Output selection and execution result dataclasses."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.generators.pmo_workbook import PMOWorkbookResult
     from src.generators.onboarding_deck import OnboardingDeckResult
+    from src.core.models import StartupKitBaseline, ValidationReport
 
 
 @dataclass(frozen=True)
@@ -44,3 +45,11 @@ class RunResult:
     slides: Optional["OnboardingDeckResult"] = None
     slides_path: Optional[Path] = None
     readiness_score: float = 0.0
+    # HTL-24: structured fields so both front ends can render their own presentation from the
+    # same underlying data, instead of only being able to read it off stdout/logs. The CLI's
+    # own formatted text (src/scoring/cli_reporter.py) stays CLI-specific presentation built
+    # from these fields; a future UI renders its own widgets from the same fields.
+    baseline: Optional["StartupKitBaseline"] = None
+    validation_report: Optional["ValidationReport"] = None
+    summary_text: Optional[str] = None
+    fallback_domains: List[str] = field(default_factory=list)
