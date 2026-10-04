@@ -23,6 +23,7 @@ output/
 #Inputs
 inputs/
 !tests/fixtures/sow/mock_sow/inputs/
+!tests/fixtures/sow/arc_application_implementation/inputs/
 
 # Test & coverage artifacts
 .pytest_cache/
