@@ -1,0 +1,120 @@
+"""HTL-17: tests for the pure, testable logic extracted from src/review_ui/generate.py's
+Streamlit page -- form validation, role resolution, and result-rendering helpers. The Streamlit
+widget code itself is not unit-tested here; it is covered by a manual smoke test
+(streamlit run src/review_ui/app.py)."""
+
+from pathlib import Path
+
+import pytest
+
+from src.core.outputs import OutputSelection, RunResult
+from src.generators.onboarding_deck import OnboardingDeckResult
+from src.generators.pmo_workbook import PMOWorkbookResult
+from src.review_ui.generate import (
+    DownloadTarget,
+    LLM_CACHE_MODES_IN_APP,
+    collect_download_targets,
+    resolve_app_role,
+    validate_generate_inputs,
+    validate_reingest_inputs,
+    validate_start_date_text,
+)
+
+
+def test_validate_start_date_text_blank_is_valid():
+    assert validate_start_date_text("") is None
+    assert validate_start_date_text(None) is None
+
+
+def test_validate_start_date_text_valid_iso_is_valid():
+    assert validate_start_date_text("2026-10-07") is None
+
+
+def test_validate_start_date_text_invalid_returns_error_message():
+    error = validate_start_date_text("not-a-date")
+    assert error is not None
+    assert "not-a-date" in error
+
+
+def test_validate_generate_inputs_requires_at_least_one_file():
+    error = validate_generate_inputs([], "")
+    assert error is not None
+    assert "upload" in error.lower()
+
+
+def test_validate_generate_inputs_valid_with_file_and_blank_date():
+    assert validate_generate_inputs(["sow.pdf"], "") is None
+
+
+def test_validate_generate_inputs_propagates_bad_date_error():
+    error = validate_generate_inputs(["sow.pdf"], "garbage")
+    assert error is not None
+
+
+def test_validate_reingest_inputs_requires_a_file():
+    error = validate_reingest_inputs(None, "")
+    assert error is not None
+    assert "docx" in error.lower()
+
+
+def test_validate_reingest_inputs_valid_with_file():
+    assert validate_reingest_inputs("Project_Startup_Kit.docx", "") is None
+
+
+def test_resolve_app_role_blank_field_means_no_override():
+    # HTL-25: a blank field on re-ingestion never overrides the existing baseline value.
+    assert resolve_app_role("") is None
+    assert resolve_app_role("   ") is None
+
+
+def test_resolve_app_role_filled_field_is_applied():
+    assert resolve_app_role("Sarah Connor") == "Sarah Connor"
+    assert resolve_app_role("  John Connor  ") == "John Connor"
+
+
+def test_llm_cache_modes_in_app_excludes_record():
+    # HTL-22: the app exposes only off/replay -- never "record".
+    assert "record" not in LLM_CACHE_MODES_IN_APP
+    assert set(LLM_CACHE_MODES_IN_APP) == {"off", "replay"}
+
+
+def test_collect_download_targets_empty_result_has_no_targets():
+    result = RunResult()
+    assert collect_download_targets(result) == []
+
+
+def test_collect_download_targets_includes_every_generated_path(tmp_path):
+    kit_path = tmp_path / "Kit.docx"
+    checklist_path = tmp_path / "Checklist.docx"
+    workbook_path = tmp_path / "Workbook.xlsx"
+    deck_path = tmp_path / "Deck.pptx"
+    manifest_path = tmp_path / "Deck.trace.json"
+
+    result = RunResult(
+        kit_path=kit_path,
+        checklist_path=checklist_path,
+        workbook=PMOWorkbookResult(
+            file_path=workbook_path,
+            schedule_rows=0,
+            wbs_rows=0,
+            task_rows=0,
+            raid_rows=0,
+            unmapped_deliverables=0,
+        ),
+        slides=OnboardingDeckResult(
+            file_path=deck_path,
+            manifest_path=manifest_path,
+            slides_count=7,
+            trace_entries_count=0,
+            project_name="Test Project",
+        ),
+    )
+
+    targets = collect_download_targets(result)
+    paths = {t.path for t in targets}
+    assert kit_path in paths
+    assert checklist_path in paths
+    assert workbook_path in paths
+    assert deck_path in paths
+    assert manifest_path in paths
+    assert len(targets) == 5

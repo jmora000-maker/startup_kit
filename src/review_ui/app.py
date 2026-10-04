@@ -1,9 +1,17 @@
-"""Standalone fact-review screen (HTL-06, HTL-07; section 17 step 1).
+"""Startup Kit Streamlit app entry point.
 
 Run with: streamlit run src/review_ui/app.py
 
-Reads one recorded fixture baseline directly (read-only) and writes corrected_baseline.json and
-review_audit.json to review_ui_scratch/. All logic lives in src/review_ui/facts.py; this file only renders.
+This is the one app entry point with two pages, selected from the sidebar:
+
+- "Generate / Re-ingest" (HTL-17): the full second front end to the CLI -- upload, every CLI
+  option, trigger a run, download results. All logic lives in src/review_ui/generate.py, which
+  calls src/orchestrator.py's shared service layer (HTL-16); this file only renders.
+- "Fact Review (fixture)" (HTL-06, HTL-07; section 17 step 1): the standalone fact-review screen,
+  unchanged, reading one recorded fixture baseline directly (read-only) and writing
+  corrected_baseline.json and review_audit.json to review_ui_scratch/. All logic lives in
+  src/review_ui/facts.py; this file only renders. This page does not yet route through the
+  review_queue/state-machine plumbing (HTL-01 through HTL-05, HTL-13), which is later work.
 """
 
 import sys
@@ -16,6 +24,7 @@ if str(_REPO_ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from src.review_ui import facts as review  # noqa: E402
+from src.review_ui import generate as generate_page  # noqa: E402
 
 GOVERNANCE_TIERS = ["Guided", "Partnered", "Elevated"]
 
@@ -49,8 +58,7 @@ def _render_field(field: review.FactField) -> str:
     return st.text_input("Your value", value=field.value, key=f"edit::{field.key}")
 
 
-def main() -> None:
-    st.set_page_config(page_title="Pre-Generation Fact Review", layout="wide")
+def _render_fact_review_page() -> None:
     baseline, categories = _load()
 
     st.title("Pre-Generation Fact Review")
@@ -81,6 +89,19 @@ def main() -> None:
             return
         st.success(f"Saved {baseline_path.name} and {audit_path.name} to {audit_path.parent}")
         st.json(audit)
+
+
+def main() -> None:
+    st.set_page_config(page_title="PMO Startup Kit", layout="wide")
+    page = st.sidebar.radio(
+        "Page",
+        ["Generate / Re-ingest", "Fact Review (fixture)"],
+        key="app_page_selector",
+    )
+    if page == "Generate / Re-ingest":
+        generate_page.render()
+    else:
+        _render_fact_review_page()
 
 
 main()
