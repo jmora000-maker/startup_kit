@@ -8,10 +8,17 @@ step does not build the review_queue/state-machine plumbing (HTL-01 through HTL-
 submitted run always goes straight through to generated output, the same as a normal
 (non---review) CLI invocation does today.
 
+HTL-27: every user sees the upload, dates, governance tier, contract type, the three named
+roles, and output selection. LLM provider/model, the mock toggle, and the llm-cache mode sit
+behind a collapsed, passphrase-locked "Advanced (admin)" section, closed by default. Until it is
+unlocked with the correct passphrase, a run always uses fixed, safe defaults: the server's
+configured real provider/model, mock off, cache off -- never whatever an invisible/inert widget
+might otherwise hold.
+
 This module is deliberately split into plain, pure functions (validation, role resolution,
-download-target collection, client construction) and a thin `render()` that only calls Streamlit
-widgets -- the pure functions are covered by tests/test_streamlit_app.py; the widget code itself
-is only smoke-tested (per HTL-17's own Test column).
+admin-gate checking, download-target collection, client construction) and a thin `render()` that
+only calls Streamlit widgets -- the pure functions are covered by tests/test_streamlit_app.py;
+the widget code itself is only smoke-tested (per HTL-17's own Test column).
 """
 
 import sys
@@ -101,10 +108,41 @@ def collect_download_targets(run_result: RunResult) -> List[DownloadTarget]:
     return targets
 
 
+def is_admin_unlocked(entered_passphrase: str, configured_passphrase: str) -> bool:
+    """HTL-27: the Advanced (admin) section unlocks only on an exact, non-empty match against the
+    configured passphrase (``config.admin_passphrase``: an env var locally, a Secret Manager value
+    in production). An empty configured passphrase never unlocks, even against an empty entry --
+    there is always a non-empty value configured in practice (the dev-only placeholder, at worst),
+    so this is a defensive refusal, not a usable bypass.
+    """
+    if not configured_passphrase:
+        return False
+    return entered_passphrase == configured_passphrase
+
+
+def resolve_llm_settings(
+    admin_unlocked: bool,
+    provider: str = "",
+    model: str = "",
+    mock: bool = False,
+    cache_mode: str = "off",
+):
+    """HTL-27: when the admin section was never unlocked for this run, the provider, model, mock
+    toggle, and cache mode are never read from the (in that case invisible and inert) admin
+    widgets at all -- every run instead uses fixed, safe defaults: the server's configured real
+    provider and its default model, mock off, and cache off. Only an unlocked admin's actual
+    selections are ever passed through.
+    """
+    if not admin_unlocked:
+        return config.default_provider, "", False, "off"
+    return provider, model, mock, cache_mode
+
+
 def build_app_llm_client(provider: str, model: str, mock: bool, cache_mode: str):
     """HTL-16/HTL-21: the app's only entry point for constructing an LLM client is the one
-    shared factory. No API key field exists anywhere in this module; keys always come from the
-    server-side config/secrets (HTL-15/HTL-21), never from a value typed into the page.
+    shared factory. No API key field exists anywhere in this module, locked or unlocked; keys
+    always come from the server-side config/secrets (HTL-15/HTL-21), never from a value typed
+    into the page.
     """
     return build_llm_client(
         provider=provider,
@@ -235,6 +273,37 @@ def _output_selection_from_checkboxes(kit: bool, checklist: bool, workbook: bool
     return OutputSelection(kit=kit, checklist=checklist, workbook=workbook, slides=slides)
 
 
+def _render_admin_gate(key_prefix: str) -> bool:
+    """HTL-27: a collapsed, closed-by-default "Advanced (admin)" expander. An ordinary user never
+    sees provider/model/mock/cache-mode controls at all -- they render only after this gate
+    reports unlocked. Rendered outside any st.form, since a passphrase check needs to take effect
+    immediately (a form only reacts on its own submit button)."""
+    import streamlit as st
+
+    unlocked_key = f"{key_prefix}_admin_unlocked"
+    if unlocked_key not in st.session_state:
+        st.session_state[unlocked_key] = False
+
+    with st.expander("Advanced (admin)", expanded=False):
+        if st.session_state[unlocked_key]:
+            st.caption("Unlocked: LLM provider/model, mock mode, and cache mode are set below.")
+        else:
+            st.caption(
+                "Locked. Ordinary users do not need this section -- a run uses the server's "
+                "configured real provider with mock off and caching off until an admin unlocks it."
+            )
+            entered = st.text_input(
+                "Admin passphrase", type="password", key=f"{key_prefix}_admin_passphrase_input"
+            )
+            if st.button("Unlock", key=f"{key_prefix}_admin_unlock_button"):
+                if is_admin_unlocked(entered, config.admin_passphrase):
+                    st.session_state[unlocked_key] = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect passphrase.")
+    return st.session_state[unlocked_key]
+
+
 def render() -> None:
     import streamlit as st
 
@@ -248,6 +317,7 @@ def render() -> None:
     tab_generate, tab_reingest = st.tabs(["Generate from SOW upload", "Re-ingest an existing Kit"])
 
     with tab_generate:
+        admin_unlocked_gen = _render_admin_gate("gen")
         with st.form("generate_form"):
             uploaded_files = st.file_uploader(
                 "Upload SOW and/or supporting documents (PDF, DOCX, PPTX, TXT)",
@@ -262,13 +332,18 @@ def render() -> None:
             pmo_lead = st.text_input("PMO Lead", value="", key="gen_pmo_lead")
             delivery_lead = st.text_input("Delivery Lead / Manager", value="", key="gen_delivery_lead")
             talent_pm = st.text_input("Talent PM", value="", key="gen_talent_pm")
-            provider = st.selectbox("LLM provider", LLM_PROVIDERS, key="gen_provider")
-            model = st.text_input("Model (optional, uses provider default if blank)", value="", key="gen_model")
-            mock = st.checkbox(
-                "Mock mode (run the offline client against my own upload, no API keys required)",
-                key="gen_mock",
-            )
-            cache_mode = st.selectbox("LLM cache mode", LLM_CACHE_MODES_IN_APP, key="gen_cache_mode")
+            if admin_unlocked_gen:
+                provider = st.selectbox("LLM provider (admin)", LLM_PROVIDERS, key="gen_provider")
+                model = st.text_input(
+                    "Model (admin, optional, uses provider default if blank)", value="", key="gen_model"
+                )
+                mock = st.checkbox(
+                    "Mock mode (admin; run the offline client against my own upload, no API keys required)",
+                    key="gen_mock",
+                )
+                cache_mode = st.selectbox("LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, key="gen_cache_mode")
+            else:
+                provider, model, mock, cache_mode = "", "", False, "off"
             st.caption("Outputs to produce")
             col1, col2, col3, col4 = st.columns(4)
             kit = col1.checkbox("Startup Kit", value=True, key="gen_out_kit")
@@ -285,6 +360,9 @@ def render() -> None:
             else:
                 try:
                     outputs = _output_selection_from_checkboxes(kit, checklist, workbook, slides)
+                    resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
+                        admin_unlocked_gen, provider=provider, model=model, mock=mock, cache_mode=cache_mode
+                    )
                     result = _run_generate(
                         uploaded_files=uploaded_files,
                         start_date_text=start_date_text,
@@ -293,10 +371,10 @@ def render() -> None:
                         pmo_lead=pmo_lead,
                         delivery_lead=delivery_lead,
                         talent_pm=talent_pm,
-                        provider=provider,
-                        model=model,
-                        mock=mock,
-                        cache_mode=cache_mode,
+                        provider=resolved_provider,
+                        model=resolved_model,
+                        mock=resolved_mock,
+                        cache_mode=resolved_cache_mode,
                         outputs=outputs,
                     )
                     st.session_state["generate_run_result"] = result
@@ -311,6 +389,7 @@ def render() -> None:
             _render_results(st.session_state["generate_run_result"])
 
     with tab_reingest:
+        admin_unlocked_r = _render_admin_gate("reingest")
         with st.form("reingest_form"):
             uploaded_kit_file = st.file_uploader(
                 "Upload an existing *_Startup_Kit.docx file to re-ingest", type=["docx"], key="reingest_file"
@@ -329,10 +408,13 @@ def render() -> None:
             talent_pm_r = st.text_input(
                 "Talent PM override (blank = keep existing value)", value="", key="reingest_talent_pm"
             )
-            provider_r = st.selectbox("LLM provider", LLM_PROVIDERS, key="reingest_provider")
-            model_r = st.text_input("Model (optional)", value="", key="reingest_model")
-            mock_r = st.checkbox("Mock mode", key="reingest_mock")
-            cache_mode_r = st.selectbox("LLM cache mode", LLM_CACHE_MODES_IN_APP, key="reingest_cache_mode")
+            if admin_unlocked_r:
+                provider_r = st.selectbox("LLM provider (admin)", LLM_PROVIDERS, key="reingest_provider")
+                model_r = st.text_input("Model (admin, optional)", value="", key="reingest_model")
+                mock_r = st.checkbox("Mock mode (admin)", key="reingest_mock")
+                cache_mode_r = st.selectbox("LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, key="reingest_cache_mode")
+            else:
+                provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
             st.caption("Outputs to regenerate")
             rcol1, rcol2, rcol3, rcol4 = st.columns(4)
             kit_r = rcol1.checkbox("Startup Kit", value=True, key="reingest_out_kit")
@@ -350,6 +432,9 @@ def render() -> None:
             else:
                 try:
                     outputs_r = _output_selection_from_checkboxes(kit_r, checklist_r, workbook_r, slides_r)
+                    resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
+                        admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
+                    )
                     result_r = _run_reingest(
                         uploaded_kit_file=uploaded_kit_file,
                         start_date_text=start_date_text_r,
@@ -358,10 +443,10 @@ def render() -> None:
                         pmo_lead_field=pmo_lead_r,
                         delivery_lead_field=delivery_lead_r,
                         talent_pm_field=talent_pm_r,
-                        provider=provider_r,
-                        model=model_r,
-                        mock=mock_r,
-                        cache_mode=cache_mode_r,
+                        provider=resolved_provider_r,
+                        model=resolved_model_r,
+                        mock=resolved_mock_r,
+                        cache_mode=resolved_cache_mode_r,
                         outputs=outputs_r,
                     )
                     st.session_state["reingest_run_result"] = result_r

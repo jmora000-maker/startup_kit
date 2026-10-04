@@ -115,6 +115,11 @@ class AppConfig:
     llm_cache_mode: str = os.getenv("LLM_CACHE_MODE", "off").lower()
     llm_cache_dir: Path = Path(os.getenv("LLM_CACHE_DIR", "tests/fixtures/llm_cache"))
     deck_template_path: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
+    # HTL-27: the app's "Advanced (admin)" section passphrase. In production this is read from a
+    # Secret Manager value exposed as this same environment variable; for local development, when
+    # the variable is unset, it falls back to a clear, documented, non-secret placeholder (never a
+    # hardcoded real secret) so a developer can still reach the admin section locally.
+    admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "dev-only-change-me")
 
 
 DECK_TEMPLATE_PATH: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))

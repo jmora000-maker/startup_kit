@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from src.config import config
 from src.core.outputs import OutputSelection, RunResult
 from src.generators.onboarding_deck import OnboardingDeckResult
 from src.generators.pmo_workbook import PMOWorkbookResult
@@ -14,7 +15,9 @@ from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
     collect_download_targets,
+    is_admin_unlocked,
     resolve_app_role,
+    resolve_llm_settings,
     validate_generate_inputs,
     validate_reingest_inputs,
     validate_start_date_text,
@@ -76,6 +79,49 @@ def test_llm_cache_modes_in_app_excludes_record():
     # HTL-22: the app exposes only off/replay -- never "record".
     assert "record" not in LLM_CACHE_MODES_IN_APP
     assert set(LLM_CACHE_MODES_IN_APP) == {"off", "replay"}
+
+
+def test_is_admin_unlocked_correct_passphrase_unlocks():
+    assert is_admin_unlocked("correct-horse-battery-staple", "correct-horse-battery-staple") is True
+
+
+def test_is_admin_unlocked_wrong_passphrase_does_not_unlock():
+    # HTL-27: a wrong passphrase must never unlock the Advanced (admin) section.
+    assert is_admin_unlocked("wrong-guess", "correct-horse-battery-staple") is False
+
+
+def test_is_admin_unlocked_empty_configured_passphrase_never_unlocks():
+    assert is_admin_unlocked("", "") is False
+    assert is_admin_unlocked("anything", "") is False
+
+
+def test_is_admin_unlocked_against_real_configured_passphrase():
+    # Exercises the real config.admin_passphrase (env var or its documented dev placeholder).
+    assert is_admin_unlocked(config.admin_passphrase, config.admin_passphrase) is True
+    assert is_admin_unlocked(config.admin_passphrase + "-wrong", config.admin_passphrase) is False
+
+
+def test_resolve_llm_settings_locked_forces_fixed_safe_defaults():
+    # HTL-27: the admin controls are genuinely inaccessible while locked -- whatever values an
+    # (invisible) widget might otherwise hold are never used; the run always gets the server's
+    # configured real provider, no model override, mock off, and cache off.
+    provider, model, mock, cache_mode = resolve_llm_settings(
+        admin_unlocked=False, provider="openai", model="gpt-4o", mock=True, cache_mode="replay"
+    )
+    assert provider == config.default_provider
+    assert model == ""
+    assert mock is False
+    assert cache_mode == "off"
+
+
+def test_resolve_llm_settings_unlocked_passes_through_admin_choices():
+    provider, model, mock, cache_mode = resolve_llm_settings(
+        admin_unlocked=True, provider="openai", model="gpt-4o", mock=True, cache_mode="replay"
+    )
+    assert provider == "openai"
+    assert model == "gpt-4o"
+    assert mock is True
+    assert cache_mode == "replay"
 
 
 def test_collect_download_targets_empty_result_has_no_targets():
