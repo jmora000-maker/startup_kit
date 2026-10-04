@@ -422,6 +422,11 @@ def main():
                 start_date=parsed_start_date,
             )
 
+            # HTL-16 Group 3: the orchestrator no longer prints; main.py prints the returned
+            # summary text (cli_reporter.py's formatting functions, now fed by RunResult).
+            if run_result.summary_text:
+                print(run_result.summary_text)
+
             logger.info("SUCCESS: Project Startup Kit re-evaluated successfully!")
             if run_result.kit_path:
                 logger.info("Startup Kit Word Document: %s", run_result.kit_path.resolve())
@@ -502,8 +507,13 @@ def main():
             start_date=parsed_start_date,
         )
 
-        if hasattr(llm_client, "fallback_domains") and llm_client.fallback_domains:
-            logger.info("Notice: The following extraction domain(s) used secondary OpenAI fallback: %s", ", ".join(llm_client.fallback_domains))
+        # HTL-16 Group 3: the orchestrator no longer prints; main.py prints the returned
+        # summary text (cli_reporter.py's formatting functions, now fed by RunResult).
+        if run_result.summary_text:
+            print(run_result.summary_text)
+
+        if run_result.fallback_domains:
+            logger.info("Notice: The following extraction domain(s) used secondary OpenAI fallback: %s", ", ".join(run_result.fallback_domains))
 
         logger.info("SUCCESS: Project Startup Kit generated successfully!")
         if run_result.kit_path:

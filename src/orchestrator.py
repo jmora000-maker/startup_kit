@@ -42,9 +42,9 @@ from src.generators.docx_generator import DocxGenerator
 from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
 from src.generators.onboarding_deck import export_onboarding_deck, OnboardingDeckResult
 from src.scoring.cli_reporter import (
-    print_readiness_cli_summary,
-    print_workbook_export_summary,
-    print_deck_export_summary,
+    format_readiness_cli_summary,
+    format_workbook_export_summary,
+    format_deck_export_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -424,12 +424,14 @@ class StartupKitController:
             written_paths.append(deck_result.file_path)
             written_paths.append(deck_result.manifest_path)
 
-        # 5. CLI Telemetry Summary
-        print_readiness_cli_summary(baseline, written_paths if written_paths else [out_path])
+        # 5. Build (but do not print) the CLI telemetry summary (HTL-16 Group 3: the
+        # orchestrator itself prints nothing; main.py takes this returned text and prints it).
+        summary_parts = [format_readiness_cli_summary(baseline, written_paths if written_paths else [out_path])]
         if wb_result is not None:
-            print_workbook_export_summary(wb_result)
+            summary_parts.append(format_workbook_export_summary(wb_result))
         if deck_result is not None:
-            print_deck_export_summary(deck_result)
+            summary_parts.append(format_deck_export_summary(deck_result))
+        summary_text = "\n".join(summary_parts)
 
         logger.info("Startup Kit execution complete! Readiness score: %.1f%%", baseline.readiness_score)
         # HTL-24: structured result fields -- the validated baseline (which already carries the
@@ -446,6 +448,7 @@ class StartupKitController:
             readiness_score=baseline.readiness_score,
             baseline=baseline,
             validation_report=validation_report,
+            summary_text=summary_text,
             fallback_domains=fallback_domains,
         )
 
@@ -618,12 +621,14 @@ class StartupKitController:
         if output_file is not None and not (outputs.kit or outputs.checklist):
             logger.warning("--output-file was provided but neither the Startup Kit nor the Readiness Checklist was selected; it only sets the destination folder for the workbook and deck.")
 
-        # Output CLI Telemetry Summary
-        print_readiness_cli_summary(baseline, written_paths if written_paths else [target_path])
+        # Build (but do not print) the CLI telemetry summary (HTL-16 Group 3: the orchestrator
+        # itself prints nothing; main.py takes this returned text and prints it).
+        summary_parts = [format_readiness_cli_summary(baseline, written_paths if written_paths else [target_path])]
         if wb_result is not None:
-            print_workbook_export_summary(wb_result)
+            summary_parts.append(format_workbook_export_summary(wb_result))
         if deck_result is not None:
-            print_deck_export_summary(deck_result)
+            summary_parts.append(format_deck_export_summary(deck_result))
+        summary_text = "\n".join(summary_parts)
 
         logger.info(
             "Startup Kit Re-evaluation complete! Readiness Score: %s%%, Status: %s",
@@ -639,4 +644,5 @@ class StartupKitController:
             readiness_score=baseline.readiness_score,
             baseline=baseline,
             validation_report=getattr(baseline, "validation_report", None),
+            summary_text=summary_text,
         )
