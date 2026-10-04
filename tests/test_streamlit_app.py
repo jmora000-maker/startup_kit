@@ -11,6 +11,12 @@ from src.config import config
 from src.core.outputs import OutputSelection, RunResult
 from src.generators.onboarding_deck import OnboardingDeckResult
 from src.generators.pmo_workbook import PMOWorkbookResult
+from src.review_ui.constants import (
+    CONTRACT_TYPES,
+    GOVERNANCE_TIERS,
+    MODEL_OPTIONS_BY_PROVIDER,
+    resolve_select_index,
+)
 from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
@@ -164,3 +170,41 @@ def test_collect_download_targets_includes_every_generated_path(tmp_path):
     assert deck_path in paths
     assert manifest_path in paths
     assert len(targets) == 5
+
+
+# Item 4: contract type is now one shared, closed-set list (src/review_ui/constants.py), imported
+# identically by both the Generate tab (src/review_ui/generate.py) and the Fact Review screen
+# (src/review_ui/app.py) -- these tests exercise that one shared definition and its helper.
+
+
+def test_contract_types_is_the_closed_two_value_set():
+    # Matches src/llm/prompts.py's extraction instructions and src/generators/checklist.py's
+    # commercial-guardrail branching, which only ever distinguish these two values.
+    assert CONTRACT_TYPES == ["Time and Materials", "Fixed Bid"]
+
+
+def test_governance_tiers_matches_the_core_model_closed_set():
+    assert GOVERNANCE_TIERS == ["Guided", "Partnered", "Elevated"]
+
+
+def test_resolve_select_index_recognized_value_returns_its_own_index():
+    assert resolve_select_index("Fixed Bid", CONTRACT_TYPES, "Time and Materials") == 1
+    assert resolve_select_index("Time and Materials", CONTRACT_TYPES, "Fixed Bid") == 0
+
+
+def test_resolve_select_index_unrecognized_value_falls_back_to_default_index():
+    assert resolve_select_index("Cost Plus", CONTRACT_TYPES, "Fixed Bid") == 1
+    assert resolve_select_index("", GOVERNANCE_TIERS, "Elevated") == 2
+
+
+def test_resolve_select_index_neither_recognized_returns_zero():
+    assert resolve_select_index("Cost Plus", CONTRACT_TYPES, "Also Not A Type") == 0
+
+
+# Item 5: the admin-gated model field is a dropdown of known-valid model names per provider.
+
+
+def test_model_options_by_provider_covers_both_providers():
+    assert set(MODEL_OPTIONS_BY_PROVIDER) == {"anthropic", "openai"}
+    assert config.anthropic_model in MODEL_OPTIONS_BY_PROVIDER["anthropic"]
+    assert config.openai_model in MODEL_OPTIONS_BY_PROVIDER["openai"]

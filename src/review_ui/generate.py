@@ -39,8 +39,15 @@ from src.orchestrator import (
     parse_start_date,
     resolve_role_for_reingest,
 )
+from src.review_ui import state_persistence
+from src.review_ui.constants import (
+    CONTRACT_TYPES,
+    GOVERNANCE_TIERS,
+    MODEL_OPTIONS_BY_PROVIDER,
+    PROVIDER_DEFAULT_MODEL_LABEL,
+    resolve_select_index,
+)
 
-GOVERNANCE_TIERS = ["Guided", "Partnered", "Elevated"]
 LLM_PROVIDERS = ["anthropic", "openai"]
 # HTL-22: the app exposes only "off" and "replay" -- "record" writes into the curated
 # test-fixture corpus and stays CLI/developer-only.
@@ -280,6 +287,52 @@ def _output_selection_from_checkboxes(kit: bool, checklist: bool, workbook: bool
     return OutputSelection(kit=kit, checklist=checklist, workbook=workbook, slides=slides)
 
 
+# Item 3: both the Generate and Re-ingest tabs used to wrap all their fields in st.form, which
+# only commits a widget's value to st.session_state on that form's own submit button -- and since
+# app.py's page router only renders the currently-selected page's widgets, navigating to the Fact
+# Review page and back unmounts every one of these widgets, silently dropping an in-progress edit
+# (the exact same root cause as the Fact Review regression, see state_persistence.py). The fix
+# reuses that same module rather than a second mechanism: st.form is removed below, each field's
+# current value is persisted into its own store the instant it changes, and that store (not the
+# widget's own, page-switch-fragile session_state key) supplies the widget's value on every
+# render. File uploaders are the one exception: Streamlit has no API to set a file uploader's
+# value, so a re-upload after switching away and back is an unavoidable, accepted limitation.
+GENERATE_STORE = "generate_form_values"
+REINGEST_STORE = "reingest_form_values"
+
+
+def _persisted_text(store_key: str, field_key: str, label: str, default: str = "", widget_fn=None, **kwargs) -> str:
+    import streamlit as st
+
+    widget_fn = widget_fn or st.text_input
+    current = state_persistence.persisted_value(store_key, field_key, default)
+    on_change = lambda fk=field_key: state_persistence.sync_to_store(store_key, fk, fk)  # noqa: E731
+    return widget_fn(label, value=current, key=field_key, on_change=on_change, **kwargs)
+
+
+def _persisted_checkbox(
+    store_key: str, field_key: str, label: str, default: bool = False, widget_fn=None, **kwargs
+) -> bool:
+    import streamlit as st
+
+    widget_fn = widget_fn or st.checkbox
+    current = state_persistence.persisted_value(store_key, field_key, default)
+    on_change = lambda fk=field_key: state_persistence.sync_to_store(store_key, fk, fk)  # noqa: E731
+    return widget_fn(label, value=bool(current), key=field_key, on_change=on_change, **kwargs)
+
+
+def _persisted_selectbox(
+    store_key: str, field_key: str, label: str, options: List[str], default: str, widget_fn=None, **kwargs
+) -> str:
+    import streamlit as st
+
+    widget_fn = widget_fn or st.selectbox
+    current = state_persistence.persisted_value(store_key, field_key, default)
+    index = resolve_select_index(current, options, default)
+    on_change = lambda fk=field_key: state_persistence.sync_to_store(store_key, fk, fk)  # noqa: E731
+    return widget_fn(label, options, index=index, key=field_key, on_change=on_change, **kwargs)
+
+
 def _render_admin_gate(key_prefix: str) -> bool:
     """HTL-27: a collapsed, closed-by-default "Advanced (admin)" expander. An ordinary user never
     sees provider/model/mock/cache-mode controls at all -- they render only after this gate
@@ -325,39 +378,63 @@ def render() -> None:
 
     with tab_generate:
         admin_unlocked_gen = _render_admin_gate("gen")
-        with st.form("generate_form"):
-            uploaded_files = st.file_uploader(
-                "Upload SOW and/or supporting documents (PDF, DOCX, PPTX, TXT)",
-                type=["pdf", "docx", "pptx", "txt"],
-                accept_multiple_files=True,
+        uploaded_files = st.file_uploader(
+            "Upload SOW and/or supporting documents (PDF, DOCX, PPTX, TXT)",
+            type=["pdf", "docx", "pptx", "txt"],
+            accept_multiple_files=True,
+            key="gen_uploader",
+        )
+        start_date_text = _persisted_text(
+            GENERATE_STORE, "gen_start_date", "Project start date (YYYY-MM-DD, optional)"
+        )
+        # Item 8: the default governance tier now matches the server's configured default
+        # (config.default_governance_tier) instead of a hardcoded index, consistent with how the
+        # Fact Review screen shows whatever the baseline itself carries -- no more silently
+        # diverging defaults between the two screens.
+        governance_tier = _persisted_selectbox(
+            GENERATE_STORE, "gen_tier", "Governance tier", GOVERNANCE_TIERS, config.default_governance_tier
+        )
+        # Item 4: contract type is a shared, closed-set dropdown (src/review_ui/constants.py),
+        # identical to the Fact Review screen's own contract-type field.
+        contract_type = _persisted_selectbox(
+            GENERATE_STORE, "gen_contract_type", "Contract type", CONTRACT_TYPES, config.default_contract_type
+        )
+        pmo_lead = _persisted_text(GENERATE_STORE, "gen_pmo_lead", "PMO Lead")
+        delivery_lead = _persisted_text(GENERATE_STORE, "gen_delivery_lead", "Delivery Lead / Manager")
+        talent_pm = _persisted_text(GENERATE_STORE, "gen_talent_pm", "Talent PM")
+        if admin_unlocked_gen:
+            provider = _persisted_selectbox(
+                GENERATE_STORE, "gen_provider", "LLM provider (admin)", LLM_PROVIDERS, config.default_provider
             )
-            start_date_text = st.text_input("Project start date (YYYY-MM-DD, optional)", key="gen_start_date")
-            governance_tier = st.selectbox("Governance tier", GOVERNANCE_TIERS, index=1, key="gen_tier")
-            contract_type = st.text_input(
-                "Contract type", value=config.default_contract_type, key="gen_contract_type"
+            # Item 5: the model field is a dropdown of known-valid model names, not free text.
+            model_options = [PROVIDER_DEFAULT_MODEL_LABEL] + MODEL_OPTIONS_BY_PROVIDER.get(provider, [])
+            model_choice = _persisted_selectbox(
+                GENERATE_STORE, "gen_model", "Model (admin, optional -- uses provider default if left as-is)",
+                model_options, PROVIDER_DEFAULT_MODEL_LABEL,
             )
-            pmo_lead = st.text_input("PMO Lead", value="", key="gen_pmo_lead")
-            delivery_lead = st.text_input("Delivery Lead / Manager", value="", key="gen_delivery_lead")
-            talent_pm = st.text_input("Talent PM", value="", key="gen_talent_pm")
-            if admin_unlocked_gen:
-                provider = st.selectbox("LLM provider (admin)", LLM_PROVIDERS, key="gen_provider")
-                model = st.text_input(
-                    "Model (admin, optional, uses provider default if blank)", value="", key="gen_model"
-                )
-                mock = st.checkbox(
-                    "Mock mode (admin; run the offline client against my own upload, no API keys required)",
-                    key="gen_mock",
-                )
-                cache_mode = st.selectbox("LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, key="gen_cache_mode")
-            else:
-                provider, model, mock, cache_mode = "", "", False, "off"
-            st.caption("Outputs to produce")
-            col1, col2, col3, col4 = st.columns(4)
-            kit = col1.checkbox("Startup Kit", value=True, key="gen_out_kit")
-            checklist = col2.checkbox("Readiness Checklist", value=True, key="gen_out_checklist")
-            workbook = col3.checkbox("Delivery Workbook", value=True, key="gen_out_workbook")
-            slides = col4.checkbox("Onboarding Deck", value=False, key="gen_out_slides")
-            submitted = st.form_submit_button("Generate")
+            model = "" if model_choice == PROVIDER_DEFAULT_MODEL_LABEL else model_choice
+            mock = _persisted_checkbox(
+                GENERATE_STORE, "gen_mock",
+                "Mock mode (admin; run the offline client against my own upload, no API keys required)",
+            )
+            cache_mode = _persisted_selectbox(
+                GENERATE_STORE, "gen_cache_mode", "LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, "off"
+            )
+        else:
+            provider, model, mock, cache_mode = "", "", False, "off"
+        st.caption("Outputs to produce")
+        col1, col2, col3, col4 = st.columns(4)
+        kit = _persisted_checkbox(GENERATE_STORE, "gen_out_kit", "Startup Kit", True, widget_fn=col1.checkbox)
+        checklist = _persisted_checkbox(
+            GENERATE_STORE, "gen_out_checklist", "Readiness Checklist", True, widget_fn=col2.checkbox
+        )
+        workbook = _persisted_checkbox(
+            GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", True, widget_fn=col3.checkbox
+        )
+        slides = _persisted_checkbox(
+            GENERATE_STORE, "gen_out_slides", "Onboarding Deck", False, widget_fn=col4.checkbox
+        )
+        submitted = st.button("Generate", key="gen_submit_button")
 
         if submitted:
             file_names = [f.name for f in (uploaded_files or [])]
@@ -370,20 +447,28 @@ def render() -> None:
                     resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
                         admin_unlocked_gen, provider=provider, model=model, mock=mock, cache_mode=cache_mode
                     )
-                    result = _run_generate(
-                        uploaded_files=uploaded_files,
-                        start_date_text=start_date_text,
-                        governance_tier=governance_tier,
-                        contract_type=contract_type,
-                        pmo_lead=pmo_lead,
-                        delivery_lead=delivery_lead,
-                        talent_pm=talent_pm,
-                        provider=resolved_provider,
-                        model=resolved_model,
-                        mock=resolved_mock,
-                        cache_mode=resolved_cache_mode,
-                        outputs=outputs,
-                    )
+                    # Item 6: a visible progress indicator (at minimum a spinner; the message
+                    # itself lists the stages a run goes through) so the user isn't left wondering
+                    # whether anything is happening during a run that can take a while.
+                    with st.spinner(
+                        "Working: ingesting documents, running extraction, validating, and "
+                        "generating documents... this can take a while depending on document "
+                        "size and the LLM provider."
+                    ):
+                        result = _run_generate(
+                            uploaded_files=uploaded_files,
+                            start_date_text=start_date_text,
+                            governance_tier=governance_tier,
+                            contract_type=contract_type,
+                            pmo_lead=pmo_lead,
+                            delivery_lead=delivery_lead,
+                            talent_pm=talent_pm,
+                            provider=resolved_provider,
+                            model=resolved_model,
+                            mock=resolved_mock,
+                            cache_mode=resolved_cache_mode,
+                            outputs=outputs,
+                        )
                     st.session_state["generate_run_result"] = result
                 except RuntimeError as exc:
                     # HTL-20/HTL-26: no silent mock fall-back; the exact build_llm_client error is
@@ -397,38 +482,60 @@ def render() -> None:
 
     with tab_reingest:
         admin_unlocked_r = _render_admin_gate("reingest")
-        with st.form("reingest_form"):
-            uploaded_kit_file = st.file_uploader(
-                "Upload an existing *_Startup_Kit.docx file to re-ingest", type=["docx"], key="reingest_file"
+        uploaded_kit_file = st.file_uploader(
+            "Upload an existing *_Startup_Kit.docx file to re-ingest", type=["docx"], key="reingest_file"
+        )
+        start_date_text_r = _persisted_text(
+            REINGEST_STORE, "reingest_start_date", "Project start date (YYYY-MM-DD, optional)"
+        )
+        governance_tier_r = _persisted_selectbox(
+            REINGEST_STORE, "reingest_tier", "Governance tier override (optional)",
+            [""] + GOVERNANCE_TIERS, "",
+        )
+        # Item 4: contract type override is the same shared, closed-set dropdown as the Generate
+        # tab and the Fact Review screen (blank = "no override", same as before).
+        contract_type_r = _persisted_selectbox(
+            REINGEST_STORE, "reingest_contract_type", "Contract type override (optional)",
+            [""] + CONTRACT_TYPES, "",
+        )
+        pmo_lead_r = _persisted_text(
+            REINGEST_STORE, "reingest_pmo_lead", "PMO Lead override (blank = keep existing value)"
+        )
+        delivery_lead_r = _persisted_text(
+            REINGEST_STORE, "reingest_delivery_lead", "Delivery Lead override (blank = keep existing value)"
+        )
+        talent_pm_r = _persisted_text(
+            REINGEST_STORE, "reingest_talent_pm", "Talent PM override (blank = keep existing value)"
+        )
+        if admin_unlocked_r:
+            provider_r = _persisted_selectbox(
+                REINGEST_STORE, "reingest_provider", "LLM provider (admin)", LLM_PROVIDERS, config.default_provider
             )
-            start_date_text_r = st.text_input("Project start date (YYYY-MM-DD, optional)", key="reingest_start_date")
-            governance_tier_r = st.selectbox(
-                "Governance tier override (optional)", [""] + GOVERNANCE_TIERS, key="reingest_tier"
+            model_options_r = [PROVIDER_DEFAULT_MODEL_LABEL] + MODEL_OPTIONS_BY_PROVIDER.get(provider_r, [])
+            model_choice_r = _persisted_selectbox(
+                REINGEST_STORE, "reingest_model", "Model (admin, optional)",
+                model_options_r, PROVIDER_DEFAULT_MODEL_LABEL,
             )
-            contract_type_r = st.text_input("Contract type override (optional)", value="", key="reingest_contract_type")
-            pmo_lead_r = st.text_input(
-                "PMO Lead override (blank = keep existing value)", value="", key="reingest_pmo_lead"
+            model_r = "" if model_choice_r == PROVIDER_DEFAULT_MODEL_LABEL else model_choice_r
+            mock_r = _persisted_checkbox(REINGEST_STORE, "reingest_mock", "Mock mode (admin)")
+            cache_mode_r = _persisted_selectbox(
+                REINGEST_STORE, "reingest_cache_mode", "LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, "off"
             )
-            delivery_lead_r = st.text_input(
-                "Delivery Lead override (blank = keep existing value)", value="", key="reingest_delivery_lead"
-            )
-            talent_pm_r = st.text_input(
-                "Talent PM override (blank = keep existing value)", value="", key="reingest_talent_pm"
-            )
-            if admin_unlocked_r:
-                provider_r = st.selectbox("LLM provider (admin)", LLM_PROVIDERS, key="reingest_provider")
-                model_r = st.text_input("Model (admin, optional)", value="", key="reingest_model")
-                mock_r = st.checkbox("Mock mode (admin)", key="reingest_mock")
-                cache_mode_r = st.selectbox("LLM cache mode (admin)", LLM_CACHE_MODES_IN_APP, key="reingest_cache_mode")
-            else:
-                provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
-            st.caption("Outputs to regenerate")
-            rcol1, rcol2, rcol3, rcol4 = st.columns(4)
-            kit_r = rcol1.checkbox("Startup Kit", value=True, key="reingest_out_kit")
-            checklist_r = rcol2.checkbox("Readiness Checklist", value=True, key="reingest_out_checklist")
-            workbook_r = rcol3.checkbox("Delivery Workbook", value=True, key="reingest_out_workbook")
-            slides_r = rcol4.checkbox("Onboarding Deck", value=False, key="reingest_out_slides")
-            submitted_r = st.form_submit_button("Re-ingest and recalculate")
+        else:
+            provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
+        st.caption("Outputs to regenerate")
+        rcol1, rcol2, rcol3, rcol4 = st.columns(4)
+        kit_r = _persisted_checkbox(REINGEST_STORE, "reingest_out_kit", "Startup Kit", True, widget_fn=rcol1.checkbox)
+        checklist_r = _persisted_checkbox(
+            REINGEST_STORE, "reingest_out_checklist", "Readiness Checklist", True, widget_fn=rcol2.checkbox
+        )
+        workbook_r = _persisted_checkbox(
+            REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", True, widget_fn=rcol3.checkbox
+        )
+        slides_r = _persisted_checkbox(
+            REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", False, widget_fn=rcol4.checkbox
+        )
+        submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button")
 
         if submitted_r:
             error = validate_reingest_inputs(
@@ -442,20 +549,24 @@ def render() -> None:
                     resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
                         admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
                     )
-                    result_r = _run_reingest(
-                        uploaded_kit_file=uploaded_kit_file,
-                        start_date_text=start_date_text_r,
-                        governance_tier=governance_tier_r,
-                        contract_type=contract_type_r,
-                        pmo_lead_field=pmo_lead_r,
-                        delivery_lead_field=delivery_lead_r,
-                        talent_pm_field=talent_pm_r,
-                        provider=resolved_provider_r,
-                        model=resolved_model_r,
-                        mock=resolved_mock_r,
-                        cache_mode=resolved_cache_mode_r,
-                        outputs=outputs_r,
-                    )
+                    with st.spinner(
+                        "Working: re-ingesting the uploaded Kit, re-running extraction, "
+                        "validating, and regenerating documents... this can take a while."
+                    ):
+                        result_r = _run_reingest(
+                            uploaded_kit_file=uploaded_kit_file,
+                            start_date_text=start_date_text_r,
+                            governance_tier=governance_tier_r,
+                            contract_type=contract_type_r,
+                            pmo_lead_field=pmo_lead_r,
+                            delivery_lead_field=delivery_lead_r,
+                            talent_pm_field=talent_pm_r,
+                            provider=resolved_provider_r,
+                            model=resolved_model_r,
+                            mock=resolved_mock_r,
+                            cache_mode=resolved_cache_mode_r,
+                            outputs=outputs_r,
+                        )
                     st.session_state["reingest_run_result"] = result_r
                 except RuntimeError as exc:
                     st.error(str(exc))

@@ -26,8 +26,8 @@ import streamlit as st  # noqa: E402
 from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
 from src.review_ui import state_persistence  # noqa: E402
+from src.review_ui.constants import CONTRACT_TYPES, GOVERNANCE_TIERS, resolve_select_index  # noqa: E402
 
-GOVERNANCE_TIERS = ["Guided", "Partnered", "Elevated"]
 FACT_REVIEW_STORE = "fact_review_values"
 
 
@@ -59,8 +59,16 @@ def _render_field(field: review.FactField) -> None:
     on_change = lambda fk=field.key: state_persistence.sync_to_store(FACT_REVIEW_STORE, f"edit::{fk}", fk)  # noqa: E731
 
     if field.key == "project_identity.governance_tier" and field.value in GOVERNANCE_TIERS:
-        index = GOVERNANCE_TIERS.index(current) if current in GOVERNANCE_TIERS else GOVERNANCE_TIERS.index(field.value)
+        index = resolve_select_index(current, GOVERNANCE_TIERS, field.value)
         st.selectbox("Your value", GOVERNANCE_TIERS, index=index, key=widget_key, on_change=on_change)
+    elif field.key == "project_identity.contract_type":
+        # Item 4: contract type is now a shared, closed-set dropdown (see
+        # src/review_ui/constants.py) instead of free text, identical to the Generate tab's own
+        # contract-type field below. An extracted value outside the known set (e.g. blank, or a
+        # SOW phrasing the extractor didn't normalize) falls back to displaying the field's own
+        # original extracted value's index if recognized, else the first option.
+        index = resolve_select_index(current, CONTRACT_TYPES, field.value)
+        st.selectbox("Your value", CONTRACT_TYPES, index=index, key=widget_key, on_change=on_change)
     elif field.self_describing:
         st.text_area("Your value", value=current, key=widget_key, on_change=on_change)
     else:
