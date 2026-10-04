@@ -12,9 +12,20 @@ moment it changes (via on_change), and use that persisted dict -- not the widget
 both the widget's initial value on (re)render and the source of truth read at save/submit time.
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict
 
 import streamlit as st
+
+
+@dataclass(frozen=True)
+class PersistedUpload:
+    """HTL-31: Holds the name and raw bytes of an uploaded file across page switches."""
+    name: str
+    data: bytes
+
+    def getvalue(self) -> bytes:
+        return self.data
 
 
 def get_store(store_key: str) -> Dict[str, Any]:

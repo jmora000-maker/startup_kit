@@ -345,16 +345,17 @@ def _output_selection_from_checkboxes(kit: bool, checklist: bool, workbook: bool
     return OutputSelection(kit=kit, checklist=checklist, workbook=workbook, slides=slides)
 
 
-# Item 3: both the Generate and Re-ingest tabs used to wrap all their fields in st.form, which
-# only commits a widget's value to st.session_state on that form's own submit button -- and since
-# app.py's page router only renders the currently-selected page's widgets, navigating to the Fact
-# Review page and back unmounts every one of these widgets, silently dropping an in-progress edit
-# (the exact same root cause as the Fact Review regression, see state_persistence.py). The fix
+# Item 3 / HTL-31: both the Generate and Re-ingest tabs used to wrap all their fields in st.form,
+# which only commits a widget's value to st.session_state on that form's own submit button -- and
+# since app.py's page router only renders the currently-selected page's widgets, navigating to the
+# Fact Review page and back unmounts every one of these widgets, silently dropping an in-progress
+# edit (the exact same root cause as the Fact Review regression, see state_persistence.py). The fix
 # reuses that same module rather than a second mechanism: st.form is removed below, each field's
 # current value is persisted into its own store the instant it changes, and that store (not the
-# widget's own, page-switch-fragile session_state key) supplies the widget's value on every
-# render. File uploaders are the one exception: Streamlit has no API to set a file uploader's
-# value, so a re-upload after switching away and back is an unavoidable, accepted limitation.
+# widget's own, page-switch-fragile session_state key) supplies the widget's value on every render.
+# HTL-31: file uploaders are now persisted into this same store as well (storing the uploaded
+# filename and bytes in state_persistence.PersistedUpload), closing the one previously-unhandled
+# exception across page switches.
 GENERATE_STORE = "generate_form_values"
 REINGEST_STORE = "reingest_form_values"
 
@@ -436,12 +437,40 @@ def render() -> None:
 
     with tab_generate:
         admin_unlocked_gen = _render_admin_gate("gen")
+
+        stored_gen_files = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
+        if stored_gen_files and not st.session_state.get("gen_uploader"):
+            filenames_label = ", ".join(f.name for f in stored_gen_files)
+            st.info(f"Using previously uploaded: {filenames_label} -- choose a different file to replace it.")
+
+        def _sync_gen_upload():
+            widget_files = st.session_state.get("gen_uploader")
+            if widget_files:
+                if isinstance(widget_files, list):
+                    state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
+                        state_persistence.PersistedUpload(f.name, f.getvalue()) for f in widget_files
+                    ]
+                else:
+                    state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
+                        state_persistence.PersistedUpload(widget_files.name, widget_files.getvalue())
+                    ]
+
         uploaded_files = st.file_uploader(
             "Upload SOW and/or supporting documents (PDF, DOCX, PPTX, TXT)",
             type=["pdf", "docx", "pptx", "txt"],
             accept_multiple_files=True,
             key="gen_uploader",
+            on_change=_sync_gen_upload,
         )
+
+        if uploaded_files:
+            state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
+                state_persistence.PersistedUpload(f.name, f.getvalue()) for f in uploaded_files
+            ]
+            effective_files = uploaded_files
+        else:
+            effective_files = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
+
         start_date_text = _persisted_text(
             GENERATE_STORE, "gen_start_date", "Project start date (YYYY-MM-DD, optional)"
         )
@@ -495,7 +524,7 @@ def render() -> None:
         submitted = st.button("Generate", key="gen_submit_button")
 
         if submitted:
-            file_names = [f.name for f in (uploaded_files or [])]
+            file_names = [f.name for f in (effective_files or [])]
             error = validate_generate_inputs(file_names, start_date_text)
             if error:
                 st.error(error)
@@ -518,7 +547,7 @@ def render() -> None:
                             status_box.write(label)
 
                         result = _run_generate(
-                            uploaded_files=uploaded_files,
+                            uploaded_files=effective_files,
                             start_date_text=start_date_text,
                             governance_tier=governance_tier,
                             contract_type=contract_type,
@@ -548,9 +577,33 @@ def render() -> None:
 
     with tab_reingest:
         admin_unlocked_r = _render_admin_gate("reingest")
+
+        stored_reingest_file = state_persistence.persisted_value(REINGEST_STORE, "reingest_uploaded_file", None)
+        if stored_reingest_file and not st.session_state.get("reingest_file"):
+            st.info(f"Using previously uploaded: {stored_reingest_file.name} -- choose a different file to replace it.")
+
+        def _sync_reingest_upload():
+            widget_file = st.session_state.get("reingest_file")
+            if widget_file:
+                state_persistence.get_store(REINGEST_STORE)["reingest_uploaded_file"] = (
+                    state_persistence.PersistedUpload(widget_file.name, widget_file.getvalue())
+                )
+
         uploaded_kit_file = st.file_uploader(
-            "Upload an existing *_Startup_Kit.docx file to re-ingest", type=["docx"], key="reingest_file"
+            "Upload an existing *_Startup_Kit.docx file to re-ingest",
+            type=["docx"],
+            key="reingest_file",
+            on_change=_sync_reingest_upload,
         )
+
+        if uploaded_kit_file:
+            state_persistence.get_store(REINGEST_STORE)["reingest_uploaded_file"] = (
+                state_persistence.PersistedUpload(uploaded_kit_file.name, uploaded_kit_file.getvalue())
+            )
+            effective_kit_file = uploaded_kit_file
+        else:
+            effective_kit_file = state_persistence.persisted_value(REINGEST_STORE, "reingest_uploaded_file", None)
+
         start_date_text_r = _persisted_text(
             REINGEST_STORE, "reingest_start_date", "Project start date (YYYY-MM-DD, optional)"
         )
@@ -605,7 +658,7 @@ def render() -> None:
 
         if submitted_r:
             error = validate_reingest_inputs(
-                uploaded_kit_file.name if uploaded_kit_file else None, start_date_text_r
+                effective_kit_file.name if effective_kit_file else None, start_date_text_r
             )
             if error:
                 st.error(error)
@@ -624,7 +677,7 @@ def render() -> None:
                             status_box_r.write(label)
 
                         result_r = _run_reingest(
-                            uploaded_kit_file=uploaded_kit_file,
+                            uploaded_kit_file=effective_kit_file,
                             start_date_text=start_date_text_r,
                             governance_tier=governance_tier_r,
                             contract_type=contract_type_r,

@@ -213,6 +213,7 @@ def test_prompt_api_keys_defaults_from_config(monkeypatch):
 def test_cli_provider_flags_parsing(monkeypatch):
     """Verify CLI argument parsing for provider flags (--provider, --openai, --anthropic)."""
     # 1. Default provider is anthropic
+    monkeypatch.setattr(config, "default_provider", "anthropic")
     monkeypatch.setattr(sys, "argv", ["main.py"])
     args = parse_args()
     assert args.provider == "anthropic"

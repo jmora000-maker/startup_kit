@@ -273,3 +273,124 @@ def test_format_run_error_never_includes_a_traceback():
 
 def test_format_run_error_blank_exception_message_falls_back_to_class_name():
     assert format_run_error(ValueError(), "validating") == "validation failed: ValueError"
+
+
+# HTL-31: Generate and Re-ingest tabs retain uploaded files across page switches via state_persistence.
+
+
+APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
+
+
+def test_generate_retains_uploaded_sow_across_page_switches():
+    """Upload a file, switch to Fact Review, switch back to Generate, confirm stored bytes are used for generate."""
+    from unittest.mock import patch, MagicMock
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    # 1. Upload file
+    at.file_uploader(key="gen_uploader").upload("project_sow.docx", b"binary-sow-content").run()
+    assert not at.exception
+
+    # 2. Switch away to Fact Review
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+    assert len(at.file_uploader) == 0
+
+    # 3. Switch back to Generate
+    at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
+    assert not at.exception
+    # The uploader widget itself is empty due to Streamlit unmounting
+    assert at.file_uploader(key="gen_uploader").value == []
+
+    # 4. Trigger Generate and verify stored bytes are passed to _run_generate
+    with patch("src.review_ui.generate._run_generate") as mock_run:
+        mock_run.return_value = MagicMock(
+            readiness_score=100.0,
+            baseline=None,
+            fallback_domains=[],
+            validation_report=None,
+            kit_path=None,
+            checklist_path=None,
+            workbook=None,
+            slides=None,
+        )
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        assert mock_run.called
+        passed_files = mock_run.call_args.kwargs["uploaded_files"]
+        assert len(passed_files) == 1
+        assert passed_files[0].name == "project_sow.docx"
+        assert passed_files[0].getvalue() == b"binary-sow-content"
+
+
+def test_upload_replacement_replaces_stored_file_without_merging():
+    """After an upload is stored, selecting a genuinely different file replaces the stored one, not merges."""
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    # Initial upload
+    at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
+
+    # Switch away and return
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
+
+    # Select a genuinely different file
+    at.file_uploader(key="gen_uploader").upload("replacement_sow.pdf", b"replacement-bytes").run()
+
+    stored_files = at.session_state["generate_form_values"]["gen_uploaded_files"]
+    assert len(stored_files) == 1
+    assert stored_files[0].name == "replacement_sow.pdf"
+    assert stored_files[0].getvalue() == b"replacement-bytes"
+
+
+def test_using_previously_uploaded_message_rendering():
+    """Verify 'Using previously uploaded: {filename}' renders when stored file exists and does not render when none uploaded."""
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    # 1. Initially nothing uploaded -> message does not render
+    gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
+    assert len(gen_info) == 0
+
+    # 2. Upload file and switch away and back -> message renders
+    at.file_uploader(key="gen_uploader").upload("statement_of_work.docx", b"sow-data").run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
+
+    gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
+    assert len(gen_info) == 1
+    assert gen_info[0] == "Using previously uploaded: statement_of_work.docx -- choose a different file to replace it."
+
+
+def test_reingest_retains_uploaded_kit_across_page_switches():
+    """Verify Re-ingest tab retains uploaded kit file and passes stored bytes to _run_reingest."""
+    from unittest.mock import patch, MagicMock
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="reingest_file").upload("Existing_Startup_Kit.docx", b"existing-kit-docx").run()
+
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
+
+    reingest_info = [i.value for i in at.info if "Using previously uploaded: Existing_Startup_Kit.docx" in i.value]
+    assert len(reingest_info) == 1
+
+    with patch("src.review_ui.generate._run_reingest") as mock_run:
+        mock_run.return_value = MagicMock(
+            readiness_score=95.0,
+            baseline=None,
+            fallback_domains=[],
+            validation_report=None,
+            kit_path=None,
+            checklist_path=None,
+            workbook=None,
+            slides=None,
+        )
+        at.button(key="reingest_submit_button").click().run()
+        assert not at.exception
+        assert mock_run.called
+        passed_file = mock_run.call_args.kwargs["uploaded_kit_file"]
+        assert passed_file.name == "Existing_Startup_Kit.docx"
+        assert passed_file.getvalue() == b"existing-kit-docx"
