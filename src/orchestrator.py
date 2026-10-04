@@ -150,6 +150,63 @@ def build_llm_client(
     )
 
 
+def parse_start_date(value: Optional[str]) -> Optional[date]:
+    """HTL-17 Group 1 (C-2): one shared start-date parse/validate helper.
+
+    Accepts the raw string value (e.g. ``args.start_date`` from the CLI, or a form field's text
+    from the app) and returns the parsed ``date``, or ``None`` when ``value`` is empty/``None``.
+    Raises ``ValueError`` on an invalid ISO format -- it never logs, prints, or exits -- so each
+    caller decides how to present the failure (the CLI logs the error and returns exit code 1;
+    the app shows a ``st.error`` message), while the parsing/validation logic itself is identical
+    for both.
+    """
+    if not value:
+        return None
+    return date.fromisoformat(value.strip())
+
+
+def resolve_execution_mode(
+    reingest_docx: Optional[Union[str, Path]],
+    is_interactive: bool,
+    prompted_mode: Optional[str] = None,
+) -> str:
+    """HTL-17 Group 1 (C-3): one shared rule choosing Initial Generation ("1") vs. DOCX
+    Re-ingestion ("2").
+
+    The decision is: an explicit ``--reingest-docx``/equivalent always means re-ingestion;
+    otherwise, in an interactive CLI session, ``prompted_mode`` (already collected via
+    ``input()``, which stays CLI-only) decides; otherwise it defaults to Initial Generation.
+    A caller with no magic-string ambiguity at all (such as the app, which has two separate
+    buttons/tabs rather than a prompt) can simply call ``run`` or ``run_reingest`` directly and
+    never needs this function -- it exists so ``main.py``'s own mode selection is a plain,
+    testable function instead of inline script logic.
+    """
+    if reingest_docx is not None:
+        return "2"
+    if is_interactive:
+        return prompted_mode if prompted_mode is not None else "1"
+    return "1"
+
+
+def resolve_mock_io_dirs(
+    mock: bool,
+    inputs_dir: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+) -> Tuple[Path, Path]:
+    """HTL-17 Group 1 (C-4/C-10): the one place that chooses mock-fixture folders.
+
+    When ``inputs_dir``/``output_dir`` is explicitly supplied, it is used as-is. Otherwise the
+    mock fixture folders (``config.mock_inputs_dir``/``config.mock_output_dir``) are used when
+    ``mock`` is True, and the normal ``config.inputs_dir``/``config.output_dir`` otherwise. This
+    replaces the two separate, previously-duplicated decisions: ``main.py``'s own
+    ``args.mock``-based default selection, and ``StartupKitController.run()``'s
+    ``isinstance(self.llm_client, MockLLMClient)`` branch -- both now call this single function.
+    """
+    resolved_inputs = inputs_dir if inputs_dir is not None else (config.mock_inputs_dir if mock else config.inputs_dir)
+    resolved_output = output_dir if output_dir is not None else (config.mock_output_dir if mock else config.output_dir)
+    return resolved_inputs, resolved_output
+
+
 def resolve_role_for_reingest(
     flag_value: Optional[str],
     prompted_value: str,
@@ -276,19 +333,14 @@ class StartupKitController:
                 )
             out_path = output_dir if output_dir is not None else config.output_dir
         else:
-            if inputs_dir is not None:
-                in_path = inputs_dir
-            elif isinstance(self.llm_client, MockLLMClient):
-                in_path = config.mock_inputs_dir
-            else:
-                in_path = config.inputs_dir
-
-            if output_dir is not None:
-                out_path = output_dir
-            elif isinstance(self.llm_client, MockLLMClient):
-                out_path = config.mock_output_dir
-            else:
-                out_path = config.output_dir
+            # HTL-17 Group 1 (C-4/C-10): one shared rule (resolve_mock_io_dirs), the same
+            # function main.py uses for its own default-folder selection, replaces this
+            # method's previously-separate isinstance(self.llm_client, MockLLMClient) check.
+            in_path, out_path = resolve_mock_io_dirs(
+                mock=isinstance(self.llm_client, MockLLMClient),
+                inputs_dir=inputs_dir,
+                output_dir=output_dir,
+            )
 
             logger.info("Starting PMO Startup Kit generation from directory: %s", in_path)
 

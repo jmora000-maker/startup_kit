@@ -12,7 +12,14 @@ from src.llm.client import LangChainLLMClient, MockLLMClient, CachingLLMClient
 from src.llm.mock_responses import create_mock_llm_client
 from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
-from src.orchestrator import StartupKitController, build_llm_client, resolve_role_for_reingest
+from src.orchestrator import (
+    StartupKitController,
+    build_llm_client,
+    resolve_role_for_reingest,
+    parse_start_date,
+    resolve_execution_mode,
+    resolve_mock_io_dirs,
+)
 from src.core.models import (
     SourceReference,
     Deliverable,
@@ -350,21 +357,23 @@ def main():
     try:
         is_interactive = not args.non_interactive
 
+        # HTL-17 Group 1 (C-2): shared parse/validate helper; the exit code/logging stays here.
         parsed_start_date: Optional[date] = None
         if getattr(args, "start_date", None):
             try:
-                parsed_start_date = date.fromisoformat(args.start_date.strip())
+                parsed_start_date = parse_start_date(args.start_date)
             except ValueError:
                 logger.error("Invalid --start-date format '%s'. Must be YYYY-MM-DD.", args.start_date)
                 return 1
 
-        # Determine execution mode: Flag takes priority, then interactive prompt
-        if args.reingest_docx is not None:
-            mode = "2"
-        elif is_interactive:
-            mode = prompt_execution_mode(interactive=True)
-        else:
-            mode = "1"
+        # HTL-17 Group 1 (C-3): shared mode-selection rule; the interactive input() prompt
+        # itself (CLI-only UX) is collected here and handed to the shared resolver.
+        prompted_mode = (
+            prompt_execution_mode(interactive=True)
+            if (args.reingest_docx is None and is_interactive)
+            else None
+        )
+        mode = resolve_execution_mode(args.reingest_docx, is_interactive, prompted_mode)
 
         outputs = OutputSelection.from_flags(
             all_=args.all_outputs,
@@ -442,8 +451,9 @@ def main():
 
         # Mode 1: Initial Generation
         logger.info("Mode: Initial Generation (From SOWs and input artifacts)")
-        default_inputs = config.mock_inputs_dir if args.mock else config.inputs_dir
-        default_outputs = config.mock_output_dir if args.mock else config.output_dir
+        # HTL-17 Group 1 (C-4/C-10): one shared rule, also used by orchestrator.run()'s own
+        # fallback, replaces this module's previously-separate args.mock-based defaulting.
+        default_inputs, default_outputs = resolve_mock_io_dirs(mock=args.mock)
         inputs_dir, output_dir = prompt_directories(
             inputs_dir=args.inputs_dir,
             output_dir=args.output_dir,
