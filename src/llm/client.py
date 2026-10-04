@@ -119,9 +119,15 @@ def parse_json_response_to_schema(text: Any, schema: Type[T], parser: Optional[P
 def get_clamped_max_tokens(provider: str, model_name: Optional[str], requested_tokens: int) -> int:
     """Clamp requested max_tokens to provider and model specific ceilings (LLM-01).
 
-    Anthropic models retain the configured token ceiling (up to Anthropic's supported 64000/128000).
-    OpenAI models (specifically gpt-4o / gpt-4o-mini) are capped at 16384, preventing 400 Bad Request
-    validation errors when falling back from Anthropic configurations (e.g. MAX_TOKENS=32768).
+    Anthropic models retain provider/model-specific ceilings:
+      - Claude Sonnet 5.5 / Sonnet 5 / Opus 5 / Opus 5.5 / Sonnet 4.6: 128000 tokens (128K)
+      - Claude Haiku 4.5 / Sonnet 4.5 / Opus 4.5: 64000 tokens (64K)
+      - Legacy Claude 3.5 (Sonnet/Haiku): 8192 tokens
+      - Legacy Claude 3 (Haiku/Opus): 4096 tokens
+    OpenAI models:
+      - o1 / o3 series: 65536 tokens
+      - gpt-4-turbo / legacy gpt-4: 4096 tokens
+      - gpt-4o / gpt-4o-mini / default: 16384 tokens
     """
     provider_norm = (provider or "").lower().strip()
     model_norm = (model_name or "").lower().strip()
@@ -137,7 +143,15 @@ def get_clamped_max_tokens(provider: str, model_name: Optional[str], requested_t
         return min(requested_tokens, ceiling)
 
     if provider_norm in ("anthropic", "claude"):
-        ceiling = 64000
+        if any(k in model_norm for k in ("haiku-4-5", "sonnet-4-5", "opus-4-5")):
+            ceiling = 64000
+        elif any(k in model_norm for k in ("3-5-sonnet", "3-5-haiku")):
+            ceiling = 8192
+        elif any(k in model_norm for k in ("3-haiku", "3-opus")):
+            ceiling = 4096
+        else:
+            # claude-sonnet-5-5, claude-sonnet-5, claude-opus-5-5, claude-opus-5, claude-sonnet-4-6, and default
+            ceiling = 128000
         return min(requested_tokens, ceiling)
 
     return requested_tokens

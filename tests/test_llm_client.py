@@ -248,7 +248,7 @@ def test_max_tokens_configuration(monkeypatch):
 
 
 def test_provider_specific_token_limit_clamping():
-    """Verify LLM-01: OpenAI models are clamped to 16384 while Anthropic retains up to 64000."""
+    """Verify LLM-01: OpenAI models are clamped to 16384 while Anthropic retains up to 128000/64000 per model."""
     from src.llm.client import get_clamped_max_tokens
 
     # OpenAI gpt-4o clamped to 16384
@@ -263,9 +263,18 @@ def test_provider_specific_token_limit_clamping():
     assert get_clamped_max_tokens("openai", "o1-preview", 32768) == 32768
     assert get_clamped_max_tokens("openai", "o3-mini", 70000) == 65536
 
-    # Anthropic models support up to 64000
+    # Anthropic models: claude-sonnet-5-5 supports up to 128000
     assert get_clamped_max_tokens("anthropic", "claude-sonnet-5-5", 32768) == 32768
-    assert get_clamped_max_tokens("anthropic", "claude-sonnet-5-5", 70000) == 64000
+    assert get_clamped_max_tokens("anthropic", "claude-sonnet-5-5", 150000) == 128000
+
+    # Anthropic models: claude-haiku-4-5-20251001 supports up to 64000
+    assert get_clamped_max_tokens("anthropic", "claude-haiku-4-5-20251001", 32768) == 32768
+    assert get_clamped_max_tokens("anthropic", "claude-haiku-4-5-20251001", 70000) == 64000
+
+    # Anthropic legacy models: claude-3-5-sonnet supports up to 8192
+    assert get_clamped_max_tokens("anthropic", "claude-3-5-sonnet-20240620", 32768) == 8192
+    # Anthropic legacy models: claude-3-haiku supports up to 4096
+    assert get_clamped_max_tokens("anthropic", "claude-3-haiku-20240307", 32768) == 4096
 
     # Client instantiation clamps internal model parameters
     client = LangChainLLMClient(
