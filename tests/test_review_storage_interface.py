@@ -80,6 +80,22 @@ def test_update_status_with_wrong_if_state_raises_and_state_unchanged_on_disk(st
     assert reread.get_run(run_id).state == "pending_review"
 
 
+def test_update_status_with_stale_if_state_after_prior_transition_raises_and_state_unchanged(storage):
+    run_id = storage.create_run("Acme Project", BASELINE, VALIDATION_REPORT)
+
+    # Legitimate prior transition: pending_review -> approved
+    storage.update_status(run_id, "approved", if_state="pending_review")
+    assert storage.get_run(run_id).state == "approved"
+
+    # Stale transition attempt: caller still expects pending_review, but state is now approved
+    with pytest.raises(ValueError):
+        storage.update_status(run_id, "approved", if_state="pending_review")
+
+    # Verify the on-disk state remains "approved" (not reverted, not corrupted)
+    reread = LocalReviewStorage(base_dir=storage.base_dir)
+    assert reread.get_run(run_id).state == "approved"
+
+
 def test_save_corrected_baseline_updates_stored_baseline(storage):
     run_id = storage.create_run("Acme Project", BASELINE, VALIDATION_REPORT)
     corrected = {**BASELINE, "governance_tier": "Guided"}
