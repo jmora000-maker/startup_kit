@@ -587,9 +587,11 @@ class LangChainLLMClient(ILLMClient):
 class MockLLMClient(ILLMClient):
     """Deterministic Mock LLM client for offline unit and integration tests."""
 
-    def __init__(self, responses_by_schema: Optional[dict] = None):
+    def __init__(self, responses_by_schema: Optional[dict] = None, primary_provider: str = "mock"):
         self.responses_by_schema = responses_by_schema or {}
         self.call_history = []
+        self.primary_provider = primary_provider
+        self.fallback_domains: list[str] = []
 
     def set_response(self, schema: Type[Any], response_obj: Any):
         self.responses_by_schema[schema] = response_obj

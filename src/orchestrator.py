@@ -559,6 +559,7 @@ class StartupKitController:
         # validation report, and any OpenAI fallback-model notice -- so a UI can render its own
         # presentation from the same data the CLI prints, instead of only reading stdout/logs.
         fallback_domains = list(getattr(self.llm_client, "fallback_domains", []) or [])
+        primary_provider = getattr(self.llm_client, "primary_provider", None)
         return RunResult(
             kit_path=kit_path,
             checklist_path=checklist_path,
@@ -570,6 +571,7 @@ class StartupKitController:
             validation_report=validation_report,
             summary_text=summary_text,
             fallback_domains=fallback_domains,
+            primary_provider=primary_provider,
         )
 
     def run_reingest(
@@ -785,6 +787,8 @@ class StartupKitController:
             baseline.readiness_score,
             baseline.gate_decision.gate_decision_status if baseline.gate_decision else "N/A"
         )
+        fallback_domains = list(getattr(self.llm_client, "fallback_domains", []) or [])
+        primary_provider = getattr(self.llm_client, "primary_provider", None)
         return RunResult(
             kit_path=kit_path,
             checklist_path=checklist_path,
@@ -795,4 +799,6 @@ class StartupKitController:
             baseline=baseline,
             validation_report=getattr(baseline, "validation_report", None),
             summary_text=summary_text,
+            fallback_domains=fallback_domains,
+            primary_provider=primary_provider,
         )

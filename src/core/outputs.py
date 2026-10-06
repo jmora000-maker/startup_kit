@@ -53,3 +53,4 @@ class RunResult:
     validation_report: Optional["ValidationReport"] = None
     summary_text: Optional[str] = None
     fallback_domains: List[str] = field(default_factory=list)
+    primary_provider: Optional[str] = None

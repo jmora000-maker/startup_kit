@@ -20,11 +20,14 @@ from src.review_ui.constants import (
 from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
+    format_fallback_message,
+    format_provider_name,
     format_run_error,
     collect_download_targets,
     is_admin_unlocked,
     progress_status_label,
     resolve_app_role,
+    resolve_fallback_provider,
     resolve_llm_settings,
     validate_generate_inputs,
     validate_reingest_inputs,
@@ -394,3 +397,106 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
         passed_file = mock_run.call_args.kwargs["uploaded_kit_file"]
         assert passed_file.name == "Existing_Startup_Kit.docx"
         assert passed_file.getvalue() == b"existing-kit-docx"
+
+
+# HTL-32: Fallback domains and provider display on results screen
+
+
+def test_format_fallback_message_empty_defaults_to_anthropic():
+    assert format_fallback_message([]) == "Ran entirely on Anthropic."
+
+
+def test_format_fallback_message_empty_anthropic_primary():
+    assert format_fallback_message([], "anthropic") == "Ran entirely on Anthropic."
+    assert format_fallback_message([], "Anthropic") == "Ran entirely on Anthropic."
+
+
+def test_format_fallback_message_empty_openai_primary():
+    assert format_fallback_message([], "openai") == "Ran entirely on OpenAI."
+    assert format_fallback_message([], "OpenAI") == "Ran entirely on OpenAI."
+
+
+def test_format_fallback_message_non_empty_anthropic_primary():
+    msg = format_fallback_message(["Scope Decomposition", "Deliverables"], "anthropic")
+    assert msg == "Fell back to OpenAI for: Scope Decomposition, Deliverables."
+
+
+def test_format_fallback_message_non_empty_openai_primary():
+    msg = format_fallback_message(["Scope Decomposition", "Deliverables"], "openai")
+    assert msg == "Fell back to Anthropic for: Scope Decomposition, Deliverables."
+
+
+def test_format_fallback_message_single_domain():
+    msg = format_fallback_message(["Scope Decomposition"], "anthropic")
+    assert msg == "Fell back to OpenAI for: Scope Decomposition."
+
+
+def test_generate_results_renders_fallback_confirmation_empty():
+    """When fallback_domains is empty, info widget renders 'Ran entirely on {provider}'."""
+    from unittest.mock import patch, MagicMock
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    mock_result = RunResult(
+        readiness_score=90.0,
+        baseline=None,
+        fallback_domains=[],
+        primary_provider="anthropic",
+    )
+
+    with patch("src.review_ui.generate._run_generate", return_value=mock_result):
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        info_msgs = [i.value for i in at.info]
+        assert "Ran entirely on Anthropic." in info_msgs
+        warning_msgs = [w.value for w in at.warning if "Fell back" in w.value]
+        assert len(warning_msgs) == 0
+
+
+def test_generate_results_renders_fallback_warning_non_empty():
+    """When fallback_domains is non-empty, warning widget renders 'Fell back to {provider} for: ...'."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    mock_result = RunResult(
+        readiness_score=85.0,
+        baseline=None,
+        fallback_domains=["Scope Decomposition", "Deliverables"],
+        primary_provider="anthropic",
+    )
+
+    with patch("src.review_ui.generate._run_generate", return_value=mock_result):
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        warning_msgs = [w.value for w in at.warning if "Fell back to OpenAI" in w.value]
+        assert len(warning_msgs) == 1
+        assert warning_msgs[0] == "Fell back to OpenAI for: Scope Decomposition, Deliverables."
+        info_msgs = [i.value for i in at.info if "Ran entirely" in i.value]
+        assert len(info_msgs) == 0
+
+
+def test_reingest_results_renders_fallback_domains():
+    """Re-ingest tab results also render the fallback/provider confirmation."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="reingest_file").upload("Kit.docx", b"kit-bytes").run()
+
+    mock_result = RunResult(
+        readiness_score=92.5,
+        baseline=None,
+        fallback_domains=["Risk Log"],
+        primary_provider="anthropic",
+    )
+
+    with patch("src.review_ui.generate._run_reingest", return_value=mock_result):
+        at.button(key="reingest_submit_button").click().run()
+        assert not at.exception
+        warning_msgs = [w.value for w in at.warning if "Fell back to OpenAI for: Risk Log." in w.value]
+        assert len(warning_msgs) == 1

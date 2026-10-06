@@ -221,6 +221,45 @@ def format_run_error(exc: BaseException, last_stage: Optional[str] = None) -> st
     return f"{stage_label} failed: {reason}"
 
 
+def format_provider_name(provider: Optional[str]) -> str:
+    """Format provider string into display name (e.g. anthropic -> Anthropic, openai -> OpenAI)."""
+    p = (provider or config.default_provider or "anthropic").strip()
+    p_lower = p.lower()
+    if p_lower == "anthropic":
+        return "Anthropic"
+    if p_lower in ("openai", "open-ai", "gpt", "chatgpt"):
+        return "OpenAI"
+    if p_lower == "mock":
+        return "Mock"
+    return p.capitalize()
+
+
+def resolve_fallback_provider(primary_provider: Optional[str]) -> str:
+    """Determine the symmetric fallback provider display name given the primary provider."""
+    primary_display = format_provider_name(primary_provider)
+    if primary_display == "OpenAI":
+        return "Anthropic"
+    return "OpenAI"
+
+
+def format_fallback_message(
+    fallback_domains: Sequence[str],
+    primary_provider: Optional[str] = None,
+) -> str:
+    """HTL-32: builds the confirmation or fallback message shown on the results screen.
+
+    - When fallback_domains is empty: e.g. "Ran entirely on Anthropic."
+    - When fallback_domains is non-empty: e.g. "Fell back to OpenAI for: Scope Decomposition, Deliverables."
+    """
+    if not fallback_domains:
+        provider_name = format_provider_name(primary_provider)
+        return f"Ran entirely on {provider_name}."
+
+    fallback_provider = resolve_fallback_provider(primary_provider)
+    domains_str = ", ".join(fallback_domains)
+    return f"Fell back to {fallback_provider} for: {domains_str}."
+
+
 def _run_generate(
     uploaded_files,
     start_date_text: str,
@@ -296,6 +335,12 @@ def _render_results(run_result: RunResult) -> None:
     st.success("Run complete.")
     st.metric("Readiness score", f"{run_result.readiness_score:.1f}%")
 
+    fallback_msg = format_fallback_message(run_result.fallback_domains, run_result.primary_provider)
+    if run_result.fallback_domains:
+        st.warning(fallback_msg)
+    else:
+        st.info(fallback_msg)
+
     baseline = run_result.baseline
     if baseline is not None:
         if baseline.readiness_breakdown:
@@ -309,12 +354,6 @@ def _render_results(run_result: RunResult) -> None:
             with st.expander(f"Open questions / clarifications ({len(baseline.open_questions)})"):
                 for q in baseline.open_questions:
                     st.write(f"- {q}")
-
-    if run_result.fallback_domains:
-        st.warning(
-            "The following extraction domain(s) used a secondary OpenAI fallback model: "
-            + ", ".join(run_result.fallback_domains)
-        )
 
     if run_result.validation_report is not None and run_result.validation_report.findings:
         with st.expander(f"Validation findings ({len(run_result.validation_report.findings)})"):
