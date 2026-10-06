@@ -1894,7 +1894,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -2516,7 +2516,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -7372,7 +7372,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -8916,17 +8916,17 @@
     {
       "slide_index": 1,
       "title": "ARC Genomics Platform",
-      "kicker": "Talent Team Onboarding · Syngenta · Start 2026-10-05",
+      "kicker": "Talent Team Onboarding · Syngenta · Start 2026-10-12",
       "text_frames": [
         [
           "ARC Genomics Platform"
         ],
         [
-          "Talent Team Onboarding · Syngenta · Start 2026-10-05"
+          "Talent Team Onboarding · Syngenta · Start 2026-10-12"
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers ARC Genomics Platform for Syngenta.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers ARC Genomics Platform for Syngenta.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 2,
@@ -8982,7 +8982,7 @@
           ],
           [
             "Start Date",
-            "2026-10-05 (Assumed - first Monday after generation date; confirm)"
+            "2026-10-12 (Assumed - first Monday after generation date; confirm)"
           ],
           [
             "Talent PM",
@@ -8998,7 +8998,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.\n• The contract type is Fixed Bid, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n• The project runs in 4 phases, from 2026-10-05 to 2027-04-02.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.\n• The contract type is Fixed Bid, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n• The project runs in 4 phases, from 2026-10-12 to 2027-04-09.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 3,
@@ -9023,30 +9023,30 @@
           [
             "P1 Foundation",
             "M1: P1 Foundation accepted",
-            "2026-10-05 – 2026-11-13",
+            "2026-10-12 – 2026-11-20",
             "DEL-01 Micro-Frontend Shell and Azure AD/MSAL Authentication\nDEL-02 Shell and Authentication E2E Test Harness\nDEL-03 Pipeline Quality Gates and Deployment Smoke Checks\nDEL-04 Authentication Negative-Test Suite and Security Scan\nDEL-05 Snowflake Data Model and Data Governance Validation"
           ],
           [
             "P2a Services and Data",
             "M2: P2a Services and Data accepted",
-            "2026-11-16 – 2027-01-22",
+            "2026-11-23 – 2027-01-29",
             "DEL-06 FastAPI Search/Detail Endpoints and Asynchronous Query Processing\nDEL-07 Backend Integration/Load Tests and Performance Engineering Spike\nDEL-08 OneGWAS Direct-Write Integration and Test Suite\nDEL-09 Data Ingestion and Migration Validation\nDEL-10 PubMed Extraction and Trait Taxonomy Validation"
           ],
           [
             "P2b Application Surface",
             "M3: P2b Application Surface accepted",
-            "2027-01-25 – 2027-02-26",
+            "2027-02-01 – 2027-03-05",
             "DEL-11 ARC Faceted Search, Results Table and Result Detail View\nDEL-12 Haplotype Search, Visualization and API\nDEL-13 Nomenclature Service\nDEL-14 P2b Test Suites (Frontend, Haplotype, Nomenclature)"
           ],
           [
             "P3 Launch",
             "M4: P3 Launch accepted",
-            "2027-03-01 – 2027-04-02",
+            "2027-03-08 – 2027-04-09",
             "DEL-15 Launch Test Suites and Test Data/Fixtures\nDEL-16 UAT Execution and Pre-Launch Hardening\nDEL-17 Production Smoke Tests and 48-Hour Defect Watch\nDEL-18 MTA Store Parity and Usage-Zero Confirmation Report\nDEL-19 Training Materials and User Documentation"
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• The project runs in 4 phases, from 2026-10-05 to 2027-04-02.\n• M1 (P1 Foundation) is due 2026-11-13.\n• M2 (P2a Services and Data) is due 2027-01-22; it starts after M1 is accepted.\n• M3 (P2b Application Surface) is due 2027-02-26; it starts after M2 is accepted.\n• M4 (P3 Launch) is due 2027-04-02; it starts after M3 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–6.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• The project runs in 4 phases, from 2026-10-12 to 2027-04-09.\n• M1 (P1 Foundation) is due 2026-11-20.\n• M2 (P2a Services and Data) is due 2027-01-29; it starts after M1 is accepted.\n• M3 (P2b Application Surface) is due 2027-03-05; it starts after M2 is accepted.\n• M4 (P3 Launch) is due 2027-04-09; it starts after M3 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–6.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 4,
@@ -9243,7 +9243,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Client Contact (designated).\n• Kickoff Call: One-time.\n• Daily Standups: Daily.\n• Biweekly Sprint Demo: Biweekly (every sprint).\n• Before P1 Foundation starts on 2026-10-05, the client prerequisite is: Client provides design system access (code library, tokens, design files, guidelines, named contact).\n• 20 open questions are waiting on the client; the first is RAID-36.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
+      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Client Contact (designated).\n• Kickoff Call: One-time.\n• Daily Standups: Daily.\n• Biweekly Sprint Demo: Biweekly (every sprint).\n• Before P1 Foundation starts on 2026-10-12, the client prerequisite is: Client provides design system access (code library, tokens, design files, guidelines, named contact).\n• 20 open questions are waiting on the client; the first is RAID-36.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
     },
     {
       "slide_index": 7,

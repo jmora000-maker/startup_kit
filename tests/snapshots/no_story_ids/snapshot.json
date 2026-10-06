@@ -1336,7 +1336,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -1782,7 +1782,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -4838,7 +4838,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-05 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -6166,17 +6166,17 @@
     {
       "slide_index": 1,
       "title": "Omnichannel Digital Platform",
-      "kicker": "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-05",
+      "kicker": "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-12",
       "text_frames": [
         [
           "Omnichannel Digital Platform"
         ],
         [
-          "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-05"
+          "Talent Team Onboarding · Apex Global Retail Inc. · Start 2026-10-12"
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Omnichannel Digital Platform for Apex Global Retail Inc.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers Omnichannel Digital Platform for Apex Global Retail Inc.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 2,
@@ -6228,7 +6228,7 @@
           ],
           [
             "Start Date",
-            "2026-10-05 (Assumed - first Monday after generation date; confirm)"
+            "2026-10-12 (Assumed - first Monday after generation date; confirm)"
           ],
           [
             "Talent PM",
@@ -6244,7 +6244,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Purpose: Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-05, and it was assumed - first monday after generation date; confirm.\n• The project runs in 3 phases, from 2026-10-05 to 2027-02-05.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Purpose: Build and deploy a unified omnichannel digital commerce platform for Apex Global Retail Inc.\n• The contract type is Time and Materials, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n• The project runs in 3 phases, from 2026-10-12 to 2027-02-12.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 3,
@@ -6269,24 +6269,24 @@
           [
             "Phase 1 Architecture and Core Foundation",
             "M1: Phase 1 (Architecture and Core Foundation, weeks 1-4) accepted",
-            "2026-10-05 – 2026-10-30",
+            "2026-10-12 – 2026-11-06",
             "DEL-01 Core Cloud Infrastructure and Container Orchestration Platform"
           ],
           [
             "Phase 2 Service Implementation",
             "M2: Phase 2 (Service Implementation, weeks 5-12) accepted",
-            "2026-11-02 – 2026-12-25",
+            "2026-11-09 – 2027-01-01",
             "DEL-04 Basket and Checkout Orchestration Service\nDEL-05 Payment Gateway Integration and Secure Transaction Logging"
           ],
           [
             "Phase 3 User Experience and Launch",
             "M3: Phase 3 (User Experience and Launch, weeks 13-18) accepted",
-            "2026-12-28 – 2027-02-05",
+            "2027-01-04 – 2027-02-12",
             "DEL-02 Identity, SSO and Role-Based Access Control Integration\nDEL-03 Product Catalogue Search API and Indexing Pipeline\nDEL-06 Responsive Web Customer Store Application\nDEL-07 Automated End-to-End Regression Test Suite\nDEL-08 Platform Deployment Runbook and Operational Documentation\nDEL-09 User Acceptance Testing and Production Rollout\nDEL-10 Training Materials"
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• The project runs in 3 phases, from 2026-10-05 to 2027-02-05.\n• M1 (Phase 1 Architecture and Core Foundation) is due 2026-10-30.\n• M2 (Phase 2 Service Implementation) is due 2026-12-25; it starts after M1 is accepted.\n• M3 (Phase 3 User Experience and Launch) is due 2027-02-05; it starts after M2 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–4.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• The project runs in 3 phases, from 2026-10-12 to 2027-02-12.\n• M1 (Phase 1 Architecture and Core Foundation) is due 2026-11-06.\n• M2 (Phase 2 Service Implementation) is due 2027-01-01; it starts after M1 is accepted.\n• M3 (Phase 3 User Experience and Launch) is due 2027-02-12; it starts after M2 is accepted.\n• The dates for M1 are based on: SOW estimate, weeks 1–4.\n\nSOURCES: Startup Kit · Deliverables and Acceptance Matrix; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 4,
@@ -6433,7 +6433,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Apex Global Retail Inc.\n• Monthly / Quarterly Business Review (MBR/QBR - G-07): Monthly.\n• Weekly Check-in (30 min): Weekly (30 min).\n• Weekly Project Status Report (PSR): Weekly.\n• Before Phase 2 Service Implementation starts on 2026-11-02, the client prerequisite is: Client provides access to legacy ERP product catalog feeds prior to week 5.\n• 32 open questions are waiting on the client; the first is RAID-16.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
+      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Apex Global Retail Inc.\n• Monthly / Quarterly Business Review (MBR/QBR - G-07): Monthly.\n• Weekly Check-in (30 min): Weekly (30 min).\n• Weekly Project Status Report (PSR): Weekly.\n• Before Phase 2 Service Implementation starts on 2026-11-09, the client prerequisite is: Client provides access to legacy ERP product catalog feeds prior to week 5.\n• 32 open questions are waiting on the client; the first is RAID-16.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
     },
     {
       "slide_index": 7,
