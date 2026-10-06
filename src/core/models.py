@@ -750,6 +750,23 @@ class StartupKitBaseline(BaseModel):
     segregation_of_duties_verified: bool = True
 
 
+class ReviewRunSummary(BaseModel):
+    """One review_queue/{run_id}/ entry's listing fields (HTL-03, HTL-13): enough for list_runs
+    to group and order runs without reading each run's full baseline/validation_report."""
+    model_config = ConfigDict(extra="forbid")
+    run_id: str
+    project_name: str
+    state: str
+    created_at: datetime
+
+
+class ReviewRun(ReviewRunSummary):
+    """A full paused run (HTL-13): its summary plus the exact baseline and validation_report
+    content it was created with."""
+    baseline: Dict[str, Any]
+    validation_report: Dict[str, Any]
+
+
 # Intermediate domain extraction schemas for multi-pass LLM prompts
 class CharterExtraction(BaseModel):
     project_name: str = "Project Baseline"

@@ -114,6 +114,10 @@ class AppConfig:
     max_tokens: int = int(os.getenv("MAX_TOKENS", "16384"))
     llm_cache_mode: str = os.getenv("LLM_CACHE_MODE", "off").lower()
     llm_cache_dir: Path = Path(os.getenv("LLM_CACHE_DIR", "tests/fixtures/llm_cache"))
+    # HTL-13: which ReviewStorage backend a paused review run is persisted through, mirroring
+    # LLM_PROVIDER and LLM_CACHE_MODE's existing pattern ("local" or "gcp"; "local" is the default
+    # everywhere except a deployed Cloud Run instance, HTL-14).
+    review_storage_backend: str = os.getenv("REVIEW_STORAGE_BACKEND", "local").lower()
     deck_template_path: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
     # HTL-27: the app's "Advanced (admin)" section passphrase. In production this is read from a
     # Secret Manager value exposed as this same environment variable; for local development, when

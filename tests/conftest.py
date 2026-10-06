@@ -9,6 +9,10 @@ from pptx import Presentation
 # Default LLM cache mode to replay in test environment (QA-01)
 os.environ.setdefault("LLM_CACHE_MODE", "replay")
 
+# HTL-13: pytest and all local development always use the local ReviewStorage backend, regardless
+# of what REVIEW_STORAGE_BACKEND a developer's shell happens to have set, mirroring LLM_CACHE_MODE above.
+os.environ.setdefault("REVIEW_STORAGE_BACKEND", "local")
+
 
 def pytest_addoption(parser):
     parser.addoption(
