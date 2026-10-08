@@ -20,6 +20,11 @@ from src.core.models import ReviewRun, ReviewRunSummary
 from src.generators.formatting import sanitize_filename
 
 PENDING_REVIEW = "pending_review"
+APPROVED = "approved"
+REJECTED = "rejected"
+GENERATED = "generated"
+
+LEGAL_STATES = {PENDING_REVIEW, APPROVED, REJECTED, GENERATED}
 
 _RUN_ID_TIMESTAMP_RE = re.compile(r"_(\d{8}_\d{6})$")
 
@@ -113,10 +118,23 @@ class LocalReviewStorage(ReviewStorage):
             )
         return summaries
 
+    def list_pending_runs(self) -> List[ReviewRunSummary]:
+        return self.list_runs(state=PENDING_REVIEW)
+
     def update_status(self, run_id: str, new_state: str, if_state: Optional[str] = None) -> None:
+        if new_state not in LEGAL_STATES:
+            raise ValueError(
+                f"update_status guard failed for {run_id!r}: invalid new_state {new_state!r}, "
+                f"expected one of {sorted(LEGAL_STATES)!r} (no update applied)."
+            )
         status_path = self._status_path(run_id)
         with _UPDATE_LOCK:
             current_state = self._read_json(status_path)["state"]
+            if current_state == REJECTED:
+                raise ValueError(
+                    f"update_status guard failed for {run_id!r}: run is in terminal 'rejected' state "
+                    f"and cannot be resumed (no update applied)."
+                )
             if if_state is not None and current_state != if_state:
                 raise ValueError(
                     f"update_status guard failed for {run_id!r}: expected state {if_state!r}, "

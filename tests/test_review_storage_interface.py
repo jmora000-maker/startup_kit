@@ -150,3 +150,51 @@ def test_unknown_backend_raises_value_error(monkeypatch):
     monkeypatch.setattr(config, "review_storage_backend", "bogus")
     with pytest.raises(ValueError):
         get_review_storage()
+
+
+def test_update_status_with_invalid_new_state_raises_and_state_unchanged(storage):
+    run_id = storage.create_run("Acme Project", BASELINE, VALIDATION_REPORT)
+
+    with pytest.raises(ValueError, match="invalid new_state"):
+        storage.update_status(run_id, "bogus_state", if_state="pending_review")
+
+    reread = LocalReviewStorage(base_dir=storage.base_dir)
+    assert reread.get_run(run_id).state == "pending_review"
+
+
+def test_update_status_from_rejected_state_always_raises_and_state_remains_rejected(storage):
+    run_id = storage.create_run("Acme Project", BASELINE, VALIDATION_REPORT)
+
+    # Transition pending_review -> rejected
+    storage.update_status(run_id, "rejected", if_state="pending_review")
+    assert storage.get_run(run_id).state == "rejected"
+
+    # Attempt to transition rejected -> approved with if_state="rejected"
+    with pytest.raises(ValueError, match="rejected"):
+        storage.update_status(run_id, "approved", if_state="rejected")
+
+    # Attempt to transition rejected -> approved with if_state=None
+    with pytest.raises(ValueError, match="rejected"):
+        storage.update_status(run_id, "approved")
+
+    # Read back from a fresh LocalReviewStorage instance to confirm state is unchanged
+    reread = LocalReviewStorage(base_dir=storage.base_dir)
+    assert reread.get_run(run_id).state == "rejected"
+
+
+def test_list_pending_runs_returns_only_runs_awaiting_review(storage):
+    id_pending = storage.create_run("Pending Project", BASELINE, VALIDATION_REPORT)
+    id_approved = storage.create_run("Approved Project", BASELINE, VALIDATION_REPORT)
+    id_rejected = storage.create_run("Rejected Project", BASELINE, VALIDATION_REPORT)
+    id_generated = storage.create_run("Generated Project", BASELINE, VALIDATION_REPORT)
+
+    storage.update_status(id_approved, "approved", if_state="pending_review")
+    storage.update_status(id_rejected, "rejected", if_state="pending_review")
+    storage.update_status(id_generated, "approved", if_state="pending_review")
+    storage.update_status(id_generated, "generated", if_state="approved")
+
+    pending_runs = storage.list_pending_runs()
+    assert [r.run_id for r in pending_runs] == [id_pending]
+
+    all_runs = storage.list_runs()
+    assert {r.run_id for r in all_runs} == {id_pending, id_approved, id_rejected, id_generated}

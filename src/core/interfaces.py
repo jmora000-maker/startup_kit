@@ -106,6 +106,10 @@ class ReviewStorage(ABC):
         """List every stored run, optionally filtered to one state; with no filter, list all."""
         pass
 
+    def list_pending_runs(self) -> List[ReviewRunSummary]:
+        """Convenience method to list runs awaiting review (state='pending_review', HTL-04)."""
+        return self.list_runs(state="pending_review")
+
     @abstractmethod
     def update_status(self, run_id: str, new_state: str, if_state: Optional[str] = None) -> None:
         """Move a run to new_state. Raises if if_state is given and does not match the run's
