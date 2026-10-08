@@ -573,3 +573,143 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
         success_msgs = [s.value for s in at.success]
         assert "Run complete." in success_msgs
         assert len(at.download_button) >= 1
+
+
+# HTL-06 / HTL-07 / HTL-29: Fact Review generalized to storage runs
+
+
+def test_fact_review_loads_selected_run_baseline(tmp_path, monkeypatch):
+    """HTL-06: Fact Review screen displays facts from the selected stored run, not the hardcoded fixture."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Beta Health Analytics",
+        contract_type="Time and Materials",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Beta Health Analytics",
+            client_name="Beta Health Inc",
+            governance_tier="Elevated",
+            contract_type="Time and Materials",
+            delivery_manager="Jordan Hayes",
+        ),
+        stakeholders=[
+            Stakeholder(name="Elena Rostova", role="Client Sponsor", organization="Beta Health Inc"),
+            Stakeholder(name="Marcus Vance", role="Approver", organization="Beta Health Inc"),
+            Stakeholder(name="Jordan Hayes", role="Delivery Manager", organization="Toptal"),
+        ],
+    )
+    run_id = storage.create_run(
+        project_name="Beta Health Analytics",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={},
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm run selector is present and defaults to the real pending run
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert selector.value == run_id
+
+    # Confirm subheader is the stored run's project name
+    assert any(sh.value == "Beta Health Analytics" for sh in at.subheader)
+
+    # Confirm caption references the stored run
+    assert any(f"Reviewing run `{run_id}`" in cap.value for cap in at.caption)
+
+
+def test_fact_review_edit_and_save_real_run_updates_storage(tmp_path, monkeypatch):
+    """HTL-07 / HTL-06: Editing a fact and clicking Save updates the run in review storage."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Beta Health Analytics",
+        contract_type="Time and Materials",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Beta Health Analytics",
+            client_name="Beta Health Inc",
+            governance_tier="Elevated",
+            contract_type="Time and Materials",
+            delivery_manager="Jordan Hayes",
+        ),
+        stakeholders=[
+            Stakeholder(name="Elena Rostova", role="Client Sponsor", organization="Beta Health Inc"),
+            Stakeholder(name="Marcus Vance", role="Approver", organization="Beta Health Inc"),
+            Stakeholder(name="Jordan Hayes", role="Delivery Manager", organization="Toptal"),
+        ],
+    )
+    run_id = storage.create_run(
+        project_name="Beta Health Analytics",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={},
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Edit the Delivery Manager field
+    dm_input_key = f"fact_review::{run_id}::edit::named_roles.delivery_manager"
+    dm_inputs = [ti for ti in at.text_input if ti.key == dm_input_key]
+    assert len(dm_inputs) == 1
+    dm_inputs[0].input("Samira Khan").run()
+
+    # Click Save review
+    at.button(key="fact_review_save_button").click().run()
+    assert not at.exception
+
+    # Check success message
+    assert any(f"Saved review for run {run_id} to review storage." in s.value for s in at.success)
+
+    # Verify storage contains the updated baseline and audit file
+    stored_run = storage.get_run(run_id)
+    assert stored_run.baseline["charter"]["delivery_manager"] == "Samira Khan"
+    audit_file = storage_dir / run_id / "review_audit.json"
+    assert audit_file.exists()
+
+
+def test_fact_review_demo_fixture_option_saves_to_scratch():
+    """HTL-06 / HTL-07: Selecting Demo fixture retains standalone fixture review behavior."""
+    from streamlit.testing.v1 import AppTest
+    from src.review_ui import facts as review
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Select the Demo fixture option
+    at.selectbox(key="fact_review_run_selector").select(review.DEMO_FIXTURE_OPTION).run()
+    assert not at.exception
+
+    # Confirm subheader is ARC Application Implementation
+    assert any(sh.value == "ARC Application Implementation" for sh in at.subheader)
+
+    # Click Save review
+    at.button(key="fact_review_save_button").click().run()
+    assert not at.exception
+
+    # Confirm saved to scratch
+    assert any("review_ui_scratch" in s.value or "Saved corrected_baseline.json" in s.value for s in at.success)
+    scratch_file = review.SCRATCH_ROOT / review.FIXTURE_NAME / "corrected_baseline.json"
+    assert scratch_file.exists()

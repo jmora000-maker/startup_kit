@@ -25,6 +25,7 @@ from src.llm.validation import validate_and_repair_baseline
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_NAME = "arc_application_implementation"
 FIXTURE_BASELINE_PATH = REPO_ROOT / "tests" / "fixtures" / "sow" / FIXTURE_NAME / "baseline.json"
+DEMO_FIXTURE_OPTION = f"Demo fixture ({FIXTURE_NAME})"
 SCRATCH_ROOT = REPO_ROOT / "review_ui_scratch"
 PROTECTED_DIRS = (REPO_ROOT / "tests" / "fixtures", REPO_ROOT / "tests" / "oracles")
 
@@ -82,6 +83,26 @@ def load_baseline(path: Path = FIXTURE_BASELINE_PATH) -> StartupKitBaseline:
     """Read a baseline.json (read-only)."""
     with open(path, encoding="utf-8") as fh:
         return StartupKitBaseline.model_validate(json.load(fh))
+
+
+def load_run_baseline(
+    run_id: str,
+    storage: Optional[Any] = None,
+) -> StartupKitBaseline:
+    """Load and prepare a baseline from review storage (HTL-13) or the demo fixture."""
+    if run_id == DEMO_FIXTURE_OPTION:
+        raw = load_baseline(FIXTURE_BASELINE_PATH)
+    else:
+        from src.review_storage import get_review_storage
+
+        storage = storage or get_review_storage()
+        run = storage.get_run(run_id)
+        raw = StartupKitBaseline.model_validate(run.baseline)
+        if raw.validation_report is None and run.validation_report:
+            from src.core.models import ValidationReport
+
+            raw.validation_report = ValidationReport.model_validate(run.validation_report)
+    return prepare_review_baseline(raw)
 
 
 def prepare_review_baseline(baseline: StartupKitBaseline) -> StartupKitBaseline:
@@ -415,3 +436,24 @@ def review_and_save(
     audit = build_review_audit(make_run_id(baseline.project_name, when), facts, corrections, when)
     baseline_path, audit_path = save_review(corrected, audit, out_dir)
     return audit, baseline_path, audit_path
+
+
+def save_run_review(
+    run_id: str,
+    baseline: StartupKitBaseline,
+    categories: List[FactCategory],
+    submitted: Dict[str, str],
+    notes: Optional[Dict[str, str]] = None,
+    storage: Optional[Any] = None,
+    when: Optional[datetime] = None,
+) -> Tuple[Dict[str, Any], StartupKitBaseline]:
+    """HTL-07 / HTL-06: Save reviewer corrections and review audit back to a real run in review storage."""
+    from src.review_storage import get_review_storage
+
+    when = when or datetime.now()
+    facts, corrections = compute_review(categories, submitted, notes)
+    corrected = apply_corrections(baseline, corrections)
+    audit = build_review_audit(run_id, facts, corrections, when)
+    storage = storage or get_review_storage()
+    storage.save_corrected_baseline(run_id, corrected.model_dump(mode="json"), audit)
+    return audit, corrected

@@ -23,22 +23,16 @@ if str(_REPO_ROOT) not in sys.path:
 
 import streamlit as st  # noqa: E402
 
+from src.review_storage import get_review_storage  # noqa: E402
 from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
 from src.review_ui import state_persistence  # noqa: E402
 from src.review_ui.constants import CONTRACT_TYPES, GOVERNANCE_TIERS, resolve_select_index  # noqa: E402
 
-FACT_REVIEW_STORE = "fact_review_values"
+DEMO_FIXTURE_LABEL = review.DEMO_FIXTURE_OPTION
 
 
-@st.cache_resource
-def _load():
-    raw = review.load_baseline(review.FIXTURE_BASELINE_PATH)
-    baseline = review.prepare_review_baseline(raw)
-    return baseline, review.build_fact_categories(baseline)
-
-
-def _render_field(field: review.FactField) -> None:
+def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> None:
     st.markdown(f"**{field.label}**")
     if field.context:
         st.caption(field.context)
@@ -52,11 +46,11 @@ def _render_field(field: review.FactField) -> None:
     if field.source_location:
         st.caption(f"Source location (not a quote): {field.source_location}")
 
-    widget_key = f"edit::{field.key}"
+    widget_key = f"{key_prefix}::edit::{field.key}"
     # Each field's current value is persisted (see state_persistence) the instant it changes, so an
     # edit survives switching away to the other page and back, even before "Save review" is clicked.
-    current = state_persistence.persisted_value(FACT_REVIEW_STORE, field.key, field.value)
-    on_change = lambda fk=field.key: state_persistence.sync_to_store(FACT_REVIEW_STORE, f"edit::{fk}", fk)  # noqa: E731
+    current = state_persistence.persisted_value(store_name, field.key, field.value)
+    on_change = lambda fk=field.key, wk=widget_key: state_persistence.sync_to_store(store_name, wk, fk)  # noqa: E731
 
     if field.key == "project_identity.governance_tier" and field.value in GOVERNANCE_TIERS:
         index = resolve_select_index(current, GOVERNANCE_TIERS, field.value)
@@ -76,13 +70,43 @@ def _render_field(field: review.FactField) -> None:
 
 
 def _render_fact_review_page() -> None:
-    baseline, categories = _load()
-
     st.title("Pre-Generation Fact Review")
-    st.caption(
-        f"Standalone review of `{review.FIXTURE_BASELINE_PATH.relative_to(review.REPO_ROOT).as_posix()}` "
-        f"(read-only). Saving writes to `{(review.SCRATCH_ROOT / review.FIXTURE_NAME).relative_to(review.REPO_ROOT).as_posix()}/`."
+
+    storage = get_review_storage()
+    pending_runs = storage.list_pending_runs()
+
+    # Build run selection options: pending runs first, followed by the demo fixture
+    options = [r.run_id for r in pending_runs] + [DEMO_FIXTURE_LABEL]
+    label_map = {r.run_id: f"{r.project_name or r.run_id} ({r.run_id})" for r in pending_runs}
+    label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
+
+    selected_run_id = st.selectbox(
+        "Select run to review",
+        options=options,
+        format_func=lambda x: label_map.get(x, x),
+        key="fact_review_run_selector",
     )
+
+    if not selected_run_id:
+        return
+
+    is_fixture = selected_run_id == DEMO_FIXTURE_LABEL
+    if is_fixture:
+        baseline = review.load_run_baseline(DEMO_FIXTURE_LABEL)
+        categories = review.build_fact_categories(baseline)
+        st.caption(
+            f"Standalone review of `{review.FIXTURE_BASELINE_PATH.relative_to(review.REPO_ROOT).as_posix()}` "
+            f"(read-only). Saving writes to `{(review.SCRATCH_ROOT / review.FIXTURE_NAME).relative_to(review.REPO_ROOT).as_posix()}/`."
+        )
+    else:
+        run = storage.get_run(selected_run_id)
+        baseline = review.load_run_baseline(selected_run_id, storage=storage)
+        categories = review.build_fact_categories(baseline)
+        st.caption(
+            f"Reviewing run `{selected_run_id}` (state: `{run.state}`). "
+            "Saving updates this run in review storage."
+        )
+
     st.subheader(baseline.project_name)
 
     # NOTE (regression fix, see INVESTIGATE 1): this screen used to render every field inside a
@@ -94,31 +118,46 @@ def _render_fact_review_page() -> None:
     # field's value is now mirrored into state_persistence's own store on every change (see
     # _render_field), and it's that persisted store -- not the widgets' own session_state keys --
     # that Save reads from, so an edit survives switching pages before "Save review" is clicked.
+    store_name = f"fact_review::{selected_run_id}"
+    key_prefix = f"fact_review::{selected_run_id}"
+
     for cat in categories:
         with st.expander(cat.title, expanded=cat.key in ("award_date", "named_roles")):
             if cat.note:
                 st.info(cat.note)
             for field in cat.fields:
                 with st.container(border=True):
-                    _render_field(field)
-            note_widget_key = f"note::{cat.key}"
-            note_current = state_persistence.persisted_value(FACT_REVIEW_STORE, note_widget_key, "")
-            note_on_change = lambda nk=note_widget_key: state_persistence.sync_to_store(  # noqa: E731
-                FACT_REVIEW_STORE, nk, nk)
-            st.text_input("Reviewer note for this category (optional)", value=note_current,
-                         key=note_widget_key, on_change=note_on_change)
-    saved = st.button("Save review")
+                    _render_field(field, store_name=store_name, key_prefix=key_prefix)
+            note_field_key = f"note::{cat.key}"
+            note_widget_key = f"{key_prefix}::note::{cat.key}"
+            note_current = state_persistence.persisted_value(store_name, note_field_key, "")
+            note_on_change = lambda nk=note_field_key, wk=note_widget_key: state_persistence.sync_to_store(  # noqa: E731
+                store_name, wk, nk
+            )
+            st.text_input(
+                "Reviewer note for this category (optional)",
+                value=note_current,
+                key=note_widget_key,
+                on_change=note_on_change,
+            )
+    saved = st.button("Save review", key="fact_review_save_button")
 
     if saved:
-        store = state_persistence.get_store(FACT_REVIEW_STORE)
+        store = state_persistence.get_store(store_name)
         submitted = {f.key: store.get(f.key, f.value) for cat in categories for f in cat.fields}
         notes = {cat.key: store.get(f"note::{cat.key}", "") for cat in categories}
         try:
-            audit, baseline_path, audit_path = review.review_and_save(baseline, categories, submitted, notes)
+            if is_fixture:
+                audit, baseline_path, audit_path = review.review_and_save(baseline, categories, submitted, notes)
+                st.success(f"Saved {baseline_path.name} and {audit_path.name} to {audit_path.parent}")
+            else:
+                audit, corrected = review.save_run_review(
+                    selected_run_id, baseline, categories, submitted, notes, storage=storage
+                )
+                st.success(f"Saved review for run {selected_run_id} to review storage.")
         except ValueError as exc:
             st.error(str(exc))
             return
-        st.success(f"Saved {baseline_path.name} and {audit_path.name} to {audit_path.parent}")
         st.json(audit)
 
 
