@@ -330,6 +330,7 @@ class StartupKitController:
         outputs: Optional[OutputSelection] = None,
         start_date: Optional[date] = None,
         on_progress: Optional[ProgressCallback] = None,
+        pause_for_review: bool = False,
     ) -> RunResult:
         """Execute the end-to-end startup kit generation pipeline.
 
@@ -343,6 +344,11 @@ class StartupKitController:
         (``"ingesting"``, ``"extracting"``, ``"validating"``, ``"generating"`` once per document
         type actually written) as they actually happen. Defaults to a no-op, so this is a pure
         addition with no effect on any existing caller that doesn't pass one.
+
+        HTL-29 / HTL-02: ``pause_for_review`` splits the pipeline after extraction and validation,
+        storing the run in review storage (state ``pending_review``) and returning without
+        generating any document files. Defaults to False, so existing callers are completely
+        unaffected.
         """
         if outputs is None:
             outputs = OutputSelection()
@@ -504,6 +510,32 @@ class StartupKitController:
         progress("validating")
         logger.info("Running extraction validation layer and reconciliation...")
         validation_report = validate_and_repair_baseline(baseline, date_conflict_warning=date_warning)
+
+        # HTL-02 / HTL-29: Pipeline split point for Pre-Generation Human Review
+        if pause_for_review:
+            from src.review_storage import get_review_storage
+
+            storage = get_review_storage()
+            baseline_dict = baseline.model_dump(mode="json")
+            validation_report_dict = validation_report.model_dump(mode="json")
+            project_name = baseline.project_name or "Project Baseline"
+            run_id = storage.create_run(
+                project_name=project_name,
+                baseline=baseline_dict,
+                validation_report=validation_report_dict,
+            )
+            logger.info("Paused run created in review queue: %s", run_id)
+            fallback_domains = list(getattr(self.llm_client, "fallback_domains", []) or [])
+            primary_provider = getattr(self.llm_client, "primary_provider", None)
+            return RunResult(
+                readiness_score=baseline.readiness_score,
+                baseline=baseline,
+                validation_report=validation_report,
+                fallback_domains=fallback_domains,
+                primary_provider=primary_provider,
+                paused=True,
+                run_id=run_id,
+            )
 
         # 4. Document & Workbook & Deck Generation according to outputs selection
         kit_path: Optional[Path] = None

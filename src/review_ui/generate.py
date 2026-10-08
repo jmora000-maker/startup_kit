@@ -274,6 +274,7 @@ def _run_generate(
     cache_mode: str,
     outputs: OutputSelection,
     on_progress=None,
+    pause_for_review: bool = False,
 ) -> RunResult:
     llm_client = build_app_llm_client(provider=provider, model=model, mock=mock, cache_mode=cache_mode)
     controller = StartupKitController(llm_client=llm_client)
@@ -291,6 +292,7 @@ def _run_generate(
         outputs=outputs,
         start_date=start_date,
         on_progress=on_progress,
+        pause_for_review=pause_for_review,
     )
 
 
@@ -331,6 +333,13 @@ def _run_reingest(
 
 def _render_results(run_result: RunResult) -> None:
     import streamlit as st
+
+    if run_result.paused:
+        st.info(
+            f"Run {run_result.run_id} created and awaiting review. "
+            "Final documents will be generated once approved."
+        )
+        return
 
     st.success("Run complete.")
     st.metric("Readiness score", f"{run_result.readiness_score:.1f}%")
@@ -560,6 +569,10 @@ def render() -> None:
         slides = _persisted_checkbox(
             GENERATE_STORE, "gen_out_slides", "Onboarding Deck", False, widget_fn=col4.checkbox
         )
+        # HTL-29: "Review before finalizing" toggle, checked by default.
+        review_before_finalizing = _persisted_checkbox(
+            GENERATE_STORE, "gen_review_before_finalizing", "Review before finalizing", True
+        )
         submitted = st.button("Generate", key="gen_submit_button")
 
         if submitted:
@@ -599,8 +612,10 @@ def render() -> None:
                             cache_mode=resolved_cache_mode,
                             outputs=outputs,
                             on_progress=_update_status,
+                            pause_for_review=review_before_finalizing,
                         )
-                        status_box.update(label="Run complete.", state="complete")
+                        completion_label = "Awaiting review." if result.paused else "Run complete."
+                        status_box.update(label=completion_label, state="complete")
                     st.session_state["generate_run_result"] = result
                 except RuntimeError as exc:
                     # HTL-20/HTL-26: no silent mock fall-back; the exact build_llm_client error is

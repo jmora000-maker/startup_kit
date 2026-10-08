@@ -54,3 +54,6 @@ class RunResult:
     summary_text: Optional[str] = None
     fallback_domains: List[str] = field(default_factory=list)
     primary_provider: Optional[str] = None
+    # HTL-29 / HTL-02: pause-for-review run result fields
+    paused: bool = False
+    run_id: Optional[str] = None

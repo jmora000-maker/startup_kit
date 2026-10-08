@@ -500,3 +500,76 @@ def test_reingest_results_renders_fallback_domains():
         assert not at.exception
         warning_msgs = [w.value for w in at.warning if "Fell back to OpenAI for: Risk Log." in w.value]
         assert len(warning_msgs) == 1
+
+
+# HTL-29: Review before finalizing toggle and paused run UI behavior
+
+
+def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting_review():
+    """HTL-29: When 'Review before finalizing' is checked (the default), submitting passes
+    pause_for_review=True, displays the 'awaiting review' message, and renders no download buttons."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    # Confirm default state of checkbox is checked (True)
+    checkboxes = [cb for cb in at.checkbox if cb.label == "Review before finalizing"]
+    assert len(checkboxes) == 1
+    assert checkboxes[0].value is True
+
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    mock_paused_result = RunResult(
+        readiness_score=88.0,
+        baseline=None,
+        paused=True,
+        run_id="Acme_Project_20261008_120000",
+    )
+
+    with patch("src.review_ui.generate._run_generate", return_value=mock_paused_result) as mock_run:
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        assert mock_run.called
+        assert mock_run.call_args.kwargs["pause_for_review"] is True
+
+        info_msgs = [i.value for i in at.info]
+        assert any(
+            "Run Acme_Project_20261008_120000 created and awaiting review." in msg
+            and "Final documents will be generated once approved." in msg
+            for msg in info_msgs
+        )
+        assert len(at.download_button) == 0
+
+
+def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_path):
+    """HTL-29: When 'Review before finalizing' is unchecked, submitting passes pause_for_review=False
+    and displays the normal results screen with download buttons."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    # Uncheck the review toggle
+    for cb in at.checkbox:
+        if cb.label == "Review before finalizing":
+            cb.uncheck().run()
+            break
+
+    dummy_kit = tmp_path / "Acme_Startup_Kit.docx"
+    dummy_kit.write_bytes(b"dummy docx bytes")
+    mock_complete_result = RunResult(
+        readiness_score=92.0,
+        kit_path=dummy_kit,
+        paused=False,
+    )
+
+    with patch("src.review_ui.generate._run_generate", return_value=mock_complete_result) as mock_run:
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        assert mock_run.called
+        assert mock_run.call_args.kwargs["pause_for_review"] is False
+
+        success_msgs = [s.value for s in at.success]
+        assert "Run complete." in success_msgs
+        assert len(at.download_button) >= 1
