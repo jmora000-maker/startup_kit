@@ -457,3 +457,36 @@ def save_run_review(
     storage = storage or get_review_storage()
     storage.save_corrected_baseline(run_id, corrected.model_dump(mode="json"), audit)
     return audit, corrected
+
+
+def get_blocking_validation_errors(validation_report: Any) -> List[str]:
+    """HTL-08: Return descriptions for any validation finding with severity == 'error'.
+    Warning and repaired findings never block approval."""
+    if not validation_report:
+        return []
+    if isinstance(validation_report, dict):
+        findings = validation_report.get("findings", [])
+    elif hasattr(validation_report, "findings"):
+        findings = validation_report.findings
+    elif isinstance(validation_report, (list, tuple)):
+        findings = validation_report
+    else:
+        findings = []
+
+    errors: List[str] = []
+    for f in findings:
+        if isinstance(f, dict):
+            sev = f.get("severity")
+            msg = f.get("message")
+            inv = f.get("invariant_id")
+        elif hasattr(f, "severity"):
+            sev = f.severity
+            msg = getattr(f, "message", None)
+            inv = getattr(f, "invariant_id", None)
+        else:
+            continue
+        if sev == "error":
+            inv_str = f"[{inv}] " if inv else ""
+            desc = msg or inv or "Validation error"
+            errors.append(f"{inv_str}{desc}" if inv and not str(desc).startswith(f"[{inv}]") else str(desc))
+    return errors

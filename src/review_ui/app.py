@@ -140,7 +140,26 @@ def _render_fact_review_page() -> None:
                 key=note_widget_key,
                 on_change=note_on_change,
             )
-    saved = st.button("Save review", key="fact_review_save_button")
+    if is_fixture:
+        saved = st.button("Save review", key="fact_review_save_button")
+        approved = False
+        blocking_errors = []
+    else:
+        blocking_errors = review.get_blocking_validation_errors(run.validation_report)
+        if blocking_errors:
+            st.error(
+                "Approval blocked: this run has open error-severity validation finding(s) that must be resolved:\n"
+                + "\n".join(f"- {err}" for err in blocking_errors)
+            )
+        col1, col2 = st.columns(2)
+        with col1:
+            saved = st.button("Save review", key="fact_review_save_button")
+        with col2:
+            approved = st.button(
+                "Approve",
+                key="fact_review_approve_button",
+                disabled=bool(blocking_errors),
+            )
 
     if saved:
         store = state_persistence.get_store(store_name)
@@ -159,6 +178,19 @@ def _render_fact_review_page() -> None:
             st.error(str(exc))
             return
         st.json(audit)
+
+    if approved:
+        if blocking_errors:
+            st.error(
+                f"Cannot approve run {selected_run_id}: open validation error(s):\n"
+                + "\n".join(f"- {err}" for err in blocking_errors)
+            )
+        else:
+            try:
+                storage.update_status(selected_run_id, "approved", if_state="pending_review")
+                st.success(f"Run {selected_run_id} approved successfully.")
+            except ValueError as exc:
+                st.error(str(exc))
 
 
 def main() -> None:

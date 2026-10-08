@@ -705,6 +705,10 @@ def test_fact_review_demo_fixture_option_saves_to_scratch():
     # Confirm subheader is ARC Application Implementation
     assert any(sh.value == "ARC Application Implementation" for sh in at.subheader)
 
+    # Confirm no Approve button is present
+    approve_buttons = [b for b in at.button if b.key == "fact_review_approve_button" or b.label == "Approve"]
+    assert len(approve_buttons) == 0
+
     # Click Save review
     at.button(key="fact_review_save_button").click().run()
     assert not at.exception
@@ -713,3 +717,146 @@ def test_fact_review_demo_fixture_option_saves_to_scratch():
     assert any("review_ui_scratch" in s.value or "Saved corrected_baseline.json" in s.value for s in at.success)
     scratch_file = review.SCRATCH_ROOT / review.FIXTURE_NAME / "corrected_baseline.json"
     assert scratch_file.exists()
+
+
+# HTL-08 / HTL-09: Fact Review Approve action and error gating Streamlit UI tests
+
+
+def test_fact_review_approve_blocked_by_error_severity_finding(tmp_path, monkeypatch):
+    """HTL-08: When a run has an error-severity validation finding, the Approve button is disabled
+    and a clear blocking error message is displayed naming the error."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Blocked Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Blocked Project",
+            client_name="Blocked Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    validation_report = {
+        "findings": [
+            {
+                "invariant_id": "VAL-02",
+                "severity": "error",
+                "message": "Unmapped critical milestone gate missing required phase",
+            },
+            {
+                "invariant_id": "VAL-05",
+                "severity": "warning",
+                "message": "Award date not explicitly stated",
+            },
+        ]
+    }
+    run_id = storage.create_run(
+        project_name="Blocked Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report=validation_report,
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm run selector is on the created run
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert selector.value == run_id
+
+    # Confirm error message is rendered and names the blocking error
+    error_msgs = [e.value for e in at.error]
+    assert any(
+        "Approval blocked" in msg
+        and "VAL-02" in msg
+        and "Unmapped critical milestone gate missing required phase" in msg
+        for msg in error_msgs
+    )
+
+    # Confirm Approve button is disabled
+    approve_button = at.button(key="fact_review_approve_button")
+    assert approve_button.disabled is True
+
+    # Confirm run state on disk remains pending_review
+    assert storage.get_run(run_id).state == "pending_review"
+
+
+def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monkeypatch):
+    """HTL-08 / HTL-09: When a run has only warning/repaired findings, the Approve button is enabled,
+    and clicking Approve transitions the run to 'approved' in storage."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Ready Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Ready Project",
+            client_name="Ready Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    validation_report = {
+        "findings": [
+            {
+                "invariant_id": "VAL-05",
+                "severity": "warning",
+                "message": "Award date not explicitly stated",
+            },
+            {
+                "invariant_id": "VAL-09",
+                "severity": "repaired",
+                "message": "Rebuilt schedule from work items",
+            },
+        ]
+    }
+    run_id = storage.create_run(
+        project_name="Ready Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report=validation_report,
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm run selector is on the created run
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert selector.value == run_id
+
+    # Confirm Approve button is NOT disabled
+    approve_button = at.button(key="fact_review_approve_button")
+    assert approve_button.disabled is False
+
+    # Click Approve
+    approve_button.click().run()
+    assert not at.exception
+
+    # Check success message
+    assert any(f"Run {run_id} approved successfully." in s.value for s in at.success)
+
+    # Verify state in storage is 'approved'
+    assert storage.get_run(run_id).state == "approved"
+    fresh_storage = LocalReviewStorage(base_dir=storage_dir)
+    assert fresh_storage.get_run(run_id).state == "approved"
