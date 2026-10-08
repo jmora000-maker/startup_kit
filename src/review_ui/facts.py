@@ -490,3 +490,75 @@ def get_blocking_validation_errors(validation_report: Any) -> List[str]:
             desc = msg or inv or "Validation error"
             errors.append(f"{inv_str}{desc}" if inv and not str(desc).startswith(f"[{inv}]") else str(desc))
     return errors
+
+
+def label_for_generated_file(filename: str) -> str:
+    """Return a user-friendly label for a generated artifact filename."""
+    if filename.endswith("_Startup_Readiness_Checklist.docx"):
+        return "Startup Readiness Checklist (.docx)"
+    if filename.endswith("_Startup_Kit.docx"):
+        return "Startup Kit (.docx)"
+    if filename.endswith("_Project_Delivery_Workbook.xlsx"):
+        return "Project Delivery Workbook (.xlsx)"
+    if filename.endswith("_Talent_Onboarding_Deck.pptx"):
+        return "Talent Onboarding Deck (.pptx)"
+    if filename.endswith(".trace.json") or filename.endswith("_Deck_Trace_Manifest.json"):
+        return "Deck Trace Manifest (.json)"
+    return filename
+
+
+def generate_approved_run(
+    run_id: str,
+    storage: Optional[Any] = None,
+    controller: Optional[Any] = None,
+    outputs: Optional[Any] = None,
+    start_date: Optional[date] = None,
+    on_progress: Optional[Any] = None,
+) -> Tuple[Dict[str, str], Any]:
+    """HTL-10: Resume generation from an approved run using its currently stored (corrected) baseline."""
+    import tempfile
+    from src.core.models import OutputSelection, ValidationReport
+    from src.orchestrator import StartupKitController
+    from src.review_storage import get_review_storage
+
+    storage = storage or get_review_storage()
+    run = storage.get_run(run_id)
+    if run.state != "approved":
+        raise ValueError(
+            f"Cannot generate documents for run {run_id!r}: run state is {run.state!r}, expected 'approved'."
+        )
+
+    baseline = StartupKitBaseline.model_validate(run.baseline)
+    if baseline.validation_report is None and run.validation_report:
+        baseline.validation_report = ValidationReport.model_validate(run.validation_report)
+
+    if controller is None:
+        controller = StartupKitController()
+
+    temp_out_dir = Path(tempfile.mkdtemp(prefix=f"startup_kit_resume_{run_id}_"))
+    outputs = outputs or OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
+
+    result = controller.generate_from_baseline(
+        baseline=baseline,
+        output_dir=temp_out_dir,
+        outputs=outputs,
+        start_date=start_date,
+        on_progress=on_progress,
+    )
+
+    written_paths: List[Path] = []
+    if result.kit_path and result.kit_path.exists():
+        written_paths.append(result.kit_path)
+    if result.checklist_path and result.checklist_path.exists():
+        written_paths.append(result.checklist_path)
+    if result.workbook is not None and result.workbook.file_path.exists():
+        written_paths.append(result.workbook.file_path)
+    if result.slides is not None:
+        if result.slides.file_path.exists():
+            written_paths.append(result.slides.file_path)
+        if result.slides.manifest_path.exists():
+            written_paths.append(result.slides.manifest_path)
+
+    references = storage.put_generated_files(run_id, written_paths)
+    storage.update_status(run_id, "generated", if_state="approved")
+    return references, result

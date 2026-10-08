@@ -538,6 +538,30 @@ class StartupKitController:
             )
 
         # 4. Document & Workbook & Deck Generation according to outputs selection
+        return self.generate_from_baseline(
+            baseline=baseline,
+            output_dir=out_path,
+            outputs=outputs,
+            start_date=start_date,
+            on_progress=on_progress,
+        )
+
+    def generate_from_baseline(
+        self,
+        baseline: StartupKitBaseline,
+        output_dir: Path,
+        outputs: Optional[OutputSelection] = None,
+        start_date: Optional[date] = None,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> RunResult:
+        """HTL-10: Produce the Kit, Checklist, Workbook, and deck from a validated/corrected baseline."""
+        progress = on_progress or _noop_progress
+        if outputs is None:
+            outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
+
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+
         kit_path: Optional[Path] = None
         checklist_path: Optional[Path] = None
         wb_result: Optional[PMOWorkbookResult] = None
@@ -600,7 +624,7 @@ class StartupKitController:
             slides_path=deck_result.file_path if deck_result else None,
             readiness_score=baseline.readiness_score,
             baseline=baseline,
-            validation_report=validation_report,
+            validation_report=getattr(baseline, "validation_report", None),
             summary_text=summary_text,
             fallback_domains=fallback_domains,
             primary_provider=primary_provider,

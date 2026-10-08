@@ -860,3 +860,122 @@ def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monke
     assert storage.get_run(run_id).state == "approved"
     fresh_storage = LocalReviewStorage(base_dir=storage_dir)
     assert fresh_storage.get_run(run_id).state == "approved"
+
+
+# HTL-10: Resume generation from approved review run Streamlit UI tests
+
+
+def test_fact_review_approved_run_shows_generate_button_and_renders_downloads(tmp_path, monkeypatch):
+    """HTL-10: When an approved run is selected on the Fact Review page, a 'Generate documents'
+    button is shown in place of Save/Approve, clicking it generates documents and renders download buttons."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Approved Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Approved Project",
+            client_name="Approved Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+            delivery_manager="Jordan Hayes",
+        ),
+        stakeholders=[
+            Stakeholder(name="Jordan Hayes", role="Delivery Manager", organization="Toptal"),
+        ],
+    )
+    run_id = storage.create_run(
+        project_name="Approved Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm run selector is on the approved run
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert selector.value == run_id
+
+    # Confirm Save and Approve buttons are absent
+    save_buttons = [b for b in at.button if b.key == "fact_review_save_button"]
+    approve_buttons = [b for b in at.button if b.key == "fact_review_approve_button"]
+    assert len(save_buttons) == 0
+    assert len(approve_buttons) == 0
+
+    # Confirm Generate documents button is present
+    gen_buttons = [b for b in at.button if b.key == "fact_review_generate_button"]
+    assert len(gen_buttons) == 1
+    assert gen_buttons[0].label == "Generate documents"
+
+    # Click Generate documents
+    gen_buttons[0].click().run()
+    assert not at.exception
+
+    # Check success message
+    assert any(f"Run {run_id} documents generated successfully." in s.value for s in at.success)
+
+    # Confirm download buttons are rendered
+    assert len(at.download_button) >= 4
+
+    # Verify state in storage is now 'generated'
+    assert storage.get_run(run_id).state == "generated"
+    fresh_storage = LocalReviewStorage(base_dir=storage_dir)
+    assert fresh_storage.get_run(run_id).state == "generated"
+
+
+def test_fact_review_pending_run_does_not_show_generate_documents_button(tmp_path, monkeypatch):
+    """HTL-10: A pending_review run shows Save/Approve and does NOT show 'Generate documents'."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Pending Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Pending Project",
+            client_name="Pending Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Pending Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm Generate documents button is absent
+    gen_buttons = [b for b in at.button if b.key == "fact_review_generate_button"]
+    assert len(gen_buttons) == 0
+
+    # Confirm Save and Approve buttons are present
+    save_buttons = [b for b in at.button if b.key == "fact_review_save_button"]
+    approve_buttons = [b for b in at.button if b.key == "fact_review_approve_button"]
+    assert len(save_buttons) == 1
+    assert len(approve_buttons) == 1

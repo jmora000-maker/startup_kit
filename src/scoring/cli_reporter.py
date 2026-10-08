@@ -93,8 +93,12 @@ def format_readiness_cli_summary(
 
     client_name = (
         baseline.governance_context.client_name
-        if baseline.governance_context
-        else (baseline.charter.client_sponsor if baseline.charter else "[Client Sponsor]")
+        if baseline.governance_context and baseline.governance_context.client_name
+        else (
+            getattr(baseline.charter, "client_name", None)
+            or getattr(baseline.charter, "client_sponsor", None)
+            or "[Client Sponsor]"
+        )
     )
 
     sep_double = "=" * 80

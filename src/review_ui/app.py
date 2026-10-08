@@ -73,11 +73,18 @@ def _render_fact_review_page() -> None:
     st.title("Pre-Generation Fact Review")
 
     storage = get_review_storage()
-    pending_runs = storage.list_pending_runs()
+    all_runs = storage.list_runs()
+    runs = [r for r in all_runs if r.state in ("pending_review", "approved", "generated")]
+    runs.sort(key=lambda r: (r.state != "pending_review", r.state != "approved", -r.created_at.timestamp()))
 
-    # Build run selection options: pending runs first, followed by the demo fixture
-    options = [r.run_id for r in pending_runs] + [DEMO_FIXTURE_LABEL]
-    label_map = {r.run_id: f"{r.project_name or r.run_id} ({r.run_id})" for r in pending_runs}
+    # Build run selection options: active runs first, followed by the demo fixture
+    options = [r.run_id for r in runs] + [DEMO_FIXTURE_LABEL]
+    label_map = {
+        r.run_id: f"{r.project_name or r.run_id} ({r.run_id})"
+        if r.state == "pending_review"
+        else f"{r.project_name or r.run_id} ({r.run_id}) [{r.state}]"
+        for r in runs
+    }
     label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
 
     selected_run_id = st.selectbox(
@@ -140,11 +147,17 @@ def _render_fact_review_page() -> None:
                 key=note_widget_key,
                 on_change=note_on_change,
             )
+
+    saved = False
+    approved = False
+    generate_clicked = False
+    blocking_errors = []
+
     if is_fixture:
         saved = st.button("Save review", key="fact_review_save_button")
-        approved = False
-        blocking_errors = []
-    else:
+    elif run.state == "approved":
+        generate_clicked = st.button("Generate documents", key="fact_review_generate_button")
+    elif run.state == "pending_review":
         blocking_errors = review.get_blocking_validation_errors(run.validation_report)
         if blocking_errors:
             st.error(
@@ -160,6 +173,8 @@ def _render_fact_review_page() -> None:
                 key="fact_review_approve_button",
                 disabled=bool(blocking_errors),
             )
+    elif run.state == "generated":
+        st.info(f"Run {selected_run_id} has been generated.")
 
     if saved:
         store = state_persistence.get_store(store_name)
@@ -191,6 +206,40 @@ def _render_fact_review_page() -> None:
                 st.success(f"Run {selected_run_id} approved successfully.")
             except ValueError as exc:
                 st.error(str(exc))
+
+    if generate_clicked:
+        try:
+            references, run_result = review.generate_approved_run(selected_run_id, storage=storage)
+            st.session_state[f"fact_review::{selected_run_id}::generated_references"] = references
+            st.success(f"Run {selected_run_id} documents generated successfully.")
+        except ValueError as exc:
+            st.error(str(exc))
+
+    # Render download buttons if generation references exist
+    generated_references = st.session_state.get(f"fact_review::{selected_run_id}::generated_references")
+    if not is_fixture and not generated_references and run.state == "generated":
+        run_dir = storage._run_dir(selected_run_id) if hasattr(storage, "_run_dir") else None
+        if run_dir and run_dir.exists():
+            existing_files = [
+                p for p in run_dir.iterdir()
+                if p.is_file() and p.name not in ("baseline.json", "status.json", "validation_report.json", "review_audit.json")
+            ]
+            if existing_files:
+                generated_references = {p.name: str(p) for p in existing_files}
+
+    if generated_references:
+        st.caption("Download generated files (each button saves the named file via your browser's own download)")
+        for filename, ref_path_str in generated_references.items():
+            ref_path = Path(ref_path_str)
+            if ref_path.exists():
+                label = review.label_for_generated_file(filename)
+                st.download_button(
+                    label=f"Download {label}: {ref_path.name}",
+                    data=ref_path.read_bytes(),
+                    file_name=ref_path.name,
+                    mime="application/octet-stream",
+                    key=f"download::{selected_run_id}::{ref_path.name}",
+                )
 
 
 def main() -> None:
