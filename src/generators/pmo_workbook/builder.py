@@ -16,6 +16,8 @@ from src.generators.formatting import ACTION_TAG_REGEX
 from src.core.models import (
     AWARD_DATE_SOURCE_STATED,
     StartupKitBaseline,
+    ValidationReport,
+    ValidationFinding,
     Milestone,
     Deliverable,
     WorkPackageSeed,
@@ -2219,18 +2221,38 @@ def build_workbook_model(
         for s in (base_story_ids | wb_story_ids)
     )
 
+    def _add_traceability_finding(msg: str) -> None:
+        if baseline.validation_report is None:
+            baseline.validation_report = ValidationReport()
+        if not any(f.message == msg and f.severity == "warning" for f in baseline.validation_report.findings):
+            baseline.validation_report.findings.append(
+                ValidationFinding(invariant_id="TR-01", severity="warning", message=msg)
+            )
+
     if missing_ms:
-        logger.warning("Traceability check: Missing Milestones in workbook: %s", missing_ms)
+        msg = f"Traceability check: Missing Milestones in workbook: {missing_ms}"
+        logger.warning(msg)
+        _add_traceability_finding(msg)
     if missing_delivs:
-        logger.warning("Traceability check: Missing Deliverables in workbook: %s", missing_delivs)
+        msg = f"Traceability check: Missing Deliverables in workbook: {missing_delivs}"
+        logger.warning(msg)
+        _add_traceability_finding(msg)
     if missing_wps:
-        logger.warning("Traceability check: Missing Work Packages in workbook: %s", missing_wps)
+        msg = f"Traceability check: Missing Work Packages in workbook: {missing_wps}"
+        logger.warning(msg)
+        _add_traceability_finding(msg)
     if missing_raid:
-        logger.warning("Traceability check: Missing RAID items in workbook: %s", missing_raid)
+        msg = f"Traceability check: Missing RAID items in workbook: {missing_raid}"
+        logger.warning(msg)
+        _add_traceability_finding(msg)
     if missing_stories:
-        logger.warning("Traceability check: Missing SOW References in workbook: %s", missing_stories)
+        msg = f"Traceability check: Missing SOW References in workbook: {missing_stories}"
+        logger.warning(msg)
+        _add_traceability_finding(msg)
     if not base_story_ids and not wb_story_ids:
-        logger.warning("No SOW work items identified in baseline.")
+        msg = "No SOW work items identified in baseline."
+        logger.warning(msg)
+        _add_traceability_finding(msg)
 
     traceability_dict: Dict[str, Dict[str, Any]] = {
         "Milestones": {

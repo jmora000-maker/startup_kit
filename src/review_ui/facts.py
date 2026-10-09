@@ -166,7 +166,7 @@ def _start_date_for_model(baseline: StartupKitBaseline) -> date:
 
 def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
     """Build HTL-06's seven categories from an already-validated baseline (see prepare_review_baseline)."""
-    workbook = build_workbook_model(copy.deepcopy(baseline), start_date=_start_date_for_model(baseline))
+    workbook = build_workbook_model(baseline, start_date=_start_date_for_model(baseline))
     schedule_by_ms = {
         r.milestone_id: r for r in workbook.schedule_rows if r.row_type in ("Milestone", "Checkpoint")
     }
