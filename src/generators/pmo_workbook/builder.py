@@ -525,7 +525,8 @@ def build_workbook_model(
             filtered_checkpoints.append(cp)
 
     # Defensive separation if milestones > 4 and checkpoints not yet extracted (e.g. un-reconciled baseline)
-    if len(filtered_milestones) > 4 and not filtered_checkpoints:
+    has_phase_codes = any(PHASE_CODE_REGEX.search(ms.description or "") for ms in filtered_milestones)
+    if has_phase_codes and len(filtered_milestones) > 4 and not filtered_checkpoints:
         def_gates: List[Milestone] = []
         def_cps: List[Milestone] = []
         phase_groups_raw: Dict[str, List[Milestone]] = {}
@@ -795,7 +796,7 @@ def build_workbook_model(
 
     for m in sorted_milestones:
         p = parsed_phases.get(m.id)
-        ws_name = p.workstream_name if p else "Build & Configuration"
+        ws_name = p.workstream_name if p else "Project Delivery"
         if ws_name not in seen_workstreams:
             seen_workstreams[ws_name] = []
             workstream_groups.append((ws_name, seen_workstreams[ws_name]))
@@ -1734,7 +1735,7 @@ def build_workbook_model(
                 single_m = all_linked_ms[0]
                 new_linked_ms = single_m.id
                 p_m = parsed_phases.get(single_m.id)
-                new_ws = p_m.workstream_name if p_m else "Build & Configuration"
+                new_ws = p_m.workstream_name if p_m else "Project Delivery"
             elif len(all_linked_ms) > 1:
                 new_linked_ms = ", ".join(m.id for m in all_linked_ms)
                 new_ws = "Multiple phases"
