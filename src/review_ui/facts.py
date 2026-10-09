@@ -17,7 +17,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from src.core.models import SourceReference, StartupKitBaseline
+from src.core.models import SourceReference, StartupKitBaseline, ValidationReport
 from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook.builder import build_workbook_model
 from src.llm.validation import validate_and_repair_baseline
@@ -166,7 +166,20 @@ def _start_date_for_model(baseline: StartupKitBaseline) -> date:
 
 def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
     """Build HTL-06's seven categories from an already-validated baseline (see prepare_review_baseline)."""
-    workbook = build_workbook_model(baseline, start_date=_start_date_for_model(baseline))
+    baseline_copy = copy.deepcopy(baseline)
+    workbook = build_workbook_model(baseline_copy, start_date=_start_date_for_model(baseline))
+    if baseline_copy.validation_report:
+        if baseline.validation_report is None:
+            baseline.validation_report = ValidationReport()
+        for f in baseline_copy.validation_report.findings:
+            if not any(
+                existing.message == f.message
+                and existing.invariant_id == f.invariant_id
+                and existing.severity == f.severity
+                for existing in baseline.validation_report.findings
+            ):
+                baseline.validation_report.findings.append(f)
+
     schedule_by_ms = {
         r.milestone_id: r for r in workbook.schedule_rows if r.row_type in ("Milestone", "Checkpoint")
     }

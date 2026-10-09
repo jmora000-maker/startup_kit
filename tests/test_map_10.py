@@ -135,3 +135,73 @@ def test_map_10_all_traceability_checks_route_findings():
     findings = baseline.validation_report.findings
     assert all(f.severity in ("warning", "repaired") for f in findings)
     assert get_blocking_validation_errors(baseline.validation_report) == []
+
+
+def test_map_10_build_fact_categories_double_call_safety():
+    """Calling build_fact_categories multiple times (simulating Streamlit reruns) must not mutate baseline or compound findings."""
+    milestones_np = [
+        Milestone(id="M1", description="Project Kickoff and Alignment"),
+        Milestone(id="M2", description="Discovery Interviews and Environment Review"),
+        Milestone(id="M3", description="Architecture and Workflow Assessment"),
+        Milestone(id="M4", description="AI Enablement Feasibility Analysis"),
+        Milestone(id="M5", description="Tooling and Pipeline Evaluation"),
+        Milestone(id="M6", description="Modernization Strategy Synthesis"),
+        Milestone(id="M7", description="Draft Findings and Roadmap Review"),
+        Milestone(id="M8", description="Final Report and Deliverable Preparation"),
+        Milestone(id="M9", description="Client sign-off and acceptance of Work Output"),
+    ]
+    delivs = [
+        Deliverable(id="DEL-01", name="Discovery Summary", description="Discovery", sow_reference="WO-01"),
+        Deliverable(id="DEL-02", name="Project Plan", description="Plan", sow_reference="WO-02"),
+    ]
+    catalogue = [
+        SOWWorkItem(reference="Work Output 1", reference_kind="Deliverable number", title="Discovery Summary", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="Work Output 2", reference_kind="Deliverable number", title="Project Plan", phase="", owner="Toptal", type="Documentation"),
+    ]
+    baseline_np = StartupKitBaseline(
+        project_name="GitLab Modernization",
+        deliverables=delivs,
+        milestones=milestones_np,
+        sow_stories_catalogue=catalogue,
+        backlog_seed=[]
+    )
+    validate_and_repair_baseline(baseline_np)
+
+    # First call
+    c1 = build_fact_categories(baseline_np)
+    ms_ids_1 = [m.id for m in baseline_np.milestones]
+    findings_count_1 = len(baseline_np.validation_report.findings)
+
+    # Second call
+    c2 = build_fact_categories(baseline_np)
+    ms_ids_2 = [m.id for m in baseline_np.milestones]
+    findings_count_2 = len(baseline_np.validation_report.findings)
+
+    assert ms_ids_1 == ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"]
+    assert ms_ids_2 == ms_ids_1
+    assert findings_count_1 == findings_count_2
+
+    # Phased baseline undergoing defensive reduction
+    m1 = Milestone(id="M1", description="P1 Phase 1 acceptance review", key_dependencies=["Dep 1"], critical_path_assumptions=["Assumption 1"])
+    m2 = Milestone(id="M2", description="P1 Discovery & Requirements complete", key_dependencies=["Dep 2"])
+    m3 = Milestone(id="M3", description="P1 Architecture approved")
+    m4 = Milestone(id="M4", description="P1 Build completed")
+    m5 = Milestone(id="M5", description="P1 accepted", key_dependencies=["Dep 5"])
+
+    baseline_p = StartupKitBaseline(
+        project_name="Phased Project",
+        deliverables=[Deliverable(id="DEL-01", name="Core Deliverable", description="Phase 1 deliverable")],
+        milestones=[m1, m2, m3, m4, m5],
+        interim_checkpoints=[],
+        backlog_seed=[]
+    )
+
+    build_fact_categories(baseline_p)
+    assert [m.id for m in baseline_p.milestones] == ["M1", "M2", "M3", "M4", "M5"]
+    assert baseline_p.milestones[4].key_dependencies == ["Dep 5"]
+    assert baseline_p.milestones[4].merged_milestone_ids == []
+
+    build_fact_categories(baseline_p)
+    assert [m.id for m in baseline_p.milestones] == ["M1", "M2", "M3", "M4", "M5"]
+    assert baseline_p.milestones[4].key_dependencies == ["Dep 5"]
+    assert baseline_p.milestones[4].merged_milestone_ids == []
