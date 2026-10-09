@@ -137,7 +137,7 @@ TOOL_RESERVED_PREFIXES: set[str] = {
 # Configurable, ordered list of (Kind, Pattern) tuples for SOW reference detection (v6 Section 1.1)
 SOW_REFERENCE_PATTERNS: list[tuple[str, str]] = [
     ("Story ID", r"\b[A-Z][A-Z0-9]{1,9}-\d{2,6}\b"),
-    ("Deliverable number", r"\b(?:Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*)\b"),
+    ("Deliverable number", r"\b(?:Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Work\s+Output\s+\d+(?:\.\d+)*|WO-\d+)\b"),
     ("Task or WBS code", r"\b(?:Task|WBS)\s+\d+(?:\.\d+)*\b"),
     ("Section", r"\b(?:Section|Clause|§)\s*\d+(?:\.\d+)*\b"),
 ]
@@ -199,6 +199,17 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
                 seen.add(deliv_id.upper())
                 results.append((deliv_id, "Deliverable number"))
 
+    # Plural work output patterns: e.g. "Work Outputs 1 and 2", "Work Outputs 1.1, 2.2 and 3.3"
+    plural_wo_pattern = r"\bWork\s+Outputs\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
+    for m in re.finditer(plural_wo_pattern, text, re.IGNORECASE):
+        num_str = m.group(1)
+        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+        for num in nums:
+            wo_id = f"Work Output {num}"
+            if wo_id.upper() not in seen:
+                seen.add(wo_id.upper())
+                results.append((wo_id, "Deliverable number"))
+
     # Plural task patterns: e.g. "Tasks 1.1 and 1.2"
     plural_task_pattern = r"\b(?:Tasks|WBS)\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
     for m in re.finditer(plural_task_pattern, text, re.IGNORECASE):
@@ -236,6 +247,81 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
 def extract_sow_references(text: str) -> list[str]:
     """Extract unique SOW references from text in appearance order (v6 Section 1.1)."""
     return [ref for ref, _ in extract_sow_references_with_kind(text)]
+
+
+def _normalize_num(num_str: str) -> str:
+    """Normalize numeric reference component by stripping leading zeros from integers and dotted numbers."""
+    parts = num_str.split(".")
+    try:
+        norm_parts = [str(int(p)) for p in parts]
+        return ".".join(norm_parts)
+    except ValueError:
+        return num_str.lstrip("0") or "0"
+
+
+def normalize_sow_reference(ref: str) -> str:
+    """Normalize SOW reference identifier into a canonical form for comparison (MAP-08).
+
+    Examples:
+    - WO-01, Work Output 1 -> WO:1
+    - Deliverable 1, D01, DEL-01 -> DEL:1
+    - Story 1, Story 01, STORY-12 -> STORY:1, STORY:12
+    - SOW-01, SOW-1 -> SYNTH:1
+    - SOW-P1-01 -> SYNTH:P1:1
+    - Task 1, TASK-01, T-01 -> TASK:1
+    - WBS 1.1 -> WBS:1.1
+    - Section 3.1, Clause 4, § 2.1 -> SECTION:3.1, SECTION:4, SECTION:2.1
+    - PROJ-101 -> PROJ:101
+    """
+    if not ref:
+        return ""
+    s = ref.strip()
+
+    # 1. Work Output: WO-01, WO 1, Work Output 1, Work Output-01, Work Output #1, WO1
+    m = re.fullmatch(r"(?:Work\s+Output[s]?|WO)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"WO:{_normalize_num(m.group(1))}"
+
+    # 2. Deliverable: Deliverable 1, Deliverable 1.1, D1, D01, D-01, DEL-01, DEL-1
+    m = re.fullmatch(r"(?:Deliverable[s]?|DEL|D)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"DEL:{_normalize_num(m.group(1))}"
+
+    # 3. Phased Synthetic: SOW-P1-01, SOW-P2a-02
+    m = re.fullmatch(r"SOW[\s\-_#]*([A-Za-z0-9]+)[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"SYNTH:{m.group(1).upper()}:{_normalize_num(m.group(2))}"
+
+    # 4. Unphased Synthetic: SOW-01, SOW-1
+    m = re.fullmatch(r"SOW[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"SYNTH:{_normalize_num(m.group(1))}"
+
+    # 5. Real Story: Story 1, Story 01, Story-01, STORY-12, STORY-01
+    m = re.fullmatch(r"(?:Story|Stories|STORY)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"STORY:{_normalize_num(m.group(1))}"
+
+    # 6. Task / WBS: Task 1, Task 01, Task 1.1, TASK-01, T-01
+    m = re.fullmatch(r"(?:Task[s]?|TASK|T)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"TASK:{_normalize_num(m.group(1))}"
+
+    m = re.fullmatch(r"(?:WBS)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"WBS:{_normalize_num(m.group(1))}"
+
+    # 7. Section / Clause: Section 3.1, Clause 4, § 2.1
+    m = re.fullmatch(r"(?:Section[s]?|Sec\.?|Clause|§)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"SECTION:{_normalize_num(m.group(1))}"
+
+    # 8. Generic Prefix-Number: PROJ-101, JIRA-101, FEAT-01
+    m = re.fullmatch(r"([A-Za-z][A-Za-z0-9]{1,9})[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"{m.group(1).upper()}:{_normalize_num(m.group(2))}"
+
+    return " ".join(s.upper().split())
 
 
 config = AppConfig()

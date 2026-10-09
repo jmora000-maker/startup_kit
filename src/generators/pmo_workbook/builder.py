@@ -11,6 +11,8 @@ from src.config import (
     normalize_person_name,
     extract_sow_references,
     detect_sow_reference_kind,
+    normalize_sow_reference,
+    is_tool_reserved_id,
 )
 from src.generators.formatting import ACTION_TAG_REGEX
 from src.core.models import (
@@ -2214,7 +2216,26 @@ def build_workbook_model(
         if w.sow_stories:
             for s in extract_sow_references(w.sow_stories):
                 wb_story_ids.add(s)
-    missing_stories = sorted(base_story_ids - wb_story_ids, key=natural_sort_key)
+
+    # MAP-08: Canonical normalization on both sides before comparison
+    wb_canonical_map: Dict[str, Set[str]] = {}
+    for s in wb_story_ids:
+        c = normalize_sow_reference(s)
+        if c:
+            wb_canonical_map.setdefault(c, set()).add(s)
+
+    base_canonical_map: Dict[str, Set[str]] = {}
+    for s in base_story_ids:
+        c = normalize_sow_reference(s)
+        if c:
+            base_canonical_map.setdefault(c, set()).add(s)
+
+    missing_canonical = set(base_canonical_map.keys()) - set(wb_canonical_map.keys())
+    missing_stories_raw: List[str] = []
+    for c in missing_canonical:
+        # Report the original baseline raw reference(s) for the missing canonical items
+        missing_stories_raw.extend(base_canonical_map[c])
+    missing_stories = sorted(list(set(missing_stories_raw)), key=natural_sort_key)
 
     has_synthetic = any(
         detect_sow_reference_kind(s) == "Synthetic" or s.startswith("SOW-")

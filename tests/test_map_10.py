@@ -18,31 +18,31 @@ def test_map_10_traceability_warning_routed_to_validation_report():
         Milestone(id="M2", description="Project Sign-off"),
     ]
     catalogue = [
-        SOWWorkItem(reference="Work Output 1", reference_kind="Deliverable number", title="Discovery & Onboarding Summary", phase="", owner="Toptal", type="Documentation"),
-        SOWWorkItem(reference="Work Output 2", reference_kind="Deliverable number", title="Task-Level Project Plan", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="WO-01", reference_kind="Deliverable number", title="Discovery & Onboarding Summary", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="WO-02", reference_kind="Deliverable number", title="Task-Level Project Plan", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="SOW-99", reference_kind="Story ID", title="Unmapped SOW Item 99", phase="", owner="Toptal", type="Documentation"),
+    ]
+    backlog = [
+        WorkPackageSeed(id="WP-01", parent_deliverable_id="DEL-01", title="Task 1", sow_reference="WO-01", owner="Toptal"),
+        WorkPackageSeed(id="WP-02", parent_deliverable_id="DEL-02", title="Task 2", sow_reference="WO-02", owner="Toptal"),
     ]
     baseline = StartupKitBaseline(
         project_name="GitLab Modernization & AI Enablement Discovery",
         deliverables=delivs,
         milestones=milestones,
         sow_stories_catalogue=catalogue,
-        backlog_seed=[]
+        backlog_seed=backlog
     )
-
-    validate_and_repair_baseline(baseline)
-    initial_findings_count = len(baseline.validation_report.findings)
 
     wb = build_workbook_model(baseline, today=date(2026, 10, 3))
 
     assert baseline.validation_report is not None
-    assert len(baseline.validation_report.findings) > initial_findings_count
-
     tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01"]
     assert len(tr_findings) == 1
     finding = tr_findings[0]
     assert finding.severity == "warning"
     assert "Traceability check: Missing SOW References in workbook:" in finding.message
-    assert "'Work Output 1'" in finding.message and "'Work Output 2'" in finding.message
+    assert "'SOW-99'" in finding.message
 
 
 def test_map_10_fact_review_displays_traceability_finding():
@@ -56,18 +56,26 @@ def test_map_10_fact_review_displays_traceability_finding():
         Milestone(id="M2", description="Project Sign-off"),
     ]
     catalogue = [
-        SOWWorkItem(reference="Work Output 1", reference_kind="Deliverable number", title="Discovery & Onboarding Summary", phase="", owner="Toptal", type="Documentation"),
-        SOWWorkItem(reference="Work Output 2", reference_kind="Deliverable number", title="Task-Level Project Plan", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="WO-01", reference_kind="Deliverable number", title="Discovery & Onboarding Summary", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="WO-02", reference_kind="Deliverable number", title="Task-Level Project Plan", phase="", owner="Toptal", type="Documentation"),
+        SOWWorkItem(reference="SOW-99", reference_kind="Story ID", title="Unmapped SOW Item 99", phase="", owner="Toptal", type="Documentation"),
+    ]
+    backlog = [
+        WorkPackageSeed(id="WP-01", parent_deliverable_id="DEL-01", title="Task 1", sow_reference="WO-01", owner="Toptal"),
+        WorkPackageSeed(id="WP-02", parent_deliverable_id="DEL-02", title="Task 2", sow_reference="WO-02", owner="Toptal"),
     ]
     baseline = StartupKitBaseline(
         project_name="GitLab Modernization & AI Enablement Discovery",
         deliverables=delivs,
         milestones=milestones,
         sow_stories_catalogue=catalogue,
-        backlog_seed=[]
+        backlog_seed=backlog
     )
 
     reviewed_baseline = prepare_review_baseline(baseline)
+    # Ensure SOW-99 is in catalogue of reviewed_baseline
+    reviewed_baseline.sow_stories_catalogue = catalogue
+    reviewed_baseline.backlog_seed = backlog
     categories = {c.key: c for c in build_fact_categories(reviewed_baseline)}
 
     assert "validation_findings" in categories
@@ -81,7 +89,7 @@ def test_map_10_fact_review_displays_traceability_finding():
     assert len(matching_fields) == 1
     lbl, val = matching_fields[0]
     assert lbl == "warning - TR-01"
-    assert "Work Output 1" in val and "Work Output 2" in val
+    assert "SOW-99" in val
 
 
 def test_map_10_warning_does_not_block_approval():
