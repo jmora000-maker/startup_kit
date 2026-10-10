@@ -20,11 +20,13 @@ STRICT BUSINESS RULES & CONSTRAINTS:
 CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter and Governance metadata.
 
 CONSTRAINTS:
+- When the primary document is a Statement of Work (or similarly named governing document) with its own cover-page title, extract that title exactly as a single clean string for project_name.
+- Never combine it with, append, or parenthesize a second title found in an attached Exhibit, Appendix, or Specification document — an exhibit's heading describes that exhibit, not the engagement.
 - Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.
 - Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.
 
 Extract:
-- project_name: Title of the project or engagement.
+- project_name: Title of the project or engagement (a single clean title).
 - client_name: Name of the client or sponsoring organization.
 - governance_tier: 'Guided', 'Partnered', or 'Elevated' (default 'Partnered').
 - contract_type: 'Time and Materials' or 'Fixed Bid' (default 'Time and Materials').
