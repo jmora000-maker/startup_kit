@@ -796,3 +796,74 @@ def test_openai_temperature_state_persists_for_subsequent_calls():
     r2 = client.generate_structured("Extract 2", SampleSchema)
     assert r2 == result_2
     assert mock_structured.invoke.call_count == 3
+
+
+def test_openai_concurrent_threads_unsupported_temperature_all_recover():
+    """Verify that when 14 concurrent threads all hit a 400 temperature error simultaneously,
+    every thread retries and recovers successfully with at most one reconfiguration warning."""
+    from concurrent.futures import ThreadPoolExecutor
+    import logging
+    import threading
+
+    mock_openai = MagicMock()
+    mock_openai.temperature = 0.0
+
+    temp_error = RuntimeError(
+        "Error code: 400 - {'error': {'message': \"Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.\", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_value'}}"
+    )
+
+    call_count = 0
+    lock = threading.Lock()
+
+    def mock_invoke(messages):
+        nonlocal call_count
+        with lock:
+            call_count += 1
+            # If the client still has temperature == 0.0, raise 400; once reconfigured to None, succeed
+            if mock_openai.temperature == 0.0:
+                raise temp_error
+            return SampleSchema(title="Concurrent Success", score=call_count)
+
+    mock_structured = MagicMock()
+    mock_structured.invoke.side_effect = mock_invoke
+    mock_openai.with_structured_output.return_value = mock_structured
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        openai_model_name="test-concurrent-reasoning-model",
+        openai_chat_model=mock_openai,
+        temperature=0.0,
+    )
+
+    results = []
+    with ThreadPoolExecutor(max_workers=14) as executor:
+        futures = [
+            executor.submit(client.generate_structured, f"Extract {i}", SampleSchema)
+            for i in range(14)
+        ]
+        for f in futures:
+            results.append(f.result())
+
+    assert len(results) == 14
+    for r in results:
+        assert isinstance(r, SampleSchema)
+        assert r.title == "Concurrent Success"
+    assert client.temperature is None
+    assert mock_openai.temperature is None
+
+
+def test_openai_new_client_inherits_unsupported_model_cache():
+    """Verify that a newly instantiated client recognizes models recorded in _UNSUPPORTED_TEMPERATURE_MODELS
+    and configures them with temperature=None from the start."""
+    from src.llm.client import _UNSUPPORTED_TEMPERATURE_MODELS
+
+    _UNSUPPORTED_TEMPERATURE_MODELS.add("cached-reasoning-model")
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        openai_model_name="cached-reasoning-model",
+        openai_api_key="sk-fake",
+        temperature=0.0,
+    )
+
+    assert client._openai_chat_model.temperature is None

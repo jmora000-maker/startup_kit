@@ -3,7 +3,8 @@
 import json
 import logging
 import re
-from typing import Type, TypeVar, Optional, Any
+import threading
+from typing import Type, TypeVar, Optional, Any, Set
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_anthropic import ChatAnthropic
@@ -127,6 +128,11 @@ def is_unsupported_temperature_error(exc: Exception) -> bool:
     )
 
 
+# Globally tracked set of OpenAI models that reject custom temperature parameters
+_UNSUPPORTED_TEMPERATURE_MODELS: Set[str] = set()
+_openai_model_lock = threading.Lock()
+
+
 def get_clamped_max_tokens(provider: str, model_name: Optional[str], requested_tokens: int) -> int:
     """Clamp requested max_tokens to provider and model specific ceilings (LLM-01).
 
@@ -223,14 +229,25 @@ class LangChainLLMClient(ILLMClient):
         else:
             self._chat_model = None
 
+        # Check if the OpenAI model is already known to reject custom temperature
+        if self.openai_model_name and self.openai_model_name in _UNSUPPORTED_TEMPERATURE_MODELS:
+            effective_openai_temp = None
+        else:
+            effective_openai_temp = self.temperature
+
         # Primary / Fallback OpenAI model
         self._custom_openai_chat_model = openai_chat_model is not None
         if openai_chat_model is not None:
             self._openai_chat_model = openai_chat_model
+            if self.openai_model_name in _UNSUPPORTED_TEMPERATURE_MODELS:
+                try:
+                    self._openai_chat_model.temperature = None
+                except Exception:
+                    pass
         elif self.openai_api_key:
             self._openai_chat_model = ChatOpenAI(
                 model=self.openai_model_name,
-                temperature=self.temperature,
+                temperature=effective_openai_temp,
                 api_key=self.openai_api_key,
                 max_tokens=self.openai_max_tokens,
             )
@@ -238,38 +255,40 @@ class LangChainLLMClient(ILLMClient):
             self._openai_chat_model = None
 
     def _handle_openai_temperature_error(self, exc: Exception) -> bool:
-        """If exc is an unsupported temperature error, reconfigure OpenAI client with temperature=None and return True."""
+        """If exc is an unsupported temperature error, record model and reconfigure OpenAI client with temperature=None."""
         if not is_unsupported_temperature_error(exc):
             return False
         if self._openai_chat_model is None:
             return False
-        current_temp = getattr(self._openai_chat_model, "temperature", None)
-        if current_temp is None and self.temperature is None:
-            return False
-        logger.warning(
-            "OpenAI model '%s' does not support custom temperature (received error: %s). "
-            "Reconfiguring OpenAI client without temperature parameter and retrying...",
-            self.openai_model_name,
-            exc,
-        )
-        self.temperature = None
-        if self._custom_openai_chat_model:
-            try:
-                self._openai_chat_model.temperature = None
-            except Exception:
-                pass
-        elif self.openai_api_key:
-            self._openai_chat_model = ChatOpenAI(
-                model=self.openai_model_name,
-                temperature=None,
-                api_key=self.openai_api_key,
-                max_tokens=self.openai_max_tokens,
-            )
-        else:
-            try:
-                self._openai_chat_model.temperature = None
-            except Exception:
-                pass
+        with _openai_model_lock:
+            if self.openai_model_name:
+                _UNSUPPORTED_TEMPERATURE_MODELS.add(self.openai_model_name)
+            current_temp = getattr(self._openai_chat_model, "temperature", None)
+            if current_temp is not None or self.temperature is not None:
+                logger.warning(
+                    "OpenAI model '%s' does not support custom temperature (received error: %s). "
+                    "Reconfiguring OpenAI client without temperature parameter and retrying...",
+                    self.openai_model_name,
+                    exc,
+                )
+                self.temperature = None
+                if self._custom_openai_chat_model:
+                    try:
+                        self._openai_chat_model.temperature = None
+                    except Exception:
+                        pass
+                elif self.openai_api_key:
+                    self._openai_chat_model = ChatOpenAI(
+                        model=self.openai_model_name,
+                        temperature=None,
+                        api_key=self.openai_api_key,
+                        max_tokens=self.openai_max_tokens,
+                    )
+                else:
+                    try:
+                        self._openai_chat_model.temperature = None
+                    except Exception:
+                        pass
         return True
 
     def _invoke_openai_structured(self, schema: Type[T], messages: list) -> T:
@@ -279,7 +298,7 @@ class LangChainLLMClient(ILLMClient):
             structured_openai = self._openai_chat_model.with_structured_output(schema)
             result = structured_openai.invoke(messages)
         except Exception as exc:
-            if self._handle_openai_temperature_error(exc):
+            if is_unsupported_temperature_error(exc) and self._handle_openai_temperature_error(exc):
                 structured_openai = self._openai_chat_model.with_structured_output(schema)
                 result = structured_openai.invoke(messages)
             else:
@@ -296,7 +315,7 @@ class LangChainLLMClient(ILLMClient):
         try:
             response = self._openai_chat_model.invoke(messages)
         except Exception as exc:
-            if self._handle_openai_temperature_error(exc):
+            if is_unsupported_temperature_error(exc) and self._handle_openai_temperature_error(exc):
                 response = self._openai_chat_model.invoke(messages)
             else:
                 raise exc
