@@ -116,6 +116,17 @@ def parse_json_response_to_schema(text: Any, schema: Type[T], parser: Optional[P
         return parser.parse(raw_str)
 
 
+def is_unsupported_temperature_error(exc: Exception) -> bool:
+    """Check if an exception is an OpenAI error indicating unsupported temperature parameter."""
+    msg = str(exc).lower()
+    return "temperature" in msg and (
+        "only the default" in msg
+        or "does not support" in msg
+        or "unsupported value" in msg
+        or "invalid temperature" in msg
+    )
+
+
 def get_clamped_max_tokens(provider: str, model_name: Optional[str], requested_tokens: int) -> int:
     """Clamp requested max_tokens to provider and model specific ceilings (LLM-01).
 
@@ -213,6 +224,7 @@ class LangChainLLMClient(ILLMClient):
             self._chat_model = None
 
         # Primary / Fallback OpenAI model
+        self._custom_openai_chat_model = openai_chat_model is not None
         if openai_chat_model is not None:
             self._openai_chat_model = openai_chat_model
         elif self.openai_api_key:
@@ -224,6 +236,71 @@ class LangChainLLMClient(ILLMClient):
             )
         else:
             self._openai_chat_model = None
+
+    def _handle_openai_temperature_error(self, exc: Exception) -> bool:
+        """If exc is an unsupported temperature error, reconfigure OpenAI client with temperature=None and return True."""
+        if not is_unsupported_temperature_error(exc):
+            return False
+        if self._openai_chat_model is None:
+            return False
+        current_temp = getattr(self._openai_chat_model, "temperature", None)
+        if current_temp is None and self.temperature is None:
+            return False
+        logger.warning(
+            "OpenAI model '%s' does not support custom temperature (received error: %s). "
+            "Reconfiguring OpenAI client without temperature parameter and retrying...",
+            self.openai_model_name,
+            exc,
+        )
+        self.temperature = None
+        if self._custom_openai_chat_model:
+            try:
+                self._openai_chat_model.temperature = None
+            except Exception:
+                pass
+        elif self.openai_api_key:
+            self._openai_chat_model = ChatOpenAI(
+                model=self.openai_model_name,
+                temperature=None,
+                api_key=self.openai_api_key,
+                max_tokens=self.openai_max_tokens,
+            )
+        else:
+            try:
+                self._openai_chat_model.temperature = None
+            except Exception:
+                pass
+        return True
+
+    def _invoke_openai_structured(self, schema: Type[T], messages: list) -> T:
+        if self._openai_chat_model is None:
+            raise ValueError("OpenAI chat model is not configured.")
+        try:
+            structured_openai = self._openai_chat_model.with_structured_output(schema)
+            result = structured_openai.invoke(messages)
+        except Exception as exc:
+            if self._handle_openai_temperature_error(exc):
+                structured_openai = self._openai_chat_model.with_structured_output(schema)
+                result = structured_openai.invoke(messages)
+            else:
+                raise exc
+        if isinstance(result, schema):
+            return result
+        if isinstance(result, dict):
+            return schema.model_validate(result)
+        return schema.model_validate(result)
+
+    def _invoke_openai_text(self, messages: list) -> Any:
+        if self._openai_chat_model is None:
+            raise ValueError("OpenAI chat model is not configured.")
+        try:
+            response = self._openai_chat_model.invoke(messages)
+        except Exception as exc:
+            if self._handle_openai_temperature_error(exc):
+                response = self._openai_chat_model.invoke(messages)
+            else:
+                raise exc
+        return response
 
     def generate_structured(
         self,
@@ -245,13 +322,7 @@ class LangChainLLMClient(ILLMClient):
                 openai_exc_ref: Optional[Exception] = None
                 # Step 1a: Attempt OpenAI native structured outputs
                 try:
-                    structured_openai = self._openai_chat_model.with_structured_output(schema)
-                    result = structured_openai.invoke(messages)
-                    if isinstance(result, schema):
-                        return result
-                    if isinstance(result, dict):
-                        return schema.model_validate(result)
-                    return schema.model_validate(result)
+                    return self._invoke_openai_structured(schema, messages)
                 except Exception as openai_exc:
                     openai_native_failed = True
                     openai_exc_ref = openai_exc
@@ -431,13 +502,7 @@ class LangChainLLMClient(ILLMClient):
                         schema_name,
                     )
                     try:
-                        structured_openai = self._openai_chat_model.with_structured_output(schema)
-                        result = structured_openai.invoke(messages)
-                        if isinstance(result, schema):
-                            return result
-                        if isinstance(result, dict):
-                            return schema.model_validate(result)
-                        return schema.model_validate(result)
+                        return self._invoke_openai_structured(schema, messages)
                     except Exception as openai_exc:
                         logger.warning(
                             "OpenAI structured invoke failed (%s): %s. Falling back to PydanticOutputParser via OpenAI.",
@@ -458,13 +523,7 @@ class LangChainLLMClient(ILLMClient):
             # 2. If Anthropic is not configured, attempt OpenAI directly
             elif self._openai_chat_model is not None:
                 try:
-                    structured_openai = self._openai_chat_model.with_structured_output(schema)
-                    result = structured_openai.invoke(messages)
-                    if isinstance(result, schema):
-                        return result
-                    if isinstance(result, dict):
-                        return schema.model_validate(result)
-                    return schema.model_validate(result)
+                    return self._invoke_openai_structured(schema, messages)
                 except Exception as openai_exc:
                     logger.warning(
                         "OpenAI structured invoke failed (%s): %s. Falling back to PydanticOutputParser via OpenAI.",
@@ -538,7 +597,7 @@ class LangChainLLMClient(ILLMClient):
 
         if force_openai:
             if self._openai_chat_model is not None:
-                response = self._openai_chat_model.invoke(messages)
+                response = self._invoke_openai_text(messages)
                 _check_openai_truncation(response)
                 return extract_text_content(response.content if hasattr(response, "content") else response)
             raise ValueError("OpenAI chat model is not configured.")
@@ -546,7 +605,7 @@ class LangChainLLMClient(ILLMClient):
         if self.primary_provider == "openai":
             if self._openai_chat_model is not None:
                 try:
-                    response = self._openai_chat_model.invoke(messages)
+                    response = self._invoke_openai_text(messages)
                     _check_openai_truncation(response)
                     return extract_text_content(response.content if hasattr(response, "content") else response)
                 except Exception as openai_exc:
@@ -598,12 +657,12 @@ class LangChainLLMClient(ILLMClient):
                             "Falling back to OpenAI text generation ('%s')...",
                             self.openai_model_name,
                         )
-                        response = self._openai_chat_model.invoke(messages)
+                        response = self._invoke_openai_text(messages)
                         _check_openai_truncation(response)
                         return extract_text_content(response.content if hasattr(response, "content") else response)
                     raise anthropic_exc
             elif self._openai_chat_model is not None:
-                response = self._openai_chat_model.invoke(messages)
+                response = self._invoke_openai_text(messages)
                 _check_openai_truncation(response)
                 return extract_text_content(response.content if hasattr(response, "content") else response)
             else:

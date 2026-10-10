@@ -410,7 +410,8 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
 
 
 def test_format_fallback_message_empty_defaults_to_anthropic():
-    assert format_fallback_message([]) == "Ran entirely on Anthropic."
+    expected_default = format_provider_name(None)
+    assert format_fallback_message([]) == f"Ran entirely on {expected_default}."
 
 
 def test_format_fallback_message_empty_anthropic_primary():

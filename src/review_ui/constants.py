@@ -30,7 +30,7 @@ CONTRACT_TYPES: List[str] = ["Time and Materials", "Fixed Bid"]
 
 MODEL_OPTIONS_BY_PROVIDER: Dict[str, List[str]] = {
     "anthropic": ["claude-sonnet-5-5", "claude-haiku-4-5-20251001"],
-    "openai": ["gpt-4o"],
+    "openai": ["gpt-4o", "gpt-6.1-sol"],
 }
 
 # Sentinel shown in the model dropdown for "use this provider's own default model" (an empty

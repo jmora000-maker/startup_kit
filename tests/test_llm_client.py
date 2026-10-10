@@ -691,3 +691,108 @@ def test_schema_complexity_error_anthropic_usage_cap_falls_back_to_openai():
     mock_openai.invoke.assert_called_once()
     mock_openai.with_structured_output.assert_not_called()
     assert "CustomComplexSchema" in client.fallback_domains
+
+
+def test_is_unsupported_temperature_error_detection():
+    """Verify is_unsupported_temperature_error accurately matches temperature restriction errors."""
+    from src.llm.client import is_unsupported_temperature_error
+
+    err1 = RuntimeError(
+        "Error code: 400 - {'error': {'message': \"Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.\", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_value'}}"
+    )
+    err2 = RuntimeError(
+        "Unsupported value: 'temperature' parameter only supports the default value of 1 with this model."
+    )
+    err3 = RuntimeError("OpenAI 429 InsufficientQuota")
+    err4 = RuntimeError("Anthropic 404 Not Found")
+
+    assert is_unsupported_temperature_error(err1) is True
+    assert is_unsupported_temperature_error(err2) is True
+    assert is_unsupported_temperature_error(err3) is False
+    assert is_unsupported_temperature_error(err4) is False
+
+
+def test_openai_unsupported_temperature_retries_and_succeeds_structured():
+    """Verify that when OpenAI structured output fails with an unsupported temperature error,
+    it automatically reconfigures temperature to None and retries successfully without raising an error."""
+    mock_openai = MagicMock()
+    mock_openai.temperature = 0.0
+    mock_structured = MagicMock()
+
+    temp_error = RuntimeError(
+        "Error code: 400 - {'error': {'message': \"Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.\", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_value'}}"
+    )
+    expected_result = SampleSchema(title="Retry Success", score=100)
+    mock_structured.invoke.side_effect = [temp_error, expected_result]
+    mock_openai.with_structured_output.return_value = mock_structured
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        openai_chat_model=mock_openai,
+        temperature=0.0,
+    )
+
+    result = client.generate_structured("Extract project", SampleSchema)
+    assert result == expected_result
+    assert mock_structured.invoke.call_count == 2
+    assert client.temperature is None
+    assert mock_openai.temperature is None
+
+
+def test_openai_unsupported_temperature_retries_and_succeeds_text():
+    """Verify that when OpenAI text generation fails with an unsupported temperature error,
+    it automatically reconfigures temperature to None and retries successfully."""
+    mock_openai = MagicMock()
+    mock_openai.temperature = 0.0
+
+    temp_error = RuntimeError(
+        "Error code: 400 - {'error': {'message': \"Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.\", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_value'}}"
+    )
+    mock_response = MagicMock()
+    mock_response.content = "OpenAI text retry success"
+    mock_openai.invoke.side_effect = [temp_error, mock_response]
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        openai_chat_model=mock_openai,
+        temperature=0.0,
+    )
+
+    result = client.generate_text("Prompt test")
+    assert result == "OpenAI text retry success"
+    assert mock_openai.invoke.call_count == 2
+    assert client.temperature is None
+    assert mock_openai.temperature is None
+
+
+def test_openai_temperature_state_persists_for_subsequent_calls():
+    """Verify that once temperature is reconfigured to None after an error, subsequent domain extractions
+    execute directly with temperature=None without redundant re-triggers."""
+    mock_openai = MagicMock()
+    mock_openai.temperature = 0.0
+    mock_structured = MagicMock()
+
+    temp_error = RuntimeError(
+        "Error code: 400 - {'error': {'message': \"Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.\", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_value'}}"
+    )
+    result_1 = SampleSchema(title="First Extraction", score=10)
+    result_2 = SampleSchema(title="Second Extraction", score=20)
+
+    # First call fails on attempt 1, succeeds on attempt 2. Second call succeeds on attempt 1.
+    mock_structured.invoke.side_effect = [temp_error, result_1, result_2]
+    mock_openai.with_structured_output.return_value = mock_structured
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        openai_chat_model=mock_openai,
+        temperature=0.0,
+    )
+
+    r1 = client.generate_structured("Extract 1", SampleSchema)
+    assert r1 == result_1
+    assert mock_structured.invoke.call_count == 2
+    assert client.temperature is None
+
+    r2 = client.generate_structured("Extract 2", SampleSchema)
+    assert r2 == result_2
+    assert mock_structured.invoke.call_count == 3
