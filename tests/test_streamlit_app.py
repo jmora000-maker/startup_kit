@@ -463,6 +463,16 @@ def test_stage_status_updater_handles_incrementing_extraction_progress():
     assert len(sleep_calls) == 1
     mock_status_box.update.assert_called_with(label="Running extraction... (2/14 complete)")
 
+    # Backlog decomposition start message
+    current_simulated_time += 1.2
+    updater.update("extracting", "13/14 complete -- decomposing backlog & SOW catalogue...")
+    mock_status_box.update.assert_called_with(
+        label="Running extraction... (13/14 complete -- decomposing backlog & SOW catalogue...)"
+    )
+    mock_status_box.write.assert_called_with(
+        "Running extraction... (13/14 complete -- decomposing backlog & SOW catalogue...)"
+    )
+
 
 # HTL-26: on a failed run, the app must show a clear, specific error message -- "{stage or
 # operation} failed: {concise reason}" -- never a bare generic message and never a raw

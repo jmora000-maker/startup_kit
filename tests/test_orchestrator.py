@@ -153,10 +153,14 @@ def test_on_progress_fires_expected_stage_sequence_for_run(populated_inputs_dir,
     stages = [stage for stage, _ in calls]
     assert stages[0] == "ingesting"
     extracting_calls = [c for c in calls if c[0] == "extracting"]
-    assert len(extracting_calls) == 15  # 1 initial + 14 increments
+    assert len(extracting_calls) == 16  # 1 initial + 13 concurrent increments + 1 backlog start + 1 final 14/14 increment
     assert extracting_calls[0] == ("extracting", "")
-    assert [detail for _, detail in extracting_calls[1:]] == [f"{i}/14 complete" for i in range(1, 15)]
-    assert stages[16] == "validating"
+    expected_details = [f"{i}/14 complete" for i in range(1, 14)] + [
+        "13/14 complete -- decomposing backlog & SOW catalogue...",
+        "14/14 complete",
+    ]
+    assert [detail for _, detail in extracting_calls[1:]] == expected_details
+    assert stages[17] == "validating"
     generating_calls = [c for c in calls if c[0] == "generating"]
     assert [detail for _, detail in generating_calls] == [
         "Startup Kit",

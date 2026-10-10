@@ -446,6 +446,10 @@ class StartupKitController:
 
             # Backlog extraction passes deliverables
             if self.backlog_extractor:
+                progress(
+                    "extracting",
+                    f"{completed_count}/{total_extractors} complete -- decomposing backlog & SOW catalogue...",
+                )
                 backlog = self.backlog_extractor.extract(
                     documents, self.llm_client, deliverables=deliverables.deliverables
                 )
