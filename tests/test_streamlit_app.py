@@ -202,6 +202,13 @@ def test_resolve_select_index_unrecognized_value_falls_back_to_default_index():
     assert resolve_select_index("", GOVERNANCE_TIERS, "Elevated") == 2
 
 
+def test_resolve_select_index_formatted_label_matches_embedded_option():
+    # If a display label with parenthesized ID or state is passed, it resolves to that option's index
+    options = ["Run_AAA_20261010", "Run_BBB_20261010", "Run_CCC_20261010"]
+    assert resolve_select_index("Project AAA (Run_AAA_20261010)", options, "Run_BBB_20261010") == 0
+    assert resolve_select_index("Project CCC (Run_CCC_20261010) [generated]", options, "Run_AAA_20261010") == 2
+
+
 def test_resolve_select_index_neither_recognized_returns_zero():
     assert resolve_select_index("Cost Plus", CONTRACT_TYPES, "Also Not A Type") == 0
 
@@ -1081,3 +1088,60 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
     assert not at.exception
     assert at.selectbox(key="fact_review_run_selector").value == target_run_id
     assert len(at.download_button) >= 4
+
+
+def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monkeypatch):
+    """If state_persistence store contains a formatted display label string, Fact Review
+    normalizes it to the raw run_id rather than falling back to options[0]."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+    from src.review_ui import state_persistence
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline_1 = StartupKitBaseline(
+        project_name="Run Alpha",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Run Alpha",
+            client_name="Alpha Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_1 = storage.create_run("Run Alpha", baseline_1.model_dump(mode="json"), {"findings": []})
+
+    baseline_2 = StartupKitBaseline(
+        project_name="Run Beta",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 2),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Run Beta",
+            client_name="Beta Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_2 = storage.create_run("Run Beta", baseline_2.model_dump(mode="json"), {"findings": []})
+
+    at = AppTest.from_file(APP_FILE).run()
+
+    # Pre-populate session state store with the formatted display label of run_2
+    formatted_label = f"Run Beta ({run_2})"
+    at.session_state["fact_review_page"] = {"selected_run_id": formatted_label}
+
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm it selected run_2 (raw run ID), not run_1 (options[0])
+    assert at.selectbox(key="fact_review_run_selector").value == run_2
+    assert at.session_state["fact_review_page"]["selected_run_id"] == run_2

@@ -91,11 +91,30 @@ def _render_fact_review_page() -> None:
     }
     label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
 
+    def _canonical_run_id(val: Any) -> str:
+        if not val:
+            return ""
+        val_str = str(val).strip()
+        if val_str in options:
+            return val_str
+        for r_id, lbl in label_map.items():
+            if val_str == lbl:
+                return r_id
+        for opt in options:
+            if f"({opt})" in val_str:
+                return opt
+        return val_str
+
     default_run_id = options[0] if options else DEMO_FIXTURE_LABEL
-    current_selected = state_persistence.persisted_value(
-        "fact_review_page", "selected_run_id", default_run_id
+    current_selected = _canonical_run_id(
+        state_persistence.persisted_value("fact_review_page", "selected_run_id", default_run_id)
     )
     select_index = resolve_select_index(current_selected, options, default_run_id)
+
+    def _on_run_selector_change():
+        widget_val = st.session_state.get("fact_review_run_selector")
+        canonical_val = _canonical_run_id(widget_val)
+        state_persistence.get_store("fact_review_page")["selected_run_id"] = canonical_val
 
     selected_run_id = st.selectbox(
         "Select run to review",
@@ -103,10 +122,9 @@ def _render_fact_review_page() -> None:
         index=select_index,
         format_func=lambda x: label_map.get(x, x),
         key="fact_review_run_selector",
-        on_change=lambda: state_persistence.sync_to_store(
-            "fact_review_page", "fact_review_run_selector", "selected_run_id"
-        ),
+        on_change=_on_run_selector_change,
     )
+    selected_run_id = _canonical_run_id(selected_run_id)
     state_persistence.get_store("fact_review_page")["selected_run_id"] = selected_run_id
 
     if not selected_run_id:

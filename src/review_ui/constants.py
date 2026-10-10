@@ -45,6 +45,10 @@ def resolve_select_index(value: str, options: List[str], fallback: str) -> int:
     """
     if value in options:
         return options.index(value)
+    if isinstance(value, str):
+        for opt in options:
+            if f"({opt})" in value or value == opt:
+                return options.index(opt)
     if fallback in options:
         return options.index(fallback)
     return 0
