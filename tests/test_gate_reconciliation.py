@@ -176,3 +176,41 @@ def test_arc_overextracted_checkpoints_regression():
     assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
     assert [cp.id for cp in baseline.interim_checkpoints] == ["CP-01", "CP-02", "CP-03"]
     assert all(cp.phase == "P3" for cp in baseline.interim_checkpoints)
+
+
+def test_ms_11_trigger_condition_reconciliation_regression_guard():
+    """MS-11 regression guard: Verify reconcile_gates_and_checkpoints behavior when a raw extraction
+    contains a trigger-condition entry (reusing Section 7's '...which starts the Hypercare Period')."""
+    milestones = [
+        Milestone(id="M1", description="Engagement kickoff and project start."),
+        Milestone(id="M2", description="Milestone 1 (P1 Foundation) complete: micro-frontend shell, Azure AD/MSAL authentication, and E2E test harness delivered and accepted (weeks 1-6)."),
+        Milestone(id="M3", description="Milestone 2 (P2a Services and Data) complete: FastAPI search/detail endpoints, async query processing, OneGWAS integration, and data validation suites delivered and accepted (weeks 7-16)."),
+        Milestone(id="M4", description="Milestone 3 (P2b Application Surface) complete: ARC micro-frontend search and detail views, haplotype features, nomenclature service, and related test suites delivered and accepted (weeks 17-21)."),
+        Milestone(id="M5", description="Milestone 4 (P3 Launch) complete: integration, performance, security, and cross-browser testing, UAT, hardening, production smoke tests, and training materials delivered and accepted (weeks 22-26)."),
+        Milestone(id="M6", description="Production go-live (HS-4831), performed by Client, which starts the Hypercare Period."),
+        Milestone(id="M7", description="Milestone 5 (Hypercare) complete: four-week post-go-live support period delivered with up to 160 hours each of Full-Stack Developer and QA Engineer capacity."),
+    ]
+    baseline = StartupKitBaseline(
+        project_name="ARC Genomics Platform Implementation",
+        milestones=milestones,
+        decisions=[],
+        deliverables=[],
+    )
+    validate_and_repair_baseline(baseline)
+
+    # Kickoff becomes CP-01, leaving 6 gates (M1..M4 from P1..P3, M5 from go-live, M6 from Hypercare)
+    assert len(baseline.milestones) == 6
+    assert len(baseline.interim_checkpoints or []) == 1
+    assert baseline.interim_checkpoints[0].id == "CP-01"
+    assert "Engagement kickoff" in (baseline.interim_checkpoints[0].description or "")
+    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4", "M5", "M6"]
+    assert baseline.milestones[0].phase == "P1"
+    assert baseline.milestones[1].phase == "P2A"
+    assert baseline.milestones[2].phase == "P2B"
+    assert baseline.milestones[3].phase == "P3"
+    assert baseline.milestones[4].phase == "G_5"
+    assert baseline.milestones[4].extracted_ids == ["M6"]
+    assert "starts the Hypercare Period" in (baseline.milestones[4].description or "")
+    assert baseline.milestones[5].phase == "G_6"
+    assert baseline.milestones[5].extracted_ids == ["M7"]
+    assert "Milestone 5 (Hypercare)" in (baseline.milestones[5].description or "")

@@ -62,7 +62,9 @@ MILESTONES_PROMPT = """Analyze the provided project documents and extract key de
 
 CONSTRAINTS:
 1. Extract key delivery milestones and phase gates (maximum 15 milestones).
-2. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.
+2. Anchor extraction to the SOW's own explicitly enumerated milestones (such as a fee schedule, milestone table, or numbered 'Milestone N' list) when one exists — extract exactly those, not more.
+3. Explicitly exclude trigger conditions, prerequisite events, or assumptions that merely describe when a milestone begins or what causes it to start (e.g. 'production go-live, which starts the Hypercare Period') — these are context for an existing milestone, never a separate milestone of their own.
+4. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.
 
 For each milestone:
 - id: Sequential identifier (e.g., M1, M2, M3...)
