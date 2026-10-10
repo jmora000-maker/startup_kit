@@ -1145,3 +1145,310 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
     # Confirm it selected run_2 (raw run ID), not run_1 (options[0])
     assert at.selectbox(key="fact_review_run_selector").value == run_2
     assert at.session_state["fact_review_page"]["selected_run_id"] == run_2
+
+
+# HTL-35: Generate/Re-ingest page fixes (checkbox defaults, button disabling during and after run)
+
+
+def test_htl_35_document_type_checkboxes_all_default_to_true():
+    """HTL-35 (1): Every document-type checkbox (Startup Kit, Readiness Checklist,
+    Delivery Workbook, and Onboarding Deck) on both Generate and Re-ingest tabs
+    defaults to checked (True)."""
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+
+    # Generate tab checkboxes
+    gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
+    assert len(gen_deck_cb) == 1
+    assert gen_deck_cb[0].value is True
+
+    gen_labels = {
+        "Startup Kit": "gen_out_kit",
+        "Readiness Checklist": "gen_out_checklist",
+        "Delivery Workbook": "gen_out_workbook",
+        "Onboarding Deck": "gen_out_slides",
+    }
+    for label, key in gen_labels.items():
+        cbs = [cb for cb in at.checkbox if cb.key == key]
+        assert len(cbs) == 1, f"Missing checkbox {key}"
+        assert cbs[0].value is True, f"Checkbox {label} ({key}) did not default to True"
+
+    # Re-ingest tab checkboxes
+    reingest_labels = {
+        "Startup Kit": "reingest_out_kit",
+        "Readiness Checklist": "reingest_out_checklist",
+        "Delivery Workbook": "reingest_out_workbook",
+        "Onboarding Deck": "reingest_out_slides",
+    }
+    for label, key in reingest_labels.items():
+        cbs = [cb for cb in at.checkbox if cb.key == key]
+        assert len(cbs) == 1, f"Missing checkbox {key}"
+        assert cbs[0].value is True, f"Checkbox {label} ({key}) did not default to True"
+
+
+def test_htl_35_generate_button_in_progress_state_during_long_running_call():
+    """HTL-35 (2): The Generate button tracks in-progress execution via session state
+    flag (gen_is_running) during a mocked long-running generation pipeline call."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    in_progress_flag_captured = []
+
+    def mock_long_running_generate(*args, **kwargs):
+        # Verify that gen_is_running is True while generation is executing
+        in_progress_flag_captured.append(at.session_state.get("gen_is_running"))
+        # Execute progress callback
+        on_progress = kwargs.get("on_progress")
+        if on_progress:
+            on_progress("ingesting", "sow.docx")
+            on_progress("extracting")
+            on_progress("validating")
+        return RunResult(
+            readiness_score=90.0,
+            paused=True,
+            run_id="Long_Run_20261010_120000",
+        )
+
+    with patch("src.review_ui.generate._run_generate", side_effect=mock_long_running_generate) as mock_gen:
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+        assert mock_gen.called
+        assert in_progress_flag_captured == [True]
+        # After run returns, gen_is_running is cleared to False
+        assert at.session_state.get("gen_is_running") is False
+
+
+def test_htl_35_generate_button_disabled_after_successful_run_completes():
+    """HTL-35 (3): Once a run completes and the 'Run {run_id} created and awaiting review...'
+    message appears, the Generate button becomes disabled (disabled=True). Uploading a new file
+    resets the result state and re-enables the Generate button."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+
+    # Initial state: button is enabled
+    assert at.button(key="gen_submit_button").disabled is False
+
+    mock_paused_result = RunResult(
+        readiness_score=85.0,
+        paused=True,
+        run_id="Pilot_Ready_Product_20261010_103601",
+    )
+
+    with patch("src.review_ui.generate._run_generate", return_value=mock_paused_result):
+        at.button(key="gen_submit_button").click().run()
+        assert not at.exception
+
+        # Message is displayed
+        info_msgs = [i.value for i in at.info]
+        assert any("Run Pilot_Ready_Product_20261010_103601 created and awaiting review." in msg for msg in info_msgs)
+
+        # On rerun / subsequent state inspection, the Generate button is disabled
+        at.run()
+        assert at.button(key="gen_submit_button").disabled is True
+
+    # Uploading a new file resets the completed run result and re-enables the button
+    at.file_uploader(key="gen_uploader").upload("new_sow.docx", b"new-sow-bytes").run()
+    assert at.button(key="gen_submit_button").disabled is False
+
+
+def test_htl_35_safeguard_clears_stuck_running_flags_without_inputs():
+    """HTL-35 safeguard: If gen_is_running or reingest_is_running is somehow set to True
+    in session_state when no files are uploaded, render() clears them to False."""
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.session_state["gen_is_running"] = True
+    at.session_state["reingest_is_running"] = True
+
+    at.run()
+    assert at.session_state.get("gen_is_running") is False
+    assert at.session_state.get("reingest_is_running") is False
+
+
+def test_htl_35_reingest_two_phase_rerun_and_disabled_button():
+    """HTL-35: Re-ingest tab uses the two-phase pattern and disables the Re-ingest button
+    during execution and after completion."""
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.file_uploader(key="reingest_file").upload("Project_Startup_Kit.docx", b"docx-bytes").run()
+
+    # Initial state: button enabled
+    assert at.button(key="reingest_submit_button").disabled is False
+
+    reingest_flag_captured = []
+
+    def mock_run_reingest(*args, **kwargs):
+        reingest_flag_captured.append(at.session_state.get("reingest_is_running"))
+        return RunResult(
+            readiness_score=88.0,
+            paused=False,
+            run_id="Reingest_Run_20261010_130000",
+        )
+
+    with patch("src.review_ui.generate._run_reingest", side_effect=mock_run_reingest) as mock_reingest:
+        at.button(key="reingest_submit_button").click().run()
+        assert not at.exception
+        assert mock_reingest.called
+        assert reingest_flag_captured == [True]
+        assert at.session_state.get("reingest_is_running") is False
+
+        # Button is disabled after run completion
+        at.run()
+        assert at.button(key="reingest_submit_button").disabled is True
+
+    # Uploading a new file re-enables the reingest button
+    at.file_uploader(key="reingest_file").upload("New_Startup_Kit.docx", b"new-docx-bytes").run()
+    assert at.button(key="reingest_submit_button").disabled is False
+
+
+def test_fact_review_generate_button_in_progress_state_during_long_running_call(tmp_path, monkeypatch):
+    """Fact Review 'Generate documents' button uses two-phase pattern and sets
+    fact_review::{run_id}::is_generating during execution, with disabled=True on the rerun pass."""
+    from datetime import date
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Approved Project For Gen",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Approved Project For Gen",
+            client_name="Approved Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+            delivery_manager="Jordan Hayes",
+        ),
+        stakeholders=[
+            Stakeholder(name="Jordan Hayes", role="Delivery Manager", organization="Toptal"),
+        ],
+    )
+    run_id = storage.create_run(
+        project_name="Approved Project For Gen",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Initially enabled
+    gen_btn = at.button(key="fact_review_generate_button")
+    assert gen_btn.disabled is False
+
+    is_generating_captured = []
+
+    def mock_long_running_generate_approved(r_id, **kwargs):
+        # Capture the is_generating flag state during generation
+        is_generating_captured.append(at.session_state.get(f"fact_review::{r_id}::is_generating"))
+        # Call the real generate_approved_run or return dummy references
+        storage.update_status(r_id, "generated", if_state="approved")
+        return {"Startup_Kit.docx": str(storage_dir / r_id / "Startup_Kit.docx")}, None
+
+    with patch("src.review_ui.facts.generate_approved_run", side_effect=mock_long_running_generate_approved) as mock_gen:
+        gen_btn.click().run()
+        assert not at.exception
+        assert mock_gen.called
+        assert is_generating_captured == [True]
+        # Flag cleared after completion
+        assert at.session_state.get(f"fact_review::{run_id}::is_generating") is False
+        # State transitioned to generated
+        assert any(f"Run {run_id} documents generated successfully." in s.value for s in at.success)
+
+
+def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, monkeypatch):
+    """Fact Review is_generating flag is scoped per run_id and safeguard clears stuck flags for non-approved runs."""
+    from datetime import date
+    from unittest.mock import patch
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline_1 = StartupKitBaseline(
+        project_name="Approved Run 1",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Approved Run 1",
+            client_name="Corp 1",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_1 = storage.create_run("Approved Run 1", baseline_1.model_dump(mode="json"), {"findings": []})
+    storage.update_status(run_1, "approved", if_state="pending_review")
+
+    baseline_2 = StartupKitBaseline(
+        project_name="Approved Run 2",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Approved Run 2",
+            client_name="Corp 2",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_2 = storage.create_run("Approved Run 2", baseline_2.model_dump(mode="json"), {"findings": []})
+    storage.update_status(run_2, "approved", if_state="pending_review")
+
+    # Seed an already-generated run to verify safeguard clears its stuck flag
+    run_gen = storage.create_run("Generated Run", baseline_2.model_dump(mode="json"), {"findings": []})
+    storage.update_status(run_gen, "generated", if_state="pending_review")
+
+    at = AppTest.from_file(APP_FILE).run()
+    # Set non-approved runs as generating to test safeguard
+    at.session_state[f"fact_review::{run_gen}::is_generating"] = True
+    at.session_state["fact_review::stuck_nonexistent_run::is_generating"] = True
+
+    # Navigate to Fact Review
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Safeguard cleared stuck flags for non-approved runs
+    assert at.session_state.get(f"fact_review::{run_gen}::is_generating") is False
+    assert at.session_state.get("fact_review::stuck_nonexistent_run::is_generating") is False
+
+    # Verify per-run scoping: when run_1 is generating, run_2's flag is unaffected
+    run_1_flag_captured = []
+    run_2_flag_captured = []
+
+    def mock_generate_scoped(r_id, **kwargs):
+        run_1_flag_captured.append(at.session_state.get(f"fact_review::{run_1}::is_generating", False))
+        run_2_flag_captured.append(at.session_state.get(f"fact_review::{run_2}::is_generating", False))
+        storage.update_status(r_id, "generated", if_state="approved")
+        return {"Startup_Kit.docx": str(storage_dir / r_id / "Startup_Kit.docx")}, None
+
+    at.selectbox(key="fact_review_run_selector").set_value(run_1).run()
+    with patch("src.review_ui.facts.generate_approved_run", side_effect=mock_generate_scoped):
+        at.button(key="fact_review_generate_button").click().run()
+
+    assert run_1_flag_captured == [True]
+    assert run_2_flag_captured == [False]

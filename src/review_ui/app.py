@@ -16,6 +16,7 @@ This is the one app entry point with two pages, selected from the sidebar:
 
 import sys
 from pathlib import Path
+from typing import Any
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -80,6 +81,14 @@ def _render_fact_review_page() -> None:
     all_runs = storage.list_runs()
     runs = [r for r in all_runs if r.state in ("pending_review", "approved", "generated")]
     runs.sort(key=lambda r: (r.state != "pending_review", r.state != "approved", -r.created_at.timestamp()))
+
+    # Defensive safeguard: clear any stuck is_generating flags if the run is not approved
+    approved_run_ids = {r.run_id for r in runs if r.state == "approved"}
+    for k in list(st.session_state.keys()):
+        if k.startswith("fact_review::") and k.endswith("::is_generating"):
+            parts = k.split("::")
+            if len(parts) == 3 and parts[1] not in approved_run_ids:
+                st.session_state[k] = False
 
     # Build run selection options: active runs first, followed by the demo fixture
     options = [r.run_id for r in runs] + [DEMO_FIXTURE_LABEL]
@@ -186,10 +195,20 @@ def _render_fact_review_page() -> None:
     generate_clicked = False
     blocking_errors = []
 
+    is_generating = (
+        st.session_state.get(f"fact_review::{selected_run_id}::is_generating", False)
+        if not is_fixture
+        else False
+    )
+
     if is_fixture:
         saved = st.button("Save review", key="fact_review_save_button")
     elif run.state == "approved":
-        generate_clicked = st.button("Generate documents", key="fact_review_generate_button")
+        generate_clicked = st.button(
+            "Generate documents",
+            key="fact_review_generate_button",
+            disabled=is_generating,
+        )
     elif run.state == "pending_review":
         blocking_errors = review.get_blocking_validation_errors(run.validation_report)
         if blocking_errors:
@@ -242,13 +261,22 @@ def _render_fact_review_page() -> None:
                 st.error(str(exc))
 
     if generate_clicked:
+        st.session_state[f"fact_review::{selected_run_id}::is_generating"] = True
+        st.rerun()
+
+    if is_generating and not is_fixture and run.state == "approved":
+        gen_success = False
         try:
             references, run_result = review.generate_approved_run(selected_run_id, storage=storage)
             st.session_state[f"fact_review::{selected_run_id}::generated_references"] = references
             st.session_state["fact_review_flash_success"] = f"Run {selected_run_id} documents generated successfully."
-            st.rerun()
-        except ValueError as exc:
+            gen_success = True
+        except Exception as exc:  # noqa: BLE001
             st.error(str(exc))
+        finally:
+            st.session_state[f"fact_review::{selected_run_id}::is_generating"] = False
+        if gen_success:
+            st.rerun()
 
     # Render download buttons if generation references exist
     generated_references = st.session_state.get(f"fact_review::{selected_run_id}::generated_references")

@@ -474,6 +474,17 @@ def _render_admin_gate(key_prefix: str) -> bool:
 def render() -> None:
     import streamlit as st
 
+    # Defensive safeguard: ensure running flags are reset if no input files are present
+    if st.session_state.get("gen_is_running"):
+        stored_gen = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
+        if not stored_gen and not st.session_state.get("gen_uploader"):
+            st.session_state["gen_is_running"] = False
+
+    if st.session_state.get("reingest_is_running"):
+        stored_reingest = state_persistence.persisted_value(REINGEST_STORE, "reingest_uploaded_file", None)
+        if not stored_reingest and not st.session_state.get("reingest_file"):
+            st.session_state["reingest_is_running"] = False
+
     st.title("Generate / Re-ingest a Startup Kit")
     st.caption(
         "Upload documents, set the same options the CLI (main.py) exposes, trigger a run, and "
@@ -492,6 +503,7 @@ def render() -> None:
             st.info(f"Using previously uploaded: {filenames_label} -- choose a different file to replace it.")
 
         def _sync_gen_upload():
+            st.session_state.pop("generate_run_result", None)
             widget_files = st.session_state.get("gen_uploader")
             if widget_files:
                 if isinstance(widget_files, list):
@@ -567,18 +579,31 @@ def render() -> None:
             GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", True, widget_fn=col3.checkbox
         )
         slides = _persisted_checkbox(
-            GENERATE_STORE, "gen_out_slides", "Onboarding Deck", False, widget_fn=col4.checkbox
+            GENERATE_STORE, "gen_out_slides", "Onboarding Deck", True, widget_fn=col4.checkbox
         )
         # HTL-29: "Review before finalizing" toggle, checked by default.
         review_before_finalizing = _persisted_checkbox(
             GENERATE_STORE, "gen_review_before_finalizing", "Review before finalizing", True
         )
-        submitted = st.button("Generate", key="gen_submit_button")
+        is_gen_running = st.session_state.get("gen_is_running", False)
+        has_gen_result = st.session_state.get("generate_run_result") is not None
+        gen_disabled = is_gen_running or has_gen_result
+        submitted = st.button("Generate", key="gen_submit_button", disabled=gen_disabled)
 
         if submitted:
             file_names = [f.name for f in (effective_files or [])]
             error = validate_generate_inputs(file_names, start_date_text)
             if error:
+                st.error(error)
+            else:
+                st.session_state["gen_is_running"] = True
+                st.rerun()
+
+        if is_gen_running:
+            file_names = [f.name for f in (effective_files or [])]
+            error = validate_generate_inputs(file_names, start_date_text)
+            if error:
+                st.session_state["gen_is_running"] = False
                 st.error(error)
             else:
                 last_stage: List[Optional[str]] = [None]
@@ -625,6 +650,8 @@ def render() -> None:
                 except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear, stage-specific message,
                     # never a bare "something went wrong" and never a raw traceback.
                     st.error(format_run_error(exc, last_stage[0]))
+                finally:
+                    st.session_state["gen_is_running"] = False
 
         if st.session_state.get("generate_run_result") is not None:
             _render_results(st.session_state["generate_run_result"])
@@ -637,6 +664,7 @@ def render() -> None:
             st.info(f"Using previously uploaded: {stored_reingest_file.name} -- choose a different file to replace it.")
 
         def _sync_reingest_upload():
+            st.session_state.pop("reingest_run_result", None)
             widget_file = st.session_state.get("reingest_file")
             if widget_file:
                 state_persistence.get_store(REINGEST_STORE)["reingest_uploaded_file"] = (
@@ -706,15 +734,29 @@ def render() -> None:
             REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", True, widget_fn=rcol3.checkbox
         )
         slides_r = _persisted_checkbox(
-            REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", False, widget_fn=rcol4.checkbox
+            REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", True, widget_fn=rcol4.checkbox
         )
-        submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button")
+        is_reingest_running = st.session_state.get("reingest_is_running", False)
+        has_reingest_result = st.session_state.get("reingest_run_result") is not None
+        reingest_disabled = is_reingest_running or has_reingest_result
+        submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button", disabled=reingest_disabled)
 
         if submitted_r:
             error = validate_reingest_inputs(
                 effective_kit_file.name if effective_kit_file else None, start_date_text_r
             )
             if error:
+                st.error(error)
+            else:
+                st.session_state["reingest_is_running"] = True
+                st.rerun()
+
+        if is_reingest_running:
+            error = validate_reingest_inputs(
+                effective_kit_file.name if effective_kit_file else None, start_date_text_r
+            )
+            if error:
+                st.session_state["reingest_is_running"] = False
                 st.error(error)
             else:
                 last_stage_r: List[Optional[str]] = [None]
@@ -752,6 +794,8 @@ def render() -> None:
                 except Exception as exc:  # noqa: BLE001 -- HTL-26: a clear, stage-specific message,
                     # never a bare "something went wrong" and never a raw traceback.
                     st.error(format_run_error(exc, last_stage_r[0]))
+                finally:
+                    st.session_state["reingest_is_running"] = False
 
         if st.session_state.get("reingest_run_result") is not None:
             _render_results(st.session_state["reingest_run_result"])
