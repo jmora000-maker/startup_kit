@@ -37,7 +37,7 @@ def test_map_10_traceability_warning_routed_to_validation_report():
     wb = build_workbook_model(baseline, today=date(2026, 10, 3))
 
     assert baseline.validation_report is not None
-    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01"]
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
     assert len(tr_findings) == 1
     finding = tr_findings[0]
     assert finding.severity == "warning"

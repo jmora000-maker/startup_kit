@@ -648,6 +648,20 @@ def build_workbook_model(
         else:
             filtered_ambiguities.append(amb)
 
+    def _add_traceability_finding(msg: str) -> None:
+        if baseline.validation_report is None:
+            baseline.validation_report = ValidationReport()
+        if not any(f.message == msg and f.severity == "warning" for f in baseline.validation_report.findings):
+            baseline.validation_report.findings.append(
+                ValidationFinding(invariant_id="TR-01", severity="warning", message=msg)
+            )
+
+    if baseline.validation_report and baseline.validation_report.findings:
+        baseline.validation_report.findings = [
+            f for f in baseline.validation_report.findings
+            if not (f.invariant_id == "TR-01" and f.message.startswith("Workstream classification:"))
+        ]
+
     # 2. Parse milestone phases & week ranges
     parsed_phases: Dict[str, ParsedMilestonePhase] = {}
     for m in filtered_milestones:
@@ -712,6 +726,10 @@ def build_workbook_model(
         p = parsed_phases.get(m.id)
         if p and p.note:
             ms_notes[m.id].append(p.note)
+            if p.workstream_name == "Unclassified":
+                msg = f"Workstream classification: Milestone '{m.id}' could not be confidently classified into a workstream category; assigned 'Unclassified'. Confirm in Fact Review."
+                logger.warning(msg)
+                _add_traceability_finding(msg)
         if getattr(m, "extracted_ids", None):
             orig_eid = m.extracted_ids[0]
             merged_eids = m.extracted_ids[1:]
@@ -2294,14 +2312,6 @@ def build_workbook_model(
         has_synthetic = any(
             getattr(st, "reference_kind", "") == "Synthetic" for st in baseline.sow_stories_catalogue
         )
-
-    def _add_traceability_finding(msg: str) -> None:
-        if baseline.validation_report is None:
-            baseline.validation_report = ValidationReport()
-        if not any(f.message == msg and f.severity == "warning" for f in baseline.validation_report.findings):
-            baseline.validation_report.findings.append(
-                ValidationFinding(invariant_id="TR-01", severity="warning", message=msg)
-            )
 
     if missing_ms:
         msg = f"Traceability check: Missing Milestones in workbook: {missing_ms}"

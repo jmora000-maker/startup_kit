@@ -370,6 +370,7 @@ def apply_corrections(baseline: StartupKitBaseline, corrections: List[Dict[str, 
             if ms is not None:
                 if parts[2] == "phase":
                     ms.phase = _phase_code(new)
+                    ms.phase_display = new.strip()
                 elif parts[2] == "external_date":
                     ms.external_date = _parse_iso_date(new, key)
         elif parts[0] == "deliverable_phase_assignment" and len(parts) == 2:

@@ -106,9 +106,16 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
     desc = milestone.description if isinstance(milestone, Milestone) else str(milestone or "")
     clean_desc = sanitize_report_text(desc)
 
-    # 1. MS-02: Structured phase_display field check (preserves original casing from SOW)
-    if isinstance(milestone, Milestone) and milestone.phase_display and milestone.phase_display.strip():
-        code = milestone.phase_display.strip()
+    # 1. MS-02: Structured phase_display / phase field check (preserves casing from SOW / Fact Review)
+    raw_phase_input = None
+    if isinstance(milestone, Milestone):
+        if milestone.phase_display and milestone.phase_display.strip():
+            raw_phase_input = milestone.phase_display.strip()
+        elif milestone.phase and milestone.phase.strip() and not milestone.phase.startswith("G_"):
+            raw_phase_input = milestone.phase.strip()
+
+    if raw_phase_input:
+        code = raw_phase_input
         match = PHASE_LABEL_REGEX.match(clean_desc)
         if not match:
             match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)
@@ -137,13 +144,15 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
                 milestone_name = clean_desc
                 scope = clean_desc
             scope_clean = strip_week_range_parenthetical(scope)
+            # Check if code is a known workstream code or name, or custom string
+            ws_resolved = WORKSTREAM_NAMES.get(code, code)
             return ParsedMilestonePhase(
-                phase_code=code,
-                workstream_name=code,
+                phase_code=code if re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE) else None,
+                workstream_name=ws_resolved,
                 milestone_name=milestone_name,
                 milestone_scope=scope,
                 milestone_scope_clean=scope_clean,
-                has_phase_label=True,
+                has_phase_label=bool(re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE)),
                 note=None
             )
 
@@ -170,8 +179,13 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
         )
 
     # Fallback to keyword classifier
-    ws_code, _ = classify_milestone(milestone)
-    ws_name = WORKSTREAM_NAMES.get(ws_code, "Build & Configuration")
+    ws_code, basis = classify_milestone(milestone)
+    if ws_code and ws_code in WORKSTREAM_NAMES:
+        ws_name = WORKSTREAM_NAMES[ws_code]
+        note = "Workstream inferred from keywords - confirm"
+    else:
+        ws_name = "Unclassified"
+        note = "Workstream unclassified - confirm"
     scope_clean = strip_week_range_parenthetical(clean_desc)
     return ParsedMilestonePhase(
         phase_code=None,
@@ -180,7 +194,7 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
         milestone_scope=clean_desc,
         milestone_scope_clean=scope_clean,
         has_phase_label=False,
-        note="Workstream inferred from keywords - confirm"
+        note=note
     )
 
 
@@ -221,7 +235,7 @@ def _match_keywords(text: str, code: str) -> List[str]:
 def classify_milestone(
     milestone: Union[Milestone, str],
     mapped_deliverables: Optional[Sequence[Union[Deliverable, str]]] = None
-) -> Tuple[str, str]:
+) -> Tuple[Optional[str], str]:
     """Classify a milestone into a workstream code and provide the classification basis.
     
     Returns (workstream_code, basis).
@@ -268,5 +282,5 @@ def classify_milestone(
             basis = f"Deliverable keyword: {', '.join(best_keywords)}"
             return best_code, basis
 
-    # 3. Default to BLD
-    return "BLD", "Default - confirm workstream"
+    # 3. MAP-09: Unclassified fallback instead of guessing BLD
+    return None, "Unclassified - confirm workstream"
