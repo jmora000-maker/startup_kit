@@ -72,6 +72,10 @@ def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> 
 def _render_fact_review_page() -> None:
     st.title("Pre-Generation Fact Review")
 
+    flash_success = st.session_state.pop("fact_review_flash_success", None)
+    if flash_success:
+        st.success(flash_success)
+
     storage = get_review_storage()
     all_runs = storage.list_runs()
     runs = [r for r in all_runs if r.state in ("pending_review", "approved", "generated")]
@@ -87,12 +91,23 @@ def _render_fact_review_page() -> None:
     }
     label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
 
+    default_run_id = options[0] if options else DEMO_FIXTURE_LABEL
+    current_selected = state_persistence.persisted_value(
+        "fact_review_page", "selected_run_id", default_run_id
+    )
+    select_index = resolve_select_index(current_selected, options, default_run_id)
+
     selected_run_id = st.selectbox(
         "Select run to review",
         options=options,
+        index=select_index,
         format_func=lambda x: label_map.get(x, x),
         key="fact_review_run_selector",
+        on_change=lambda: state_persistence.sync_to_store(
+            "fact_review_page", "fact_review_run_selector", "selected_run_id"
+        ),
     )
+    state_persistence.get_store("fact_review_page")["selected_run_id"] = selected_run_id
 
     if not selected_run_id:
         return
@@ -203,7 +218,8 @@ def _render_fact_review_page() -> None:
         else:
             try:
                 storage.update_status(selected_run_id, "approved", if_state="pending_review")
-                st.success(f"Run {selected_run_id} approved successfully.")
+                st.session_state["fact_review_flash_success"] = f"Run {selected_run_id} approved successfully."
+                st.rerun()
             except ValueError as exc:
                 st.error(str(exc))
 
@@ -211,7 +227,8 @@ def _render_fact_review_page() -> None:
         try:
             references, run_result = review.generate_approved_run(selected_run_id, storage=storage)
             st.session_state[f"fact_review::{selected_run_id}::generated_references"] = references
-            st.success(f"Run {selected_run_id} documents generated successfully.")
+            st.session_state["fact_review_flash_success"] = f"Run {selected_run_id} documents generated successfully."
+            st.rerun()
         except ValueError as exc:
             st.error(str(exc))
 

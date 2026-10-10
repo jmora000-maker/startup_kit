@@ -979,3 +979,105 @@ def test_fact_review_pending_run_does_not_show_generate_documents_button(tmp_pat
     approve_buttons = [b for b in at.button if b.key == "fact_review_approve_button"]
     assert len(save_buttons) == 1
     assert len(approve_buttons) == 1
+
+
+# HTL-33: Run selection persistence and download buttons survival across page switch / remount
+
+
+def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path, monkeypatch):
+    """HTL-33: In a multi-run queue, approving and generating a run transitions the UI immediately
+    via st.rerun(), and navigating away to Generate / Re-ingest and back retains the generated run's
+    selection and download buttons rather than reverting to pending_review options[0]."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, Stakeholder, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    # 1. Seed existing pending and generated runs so options[0] will be a pending run
+    pending_baseline = StartupKitBaseline(
+        project_name="Existing Pending Run",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Existing Pending Run",
+            client_name="Pending Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    pending_run_id = storage.create_run(
+        project_name="Existing Pending Run",
+        baseline=pending_baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+
+    # 2. Create target run
+    target_baseline = StartupKitBaseline(
+        project_name="Target Generation Run",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 2),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Target Generation Run",
+            client_name="Target Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    target_run_id = storage.create_run(
+        project_name="Target Generation Run",
+        baseline=target_baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+
+    at = AppTest.from_file(APP_FILE).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Select target run
+    at.selectbox(key="fact_review_run_selector").set_value(target_run_id).run()
+    assert at.selectbox(key="fact_review_run_selector").value == target_run_id
+
+    # Click Approve -> next-state button ('Generate documents') appears immediately
+    at.button(key="fact_review_approve_button").click().run()
+    assert not at.exception
+    assert at.selectbox(key="fact_review_run_selector").value == target_run_id
+    gen_buttons = [b for b in at.button if b.key == "fact_review_generate_button"]
+    assert len(gen_buttons) == 1
+
+    # Click Generate documents -> download buttons appear immediately
+    gen_buttons[0].click().run()
+    assert not at.exception
+    assert at.selectbox(key="fact_review_run_selector").value == target_run_id
+    assert len(at.download_button) >= 4
+
+    # Navigate away to Generate / Re-ingest page
+    at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
+    assert not at.exception
+
+    # Navigate back to Fact Review
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Confirm selected run did NOT revert to options[0] (pending_run_id)
+    assert at.selectbox(key="fact_review_run_selector").value == target_run_id
+
+    # Confirm download buttons survived and no Save/Approve buttons are shown
+    assert len(at.download_button) >= 4
+    save_buttons = [b for b in at.button if b.key == "fact_review_save_button"]
+    approve_buttons = [b for b in at.button if b.key == "fact_review_approve_button"]
+    assert len(save_buttons) == 0
+    assert len(approve_buttons) == 0
+
+    # Click first download button and confirm buttons remain intact
+    at.download_button[0].click().run()
+    assert not at.exception
+    assert at.selectbox(key="fact_review_run_selector").value == target_run_id
+    assert len(at.download_button) >= 4
