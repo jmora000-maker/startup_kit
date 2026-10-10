@@ -95,10 +95,11 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
     if not has_phase_codes:
         for idx, ms in enumerate(baseline.milestones, start=1):
             phase_groups[f"G_{idx}"] = [ms]
+            phase_display_groups[f"G_{idx}"] = None
     else:
         last_phase = "P1"
         last_phase_display = "P1"
-        for ms in baseline.milestones:
+        for i, ms in enumerate(baseline.milestones):
             m_desc = ms.description or ""
             phase_m = PHASE_CODE_REGEX.search(m_desc)
             if phase_m:
@@ -107,8 +108,22 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
                 last_phase = phase_code
                 last_phase_display = phase_code_raw
             else:
-                phase_code = last_phase
-                phase_code_raw = last_phase_display
+                is_restatement = bool(PHASE_RESTATEMENT_REGEX.search(m_desc))
+                is_checkpoint = bool(re.search(r'\b(checkpoint|interim)\b', m_desc, re.IGNORECASE))
+                has_following_same_phase = any(
+                    bool(PHASE_CODE_REGEX.search(sub_m.description or "") and 
+                         PHASE_CODE_REGEX.search(sub_m.description or "").group(1).upper() == last_phase)
+                    for sub_m in baseline.milestones[i+1:]
+                )
+                if is_restatement or is_checkpoint or has_following_same_phase:
+                    phase_code = last_phase
+                    phase_code_raw = last_phase_display
+                else:
+                    phase_code = f"G_{len(phase_groups) + 1}"
+                    phase_code_raw = None
+                    last_phase = phase_code
+                    last_phase_display = None
+
             if phase_code not in phase_groups:
                 phase_groups[phase_code] = []
                 phase_display_groups[phase_code] = phase_code_raw

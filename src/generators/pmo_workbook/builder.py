@@ -535,10 +535,24 @@ def build_workbook_model(
         def_cps: List[Milestone] = []
         phase_groups_raw: Dict[str, List[Milestone]] = {}
         last_p = "P1"
-        for ms in filtered_milestones:
+        for i, ms in enumerate(filtered_milestones):
             pm = PHASE_CODE_REGEX.search(ms.description or "")
-            p_code = pm.group(1).upper() if pm else last_p
-            last_p = p_code
+            if pm:
+                p_code = pm.group(1).upper()
+                last_p = p_code
+            else:
+                is_restatement = bool(PHASE_RESTATEMENT_REGEX.search(ms.description or ""))
+                is_checkpoint = bool(re.search(r'\b(checkpoint|interim)\b', ms.description or "", re.IGNORECASE))
+                has_following_same_phase = any(
+                    bool(PHASE_CODE_REGEX.search(sub_m.description or "") and 
+                         PHASE_CODE_REGEX.search(sub_m.description or "").group(1).upper() == last_p)
+                    for sub_m in filtered_milestones[i+1:]
+                )
+                if is_restatement or is_checkpoint or has_following_same_phase:
+                    p_code = last_p
+                else:
+                    p_code = f"G_{len(phase_groups_raw) + 1}"
+                    last_p = p_code
             phase_groups_raw.setdefault(p_code, []).append(ms)
 
         for p_code, ms_list in phase_groups_raw.items():

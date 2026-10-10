@@ -116,3 +116,63 @@ def test_checkpoint_phase_fallback_preservation():
     assert cp2.id == "CP-01"
     assert cp2.phase == "P2B"
     assert cp2.phase_display == "P2b"
+
+
+def test_ms_10_standalone_trailing_milestone_not_demoted():
+    """MS-10: Standalone trailing milestone without P# prefix (e.g. Hypercare) must not be demoted to a checkpoint."""
+    milestones = [
+        Milestone(id="M1", description="P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, and the related test outputs are delivered."),
+        Milestone(id="M2", description="P2a Services and Data accepted: search and detail endpoints, async processing, OneGWAS direct-write, and data validation outputs are delivered."),
+        Milestone(id="M3", description="P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, haplotype endpoints, and nomenclature service are delivered."),
+        Milestone(id="M4", description="P3 Launch accepted: integration testing, UAT, hardening, production smoke tests with 48-hour defect watch, MTA Store parity confirmation, and training materials are completed."),
+        Milestone(id="M5", description="Hypercare complete: four weeks of post-go-live support provided by one Full-Stack Developer and one QA Engineer."),
+    ]
+    baseline = StartupKitBaseline(
+        project_name="ARC Genomics Platform Implementation",
+        milestones=milestones,
+        decisions=[],
+        deliverables=[],
+    )
+    validate_and_repair_baseline(baseline)
+
+    assert len(baseline.milestones) == 5
+    assert len(baseline.interim_checkpoints or []) == 0
+    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4", "M5"]
+    assert baseline.milestones[0].phase == "P1"
+    assert baseline.milestones[1].phase == "P2A"
+    assert baseline.milestones[2].phase == "P2B"
+    assert baseline.milestones[3].phase == "P3"
+    assert baseline.milestones[4].phase == "G_5"
+    assert baseline.milestones[4].phase_display is None
+    assert "Hypercare" in (baseline.milestones[4].description or "")
+
+
+def test_arc_application_implementation_checkpoint_regression():
+    """Regression check: arc_application_implementation's CP-01 correctly becomes a checkpoint."""
+    import json
+    from pathlib import Path
+    data = json.loads(Path("tests/fixtures/sow/arc_application_implementation/baseline.json").read_text(encoding="utf-8"))
+    baseline = StartupKitBaseline.model_validate(data)
+    validate_and_repair_baseline(baseline)
+
+    assert len(baseline.milestones) == 4
+    assert len(baseline.interim_checkpoints or []) == 1
+    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
+    assert baseline.interim_checkpoints[0].id == "CP-01"
+    assert baseline.interim_checkpoints[0].phase == "P1"
+    assert baseline.interim_checkpoints[0].phase_display == "P1"
+
+
+def test_arc_overextracted_checkpoints_regression():
+    """Regression check: arc_overextracted's CP-01, CP-02, CP-03 correctly become checkpoints."""
+    import json
+    from pathlib import Path
+    data = json.loads(Path("tests/fixtures/sow/arc_overextracted/baseline.json").read_text(encoding="utf-8"))
+    baseline = StartupKitBaseline.model_validate(data)
+    validate_and_repair_baseline(baseline)
+
+    assert len(baseline.milestones) == 4
+    assert len(baseline.interim_checkpoints or []) == 3
+    assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
+    assert [cp.id for cp in baseline.interim_checkpoints] == ["CP-01", "CP-02", "CP-03"]
+    assert all(cp.phase == "P3" for cp in baseline.interim_checkpoints)
