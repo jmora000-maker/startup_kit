@@ -3,7 +3,7 @@
 import shutil
 import logging
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 from pathlib import Path
 from typing import BinaryIO, Callable, Optional, List, Tuple, Union
@@ -397,63 +397,62 @@ class StartupKitController:
         logger.info("Executing concurrent multi-pass LLM extractions (12 domain passes)...")
         try:
             with ThreadPoolExecutor(max_workers=14) as executor:
-                future_charter = executor.submit(self.charter_extractor.extract, documents, self.llm_client)
-                future_deliverables = executor.submit(self.deliverables_extractor.extract, documents, self.llm_client)
-                future_milestones = executor.submit(self.milestones_extractor.extract, documents, self.llm_client)
-                future_raid = executor.submit(self.raid_extractor.extract, documents, self.llm_client)
-                future_questions = executor.submit(self.questions_extractor.extract, documents, self.llm_client)
-                future_sow = (
-                    executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)
-                    if self.sow_interpretation_extractor else None
-                )
-                future_acceptance = (
-                    executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)
-                    if self.acceptance_extractor else None
-                )
-                future_stakeholders = (
-                    executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)
-                    if self.stakeholders_extractor else None
-                )
-                future_comms = (
-                    executor.submit(self.communications_extractor.extract, documents, self.llm_client)
-                    if self.communications_extractor else None
-                )
-                future_commercial = (
-                    executor.submit(self.commercial_extractor.extract, documents, self.llm_client)
-                    if self.commercial_extractor else None
-                )
-                future_talent = (
-                    executor.submit(self.talent_extractor.extract, documents, self.llm_client)
-                    if self.talent_extractor else None
-                )
-                future_decisions = (
-                    executor.submit(self.decisions_extractor.extract, documents, self.llm_client)
-                    if self.decisions_extractor else None
-                )
-                future_conflicts = (
-                    executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)
-                    if self.conflicts_extractor else None
-                )
+                futures_map = {
+                    executor.submit(self.charter_extractor.extract, documents, self.llm_client): "charter",
+                    executor.submit(self.deliverables_extractor.extract, documents, self.llm_client): "deliverables",
+                    executor.submit(self.milestones_extractor.extract, documents, self.llm_client): "milestones",
+                    executor.submit(self.raid_extractor.extract, documents, self.llm_client): "raid",
+                    executor.submit(self.questions_extractor.extract, documents, self.llm_client): "questions",
+                }
+                if self.sow_interpretation_extractor:
+                    futures_map[executor.submit(self.sow_interpretation_extractor.extract, documents, self.llm_client)] = "sow"
+                if self.acceptance_extractor:
+                    futures_map[executor.submit(self.acceptance_extractor.extract, documents, self.llm_client)] = "acceptance"
+                if self.stakeholders_extractor:
+                    futures_map[executor.submit(self.stakeholders_extractor.extract, documents, self.llm_client)] = "stakeholders"
+                if self.communications_extractor:
+                    futures_map[executor.submit(self.communications_extractor.extract, documents, self.llm_client)] = "communications"
+                if self.commercial_extractor:
+                    futures_map[executor.submit(self.commercial_extractor.extract, documents, self.llm_client)] = "commercial"
+                if self.talent_extractor:
+                    futures_map[executor.submit(self.talent_extractor.extract, documents, self.llm_client)] = "talent"
+                if self.decisions_extractor:
+                    futures_map[executor.submit(self.decisions_extractor.extract, documents, self.llm_client)] = "decisions"
+                if self.conflicts_extractor:
+                    futures_map[executor.submit(self.conflicts_extractor.extract, documents, self.llm_client)] = "conflicts"
 
-                charter = future_charter.result()
-                deliverables = future_deliverables.result()
-                milestones = future_milestones.result()
-                raid = future_raid.result()
-                questions = future_questions.result()
-                sow_interpretation = future_sow.result() if future_sow else None
-                acceptance = future_acceptance.result() if future_acceptance else None
-                stakeholders = future_stakeholders.result() if future_stakeholders else None
-                communications = future_comms.result() if future_comms else None
-                commercial = future_commercial.result() if future_commercial else None
-                talent = future_talent.result() if future_talent else None
-                decisions = future_decisions.result() if future_decisions else None
-                conflicts = future_conflicts.result() if future_conflicts else None
+                total_extractors = len(futures_map) + (1 if self.backlog_extractor else 0)
+                results = {}
+                completed_count = 0
+                for future in as_completed(futures_map):
+                    key = futures_map[future]
+                    results[key] = future.result()
+                    completed_count += 1
+                    progress("extracting", f"{completed_count}/{total_extractors} complete")
+
+                charter = results["charter"]
+                deliverables = results["deliverables"]
+                milestones = results["milestones"]
+                raid = results["raid"]
+                questions = results["questions"]
+                sow_interpretation = results.get("sow")
+                acceptance = results.get("acceptance")
+                stakeholders = results.get("stakeholders")
+                communications = results.get("communications")
+                commercial = results.get("commercial")
+                talent = results.get("talent")
+                decisions = results.get("decisions")
+                conflicts = results.get("conflicts")
 
             # Backlog extraction passes deliverables
-            backlog = (
-                self.backlog_extractor.extract(documents, self.llm_client, deliverables=deliverables.deliverables)
-                if self.backlog_extractor else None
-            )
+            if self.backlog_extractor:
+                backlog = self.backlog_extractor.extract(
+                    documents, self.llm_client, deliverables=deliverables.deliverables
+                )
+                completed_count += 1
+                progress("extracting", f"{completed_count}/{total_extractors} complete")
+            else:
+                backlog = None
         except Exception as exc:
             reason = str(exc).strip() or exc.__class__.__name__
             if any(reason.startswith(f"{lbl} failed:") for lbl in ("ingestion", "extraction", "validation", "document generation", "run")):

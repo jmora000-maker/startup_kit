@@ -20,6 +20,8 @@ from src.review_ui.constants import (
 from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
+    MIN_STAGE_DISPLAY_SECONDS,
+    StageStatusUpdater,
     format_fallback_message,
     format_provider_name,
     format_run_error,
@@ -246,6 +248,222 @@ def test_progress_status_label_unrecognized_stage_falls_back_gracefully():
     assert progress_status_label("") == "Working"
 
 
+def test_stage_status_updater_fast_stage_waits_for_minimum_duration():
+    """HTL-28 (a): A stage that completes faster than the minimum duration (e.g. 0.15s < 1.0s)
+    holds the display for at least min_display_seconds (sleeps the remaining 0.85s) before
+    the next stage is displayed."""
+    from unittest.mock import MagicMock
+
+    mock_status_box = MagicMock()
+    last_stage = [None]
+
+    current_simulated_time = 100.0
+    sleep_calls = []
+
+    def mock_time():
+        return current_simulated_time
+
+    def mock_sleep(seconds):
+        nonlocal current_simulated_time
+        sleep_calls.append(seconds)
+        current_simulated_time += seconds
+
+    updater = StageStatusUpdater(
+        status_box=mock_status_box,
+        last_stage_ref=last_stage,
+        min_display_seconds=1.0,
+        time_fn=mock_time,
+        sleep_fn=mock_sleep,
+    )
+
+    # Stage 1: ingesting at t=100.0
+    updater.update("ingesting", "sow.pdf")
+    assert last_stage[0] == "ingesting"
+    assert sleep_calls == []
+    mock_status_box.update.assert_called_with(label="Ingesting documents... (sow.pdf)")
+    mock_status_box.write.assert_called_with("Ingesting documents... (sow.pdf)")
+
+    # Underlying work completes fast: only 0.15s elapsed
+    current_simulated_time += 0.15
+
+    # Stage 2: extracting at t=100.15
+    updater.update("extracting")
+    assert last_stage[0] == "extracting"
+    # Must sleep for remaining 1.0 - 0.15 = 0.85s
+    assert len(sleep_calls) == 1
+    assert pytest.approx(sleep_calls[0], 0.001) == 0.85
+    assert pytest.approx(current_simulated_time, 0.001) == 101.0
+    mock_status_box.update.assert_called_with(label="Running extraction...")
+
+
+def test_stage_status_updater_long_stage_not_delayed():
+    """HTL-28 (b): A stage that already takes longer than the minimum duration (e.g. 15.0s > 1.0s)
+    is completely unaffected, adding zero extra delay."""
+    from unittest.mock import MagicMock
+
+    mock_status_box = MagicMock()
+    last_stage = [None]
+
+    current_simulated_time = 100.0
+    sleep_calls = []
+
+    def mock_time():
+        return current_simulated_time
+
+    def mock_sleep(seconds):
+        nonlocal current_simulated_time
+        sleep_calls.append(seconds)
+        current_simulated_time += seconds
+
+    updater = StageStatusUpdater(
+        status_box=mock_status_box,
+        last_stage_ref=last_stage,
+        min_display_seconds=1.0,
+        time_fn=mock_time,
+        sleep_fn=mock_sleep,
+    )
+
+    updater.update("extracting")
+    assert sleep_calls == []
+
+    # Extraction takes 15 seconds
+    current_simulated_time += 15.0
+
+    # Stage 3: validating
+    updater.update("validating")
+    # No sleep should occur because 15.0s > 1.0s
+    assert sleep_calls == []
+    assert last_stage[0] == "validating"
+    mock_status_box.update.assert_called_with(label="Validating...")
+
+
+def test_stage_status_updater_pipeline_execution_decoupled_from_display():
+    """HTL-28 (c): The real underlying pipeline work (ingestion, extraction, validation) runs
+    at full execution speed and is not modified or throttled; only the inter-stage UI display
+    transitions enforce the visual floor."""
+    from unittest.mock import MagicMock
+
+    mock_status_box = MagicMock()
+    last_stage = [None]
+
+    current_simulated_time = 0.0
+    work_log = []
+    sleep_calls = []
+
+    def mock_time():
+        return current_simulated_time
+
+    def mock_sleep(seconds):
+        nonlocal current_simulated_time
+        sleep_calls.append(seconds)
+        current_simulated_time += seconds
+
+    updater = StageStatusUpdater(
+        status_box=mock_status_box,
+        last_stage_ref=last_stage,
+        min_display_seconds=1.0,
+        time_fn=mock_time,
+        sleep_fn=mock_sleep,
+    )
+
+    # Simulated pipeline sequence
+    # 1. Ingestion starts
+    updater.update("ingesting", "sow.docx")
+    work_log.append(("ingestion_start", current_simulated_time))
+    # Ingestion real compute work takes 0.05s
+    current_simulated_time += 0.05
+    work_log.append(("ingestion_done", current_simulated_time))
+
+    # 2. Extraction starts
+    updater.update("extracting")
+    work_log.append(("extraction_start", current_simulated_time))
+    # Extraction real compute work takes 10.0s
+    current_simulated_time += 10.0
+    work_log.append(("extraction_done", current_simulated_time))
+
+    # 3. Validation starts
+    updater.update("validating")
+    work_log.append(("validation_start", current_simulated_time))
+    # Validation real compute work takes 0.02s
+    current_simulated_time += 0.02
+    work_log.append(("validation_done", current_simulated_time))
+
+    # 4. Pipeline finishes and updates complete
+    updater.complete("Awaiting review.")
+    work_log.append(("completed", current_simulated_time))
+
+    # Ingestion ran from 0.0 to 0.05
+    assert work_log[0] == ("ingestion_start", 0.0)
+    assert work_log[1] == ("ingestion_done", 0.05)
+
+    # Sleep 0.95s to hold ingestion label for 1.0s, so extraction starts at 1.0
+    assert work_log[2] == ("extraction_start", 1.0)
+    # Extraction ran for 10.0s until 11.0
+    assert work_log[3] == ("extraction_done", 11.0)
+
+    # Extraction was already > 1.0s, so validation starts immediately at 11.0 with 0 sleep
+    assert work_log[4] == ("validation_start", 11.0)
+    # Validation ran for 0.02s until 11.02
+    assert work_log[5] == ("validation_done", 11.02)
+
+    # Sleep 0.98s to hold validation label for 1.0s, so completion happens at 12.0
+    assert work_log[6] == ("completed", 12.0)
+
+    # Total display floor sleeps: [0.95, 0.98]
+    assert len(sleep_calls) == 2
+    assert pytest.approx(sleep_calls[0], 0.001) == 0.95
+    assert pytest.approx(sleep_calls[1], 0.001) == 0.98
+
+
+def test_stage_status_updater_handles_incrementing_extraction_progress():
+    """HTL-28: As concurrent extractors complete and on_progress('extracting', 'N/14 complete')
+    fires, StageStatusUpdater updates the label and write text to 'Running extraction... (N/14 complete)',
+    enforcing min_display_seconds floor between consecutive updates."""
+    from unittest.mock import MagicMock
+
+    mock_status_box = MagicMock()
+    last_stage = [None]
+
+    current_simulated_time = 0.0
+    sleep_calls = []
+
+    def mock_time():
+        return current_simulated_time
+
+    def mock_sleep(seconds):
+        nonlocal current_simulated_time
+        sleep_calls.append(seconds)
+        current_simulated_time += seconds
+
+    updater = StageStatusUpdater(
+        status_box=mock_status_box,
+        last_stage_ref=last_stage,
+        min_display_seconds=1.0,
+        time_fn=mock_time,
+        sleep_fn=mock_sleep,
+    )
+
+    # Initial extraction stage start
+    updater.update("extracting")
+    mock_status_box.update.assert_called_with(label="Running extraction...")
+
+    # Fast completion 1: 0.2s elapsed
+    current_simulated_time += 0.2
+    updater.update("extracting", "1/14 complete")
+    # Must sleep 0.8s
+    assert len(sleep_calls) == 1
+    assert pytest.approx(sleep_calls[0], 0.001) == 0.8
+    mock_status_box.update.assert_called_with(label="Running extraction... (1/14 complete)")
+    mock_status_box.write.assert_called_with("Running extraction... (1/14 complete)")
+
+    # Slower completion 2: 2.5s elapsed
+    current_simulated_time += 2.5
+    updater.update("extracting", "2/14 complete")
+    # No sleep needed
+    assert len(sleep_calls) == 1
+    mock_status_box.update.assert_called_with(label="Running extraction... (2/14 complete)")
+
+
 # HTL-26: on a failed run, the app must show a clear, specific error message -- "{stage or
 # operation} failed: {concise reason}" -- never a bare generic message and never a raw
 # traceback. format_run_error(exc, last_stage) is the pure logic behind the generic
@@ -296,7 +514,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     # 1. Upload file
     at.file_uploader(key="gen_uploader").upload("project_sow.docx", b"binary-sow-content").run()
     assert not at.exception
@@ -337,7 +555,7 @@ def test_upload_replacement_replaces_stored_file_without_merging():
     """After an upload is stored, selecting a genuinely different file replaces the stored one, not merges."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     # Initial upload
     at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
 
@@ -358,7 +576,7 @@ def test_using_previously_uploaded_message_rendering():
     """Verify 'Using previously uploaded: {filename}' renders when stored file exists and does not render when none uploaded."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     # 1. Initially nothing uploaded -> message does not render
     gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
     assert len(gen_info) == 0
@@ -378,7 +596,7 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="reingest_file").upload("Existing_Startup_Kit.docx", b"existing-kit-docx").run()
 
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
@@ -444,7 +662,7 @@ def test_generate_results_renders_fallback_confirmation_empty():
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -468,7 +686,7 @@ def test_generate_results_renders_fallback_warning_non_empty():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -493,7 +711,7 @@ def test_reingest_results_renders_fallback_domains():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="reingest_file").upload("Kit.docx", b"kit-bytes").run()
 
     mock_result = RunResult(
@@ -519,7 +737,7 @@ def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     # Confirm default state of checkbox is checked (True)
     checkboxes = [cb for cb in at.checkbox if cb.label == "Review before finalizing"]
     assert len(checkboxes) == 1
@@ -555,7 +773,7 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Uncheck the review toggle
@@ -622,7 +840,7 @@ def test_fact_review_loads_selected_run_baseline(tmp_path, monkeypatch):
         validation_report={},
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -673,7 +891,7 @@ def test_fact_review_edit_and_save_real_run_updates_storage(tmp_path, monkeypatc
         validation_report={},
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -702,7 +920,7 @@ def test_fact_review_demo_fixture_option_saves_to_scratch():
     from streamlit.testing.v1 import AppTest
     from src.review_ui import facts as review
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -775,7 +993,7 @@ def test_fact_review_approve_blocked_by_error_severity_finding(tmp_path, monkeyp
         validation_report=validation_report,
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -845,7 +1063,7 @@ def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monke
         validation_report=validation_report,
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -909,7 +1127,7 @@ def test_fact_review_approved_run_shows_generate_button_and_renders_downloads(tm
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -974,7 +1192,7 @@ def test_fact_review_pending_run_does_not_show_generate_documents_button(tmp_pat
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1045,7 +1263,7 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1134,7 +1352,7 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
     )
     run_2 = storage.create_run("Run Beta", baseline_2.model_dump(mode="json"), {"findings": []})
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
 
     # Pre-populate session state store with the formatted display label of run_2
     formatted_label = f"Run Beta ({run_2})"
@@ -1157,7 +1375,7 @@ def test_htl_35_document_type_checkboxes_all_default_to_true():
     defaults to checked (True)."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
 
     # Generate tab checkboxes
     gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
@@ -1194,7 +1412,7 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     in_progress_flag_captured = []
@@ -1214,7 +1432,9 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
             run_id="Long_Run_20261010_120000",
         )
 
-    with patch("src.review_ui.generate._run_generate", side_effect=mock_long_running_generate) as mock_gen:
+    with patch("src.review_ui.generate.time.sleep", return_value=None), patch(
+        "src.review_ui.generate._run_generate", side_effect=mock_long_running_generate
+    ) as mock_gen:
         at.button(key="gen_submit_button").click().run()
         assert not at.exception
         assert mock_gen.called
@@ -1230,7 +1450,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Initial state: button is enabled
@@ -1264,7 +1484,7 @@ def test_htl_35_safeguard_clears_stuck_running_flags_without_inputs():
     in session_state when no files are uploaded, render() clears them to False."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.session_state["gen_is_running"] = True
     at.session_state["reingest_is_running"] = True
 
@@ -1279,7 +1499,7 @@ def test_htl_35_reingest_two_phase_rerun_and_disabled_button():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="reingest_file").upload("Project_Startup_Kit.docx", b"docx-bytes").run()
 
     # Initial state: button enabled
@@ -1348,7 +1568,7 @@ def test_fact_review_generate_button_in_progress_state_during_long_running_call(
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1424,7 +1644,7 @@ def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, mon
     run_gen = storage.create_run("Generated Run", baseline_2.model_dump(mode="json"), {"findings": []})
     storage.update_status(run_gen, "generated", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE).run()
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     # Set non-approved runs as generating to test safeguard
     at.session_state[f"fact_review::{run_gen}::is_generating"] = True
     at.session_state["fact_review::stuck_nonexistent_run::is_generating"] = True

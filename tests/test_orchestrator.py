@@ -151,17 +151,19 @@ def test_on_progress_fires_expected_stage_sequence_for_run(populated_inputs_dir,
 
     assert result.kit_path.exists()
     stages = [stage for stage, _ in calls]
-    assert stages == [
-        "ingesting",
-        "extracting",
-        "validating",
-        "generating",  # Startup Kit
-        "generating",  # Readiness Checklist
-        "generating",  # Delivery Workbook
-        "generating",  # Onboarding Deck
+    assert stages[0] == "ingesting"
+    extracting_calls = [c for c in calls if c[0] == "extracting"]
+    assert len(extracting_calls) == 15  # 1 initial + 14 increments
+    assert extracting_calls[0] == ("extracting", "")
+    assert [detail for _, detail in extracting_calls[1:]] == [f"{i}/14 complete" for i in range(1, 15)]
+    assert stages[16] == "validating"
+    generating_calls = [c for c in calls if c[0] == "generating"]
+    assert [detail for _, detail in generating_calls] == [
+        "Startup Kit",
+        "Readiness Checklist",
+        "Delivery Workbook",
+        "Onboarding Deck",
     ]
-    generating_details = [detail for stage, detail in calls if stage == "generating"]
-    assert generating_details == ["Startup Kit", "Readiness Checklist", "Delivery Workbook", "Onboarding Deck"]
 
 
 def test_on_progress_fires_expected_stage_sequence_for_run_reingest(sample_baseline, tmp_path):
