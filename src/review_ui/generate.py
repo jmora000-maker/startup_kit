@@ -23,9 +23,10 @@ the widget code itself is only smoke-tested (per HTL-17's own Test column).
 
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -187,6 +188,55 @@ def progress_status_label(stage: str, detail: str = "") -> str:
     """
     base = STAGE_LABELS.get(stage, stage.capitalize() if stage else "Working")
     return f"{base} ({detail})" if detail else base
+
+
+# HTL-28: minimum duration (in seconds) each stage remains visible on screen before
+# the next stage or final completion is allowed to replace it. 1.0 second provides
+# comfortable human legibility without introducing unnecessary delay.
+MIN_STAGE_DISPLAY_SECONDS: float = 1.0
+
+
+class StageStatusUpdater:
+    """HTL-28: Manages stage progress updates with a minimum display duration.
+
+    Ensures that once a stage's status label is displayed, it remains visible for at least
+    `min_display_seconds` before being replaced by the next stage or by final completion.
+    """
+
+    def __init__(
+        self,
+        status_box: Any,
+        last_stage_ref: List[Optional[str]],
+        min_display_seconds: float = MIN_STAGE_DISPLAY_SECONDS,
+        time_fn=time.time,
+        sleep_fn=time.sleep,
+    ):
+        self.status_box = status_box
+        self.last_stage_ref = last_stage_ref
+        self.min_display_seconds = min_display_seconds
+        self.time_fn = time_fn
+        self.sleep_fn = sleep_fn
+        self.last_update_time: Optional[float] = None
+
+    def update(self, stage: str, detail: str = "") -> None:
+        if self.last_update_time is not None and self.min_display_seconds > 0:
+            elapsed = self.time_fn() - self.last_update_time
+            remaining = self.min_display_seconds - elapsed
+            if remaining > 0:
+                self.sleep_fn(remaining)
+        self.last_stage_ref[0] = stage
+        label = progress_status_label(stage, detail)
+        self.status_box.update(label=label)
+        self.status_box.write(label)
+        self.last_update_time = self.time_fn()
+
+    def complete(self, completion_label: str) -> None:
+        if self.last_update_time is not None and self.min_display_seconds > 0:
+            elapsed = self.time_fn() - self.last_update_time
+            remaining = self.min_display_seconds - elapsed
+            if remaining > 0:
+                self.sleep_fn(remaining)
+        self.status_box.update(label=completion_label, state="complete")
 
 
 # HTL-26: on a failed run, the app must show a clear, specific error message -- never a bare
@@ -617,12 +667,7 @@ def render() -> None:
                     # isn't left wondering whether anything is happening during a run that can
                     # take a while.
                     with st.status("Starting...", expanded=True) as status_box:
-                        def _update_status(stage: str, detail: str = "") -> None:
-                            last_stage[0] = stage
-                            label = progress_status_label(stage, detail)
-                            status_box.update(label=label)
-                            status_box.write(label)
-
+                        status_updater = StageStatusUpdater(status_box, last_stage)
                         result = _run_generate(
                             uploaded_files=effective_files,
                             start_date_text=start_date_text,
@@ -636,11 +681,11 @@ def render() -> None:
                             mock=resolved_mock,
                             cache_mode=resolved_cache_mode,
                             outputs=outputs,
-                            on_progress=_update_status,
+                            on_progress=status_updater.update,
                             pause_for_review=review_before_finalizing,
                         )
                         completion_label = "Awaiting review." if result.paused else "Run complete."
-                        status_box.update(label=completion_label, state="complete")
+                        status_updater.complete(completion_label)
                     st.session_state["generate_run_result"] = result
                 except RuntimeError as exc:
                     # HTL-20/HTL-26: no silent mock fall-back; the exact build_llm_client error is
@@ -766,12 +811,7 @@ def render() -> None:
                         admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
                     )
                     with st.status("Starting...", expanded=True) as status_box_r:
-                        def _update_status_r(stage: str, detail: str = "") -> None:
-                            last_stage_r[0] = stage
-                            label = progress_status_label(stage, detail)
-                            status_box_r.update(label=label)
-                            status_box_r.write(label)
-
+                        status_updater_r = StageStatusUpdater(status_box_r, last_stage_r)
                         result_r = _run_reingest(
                             uploaded_kit_file=effective_kit_file,
                             start_date_text=start_date_text_r,
@@ -785,9 +825,9 @@ def render() -> None:
                             mock=resolved_mock_r,
                             cache_mode=resolved_cache_mode_r,
                             outputs=outputs_r,
-                            on_progress=_update_status_r,
+                            on_progress=status_updater_r.update,
                         )
-                        status_box_r.update(label="Run complete.", state="complete")
+                        status_updater_r.complete("Run complete.")
                     st.session_state["reingest_run_result"] = result_r
                 except RuntimeError as exc:
                     st.error(str(exc))
