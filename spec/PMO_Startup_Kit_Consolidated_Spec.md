@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 49 · October 3, 2026
+Revision 50 · October 3, 2026
 
 ## 0. Document control
 
@@ -303,6 +303,7 @@ Every fact category in HTL-06 was chosen because it caused a real, previously-fo
 | HTL-30 | **One editable source for identity and role fields.** Contract Type, Governance Tier, PMO Lead, Delivery Lead, and Talent PM are editable in exactly one place at a time, never two: when `HTL-29`'s review toggle is checked (the default), these fields are read-only, display-only text on the Generate tab -- shown once a run reaches review, reflecting the run's current values -- and are editable only on the Fact Review screen (`HTL-06`'s `project_identity` and `named_roles` categories), whose corrected value is what `HTL-07` carries into final generation. When the review toggle is unchecked, these fields revert to being directly editable on Generate, exactly as `HTL-17` originally built them (pre-extraction hints, no Fact Review step in that path at all). The two states are mutually exclusive per run; a field is never editable in both places at once. | New | `test_streamlit_app.py` |
 | HTL-31 | **Generate tab retains the uploaded SOW across page switches.** The HTL-17/item-3 form-state fix explicitly left one documented exception: a file uploader's own widget state cannot be persisted by Streamlit, so switching to Fact Review and back previously forced a re-upload. This is now closed at the application level, not the widget level: the instant a file is uploaded, its actual bytes and filename are stored in the same `state_persistence.py` store used for every other field. Returning to Generate without choosing a new file reuses the stored upload automatically, shown as "Using previously uploaded: {filename} -- choose a different file to replace it"; choosing a new file replaces the stored one. The user never has to re-select the same file after merely visiting another page. | New | `test_streamlit_app.py` |
 | HTL-32 | **Surface which provider actually ran, including any fallback.** `RunResult.fallback_domains` (already a structured field per `HTL-24`, tracked by the client but never shown anywhere) is displayed on the app's results screen: when empty, a plain confirmation of which provider ran the whole request unassisted (e.g. "Ran entirely on Anthropic"); when non-empty, which specific domains fell back and to which provider (e.g. "Fell back to OpenAI for: Scope Decomposition, Deliverables"). Found as a real gap while trying to understand a billed cost after the fact with no way to see, from the app alone, whether a run quietly paid for two attempts instead of one. | New | `test_streamlit_app.py` |
+| HTL-33 | **Clicking a download button must never revert a generated run's displayed state back to pending review.** Confirmed, real run (`ARC_Application_Implementation_20261010_004825`, Appendix KK): generation completed successfully -- all 5 real files on disk, `status.json` correctly persisted as `"generated"` -- but after downloading the second of five files, the UI's Save Review/Approve buttons reappeared in place of the remaining download buttons, as if the run had reverted to `pending_review`. The backend state was never actually wrong; this is a pure display bug, most likely Streamlit's `download_button` triggering a script rerun that re-reads the run list or re-renders the wrong branch for this run. The user recovered the real files directly from `review_queue/{run_id}/` on disk, unaffected by the UI issue. | New (found live; backend confirmed correct throughout, UI-only defect) | None yet |
 
 
 ## 15C. LLM Client Provider Correctness
@@ -431,6 +432,7 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | 47 | Marks `MS-10` and `DECK-24` Done (Appendix II, extended): the real root-cause fix correctly distinguishes a genuine restatement/checkpoint from a standalone trailing milestone with no `P#` code, confirmed against real production checkpoint text from two existing fixtures (no regression) and the real Hypercare case (now its own gate). A full real end-to-end deck regeneration confirms `DECK-24`'s original symptom is gone, with `M1`-`M4`'s date calculation independently confirmed unaffected. `MAP-12` remains open -- confirmed, with real end-to-end evidence, to be a genuinely separate, independent regex gap, not resolved by this fix, exactly as Appendix GG predicted. |
 | 48 | Adds `MS-11` and `MS-12` (Appendix JJ): a second real run of the same ARC Genomics SOW already used to validate `MS-10`'s fix surfaced two new, previously-unseen extraction defects -- a milestone's own trigger condition (production go-live) extracted as if it were a sixth, separate milestone, shifting the real Hypercare milestone to `M6`; and the run's project name concatenating two real but distinct section titles from the same document into one string. Both found live, mid-review, by the user reading Fact Review's actual output closely -- neither traced to root cause yet. |
 | 49 | Marks `MS-11` and `MS-12` Done (Appendix JJ, extended): both traced to genuine extraction-prompt non-determinism, not reconciliation bugs -- `MILESTONES_PROMPT` and `CHARTER_PROMPT` each tightened with a minimal, targeted rule (anchor to the SOW's own enumerated milestones and exclude trigger conditions; prefer the SOW's own cover title over an attached Exhibit's heading, never combine them). Each confirmed with 5+ consecutive live extractions against the real ARC Genomics SOW, given both were demonstrated to be non-deterministic before their fixes -- a single successful run would not have been sufficient evidence. |
+| 50 | Adds `HTL-33` (Appendix KK): a real generated run's download screen reverted to showing Save Review/Approve mid-download, even though the backend had already correctly persisted `"generated"` status and all 5 real files existed on disk -- a pure UI rendering bug, not a data or approval problem. |
 
 
 ## Appendix A: Workbook column layouts
@@ -1440,3 +1442,31 @@ Per the real SOW (confirmed directly, Appendix II), production go-live is refere
 **`MS-12`: two real titles concatenated into one project name.** The same run was named `ARC_Application_Implementation_ARC_Genomics_Platform_20261009_234131`. Both halves are real: the SOW's cover page reads *"Statement of Work -- ARC Application Implementation"*; Exhibit A's own heading reads *"ARC Genomics Platform -- Implementation Specifications"*. Both genuinely exist in the one real document, as two different section titles for the same engagement -- something combined them into a single `project_name` rather than selecting one.
 
 **Status: logged, not yet fixed or traced.** Both are real, reproducible-in-principle findings from a real document already on hand, but neither has been traced to a specific line of code yet -- that is the next session's first task for each.
+
+
+## Appendix KK: A download button reverted the UI to pending-review, but the backend was correct throughout (the basis for Revision 50)
+
+**Found live, on a genuinely fresh run of the real ARC Application Implementation SOW** (`ARC_Application_Implementation_20261010_004825`), after a clean approve -> generate flow. Five real download buttons appeared, as expected. After clicking the second one, the Save Review/Approve buttons reappeared in place of the remaining three download buttons -- the same screen state shown for a run still awaiting review.
+
+**Direct inspection proved the backend never actually reverted.** The real run folder:
+
+```text
+ARC_Application_Implementation_Project_Delivery_Workbook.xlsx
+ARC_Application_Implementation_Startup_Kit.docx
+ARC_Application_Implementation_Startup_Readiness_Checklist.docx
+ARC_Application_Implementation_Talent_Onboarding_Deck.pptx
+ARC_Application_Implementation_Talent_Onboarding_Deck.trace.json
+baseline.json / review_audit.json / status.json / validation_report.json
+```
+
+All 5 real output files exist, timestamped before the UI reverted. `status.json`:
+
+```json
+{
+  "state": "generated"
+}
+```
+
+**This is a pure display bug.** The backend correctly completed generation and persisted `"generated"` status; nothing was lost or corrupted. The most likely cause is Streamlit's `download_button` triggering a script rerun that re-reads or re-renders this run's state incorrectly on that specific rerun, rather than any real data or workflow failure. The user recovered all 5 real files directly from `review_queue/{run_id}/` on disk, confirming the files themselves were never at risk.
+
+**Status: logged, investigation starting now.**
