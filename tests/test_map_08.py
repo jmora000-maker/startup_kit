@@ -93,7 +93,7 @@ def test_map_08_traceability_normalization_gitlab_baseline():
     assert sow_trace["missing_ids"] == []
 
     # Validation findings should not have any TR-01 warning for missing SOW references
-    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Missing SOW References" in f.message]
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
     assert tr_findings == []
 
 
@@ -125,7 +125,7 @@ def test_map_08_traceability_normalization_reverse_tagging():
     sow_trace = wb.traceability["SOW References"]
     assert sow_trace["missing_ids"] == []
 
-    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Missing SOW References" in f.message]
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
     assert tr_findings == []
 
 
@@ -157,7 +157,7 @@ def test_map_08_genuine_mismatch_detected():
     sow_trace = wb.traceability["SOW References"]
     assert "Work Output 2" in sow_trace["missing_ids"]
 
-    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Missing SOW References" in f.message]
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
     assert len(tr_findings) == 1
     assert "Work Output 2" in tr_findings[0].message
 
@@ -192,7 +192,7 @@ def test_map_08_fact_review_clean_when_matching():
         labels_and_values = [(f.label, f.value) for f in val_cat.fields]
         tr_fields = [
             (lbl, val) for lbl, val in labels_and_values
-            if "TR-01" in lbl and "Missing SOW References" in val
+            if "TR-01" in lbl and "Unmatched SOW References" in val
         ]
         assert tr_fields == []
 
@@ -233,6 +233,167 @@ def test_map_08_synthetic_and_real_story_conflation_prevention():
 
     # Must also emit a TR-01 ValidationFinding warning
     assert baseline.validation_report is not None
-    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Missing SOW References" in f.message]
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
     assert len(tr_findings) == 1
     assert "Story 1" in tr_findings[0].message
+
+
+def test_map_12_hypercare_capacity_non_numeric_synthetic_reference_matches():
+    """MAP-12: Non-numeric synthetic reference 'Hypercare Capacity' matches between deliverable/backlog and SOW catalogue without false warnings."""
+    deliv = Deliverable(
+        id="DEL-20",
+        name="Four-Week Hypercare Support",
+        description="Post-launch hypercare support",
+        sow_reference="Hypercare Capacity",
+    )
+    milestone = Milestone(
+        id="M4",
+        description="P3 Launch accepted: System live and hypercare support delivered.",
+    )
+    catalogue_item = SOWWorkItem(
+        reference="Hypercare Capacity",
+        reference_kind="Synthetic",
+        title="Hypercare Capacity: up to 160 hours",
+        phase="P3 Launch",
+        owner="Toptal Delivery Team",
+        type="Build",
+    )
+    wp = WorkPackageSeed(
+        id="WP-36",
+        parent_deliverable_id="DEL-20",
+        title="Hypercare Capacity: up to 160 hours of developer and QA support",
+        sow_reference="Hypercare Capacity",
+        owner="Toptal Delivery Team",
+    )
+    baseline = StartupKitBaseline(
+        project_name="ARC Genomics Platform Implementation",
+        deliverables=[deliv],
+        milestones=[milestone],
+        sow_stories_catalogue=[catalogue_item],
+        backlog_seed=[wp],
+    )
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 10))
+
+    sow_trace = wb.traceability["SOW References"]
+    assert sow_trace["missing_ids"] == []
+    assert sow_trace["in_baseline"] == 1
+    assert sow_trace["in_workbook"] == 1
+    assert sow_trace["synthetic"] is True
+
+    # No TR-01 warning should be emitted for SOW references
+    if baseline.validation_report:
+        tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
+        assert tr_findings == []
+
+
+def test_map_12_genuinely_missing_non_numeric_reference_produces_warning():
+    """MAP-12: A genuinely missing non-numeric reference in catalogue produces clear Unmatched SOW References warning."""
+    deliv = Deliverable(
+        id="DEL-01",
+        name="Discovery & Planning",
+        description="Discovery phase",
+        sow_reference="WO-01",
+    )
+    milestone = Milestone(
+        id="M1",
+        description="Project Kickoff",
+    )
+    catalogue = [
+        SOWWorkItem(
+            reference="WO-01",
+            reference_kind="Deliverable number",
+            title="Discovery & Planning",
+            phase="",
+            owner="Toptal",
+            type="Documentation",
+        ),
+        SOWWorkItem(
+            reference="Hypercare Capacity",
+            reference_kind="Synthetic",
+            title="Hypercare Capacity: up to 160 hours",
+            phase="",
+            owner="Toptal",
+            type="Build",
+        ),
+    ]
+    wp = WorkPackageSeed(
+        id="WP-01",
+        parent_deliverable_id="DEL-01",
+        title="Discovery Task",
+        sow_reference="WO-01",
+        owner="Toptal",
+    )
+    baseline = StartupKitBaseline(
+        project_name="Platform Implementation",
+        deliverables=[deliv],
+        milestones=[milestone],
+        sow_stories_catalogue=catalogue,
+        backlog_seed=[wp],
+    )
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 10))
+
+    sow_trace = wb.traceability["SOW References"]
+    assert "Hypercare Capacity" in sow_trace["missing_ids"]
+
+    assert baseline.validation_report is not None
+    tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
+    assert len(tr_findings) == 1
+    assert "Hypercare Capacity" in tr_findings[0].message
+
+
+def test_map_12_comma_separated_references_including_synthetic_match():
+    """MAP-12: Deliverable with comma-separated references ('WO-01, Hypercare Capacity') matches both catalogue items."""
+    deliv = Deliverable(
+        id="DEL-01",
+        name="Hybrid Scope Package",
+        description="Delivery and hypercare scope",
+        sow_reference="WO-01, Hypercare Capacity",
+    )
+    milestone = Milestone(
+        id="M1",
+        description="Gate 1",
+    )
+    catalogue = [
+        SOWWorkItem(
+            reference="Work Output 1",
+            reference_kind="Deliverable number",
+            title="Discovery & Planning",
+            phase="",
+            owner="Toptal",
+            type="Documentation",
+        ),
+        SOWWorkItem(
+            reference="Hypercare Capacity",
+            reference_kind="Synthetic",
+            title="Hypercare Capacity",
+            phase="",
+            owner="Toptal",
+            type="Build",
+        ),
+    ]
+    wp = WorkPackageSeed(
+        id="WP-01",
+        parent_deliverable_id="DEL-01",
+        title="Delivery Task",
+        sow_reference="WO-01, Hypercare Capacity",
+        owner="Toptal",
+    )
+    baseline = StartupKitBaseline(
+        project_name="Platform Implementation",
+        deliverables=[deliv],
+        milestones=[milestone],
+        sow_stories_catalogue=catalogue,
+        backlog_seed=[wp],
+    )
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 10))
+
+    sow_trace = wb.traceability["SOW References"]
+    assert sow_trace["missing_ids"] == []
+    assert sow_trace["in_baseline"] == 3
+    assert sow_trace["in_workbook"] == 2
+    if baseline.validation_report:
+        tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
+        assert tr_findings == []

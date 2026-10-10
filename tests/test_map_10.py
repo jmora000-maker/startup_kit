@@ -41,7 +41,7 @@ def test_map_10_traceability_warning_routed_to_validation_report():
     assert len(tr_findings) == 1
     finding = tr_findings[0]
     assert finding.severity == "warning"
-    assert "Traceability check: Missing SOW References in workbook:" in finding.message
+    assert "Traceability check: Unmatched SOW References in workbook:" in finding.message
     assert "'SOW-99'" in finding.message
 
 
@@ -84,7 +84,7 @@ def test_map_10_fact_review_displays_traceability_finding():
 
     matching_fields = [
         (lbl, val) for lbl, val in labels_and_values
-        if "TR-01" in lbl and "Missing SOW References in workbook" in val
+        if "TR-01" in lbl and "Unmatched SOW References in workbook" in val
     ]
     assert len(matching_fields) == 1
     lbl, val = matching_fields[0]

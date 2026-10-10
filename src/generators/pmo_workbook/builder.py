@@ -242,9 +242,19 @@ def extract_story_ids_for_deliverable(d: Deliverable) -> List[str]:
     stories: List[str] = []
     # 1. From sow_reference
     if getattr(d, "sow_reference", None):
-        for s in extract_sow_references(d.sow_reference):
-            if s not in stories:
-                stories.append(s)
+        for part in d.sow_reference.split(","):
+            p = part.strip()
+            if not p:
+                continue
+            extracted = extract_sow_references(p)
+            if extracted:
+                for s in extracted:
+                    if s not in stories:
+                        stories.append(s)
+            elif not re.fullmatch(r"P\d+[a-z]?", p, re.IGNORECASE):
+                # MAP-12: Non-numeric synthetic reference (e.g. "Hypercare Capacity"), excluding bare phase codes (e.g. "P1")
+                if p not in stories:
+                    stories.append(p)
     # 2. From name or description if any
     text = f"{d.name or ''} {d.description or ''}"
     for s in extract_sow_references(text):
@@ -1438,8 +1448,25 @@ def build_workbook_model(
                                 if wp.id in wp_also_covers:
                                     wp_note_parts.append(f"Also covers {', '.join(wp_also_covers[wp.id])}")
                                 wp_note = " | ".join(wp_note_parts) if wp_note_parts else None
-                                wp_refs = extract_sow_references(f"{wp.sow_reference or ''} {wp.title or ''}")
-                                wp_sow_str = ", ".join(wp_refs) if wp_refs else (wp.sow_reference or "")
+                                wp_refs: List[str] = []
+                                if wp.sow_reference:
+                                    for part in wp.sow_reference.split(","):
+                                        p = part.strip()
+                                        if not p:
+                                            continue
+                                        ext = extract_sow_references(p)
+                                        if ext:
+                                            for s in ext:
+                                                if s not in wp_refs:
+                                                    wp_refs.append(s)
+                                        else:
+                                            if p not in wp_refs:
+                                                wp_refs.append(p)
+                                if wp.title:
+                                    for s in extract_sow_references(wp.title):
+                                        if s not in wp_refs:
+                                            wp_refs.append(s)
+                                wp_sow_str = ", ".join(wp_refs) if wp_refs else ""
                                 task_rows_to_add.append((t_name, wp_owner, "Baseline - Backlog", wp.id, "", "", wp_note, wp_sow_str))
                         elif d_story_ids:
                             # Option 2: SOW work items (TXT-04)
@@ -2228,8 +2255,16 @@ def build_workbook_model(
     wb_story_ids: Set[str] = set()
     for w in updated_wbs_rows:
         if w.sow_stories:
-            for s in extract_sow_references(w.sow_stories):
-                wb_story_ids.add(s)
+            for part in w.sow_stories.split(","):
+                p = part.strip()
+                if not p:
+                    continue
+                extracted = extract_sow_references(p)
+                if extracted:
+                    for s in extracted:
+                        wb_story_ids.add(s)
+                else:
+                    wb_story_ids.add(p)
 
     # MAP-08: Canonical normalization on both sides before comparison
     wb_canonical_map: Dict[str, Set[str]] = {}
@@ -2255,6 +2290,10 @@ def build_workbook_model(
         detect_sow_reference_kind(s) == "Synthetic" or s.startswith("SOW-")
         for s in (base_story_ids | wb_story_ids)
     )
+    if not has_synthetic and hasattr(baseline, "sow_stories_catalogue") and baseline.sow_stories_catalogue:
+        has_synthetic = any(
+            getattr(st, "reference_kind", "") == "Synthetic" for st in baseline.sow_stories_catalogue
+        )
 
     def _add_traceability_finding(msg: str) -> None:
         if baseline.validation_report is None:
@@ -2281,7 +2320,7 @@ def build_workbook_model(
         logger.warning(msg)
         _add_traceability_finding(msg)
     if missing_stories:
-        msg = f"Traceability check: Missing SOW References in workbook: {missing_stories}"
+        msg = f"Traceability check: Unmatched SOW References in workbook: {missing_stories}"
         logger.warning(msg)
         _add_traceability_finding(msg)
     if not base_story_ids and not wb_story_ids:
