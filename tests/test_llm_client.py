@@ -563,3 +563,131 @@ def test_env_var_llm_provider_openai_routes_through_build_llm_client(monkeypatch
     monkeypatch.setattr("langchain_openai.ChatOpenAI.invoke", MagicMock(return_value=mock_resp))
     result = client.generate_text("Test prompt")
     assert result == "OpenAI response from primary provider with clamped ceiling"
+
+
+def test_anthropic_usage_cap_error_immediately_falls_back_to_openai_without_redundant_retry():
+    """Verify that when Anthropic native structured outputs fails with a provider error (e.g. workspace usage limit),
+    it immediately falls back to OpenAI without redundantly re-attempting Anthropic text generation in Step 1b."""
+    mock_anthropic = MagicMock()
+    mock_structured_anthropic = MagicMock()
+    mock_structured_anthropic.invoke.side_effect = RuntimeError(
+        "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'You have reached your specified workspace API usage limits. Please increase your limit in your workspace settings.'}}"
+    )
+    mock_anthropic.with_structured_output.return_value = mock_structured_anthropic
+
+    mock_openai = MagicMock()
+    mock_structured_openai = MagicMock()
+    expected_result = SampleSchema(title="OpenAI Fallback Success After Anthropic Cap", score=100)
+    mock_structured_openai.invoke.return_value = expected_result
+    mock_openai.with_structured_output.return_value = mock_structured_openai
+
+    client = LangChainLLMClient(
+        primary_provider="anthropic",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    result = client.generate_structured("Extract project", SampleSchema)
+    assert result == expected_result
+    mock_structured_anthropic.invoke.assert_called_once()
+    # Step 1b must be skipped so Anthropic text invoke is NOT called
+    mock_anthropic.invoke.assert_not_called()
+    mock_openai.with_structured_output.assert_called_once()
+    assert "SampleSchema" in client.fallback_domains
+
+
+def test_openai_primary_quota_error_immediately_falls_back_to_anthropic_without_redundant_retry():
+    """Verify that when OpenAI native structured outputs fails with a provider error (e.g. 429 Quota Exceeded),
+    it immediately falls back to Anthropic without redundantly re-attempting OpenAI text generation in Step 1b."""
+    mock_openai = MagicMock()
+    mock_structured_openai = MagicMock()
+    mock_structured_openai.invoke.side_effect = RuntimeError("OpenAI 429 InsufficientQuota")
+    mock_openai.with_structured_output.return_value = mock_structured_openai
+
+    mock_anthropic = MagicMock()
+    mock_structured_anthropic = MagicMock()
+    expected_result = SampleSchema(title="Anthropic Fallback Success After OpenAI Quota", score=95)
+    mock_structured_anthropic.invoke.return_value = expected_result
+    mock_anthropic.with_structured_output.return_value = mock_structured_anthropic
+
+    client = LangChainLLMClient(
+        primary_provider="openai",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    result = client.generate_structured("Extract project", SampleSchema)
+    assert result == expected_result
+    mock_structured_openai.invoke.assert_called_once()
+    # Step 1b must be skipped so OpenAI text invoke is NOT called
+    mock_openai.invoke.assert_not_called()
+    mock_anthropic.with_structured_output.assert_called_once()
+    assert "SampleSchema" in client.fallback_domains
+
+
+def test_complex_schema_anthropic_usage_cap_falls_back_to_openai():
+    """Verify that when a complex schema (e.g. CharterExtraction) is processed and Anthropic hits
+    workspace usage limit in Step 1b prompt extraction, generate_text gracefully falls back to OpenAI."""
+    from src.core.models import CharterExtraction
+
+    mock_anthropic = MagicMock()
+    mock_anthropic.invoke.side_effect = RuntimeError(
+        "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'You have reached your specified workspace API usage limits.'}}"
+    )
+
+    mock_openai = MagicMock()
+    mock_openai_response = MagicMock()
+    mock_openai_response.content = '{"project_name": "OpenAI SOW Project", "executive_summary": "Extracted via OpenAI fallback."}'
+    mock_openai.invoke.return_value = mock_openai_response
+
+    client = LangChainLLMClient(
+        primary_provider="anthropic",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    result = client.generate_structured("Extract charter", CharterExtraction)
+    assert isinstance(result, CharterExtraction)
+    assert result.project_name == "OpenAI SOW Project"
+    assert result.executive_summary == "Extracted via OpenAI fallback."
+    mock_anthropic.invoke.assert_called_once()
+    mock_openai.invoke.assert_called_once()
+    mock_openai.with_structured_output.assert_not_called()
+    assert "CharterExtraction" in client.fallback_domains
+
+
+def test_schema_complexity_error_anthropic_usage_cap_falls_back_to_openai():
+    """Verify that when native structured fails with 'schema is too complex' and Anthropic text prompt
+    subsequently hits usage limits, it falls back to OpenAI text generation via LLM-02 fallback."""
+    class CustomComplexSchema(BaseModel):
+        title: str
+        score: int
+
+    mock_anthropic = MagicMock()
+    mock_structured_anthropic = MagicMock()
+    mock_structured_anthropic.invoke.side_effect = RuntimeError("Error code: 400 - schema is too complex")
+    mock_anthropic.with_structured_output.return_value = mock_structured_anthropic
+    mock_anthropic.invoke.side_effect = RuntimeError(
+        "AnthropicInvalidRequestError: You have reached your specified workspace API usage limits."
+    )
+
+    mock_openai = MagicMock()
+    mock_openai_response = MagicMock()
+    mock_openai_response.content = '{"title": "OpenAI Recovered Schema", "score": 95}'
+    mock_openai.invoke.return_value = mock_openai_response
+
+    client = LangChainLLMClient(
+        primary_provider="anthropic",
+        chat_model=mock_anthropic,
+        openai_chat_model=mock_openai,
+    )
+
+    result = client.generate_structured("Extract custom", CustomComplexSchema)
+    assert isinstance(result, CustomComplexSchema)
+    assert result.title == "OpenAI Recovered Schema"
+    assert result.score == 95
+    mock_structured_anthropic.invoke.assert_called_once()
+    mock_anthropic.invoke.assert_called_once()
+    mock_openai.invoke.assert_called_once()
+    mock_openai.with_structured_output.assert_not_called()
+    assert "CustomComplexSchema" in client.fallback_domains

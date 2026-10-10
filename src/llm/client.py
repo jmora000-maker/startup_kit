@@ -241,6 +241,8 @@ class LangChainLLMClient(ILLMClient):
         if self.primary_provider == "openai":
             # 1. Attempt primary OpenAI model if configured
             if self._openai_chat_model is not None:
+                openai_native_failed = False
+                openai_exc_ref: Optional[Exception] = None
                 # Step 1a: Attempt OpenAI native structured outputs
                 try:
                     structured_openai = self._openai_chat_model.with_structured_output(schema)
@@ -251,67 +253,76 @@ class LangChainLLMClient(ILLMClient):
                         return schema.model_validate(result)
                     return schema.model_validate(result)
                 except Exception as openai_exc:
+                    openai_native_failed = True
+                    openai_exc_ref = openai_exc
                     logger.warning(
-                        "OpenAI native structured output failed (%s): %s. Attempting OpenAI schema-instructed JSON extraction...",
+                        "OpenAI native structured output failed (%s): %s. Attempting fallback...",
                         type(openai_exc).__name__,
                         openai_exc,
                     )
 
-                # Step 1b: Attempt OpenAI prompt-based JSON extraction with schema format instructions
-                try:
-                    parser = PydanticOutputParser(pydantic_object=schema)
-                    format_instructions = parser.get_format_instructions()
-                    fallback_prompt = (
-                        f"{prompt}\n\n"
-                        f"IMPORTANT: Output your response as a valid JSON object strictly conforming to the following JSON schema. "
-                        f"Do not include preamble, conversational remarks, or markdown text outside the JSON object.\n\n"
-                        f"{format_instructions}"
-                    )
-                    response_text = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_openai=True)
-                    return parse_json_response_to_schema(response_text, schema, parser)
-                except Exception as openai_text_exc:
-                    logger.warning(
-                        "OpenAI schema-instructed JSON extraction failed (%s): %s",
-                        type(openai_text_exc).__name__,
-                        openai_text_exc,
-                        exc_info=True,
-                    )
-                    # Step 1c: If Anthropic fallback is available, fail over to Anthropic
-                    if self._chat_model is not None:
-                        if schema_name not in self.fallback_domains:
-                            self.fallback_domains.append(schema_name)
-                        logger.info(
-                            "Falling back to Anthropic model '%s' for schema '%s' after OpenAI failure...",
-                            self.model_name,
-                            schema_name,
-                        )
-                        skip_native = is_complex_schema(schema)
-                        if not skip_native:
-                            try:
-                                structured_anthropic = self._chat_model.with_structured_output(schema, method="json_schema")
-                                result = structured_anthropic.invoke(messages)
-                                if isinstance(result, schema):
-                                    return result
-                                if isinstance(result, dict):
-                                    return schema.model_validate(result)
-                                return schema.model_validate(result)
-                            except Exception as anthropic_exc:
-                                err_msg = str(anthropic_exc).lower()
-                                if "schema is too complex" in err_msg or "invalid_request_error" in err_msg:
-                                    _COMPLEX_SCHEMAS.add(schema_name)
-                                logger.warning(
-                                    "Anthropic structured invoke failed (%s): %s. Falling back to PydanticOutputParser via Anthropic.",
-                                    type(anthropic_exc).__name__,
-                                    anthropic_exc,
-                                    exc_info=True,
-                                )
+                # Step 1b: Attempt OpenAI prompt-based JSON extraction only if OpenAI hasn't experienced a provider-level failure or if Anthropic fallback is unavailable
+                if not openai_native_failed or self._chat_model is None:
+                    try:
                         parser = PydanticOutputParser(pydantic_object=schema)
                         format_instructions = parser.get_format_instructions()
-                        fallback_prompt = f"{prompt}\n\n{format_instructions}"
-                        response = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_anthropic=True)
-                        return parse_json_response_to_schema(response, schema, parser)
-                    else:
-                        raise openai_text_exc
+                        fallback_prompt = (
+                            f"{prompt}\n\n"
+                            f"IMPORTANT: Output your response as a valid JSON object strictly conforming to the following JSON schema. "
+                            f"Do not include preamble, conversational remarks, or markdown text outside the JSON object.\n\n"
+                            f"{format_instructions}"
+                        )
+                        response_text = self.generate_text(fallback_prompt, system_prompt=system_prompt)
+                        if schema_name not in self.fallback_domains and "TextGeneration" in self.fallback_domains:
+                            self.fallback_domains.append(schema_name)
+                        return parse_json_response_to_schema(response_text, schema, parser)
+                    except Exception as openai_text_exc:
+                        openai_exc_ref = openai_text_exc
+                        logger.warning(
+                            "OpenAI schema-instructed JSON extraction failed (%s): %s",
+                            type(openai_text_exc).__name__,
+                            openai_text_exc,
+                            exc_info=True,
+                        )
+
+                # Step 1c: If Anthropic fallback is available, fail over to Anthropic
+                if self._chat_model is not None:
+                    if schema_name not in self.fallback_domains:
+                        self.fallback_domains.append(schema_name)
+                    logger.info(
+                        "Falling back to Anthropic model '%s' for schema '%s' after OpenAI failure...",
+                        self.model_name,
+                        schema_name,
+                    )
+                    skip_native = is_complex_schema(schema)
+                    if not skip_native:
+                        try:
+                            structured_anthropic = self._chat_model.with_structured_output(schema, method="json_schema")
+                            result = structured_anthropic.invoke(messages)
+                            if isinstance(result, schema):
+                                return result
+                            if isinstance(result, dict):
+                                return schema.model_validate(result)
+                            return schema.model_validate(result)
+                        except Exception as anthropic_exc:
+                            err_msg = str(anthropic_exc).lower()
+                            if "schema is too complex" in err_msg or "invalid_request_error" in err_msg:
+                                _COMPLEX_SCHEMAS.add(schema_name)
+                            logger.warning(
+                                "Anthropic structured invoke failed (%s): %s. Falling back to PydanticOutputParser via Anthropic.",
+                                type(anthropic_exc).__name__,
+                                anthropic_exc,
+                                exc_info=True,
+                            )
+                    parser = PydanticOutputParser(pydantic_object=schema)
+                    format_instructions = parser.get_format_instructions()
+                    fallback_prompt = f"{prompt}\n\n{format_instructions}"
+                    response = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_anthropic=True)
+                    return parse_json_response_to_schema(response, schema, parser)
+                else:
+                    if openai_exc_ref is not None:
+                        raise openai_exc_ref
+                    raise RuntimeError("OpenAI structured extraction failed with no fallback configured.")
 
             # 2. If OpenAI is not configured, attempt Anthropic directly
             elif self._chat_model is not None:
@@ -350,6 +361,9 @@ class LangChainLLMClient(ILLMClient):
             if self._chat_model is not None:
                 # Check if schema is known or detected to exceed Anthropic native grammar compilation limits
                 skip_native = is_complex_schema(schema)
+                anthropic_native_failed = False
+                is_schema_complexity = False
+                anthropic_exc_ref: Optional[Exception] = None
                 if skip_native:
                     logger.info(
                         "Schema '%s' is identified as complex. Directly executing Anthropic schema-instructed JSON extraction...",
@@ -366,65 +380,80 @@ class LangChainLLMClient(ILLMClient):
                             return schema.model_validate(result)
                         return schema.model_validate(result)
                     except Exception as anthropic_exc:
+                        anthropic_native_failed = True
+                        anthropic_exc_ref = anthropic_exc
                         err_msg = str(anthropic_exc).lower()
-                        if "schema is too complex" in err_msg or "invalid_request_error" in err_msg:
+                        is_schema_complexity = "schema is too complex" in err_msg
+                        if is_schema_complexity:
                             _COMPLEX_SCHEMAS.add(schema_name)
                         logger.warning(
-                            "Anthropic native structured output failed (%s): %s. Attempting Anthropic schema-instructed JSON extraction...",
+                            "Anthropic native structured output failed (%s): %s. Attempting fallback...",
                             type(anthropic_exc).__name__,
                             anthropic_exc,
                         )
 
-                # Step 1b: Attempt Anthropic prompt-based JSON extraction with schema format instructions
-                try:
-                    parser = PydanticOutputParser(pydantic_object=schema)
-                    format_instructions = parser.get_format_instructions()
-                    fallback_prompt = (
-                        f"{prompt}\n\n"
-                        f"IMPORTANT: Output your response as a valid JSON object strictly conforming to the following JSON schema. "
-                        f"Do not include preamble, conversational remarks, or markdown text outside the JSON object.\n\n"
-                        f"{format_instructions}"
-                    )
-                    response_text = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_anthropic=True)
-                    return parse_json_response_to_schema(response_text, schema, parser)
-                except Exception as anthropic_text_exc:
-                    logger.warning(
-                        "Anthropic schema-instructed JSON extraction failed (%s): %s",
-                        type(anthropic_text_exc).__name__,
-                        anthropic_text_exc,
-                        exc_info=True,
-                    )
-                    # Step 1c: If OpenAI fallback is available, fail over to OpenAI
-                    if self._openai_chat_model is not None:
-                        if schema_name not in self.fallback_domains:
-                            self.fallback_domains.append(schema_name)
-                        logger.info(
-                            "Falling back to OpenAI model '%s' for schema '%s' after Anthropic failure...",
-                            self.openai_model_name,
-                            schema_name,
+                # Step 1b: Attempt Anthropic prompt-based JSON extraction only if:
+                # - Native structured was skipped (e.g. complex schema), OR
+                # - Native structured failed specifically due to schema complexity, OR
+                # - OpenAI fallback is not configured.
+                # If native structured failed due to a provider-level error (e.g. usage limit, rate limit, 500 error)
+                # and OpenAI is available, do not retry Anthropic; fail over to OpenAI immediately.
+                if skip_native or is_schema_complexity or self._openai_chat_model is None:
+                    try:
+                        parser = PydanticOutputParser(pydantic_object=schema)
+                        format_instructions = parser.get_format_instructions()
+                        fallback_prompt = (
+                            f"{prompt}\n\n"
+                            f"IMPORTANT: Output your response as a valid JSON object strictly conforming to the following JSON schema. "
+                            f"Do not include preamble, conversational remarks, or markdown text outside the JSON object.\n\n"
+                            f"{format_instructions}"
                         )
-                        try:
-                            structured_openai = self._openai_chat_model.with_structured_output(schema)
-                            result = structured_openai.invoke(messages)
-                            if isinstance(result, schema):
-                                return result
-                            if isinstance(result, dict):
-                                return schema.model_validate(result)
+                        response_text = self.generate_text(fallback_prompt, system_prompt=system_prompt)
+                        if schema_name not in self.fallback_domains and "TextGeneration" in self.fallback_domains:
+                            self.fallback_domains.append(schema_name)
+                        return parse_json_response_to_schema(response_text, schema, parser)
+                    except Exception as anthropic_text_exc:
+                        anthropic_exc_ref = anthropic_text_exc
+                        logger.warning(
+                            "Anthropic schema-instructed JSON extraction failed (%s): %s",
+                            type(anthropic_text_exc).__name__,
+                            anthropic_text_exc,
+                            exc_info=True,
+                        )
+
+                # Step 1c: If OpenAI fallback is available, fail over to OpenAI
+                if self._openai_chat_model is not None:
+                    if schema_name not in self.fallback_domains:
+                        self.fallback_domains.append(schema_name)
+                    logger.info(
+                        "Falling back to OpenAI model '%s' for schema '%s' after Anthropic failure...",
+                        self.openai_model_name,
+                        schema_name,
+                    )
+                    try:
+                        structured_openai = self._openai_chat_model.with_structured_output(schema)
+                        result = structured_openai.invoke(messages)
+                        if isinstance(result, schema):
+                            return result
+                        if isinstance(result, dict):
                             return schema.model_validate(result)
-                        except Exception as openai_exc:
-                            logger.warning(
-                                "OpenAI structured invoke failed (%s): %s. Falling back to PydanticOutputParser via OpenAI.",
-                                type(openai_exc).__name__,
-                                openai_exc,
-                                exc_info=True,
-                            )
-                            parser = PydanticOutputParser(pydantic_object=schema)
-                            format_instructions = parser.get_format_instructions()
-                            fallback_prompt = f"{prompt}\n\n{format_instructions}"
-                            response = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_openai=True)
-                            return parse_json_response_to_schema(response, schema, parser)
-                    else:
-                        raise anthropic_text_exc
+                        return schema.model_validate(result)
+                    except Exception as openai_exc:
+                        logger.warning(
+                            "OpenAI structured invoke failed (%s): %s. Falling back to PydanticOutputParser via OpenAI.",
+                            type(openai_exc).__name__,
+                            openai_exc,
+                            exc_info=True,
+                        )
+                        parser = PydanticOutputParser(pydantic_object=schema)
+                        format_instructions = parser.get_format_instructions()
+                        fallback_prompt = f"{prompt}\n\n{format_instructions}"
+                        response = self.generate_text(fallback_prompt, system_prompt=system_prompt, force_openai=True)
+                        return parse_json_response_to_schema(response, schema, parser)
+                else:
+                    if anthropic_exc_ref is not None:
+                        raise anthropic_exc_ref
+                    raise RuntimeError("Anthropic structured extraction failed with no fallback configured.")
 
             # 2. If Anthropic is not configured, attempt OpenAI directly
             elif self._openai_chat_model is not None:
