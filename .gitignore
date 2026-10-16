@@ -40,3 +40,5 @@ review_queue/
 .output.txt
 review_ui_scratch/
 
+
+firestore-debug.log
