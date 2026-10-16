@@ -397,3 +397,148 @@ def test_map_12_comma_separated_references_including_synthetic_match():
     if baseline.validation_report:
         tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
         assert tr_findings == []
+
+
+def test_map_14_synthetic_milestone_prefixed_references_full_traceability():
+    """MAP-14: Synthetic SOW references with milestone prefixes (M1-WO-01..M4-WO-08) match perfectly across catalogue and backlog."""
+    # Undivide Project SOW shape: 4 Milestones, 19 Deliverables, 27 bulleted Work Outputs across milestones
+    milestones = [
+        Milestone(id="M1", description="Phase 1 - Data and Backend Foundation"),
+        Milestone(id="M2", description="Phase 2 - LLM Enrichment Layer"),
+        Milestone(id="M3", description="Phase 3 - Access Control, Observability, and Pilot Readiness"),
+        Milestone(id="M4", description="Phase 4 - Launch and Handoff"),
+    ]
+    deliv_names = [
+        "PostgreSQL Core Schema", "Ingestion Engine", "Data Migration Scripts", "Transformation Worker", "Validation Rules",
+        "LLM API Gateway", "Inference Router", "Prompt Pipeline", "Context Enrichment", "Vector Store",
+        "RBAC Module", "Audit Logger", "Observability Dashboard", "Alerting Policies", "Load Testing Report",
+        "Security Review", "Operator Runbook", "UAT Sign-off Report", "Pilot Deployment Package"
+    ]
+    delivs = [
+        Deliverable(id=f"DEL-{i+1:02d}", name=deliv_names[i], description=f"Scope for {deliv_names[i]}", sow_reference="")
+        for i in range(19)
+    ]
+    catalogue_items = []
+    # 27 catalogue items distributed across 19 deliverables
+    # M1: 7 work items (M1-WO-01 .. M1-WO-07) mapped to DEL-01..DEL-05
+    for i in range(1, 8):
+        deliv_idx = min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"M1-WO-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Database schema and migrations component {i}",
+            phase="Phase 1",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    # M2: 6 work items (M2-WO-01 .. M2-WO-06) mapped to DEL-06..DEL-10
+    for i in range(1, 7):
+        deliv_idx = 5 + min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"M2-WO-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"LLM gateway component {i}",
+            phase="Phase 2",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    # M3: 6 work items (M3-WO-01 .. M3-WO-06) mapped to DEL-11..DEL-15
+    for i in range(1, 7):
+        deliv_idx = 10 + min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"M3-WO-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Security component {i}",
+            phase="Phase 3",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    # M4: 8 work items (M4-WO-01 .. M4-WO-08) mapped to DEL-16..DEL-19
+    for i in range(1, 9):
+        deliv_idx = 15 + min(i, 4)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"M4-WO-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Deployment component {i}",
+            phase="Phase 4",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+
+    assert len(catalogue_items) == 27
+
+    baseline = StartupKitBaseline(
+        project_name="The Undivide Project - Pilot-Ready Product Implementation",
+        deliverables=delivs,
+        milestones=milestones,
+        sow_stories_catalogue=catalogue_items,
+        backlog_seed=[]
+    )
+
+    validate_and_repair_baseline(baseline)
+
+    # Confirm backlog seed was rebuilt preserving full milestone-prefixed references
+    assert len(baseline.backlog_seed) == 27
+    assert baseline.backlog_seed[0].sow_reference == "M1-WO-01"
+    assert baseline.backlog_seed[26].sow_reference == "M4-WO-08"
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 16))
+
+    # Zero unmatched findings in workbook traceability
+    sow_trace = wb.traceability["SOW References"]
+    assert sow_trace["missing_ids"] == [], f"Expected 0 missing IDs, got {len(sow_trace['missing_ids'])}: {sow_trace['missing_ids']}"
+    assert sow_trace["in_baseline"] == 27
+    assert sow_trace["in_workbook"] == 27
+
+    # Zero TR-01 findings in validation report
+    if baseline.validation_report:
+        tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
+        assert tr_findings == []
+
+
+def test_map_13_deliverable_milestone_header_fragment_cleaned_to_fallback():
+    """MAP-13: Garbage milestone header fragments like '(- Data and Backend Foundation)' are cleaned to clean fallback."""
+    delivs = [
+        Deliverable(id="DEL-01", name="PostgreSQL Core Schema", description="Database schema", sow_reference="(- Data and Backend Foundation)"),
+        Deliverable(id="DEL-02", name="LLM Inference Gateway", description="Inference layer", sow_reference="(- LLM Enrichment Layer)"),
+        Deliverable(id="DEL-03", name="Pilot Deployment", description="Launch", sow_reference="(- Access Control, Observability, and Pilot Readiness), (- Launch and Handoff)"),
+    ]
+    milestones = [
+        Milestone(id="M1", description="Phase 1 - Data and Backend Foundation"),
+        Milestone(id="M2", description="Phase 2 - LLM Enrichment Layer"),
+        Milestone(id="M3", description="Phase 3 - Access Control, Observability, and Pilot Readiness"),
+        Milestone(id="M4", description="Phase 4 - Launch and Handoff"),
+    ]
+    catalogue = [
+        SOWWorkItem(reference="M1-WO-01", reference_kind="Synthetic", title="Core Schema", phase="Phase 1", owner="Toptal", type="Build"),
+        SOWWorkItem(reference="M2-WO-01", reference_kind="Synthetic", title="LLM Gateway", phase="Phase 2", owner="Toptal", type="Build"),
+        SOWWorkItem(reference="M4-WO-01", reference_kind="Synthetic", title="Pilot Deployment", phase="Phase 4", owner="Toptal", type="Build"),
+    ]
+    baseline = StartupKitBaseline(
+        project_name="The Undivide Project",
+        deliverables=delivs,
+        milestones=milestones,
+        sow_stories_catalogue=catalogue,
+        backlog_seed=[]
+    )
+
+    validate_and_repair_baseline(baseline)
+
+    # Deliverables should have clean sow_reference (empty string / no garbage milestone header text)
+    for d in baseline.deliverables:
+        assert "(- " not in (d.sow_reference or "")
+        assert "Data and Backend Foundation" not in (d.sow_reference or "")
+        assert "LLM Enrichment Layer" not in (d.sow_reference or "")
+        assert "Launch and Handoff" not in (d.sow_reference or "")
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 16))
+
+    # Verify that no garbage fragments appear in workbook schedule or traceability
+    sow_trace = wb.traceability["SOW References"]
+    for missing_id in sow_trace["missing_ids"]:
+        assert "(-" not in missing_id
+        assert "Backend Foundation" not in missing_id

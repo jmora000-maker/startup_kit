@@ -162,7 +162,7 @@ def detect_sow_reference_kind(ref: str) -> Optional[str]:
     if not ref:
         return None
     ref_clean = ref.strip()
-    if ref_clean.upper().startswith("SOW-"):
+    if ref_clean.upper().startswith("SOW-") or re.fullmatch(r"(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+-\d{1,6}", ref_clean, re.IGNORECASE):
         return "Synthetic"
     for kind, pattern in SOW_REFERENCE_PATTERNS:
         m = re.search(pattern, ref_clean, re.IGNORECASE)
@@ -179,50 +179,73 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
         return []
     results: list[tuple[str, str]] = []
     seen: set[str] = set()
+    matched_spans: list[tuple[int, int]] = []
 
-    # Synthetic references pattern: SOW-{phase code or milestone ID}-{nn} or SOW-{nn}
-    synthetic_pattern = r"\bSOW-(?:[A-Za-z0-9]+-)?\d{2,4}\b"
+    def _overlaps(start: int, end: int) -> bool:
+        for s_start, s_end in matched_spans:
+            if not (end <= s_start or start >= s_end):
+                return True
+        return False
+
+    # Synthetic references pattern: SOW-{phase code or milestone ID}-{nn}, SOW-{nn}, or milestone/phase prefixed synthetic references (e.g. M1-WO-01, P1-WO-01)
+    synthetic_pattern = r"\b(?:SOW-(?:[A-Za-z0-9]+-)?\d{2,4}|(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+-\d{1,6})\b"
     for m in re.finditer(synthetic_pattern, text, re.IGNORECASE):
-        val = m.group(0).strip()
-        if val.upper() not in seen:
-            seen.add(val.upper())
-            results.append((val, "Synthetic"))
+        start, end = m.span()
+        if not _overlaps(start, end):
+            matched_spans.append((start, end))
+            val = m.group(0).strip()
+            if val.upper() not in seen:
+                seen.add(val.upper())
+                results.append((val, "Synthetic"))
 
     # Plural deliverable patterns: e.g. "Deliverables 2.2 and 3.1", "Deliverables 1.1, 2.2 and 3.3"
     plural_deliv_pattern = r"\bDeliverables\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
     for m in re.finditer(plural_deliv_pattern, text, re.IGNORECASE):
-        num_str = m.group(1)
-        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
-        for num in nums:
-            deliv_id = f"Deliverable {num}"
-            if deliv_id.upper() not in seen:
-                seen.add(deliv_id.upper())
-                results.append((deliv_id, "Deliverable number"))
+        start, end = m.span()
+        if not _overlaps(start, end):
+            matched_spans.append((start, end))
+            num_str = m.group(1)
+            nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+            for num in nums:
+                deliv_id = f"Deliverable {num}"
+                if deliv_id.upper() not in seen:
+                    seen.add(deliv_id.upper())
+                    results.append((deliv_id, "Deliverable number"))
 
     # Plural work output patterns: e.g. "Work Outputs 1 and 2", "Work Outputs 1.1, 2.2 and 3.3"
     plural_wo_pattern = r"\bWork\s+Outputs\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
     for m in re.finditer(plural_wo_pattern, text, re.IGNORECASE):
-        num_str = m.group(1)
-        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
-        for num in nums:
-            wo_id = f"Work Output {num}"
-            if wo_id.upper() not in seen:
-                seen.add(wo_id.upper())
-                results.append((wo_id, "Deliverable number"))
+        start, end = m.span()
+        if not _overlaps(start, end):
+            matched_spans.append((start, end))
+            num_str = m.group(1)
+            nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+            for num in nums:
+                wo_id = f"Work Output {num}"
+                if wo_id.upper() not in seen:
+                    seen.add(wo_id.upper())
+                    results.append((wo_id, "Deliverable number"))
 
     # Plural task patterns: e.g. "Tasks 1.1 and 1.2"
     plural_task_pattern = r"\b(?:Tasks|WBS)\s+((?:\d+(?:\.\d+)*\s*(?:,|and|&)\s*)+\d+(?:\.\d+)*)\b"
     for m in re.finditer(plural_task_pattern, text, re.IGNORECASE):
-        num_str = m.group(1)
-        nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
-        for num in nums:
-            task_id = f"Task {num}"
-            if task_id.upper() not in seen:
-                seen.add(task_id.upper())
-                results.append((task_id, "Task or WBS code"))
+        start, end = m.span()
+        if not _overlaps(start, end):
+            matched_spans.append((start, end))
+            num_str = m.group(1)
+            nums = re.findall(r"\b\d+(?:\.\d+)*\b", num_str)
+            for num in nums:
+                task_id = f"Task {num}"
+                if task_id.upper() not in seen:
+                    seen.add(task_id.upper())
+                    results.append((task_id, "Task or WBS code"))
 
     for kind, pattern in SOW_REFERENCE_PATTERNS:
         for m in re.finditer(pattern, text, re.IGNORECASE):
+            start, end = m.span()
+            if _overlaps(start, end):
+                continue
+            matched_spans.append((start, end))
             val = m.group(0).strip()
             if kind == "Story ID" and is_tool_reserved_id(val):
                 continue
@@ -268,6 +291,7 @@ def normalize_sow_reference(ref: str) -> str:
     - Story 1, Story 01, STORY-12 -> STORY:1, STORY:12
     - SOW-01, SOW-1 -> SYNTH:1
     - SOW-P1-01 -> SYNTH:P1:1
+    - M1-WO-01, M1-WO-1 -> SYNTH:M1:WO:1
     - Task 1, TASK-01, T-01 -> TASK:1
     - WBS 1.1 -> WBS:1.1
     - Section 3.1, Clause 4, § 2.1 -> SECTION:3.1, SECTION:4, SECTION:2.1
@@ -276,6 +300,16 @@ def normalize_sow_reference(ref: str) -> str:
     if not ref:
         return ""
     s = ref.strip()
+
+    # Milestone/Phase-prefixed synthetic Work Output: e.g. M1-WO-01, M1-WO-1, P1-WO-02
+    m = re.fullmatch(r"(M\d+|P\d+[a-z]?)[\s\-_]+(?:Work\s+Output[s]?|WO)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"SYNTH:{m.group(1).upper()}:WO:{_normalize_num(m.group(2))}"
+
+    # Milestone/Phase-prefixed other synthetic item: e.g. M1-DEL-01, P1-ITEM-01
+    m = re.fullmatch(r"(M\d+|P\d+[a-z]?)[\s\-_]+([A-Za-z][A-Za-z0-9]{0,9})[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
+    if m:
+        return f"SYNTH:{m.group(1).upper()}:{m.group(2).upper()}:{_normalize_num(m.group(3))}"
 
     # 1. Work Output: WO-01, WO 1, Work Output 1, Work Output-01, Work Output #1, WO1
     m = re.fullmatch(r"(?:Work\s+Output[s]?|WO)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
@@ -287,7 +321,7 @@ def normalize_sow_reference(ref: str) -> str:
     if m:
         return f"DEL:{_normalize_num(m.group(1))}"
 
-    # 3. Phased Synthetic: SOW-P1-01, SOW-P2a-02
+    # 3. Phased Synthetic: SOW-P1-01, SOW-P2a-02, SOW-M1-01
     m = re.fullmatch(r"SOW[\s\-_#]*([A-Za-z0-9]+)[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"SYNTH:{m.group(1).upper()}:{_normalize_num(m.group(2))}"

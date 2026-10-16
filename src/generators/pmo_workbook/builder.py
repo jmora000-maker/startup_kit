@@ -251,10 +251,11 @@ def extract_story_ids_for_deliverable(d: Deliverable) -> List[str]:
                 for s in extracted:
                     if s not in stories:
                         stories.append(s)
-            elif not re.fullmatch(r"P\d+[a-z]?", p, re.IGNORECASE):
-                # MAP-12: Non-numeric synthetic reference (e.g. "Hypercare Capacity"), excluding bare phase codes (e.g. "P1")
-                if p not in stories:
-                    stories.append(p)
+            elif not re.fullmatch(r"P\d+[a-z]?", p, re.IGNORECASE) and not p.startswith("(") and not re.search(r'\b(?:Milestone\s+\d+|Phase\s+\d+[a-z]?)\b', p, re.IGNORECASE):
+                # MAP-12: Non-numeric synthetic reference (e.g. "Hypercare Capacity"), excluding bare phase codes (e.g. "P1") and milestone header fragments
+                p_clean = p.strip(" ;,-\t\r\n()")
+                if p_clean and p_clean not in stories:
+                    stories.append(p_clean)
     # 2. From name or description if any
     text = f"{d.name or ''} {d.description or ''}"
     for s in extract_sow_references(text):
@@ -922,7 +923,7 @@ def build_workbook_model(
                 story_catalogue_titles[ref_val] = st.title
 
     # If no story/work item IDs exist anywhere in deliverables or catalogue, build synthetic work items (v6 Section 1.1)
-    has_any_sow_refs = any(extract_story_ids_for_deliverable(d) for d in filtered_deliverables)
+    has_any_sow_refs = any(extract_story_ids_for_deliverable(d) for d in filtered_deliverables) or bool(getattr(baseline, "sow_stories_catalogue", None))
     if not has_any_sow_refs:
         synthetic_items = build_synthetic_work_items(baseline)
         if synthetic_items:
@@ -1374,6 +1375,26 @@ def build_workbook_model(
                 non_degen_wps = [wp for wp in matched_wps if wp.id not in degenerate_wp_ids]
                 degen_wps = [wp for wp in matched_wps if wp.id in degenerate_wp_ids]
                 d_source_id = ", ".join(wp.id for wp in degen_wps) if degen_wps else ""
+
+                # If degenerate work packages carry SOW references, include them in deliverable's story IDs
+                for wp in degen_wps:
+                    if wp.sow_reference:
+                        for part in wp.sow_reference.split(","):
+                            p = part.strip()
+                            if not p:
+                                continue
+                            ext = extract_sow_references(p)
+                            if ext:
+                                for s in ext:
+                                    if s not in d_story_ids:
+                                        d_story_ids.append(s)
+                            elif p not in d_story_ids:
+                                d_story_ids.append(p)
+                    if wp.title:
+                        for s in extract_sow_references(wp.title):
+                            if s not in d_story_ids:
+                                d_story_ids.append(s)
+                d_sow_stories_str = ", ".join(d_story_ids)
 
                 # Work type classification
                 work_type, task_templates = classify_deliverable_work_type(d_name)

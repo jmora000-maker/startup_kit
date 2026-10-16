@@ -514,6 +514,13 @@ def validate_contract_ambiguities(baseline: StartupKitBaseline, findings: List[V
 
 def validate_one_numbering_system(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
     """VAL-06: Deliverable SOW references hold references only; phase context stored separately."""
+    catalogue_refs = set()
+    if baseline.sow_stories_catalogue:
+        for st in baseline.sow_stories_catalogue:
+            ref_val = getattr(st, "reference", None) or getattr(st, "id", None)
+            if ref_val:
+                catalogue_refs.add(ref_val.strip().upper())
+
     for d in baseline.deliverables:
         if d.sow_reference:
             clean_sow_ref = re.sub(r'\b(?:Milestone\s+\d+|Phase\s+\d+[a-z]?):?\s*', '', d.sow_reference, flags=re.IGNORECASE).strip(" ;,")
@@ -521,7 +528,16 @@ def validate_one_numbering_system(baseline: StartupKitBaseline, findings: List[V
             if refs:
                 d.sow_reference = ", ".join(refs)
             else:
-                d.sow_reference = clean_sow_ref if clean_sow_ref else ""
+                # MAP-13: Handle non-numeric synthetic references (MAP-12) vs garbage milestone headers/filler text
+                parts = [p.strip(" ;,-\t\r\n()") for p in clean_sow_ref.split(",") if p.strip(" ;,-\t\r\n()")]
+                valid_parts: List[str] = []
+                for p in parts:
+                    if p.upper() in catalogue_refs:
+                        valid_parts.append(p)
+                if valid_parts:
+                    d.sow_reference = ", ".join(valid_parts)
+                else:
+                    d.sow_reference = ""
 
 
 def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
