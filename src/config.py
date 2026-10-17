@@ -162,7 +162,8 @@ def detect_sow_reference_kind(ref: str) -> Optional[str]:
     if not ref:
         return None
     ref_clean = ref.strip()
-    if ref_clean.upper().startswith("SOW-") or re.fullmatch(r"(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+-\d{1,6}", ref_clean, re.IGNORECASE):
+    norm = normalize_sow_reference(ref_clean)
+    if norm.startswith("SYNTH:"):
         return "Synthetic"
     for kind, pattern in SOW_REFERENCE_PATTERNS:
         m = re.search(pattern, ref_clean, re.IGNORECASE)
@@ -187,8 +188,17 @@ def extract_sow_references_with_kind(text: str) -> list[tuple[str, str]]:
                 return True
         return False
 
-    # Synthetic references pattern: SOW-{phase code or milestone ID}-{nn}, SOW-{nn}, or milestone/phase prefixed synthetic references (e.g. M1-WO-01, P1-WO-01)
-    synthetic_pattern = r"\b(?:SOW-(?:[A-Za-z0-9]+-)?\d{2,4}|(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+-\d{1,6})\b"
+    # Synthetic references pattern: SOW-{phase code or milestone ID}-{nn}, SOW-{nn}, or milestone/phase synthetic references in any token order (e.g. M1-WO-01, WO-M1-01, P1-WO-01, 01-M1-WO)
+    synthetic_pattern = (
+        r"\b(?:"
+        r"SOW-(?:[A-Za-z0-9]+-)?\d{1,6}"
+        r"|(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+-\d{1,6}"
+        r"|[A-Za-z0-9]+-(?:M\d+|P\d+[a-z]?)-\d{1,6}"
+        r"|\d{1,6}-(?:M\d+|P\d+[a-z]?)-[A-Za-z0-9]+"
+        r"|(?:M\d+|P\d+[a-z]?)-\d{1,6}-[A-Za-z0-9]+"
+        r"|[A-Za-z0-9]+-\d{1,6}-(?:M\d+|P\d+[a-z]?)"
+        r")\b"
+    )
     for m in re.finditer(synthetic_pattern, text, re.IGNORECASE):
         start, end = m.span()
         if not _overlaps(start, end):
@@ -283,15 +293,17 @@ def _normalize_num(num_str: str) -> str:
 
 
 def normalize_sow_reference(ref: str) -> str:
-    """Normalize SOW reference identifier into a canonical form for comparison (MAP-08).
+    """Normalize SOW reference identifier into a canonical form for comparison (MAP-08, MAP-14).
 
-    Examples:
+    Order-independent for compound synthetic references:
+    - M1-WO-01, WO-M1-01, 01-M1-WO, WO-01-M1 -> SYNTH:M1:WO:1
+    - P1-WO-02, WO-P1-02 -> SYNTH:P1:WO:2
+    - M1-DEL-01, DEL-M1-01 -> SYNTH:M1:DEL:1
+    - SOW-P1-01, P1-SOW-01, SOW-M1-01, M1-SOW-01 -> SYNTH:P1:1 / SYNTH:M1:1
+    - SOW-01, SOW-1 -> SYNTH:1
     - WO-01, Work Output 1 -> WO:1
     - Deliverable 1, D01, DEL-01 -> DEL:1
     - Story 1, Story 01, STORY-12 -> STORY:1, STORY:12
-    - SOW-01, SOW-1 -> SYNTH:1
-    - SOW-P1-01 -> SYNTH:P1:1
-    - M1-WO-01, M1-WO-1 -> SYNTH:M1:WO:1
     - Task 1, TASK-01, T-01 -> TASK:1
     - WBS 1.1 -> WBS:1.1
     - Section 3.1, Clause 4, § 2.1 -> SECTION:3.1, SECTION:4, SECTION:2.1
@@ -301,42 +313,88 @@ def normalize_sow_reference(ref: str) -> str:
         return ""
     s = ref.strip()
 
-    # Milestone/Phase-prefixed synthetic Work Output: e.g. M1-WO-01, M1-WO-1, P1-WO-02
-    m = re.fullmatch(r"(M\d+|P\d+[a-z]?)[\s\-_]+(?:Work\s+Output[s]?|WO)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
-    if m:
-        return f"SYNTH:{m.group(1).upper()}:WO:{_normalize_num(m.group(2))}"
+    # 1. Check for compound milestone/phase synthetic reference in any token ordering.
+    tokens = [t.strip() for t in re.split(r"[\s\-_#/]+", s) if t.strip()]
+    if len(tokens) >= 2:
+        phase_token = None
+        num_token = None
+        kind_token = None
+        other_tokens = []
 
-    # Milestone/Phase-prefixed other synthetic item: e.g. M1-DEL-01, P1-ITEM-01
-    m = re.fullmatch(r"(M\d+|P\d+[a-z]?)[\s\-_]+([A-Za-z][A-Za-z0-9]{0,9})[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
-    if m:
-        return f"SYNTH:{m.group(1).upper()}:{m.group(2).upper()}:{_normalize_num(m.group(3))}"
+        for tok in tokens:
+            if re.fullmatch(r"(?:Milestone\s*)?M\d+(?:\.\d+)*|(?:Phase\s*)?P\d+[a-z]?", tok, re.IGNORECASE):
+                if phase_token is None:
+                    phase_token = re.sub(r"^(?:Milestone|Phase)\s*", "", tok, flags=re.IGNORECASE).upper()
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"\d+(?:\.\d+)*", tok):
+                if num_token is None:
+                    num_token = _normalize_num(tok)
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"Work\s*Outputs?|WO", tok, re.IGNORECASE):
+                if kind_token is None:
+                    kind_token = "WO"
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"Deliverables?|DEL|D", tok, re.IGNORECASE):
+                if kind_token is None:
+                    kind_token = "DEL"
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"SOW", tok, re.IGNORECASE):
+                if kind_token is None:
+                    kind_token = "SOW"
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"Story|Stories", tok, re.IGNORECASE):
+                if kind_token is None:
+                    kind_token = "STORY"
+                else:
+                    other_tokens.append(tok)
+            elif re.fullmatch(r"Tasks?|TASK|T", tok, re.IGNORECASE):
+                if kind_token is None:
+                    kind_token = "TASK"
+                else:
+                    other_tokens.append(tok)
+            else:
+                other_tokens.append(tok)
 
-    # 1. Work Output: WO-01, WO 1, Work Output 1, Work Output-01, Work Output #1, WO1
+        if phase_token and num_token:
+            if not other_tokens:
+                if kind_token and kind_token != "SOW":
+                    return f"SYNTH:{phase_token}:{kind_token}:{num_token}"
+                return f"SYNTH:{phase_token}:{num_token}"
+            elif len(other_tokens) == 1 and not kind_token:
+                custom_kind = other_tokens[0].upper()
+                return f"SYNTH:{phase_token}:{custom_kind}:{num_token}"
+
+    # 2. Work Output: WO-01, WO 1, Work Output 1, Work Output-01, Work Output #1, WO1
     m = re.fullmatch(r"(?:Work\s+Output[s]?|WO)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"WO:{_normalize_num(m.group(1))}"
 
-    # 2. Deliverable: Deliverable 1, Deliverable 1.1, D1, D01, D-01, DEL-01, DEL-1
+    # 3. Deliverable: Deliverable 1, Deliverable 1.1, D1, D01, D-01, DEL-01, DEL-1
     m = re.fullmatch(r"(?:Deliverable[s]?|DEL|D)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"DEL:{_normalize_num(m.group(1))}"
 
-    # 3. Phased Synthetic: SOW-P1-01, SOW-P2a-02, SOW-M1-01
+    # 4. Phased Synthetic: SOW-P1-01, SOW-P2a-02, SOW-M1-01
     m = re.fullmatch(r"SOW[\s\-_#]*([A-Za-z0-9]+)[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"SYNTH:{m.group(1).upper()}:{_normalize_num(m.group(2))}"
 
-    # 4. Unphased Synthetic: SOW-01, SOW-1
+    # 5. Unphased Synthetic: SOW-01, SOW-1
     m = re.fullmatch(r"SOW[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"SYNTH:{_normalize_num(m.group(1))}"
 
-    # 5. Real Story: Story 1, Story 01, Story-01, STORY-12, STORY-01
+    # 6. Real Story: Story 1, Story 01, Story-01, STORY-12, STORY-01
     m = re.fullmatch(r"(?:Story|Stories|STORY)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"STORY:{_normalize_num(m.group(1))}"
 
-    # 6. Task / WBS: Task 1, Task 01, Task 1.1, TASK-01, T-01
+    # 7. Task / WBS: Task 1, Task 01, Task 1.1, TASK-01, T-01
     m = re.fullmatch(r"(?:Task[s]?|TASK|T)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"TASK:{_normalize_num(m.group(1))}"
@@ -345,12 +403,12 @@ def normalize_sow_reference(ref: str) -> str:
     if m:
         return f"WBS:{_normalize_num(m.group(1))}"
 
-    # 7. Section / Clause: Section 3.1, Clause 4, § 2.1
+    # 8. Section / Clause: Section 3.1, Clause 4, § 2.1
     m = re.fullmatch(r"(?:Section[s]?|Sec\.?|Clause|§)[\s\-_#]*(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"SECTION:{_normalize_num(m.group(1))}"
 
-    # 8. Generic Prefix-Number: PROJ-101, JIRA-101, FEAT-01
+    # 9. Generic Prefix-Number: PROJ-101, JIRA-101, FEAT-01
     m = re.fullmatch(r"([A-Za-z][A-Za-z0-9]{1,9})[\s\-_#]+(\d+(?:\.\d+)*)", s, re.IGNORECASE)
     if m:
         return f"{m.group(1).upper()}:{_normalize_num(m.group(2))}"

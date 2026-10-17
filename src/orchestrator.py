@@ -522,10 +522,17 @@ class StartupKitController:
             baseline_dict = baseline.model_dump(mode="json")
             validation_report_dict = validation_report.model_dump(mode="json")
             project_name = baseline.project_name or "Project Baseline"
+            outputs_dict = {
+                "kit": outputs.kit,
+                "checklist": outputs.checklist,
+                "workbook": outputs.workbook,
+                "slides": outputs.slides,
+            } if outputs else None
             run_id = storage.create_run(
                 project_name=project_name,
                 baseline=baseline_dict,
                 validation_report=validation_report_dict,
+                outputs=outputs_dict,
             )
             logger.info("Paused run created in review queue: %s", run_id)
             fallback_domains = list(getattr(self.llm_client, "fallback_domains", []) or [])

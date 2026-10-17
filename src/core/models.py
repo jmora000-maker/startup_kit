@@ -259,9 +259,6 @@ class Deliverable(BaseModel):
             self.name = self.description
         elif not self.description and self.name:
             self.description = self.name
-        if not self.sow_reference and self.source_reference:
-            loc = f" ({self.source_reference.clause_or_slide})" if self.source_reference.clause_or_slide else ""
-            self.sow_reference = f"{self.source_reference.document_name}{loc}"
 
 
 class Milestone(BaseModel):
@@ -765,6 +762,7 @@ class ReviewRun(ReviewRunSummary):
     content it was created with."""
     baseline: Dict[str, Any]
     validation_report: Dict[str, Any]
+    outputs: Optional[Dict[str, bool]] = Field(default=None)
 
 
 # Intermediate domain extraction schemas for multi-pass LLM prompts

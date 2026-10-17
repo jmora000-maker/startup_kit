@@ -399,8 +399,8 @@ def test_map_12_comma_separated_references_including_synthetic_match():
         assert tr_findings == []
 
 
-def test_map_14_synthetic_milestone_prefixed_references_full_traceability():
-    """MAP-14: Synthetic SOW references with milestone prefixes (M1-WO-01..M4-WO-08) match perfectly across catalogue and backlog."""
+def test_map_14_synthetic_milestone_prefixed_references_milestone_first_ordering():
+    """MAP-14: Synthetic SOW references with milestone-first ordering (M1-WO-01..M4-WO-08) match perfectly across catalogue and backlog."""
     # Undivide Project SOW shape: 4 Milestones, 19 Deliverables, 27 bulleted Work Outputs across milestones
     milestones = [
         Milestone(id="M1", description="Phase 1 - Data and Backend Foundation"),
@@ -498,6 +498,199 @@ def test_map_14_synthetic_milestone_prefixed_references_full_traceability():
     if baseline.validation_report:
         tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
         assert tr_findings == []
+
+
+def test_map_14_synthetic_milestone_prefixed_references_wo_first_ordering():
+    """MAP-14 (reopened): Synthetic SOW references with WO-first ordering (WO-M1-01..WO-M4-08) match perfectly across catalogue and backlog."""
+    # Run 2 SOW shape: WO-prefix-first catalogue references (WO-M1-01 .. WO-M4-08)
+    milestones = [
+        Milestone(id="M1", description="Phase 1 - Data and Backend Foundation"),
+        Milestone(id="M2", description="Phase 2 - LLM Enrichment Layer"),
+        Milestone(id="M3", description="Phase 3 - Access Control, Observability, and Pilot Readiness"),
+        Milestone(id="M4", description="Phase 4 - Launch and Handoff"),
+    ]
+    deliv_names = [
+        "Postgres Schema and Facility Data Migration",
+        "Normalization Layer and Ingestion Framework",
+        "Infrastructure-as-Code for AWS Data Tier",
+        "Launch Source Ingestion Connectors with Data-Quality Checks",
+        "Scraper Interface Specification and News-Site Scraper Connector",
+        "Authenticated API and Backend Test Suite",
+        "LLM Enrichment Service",
+        "Confidence-Score Capture and Review-Queue Routing",
+        "Review-Queue Admin User Interface",
+        "Prompt Versioning, Output Caching and Cost Controls",
+        "Ingestion Normalizer Test Suite",
+        "Role-Based Access Control for Four Personas",
+        "Role-Based Views and Admin Panel",
+        "Observability Stack",
+        "CI/CD Pipeline and Integrated Staging Deployment",
+        "Production Deployment and Pilot Partner Onboarding Support",
+        "Architecture, Runbook and Data Structure Documentation",
+        "Mentoring Runbook",
+        "Design Handoff, Knowledge Transfer and Handover Checklist"
+    ]
+    delivs = [
+        Deliverable(id=f"DEL-{i+1:02d}", name=deliv_names[i], description=f"Scope for {deliv_names[i]}", sow_reference="")
+        for i in range(19)
+    ]
+    catalogue_items = []
+    # 27 catalogue items distributed across 19 deliverables with WO-M{x}-{yy} ordering
+    for i in range(1, 8):
+        deliv_idx = min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"WO-M1-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Database schema and migrations component {i}",
+            phase="Phase 1",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    for i in range(1, 7):
+        deliv_idx = 5 + min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"WO-M2-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"LLM gateway component {i}",
+            phase="Phase 2",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    for i in range(1, 7):
+        deliv_idx = 10 + min(i, 5)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"WO-M3-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Security component {i}",
+            phase="Phase 3",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+    for i in range(1, 9):
+        deliv_idx = 15 + min(i, 4)
+        catalogue_items.append(SOWWorkItem(
+            reference=f"WO-M4-{i:02d}",
+            reference_kind="Synthetic",
+            title=f"Deployment component {i}",
+            phase="Phase 4",
+            owner="Toptal Delivery Team",
+            type="Build",
+            deliverable_id=f"DEL-{deliv_idx:02d}"
+        ))
+
+    assert len(catalogue_items) == 27
+
+    baseline = StartupKitBaseline(
+        project_name="The Undivide Project - Pilot-Ready Product Implementation",
+        deliverables=delivs,
+        milestones=milestones,
+        sow_stories_catalogue=catalogue_items,
+        backlog_seed=[]
+    )
+
+    validate_and_repair_baseline(baseline)
+
+    # Confirm backlog seed preserves the full WO-M1-01 string without dropping WO token
+    assert len(baseline.backlog_seed) == 27
+    assert baseline.backlog_seed[0].sow_reference == "WO-M1-01"
+    assert baseline.backlog_seed[26].sow_reference == "WO-M4-08"
+
+    wb = build_workbook_model(baseline, today=date(2026, 10, 16))
+
+    # Zero unmatched findings in workbook traceability
+    sow_trace = wb.traceability["SOW References"]
+    assert sow_trace["missing_ids"] == [], f"Expected 0 missing IDs, got {len(sow_trace['missing_ids'])}: {sow_trace['missing_ids']}"
+    assert sow_trace["in_baseline"] == 27
+    assert sow_trace["in_workbook"] == 27
+
+    # Zero TR-01 findings in validation report
+    if baseline.validation_report:
+        tr_findings = [f for f in baseline.validation_report.findings if f.invariant_id == "TR-01" and "Unmatched SOW References" in f.message]
+        assert tr_findings == []
+
+
+def test_map_14_order_independent_synthetic_token_normalization():
+    """MAP-14: Test order-independent canonicalization across diverse token permutations."""
+    # Milestone + WO + Sequence number in various orders
+    assert normalize_sow_reference("M1-WO-01") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("WO-M1-01") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("01-M1-WO") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("WO-01-M1") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("M1-01-WO") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("M1_WO_01") == "SYNTH:M1:WO:1"
+    assert normalize_sow_reference("M1 WO 01") == "SYNTH:M1:WO:1"
+
+    # Phase + WO
+    assert normalize_sow_reference("P1-WO-02") == "SYNTH:P1:WO:2"
+    assert normalize_sow_reference("WO-P1-02") == "SYNTH:P1:WO:2"
+
+    # Milestone/Phase + Deliverable
+    assert normalize_sow_reference("M1-DEL-01") == "SYNTH:M1:DEL:1"
+    assert normalize_sow_reference("DEL-M1-01") == "SYNTH:M1:DEL:1"
+
+    # SOW + Milestone/Phase
+    assert normalize_sow_reference("SOW-P1-01") == "SYNTH:P1:1"
+    assert normalize_sow_reference("P1-SOW-01") == "SYNTH:P1:1"
+    assert normalize_sow_reference("SOW-M1-01") == "SYNTH:M1:1"
+    assert normalize_sow_reference("M1-SOW-01") == "SYNTH:M1:1"
+
+
+def test_map_15_deliverable_empty_sow_reference_with_populated_source_reference_clean_workbook(tmp_path):
+    """MAP-15: Deliverable with empty sow_reference and populated source_reference renders clean empty SOW References column in Workbook."""
+    from src.core.models import SourceReference
+    from src.generators.pmo_workbook import export_pmo_workbook
+    import openpyxl
+
+    deliv = Deliverable(
+        id="DEL-01",
+        name="Ingestion Normalizer Test Suite",
+        description="Comprehensive automated test suite for normalizer",
+        sow_reference="",
+        source_reference=SourceReference(
+            document_name="THE UNDIVIDE PROJECT - SOW 1 + Exhibit A - MD (clean, MF Approved) (1).pdf",
+            clause_or_slide="Exhibit A, Section 3"
+        )
+    )
+
+    # Deliverable sow_reference must remain empty (not populated with document filename citation)
+    assert deliv.sow_reference == ""
+
+    baseline = StartupKitBaseline(
+        project_name="The Undivide Project",
+        deliverables=[deliv],
+        milestones=[Milestone(id="M1", description="Phase 1 - Data Foundation")],
+        sow_stories_catalogue=[],
+        backlog_seed=[]
+    )
+
+    validate_and_repair_baseline(baseline)
+    assert baseline.deliverables[0].sow_reference == ""
+
+    # Generate workbook and verify Project Schedule and WBS sheets
+    res = export_pmo_workbook(baseline, tmp_path, start_date=date(2026, 10, 16))
+    wb = openpyxl.load_workbook(res.file_path)
+
+    # Check Project Schedule sheet
+    ws_sched = wb["Project Schedule"]
+    for r in range(1, ws_sched.max_row + 1):
+        if ws_sched.cell(row=r, column=1).value == "DEL-01":
+            sow_val = ws_sched.cell(row=r, column=7).value
+            assert sow_val is None or sow_val == "", f"Expected empty SOW References in Schedule, got {sow_val!r}"
+            assert "UNDIVIDE" not in str(sow_val)
+            assert "Exhibit A" not in str(sow_val)
+
+    # Check WBS sheet
+    ws_wbs = wb["WBS"]
+    for r in range(1, ws_wbs.max_row + 1):
+        deliv_id = ws_wbs.cell(row=r, column=1).value
+        if deliv_id == "DEL-01":
+            sow_val = ws_wbs.cell(row=r, column=9).value
+            assert sow_val is None or sow_val == "", f"Expected empty SOW References in WBS, got {sow_val!r}"
+            assert "UNDIVIDE" not in str(sow_val)
+            assert "Exhibit A" not in str(sow_val)
 
 
 def test_map_13_deliverable_milestone_header_fragment_cleaned_to_fallback():

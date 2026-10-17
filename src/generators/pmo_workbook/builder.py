@@ -251,8 +251,14 @@ def extract_story_ids_for_deliverable(d: Deliverable) -> List[str]:
                 for s in extracted:
                     if s not in stories:
                         stories.append(s)
-            elif not re.fullmatch(r"P\d+[a-z]?", p, re.IGNORECASE) and not p.startswith("(") and not re.search(r'\b(?:Milestone\s+\d+|Phase\s+\d+[a-z]?)\b', p, re.IGNORECASE):
-                # MAP-12: Non-numeric synthetic reference (e.g. "Hypercare Capacity"), excluding bare phase codes (e.g. "P1") and milestone header fragments
+            elif (
+                not re.fullmatch(r"P\d+[a-z]?", p, re.IGNORECASE)
+                and not p.startswith("(")
+                and not re.search(r'\b(?:Milestone\s+\d+|Phase\s+\d+[a-z]?)\b', p, re.IGNORECASE)
+                and not re.search(r'\.(?:pdf|docx|pptx|txt|xlsx)\b', p, re.IGNORECASE)
+                and not re.search(r'\b(?:Exhibit|Section|Clause)\s+[A-Za-z0-9]+\b', p, re.IGNORECASE)
+            ):
+                # MAP-12: Non-numeric synthetic reference (e.g. "Hypercare Capacity"), excluding bare phase codes (e.g. "P1"), milestone header fragments, and document citations
                 p_clean = p.strip(" ;,-\t\r\n()")
                 if p_clean and p_clean not in stories:
                     stories.append(p_clean)

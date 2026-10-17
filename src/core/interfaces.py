@@ -89,7 +89,13 @@ class ReviewStorage(ABC):
     """
 
     @abstractmethod
-    def create_run(self, project_name: str, baseline: dict, validation_report: dict) -> str:
+    def create_run(
+        self,
+        project_name: str,
+        baseline: dict,
+        validation_report: dict,
+        outputs: Optional[dict] = None,
+    ) -> str:
         """Create a new paused run from a validated baseline and its validation report, and
         return the newly assigned run_id (HTL-03's {sanitize_filename(project_name)}_{YYYYMMDD_HHMMSS}
         shape for the local backend). The run starts in the pending_review state."""

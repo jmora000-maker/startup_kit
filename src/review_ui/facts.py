@@ -550,7 +550,15 @@ def generate_approved_run(
         controller = StartupKitController()
 
     temp_out_dir = Path(tempfile.mkdtemp(prefix=f"startup_kit_resume_{run_id}_"))
-    outputs = outputs or OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
+    if outputs is None and run.outputs is not None:
+        outputs = OutputSelection(
+            kit=bool(run.outputs.get("kit")),
+            checklist=bool(run.outputs.get("checklist")),
+            workbook=bool(run.outputs.get("workbook")),
+            slides=bool(run.outputs.get("slides")),
+        )
+    elif outputs is None:
+        outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
 
     result = controller.generate_from_baseline(
         baseline=baseline,

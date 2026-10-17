@@ -196,3 +196,40 @@ def test_put_generated_files_called_and_returns_valid_file_references(tmp_path):
         target_path = Path(references[fname])
         assert target_path.exists(), f"Referenced file {target_path} does not exist"
         assert target_path.parent == storage_dir / run_id
+
+
+def test_htl_36_document_selection_checkboxes_honored_in_generation(tmp_path):
+    """HTL-36: Generating with only a subset of checkboxes selected produces only those document types' output files, not all four."""
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+
+    baseline = _create_sample_baseline("Subset Selection Project")
+    # User selects only Delivery Workbook and Onboarding Deck on the Generate page
+    outputs_selected = {"kit": False, "checklist": False, "workbook": True, "slides": True}
+
+    run_id = storage.create_run(
+        project_name="Subset Selection Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={},
+        outputs=outputs_selected,
+    )
+
+    # Confirm stored run captures the output selection
+    run = storage.get_run(run_id)
+    assert run.outputs == outputs_selected
+
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    # Resume generation without passing explicit outputs override (it should read from run.outputs)
+    references, result = review.generate_approved_run(run_id, storage=storage)
+
+    # Verify that ONLY Workbook and Deck (with its trace manifest) were generated
+    assert "Subset_Selection_Project_Project_Delivery_Workbook.xlsx" in references
+    assert "Subset_Selection_Project_Talent_Onboarding_Deck.pptx" in references
+    assert "Subset_Selection_Project_Talent_Onboarding_Deck.trace.json" in references
+
+    # Verify that Startup Kit and Readiness Checklist were NOT generated
+    assert "Subset_Selection_Project_Startup_Kit.docx" not in references
+    assert "Subset_Selection_Project_Startup_Readiness_Checklist.docx" not in references
+    assert not (storage_dir / run_id / "Subset_Selection_Project_Startup_Kit.docx").exists()
+    assert not (storage_dir / run_id / "Subset_Selection_Project_Startup_Readiness_Checklist.docx").exists()

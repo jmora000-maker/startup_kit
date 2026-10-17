@@ -69,14 +69,23 @@ class LocalReviewStorage(ReviewStorage):
             raise ValueError(f"run_id does not match HTL-03's shape: {run_id!r}")
         return datetime.strptime(m.group(1), "%Y%m%d_%H%M%S")
 
-    def create_run(self, project_name: str, baseline: dict, validation_report: dict) -> str:
+    def create_run(
+        self,
+        project_name: str,
+        baseline: dict,
+        validation_report: dict,
+        outputs: Optional[dict] = None,
+    ) -> str:
         when = datetime.now()
         run_id = f"{sanitize_filename(project_name)}_{when.strftime('%Y%m%d_%H%M%S')}"
         run_dir = self._run_dir(run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
         self._write_json(self._baseline_path(run_id), baseline)
         self._write_json(self._validation_report_path(run_id), validation_report)
-        self._write_json(self._status_path(run_id), {"state": PENDING_REVIEW})
+        status_data: dict = {"state": PENDING_REVIEW}
+        if outputs is not None:
+            status_data["outputs"] = outputs
+        self._write_json(self._status_path(run_id), status_data)
         return run_id
 
     def get_run(self, run_id: str) -> ReviewRun:
@@ -90,6 +99,7 @@ class LocalReviewStorage(ReviewStorage):
             created_at=self._created_at(run_id),
             baseline=baseline,
             validation_report=validation_report,
+            outputs=status.get("outputs"),
         )
 
     def list_runs(self, state: Optional[str] = None) -> List[ReviewRunSummary]:
@@ -129,7 +139,8 @@ class LocalReviewStorage(ReviewStorage):
             )
         status_path = self._status_path(run_id)
         with _UPDATE_LOCK:
-            current_state = self._read_json(status_path)["state"]
+            status_data = self._read_json(status_path)
+            current_state = status_data["state"]
             if current_state == REJECTED:
                 raise ValueError(
                     f"update_status guard failed for {run_id!r}: run is in terminal 'rejected' state "
@@ -140,7 +151,8 @@ class LocalReviewStorage(ReviewStorage):
                     f"update_status guard failed for {run_id!r}: expected state {if_state!r}, "
                     f"found {current_state!r} (no update applied)."
                 )
-            self._write_json(status_path, {"state": new_state})
+            status_data["state"] = new_state
+            self._write_json(status_path, status_data)
 
     def save_corrected_baseline(self, run_id: str, baseline: dict, audit: dict) -> None:
         self._write_json(self._baseline_path(run_id), baseline)
