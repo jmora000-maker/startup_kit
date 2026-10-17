@@ -44,16 +44,16 @@ def test_alias_fallback_when_no_exact_file_exists():
         oracle = load_oracle(name)
         assert oracle is not None, f"Expected oracle for alias {name}"
         assert oracle.get("gate_count") == 4
-        assert oracle.get("award_date_stated_in_sow") is False
+        assert oracle.get("award_date_stated_in_sow") is True
 
     # Check via load_oracle_for_folder
     oracle_genomics = load_oracle_for_folder(Path("output/arc_genomics"))
     assert oracle_genomics is not None
-    assert oracle_genomics.get("award_date_stated_in_sow") is False
+    assert oracle_genomics.get("award_date_stated_in_sow") is True
 
     oracle_overext = load_oracle_for_folder(Path("output/arc_overextracted"))
     assert oracle_overext is not None
-    assert oracle_overext.get("award_date_stated_in_sow") is False
+    assert oracle_overext.get("award_date_stated_in_sow") is True
 
 
 def test_non_matching_fixture_resolves_to_none():

@@ -16,7 +16,8 @@
     "P3":  ["HS-4825", "HS-4826", "HS-4828", "HS-4943", "HS-4832", "HS-4788", "HS-4829"]
   },
   "client_owned_references": ["HS-4781", "HS-4827", "HS-4824"],
-  "award_date_stated_in_sow": false,
+  "award_date_stated_in_sow": true,
+  "award_date": "2026-10-12",
   "min_evidence_coverage": 0.90,
   "acceptance_mode": "milestone"
 }

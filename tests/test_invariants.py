@@ -428,6 +428,11 @@ def test_inv_33_fails_on_keyword_workstream_with_phase_milestones(base_artifacts
 def test_inv_34_fails_on_assumed_start_date_when_award_date_stated(base_artifacts, tmp_path):
     oracle = dict(_copy_artifacts(base_artifacts, tmp_path))
     oracle["award_date_stated_in_sow"] = True
+    wb_file = list(tmp_path.glob("*_Project_Delivery_Workbook.xlsx"))[0]
+    wb = openpyxl.load_workbook(wb_file)
+    ws = wb["Project Schedule"]
+    ws.cell(row=3, column=1, value="Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline")
+    wb.save(wb_file)
     violations = check_artifacts_directory(tmp_path, oracle_override=oracle)
     assert any(v.inv_id == "INV-34" for v in violations)
 

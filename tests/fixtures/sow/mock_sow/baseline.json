@@ -878,7 +878,8 @@
     "commercial_risk_mitigation": 100.0
   },
   "workflow_state": "Ready for G-01 Gate Review",
-  "sow_awarded_date": "2026-09-30",
+  "sow_awarded_date": "2026-10-12",
+  "award_date_source": "stated",
   "kit_drafted_date": "2026-10-01",
   "sla_met": true,
   "author_name": "Sarah Connor",

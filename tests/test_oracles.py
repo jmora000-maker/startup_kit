@@ -41,4 +41,4 @@ def test_arc_oracle_structure():
     assert len(oracle["sow_reference_phase"]) == 4
     assert "HS-4762" in oracle["sow_reference_phase"]["P1"]
     assert oracle["min_evidence_coverage"] == 0.90
-    assert oracle["award_date_stated_in_sow"] is False
+    assert oracle["award_date_stated_in_sow"] is True
