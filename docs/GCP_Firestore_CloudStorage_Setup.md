@@ -296,6 +296,11 @@ directly, for an unverified amount of real risk.
   two local emulators above via `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080` and
   `STORAGE_EMULATOR_HOST=http://localhost:4443` (no code branching needed between
   emulator and real-cloud paths — same client libraries, different target endpoint).
+- Deploy the composite collection-group index defined in `firestore.indexes.json` to the
+  real `toptal-delivery-apps` project (via `firebase deploy --only firestore:indexes` or the
+  Firestore console) before `query_milestones_by_date_range` will work against real Cloud
+  Firestore — it works fine against the emulator today, but real Cloud Firestore requires
+  this index explicitly provisioned and will fail in production without it.
 - Swap the app's storage layer from `review_queue/` local files to this new backend.
 - Real GCP credentials setup for when the app is deployed to Cloud Run (a separate,
   final verification step — nearly all of the storage-layer code above can be built and
