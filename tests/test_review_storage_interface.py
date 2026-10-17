@@ -6,7 +6,7 @@ import os
 import pytest
 
 from src.config import config
-from src.review_storage import get_review_storage
+from src.review_storage import get_review_storage, FirestoreReviewStorage
 from src.review_storage.local import LocalReviewStorage
 
 BASELINE = {"project_name": "Acme Project", "governance_tier": "Elevated"}
@@ -140,10 +140,10 @@ def test_pytest_uses_local_backend_even_when_review_storage_backend_env_is_gcp(m
     assert isinstance(get_review_storage(), LocalReviewStorage)
 
 
-def test_gcp_backend_raises_not_implemented(monkeypatch):
+def test_gcp_backend_returns_firestore_review_storage(monkeypatch):
     monkeypatch.setattr(config, "review_storage_backend", "gcp")
-    with pytest.raises(NotImplementedError):
-        get_review_storage()
+    storage = get_review_storage()
+    assert isinstance(storage, FirestoreReviewStorage)
 
 
 def test_unknown_backend_raises_value_error(monkeypatch):

@@ -9,9 +9,10 @@ already follows for live LLM calls.
 
 from src.config import config
 from src.core.interfaces import ReviewStorage
+from src.review_storage.firestore import FirestoreReviewStorage
 from src.review_storage.local import LocalReviewStorage
 
-__all__ = ["ReviewStorage", "LocalReviewStorage", "get_review_storage"]
+__all__ = ["ReviewStorage", "LocalReviewStorage", "FirestoreReviewStorage", "get_review_storage"]
 
 
 def get_review_storage() -> ReviewStorage:
@@ -19,9 +20,6 @@ def get_review_storage() -> ReviewStorage:
     backend = config.review_storage_backend
     if backend == "local":
         return LocalReviewStorage()
-    if backend == "gcp":
-        # HTL-14 builds the Firestore/Cloud Storage backend; not implemented by this step.
-        raise NotImplementedError(
-            "The 'gcp' ReviewStorage backend is not implemented yet (HTL-14)."
-        )
+    if backend in ("gcp", "firestore"):
+        return FirestoreReviewStorage()
     raise ValueError(f"Unknown REVIEW_STORAGE_BACKEND: {backend!r} (expected 'local' or 'gcp')")
