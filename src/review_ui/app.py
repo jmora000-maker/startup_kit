@@ -14,6 +14,7 @@ This is the one app entry point with two pages, selected from the sidebar:
   review_queue/state-machine plumbing (HTL-01 through HTL-05, HTL-13), which is later work.
 """
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,8 @@ from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
 from src.review_ui import state_persistence  # noqa: E402
 from src.review_ui.constants import CONTRACT_TYPES, GOVERNANCE_TIERS, resolve_select_index  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 DEMO_FIXTURE_LABEL = review.DEMO_FIXTURE_OPTION
 
@@ -281,27 +284,45 @@ def _render_fact_review_page() -> None:
     # Render download buttons if generation references exist
     generated_references = st.session_state.get(f"fact_review::{selected_run_id}::generated_references")
     if not is_fixture and not generated_references and run.state == "generated":
-        run_dir = storage._run_dir(selected_run_id) if hasattr(storage, "_run_dir") else None
-        if run_dir and run_dir.exists():
-            existing_files = [
-                p for p in run_dir.iterdir()
-                if p.is_file() and p.name not in ("baseline.json", "status.json", "validation_report.json", "review_audit.json")
-            ]
-            if existing_files:
-                generated_references = {p.name: str(p) for p in existing_files}
+        if hasattr(storage, "list_generated_files"):
+            generated_references = storage.list_generated_files(selected_run_id)
+        elif hasattr(storage, "_run_dir"):
+            run_dir = storage._run_dir(selected_run_id)
+            if run_dir and run_dir.exists():
+                existing_files = [
+                    p for p in run_dir.iterdir()
+                    if p.is_file() and p.name not in ("baseline.json", "status.json", "validation_report.json", "review_audit.json")
+                ]
+                if existing_files:
+                    generated_references = {p.name: str(p) for p in existing_files}
 
     if generated_references:
         st.caption("Download generated files (each button saves the named file via your browser's own download)")
         for filename, ref_path_str in generated_references.items():
-            ref_path = Path(ref_path_str)
-            if ref_path.exists():
-                label = review.label_for_generated_file(filename)
+            clean_filename = Path(filename).name
+            try:
+                file_bytes = (
+                    storage.get_file_bytes(selected_run_id, ref_path_str)
+                    if not is_fixture
+                    else Path(ref_path_str).read_bytes()
+                )
+            except Exception as exc:
+                file_bytes = None
+                logger.warning(
+                    "Could not load '%s' for run '%s': %s",
+                    clean_filename,
+                    selected_run_id,
+                    exc,
+                )
+                st.warning(f"Could not load '{clean_filename}' for download: {exc}")
+            if file_bytes is not None:
+                label = review.label_for_generated_file(clean_filename)
                 st.download_button(
-                    label=f"Download {label}: {ref_path.name}",
-                    data=ref_path.read_bytes(),
-                    file_name=ref_path.name,
+                    label=f"Download {label}: {clean_filename}",
+                    data=file_bytes,
+                    file_name=clean_filename,
                     mime="application/octet-stream",
-                    key=f"download::{selected_run_id}::{ref_path.name}",
+                    key=f"download::{selected_run_id}::{clean_filename}",
                 )
 
 

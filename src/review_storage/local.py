@@ -169,3 +169,18 @@ class LocalReviewStorage(ReviewStorage):
                 shutil.copyfile(src_path, dest_path)
             references[src_path.name] = str(dest_path)
         return references
+
+    def get_file_bytes(self, run_id: str, reference: str) -> bytes:
+        ref_path = Path(reference)
+        if not ref_path.is_absolute() or not ref_path.exists():
+            ref_path = self._run_dir(run_id) / ref_path.name
+        if not ref_path.exists():
+            raise FileNotFoundError(f"File {reference!r} not found for run {run_id!r} in {self._run_dir(run_id)}")
+        return ref_path.read_bytes()
+
+    def list_generated_files(self, run_id: str) -> Dict[str, str]:
+        run_dir = self._run_dir(run_id)
+        if not run_dir.exists():
+            return {}
+        ignored = {"baseline.json", "status.json", "validation_report.json", "review_audit.json"}
+        return {p.name: str(p) for p in run_dir.iterdir() if p.is_file() and p.name not in ignored}

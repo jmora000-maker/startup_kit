@@ -12,6 +12,7 @@ from src.storage.gcs_client import (
     get_bucket_name,
     upload_file,
     download_file,
+    download_file_bytes,
     list_run_files,
     delete_run_files,
 )
@@ -80,6 +81,12 @@ def test_upload_download_list_delete_lifecycle(tmp_path):
     assert dest1.read_bytes() == b"Sample DOCX binary payload for Startup Kit"
     assert dest2.exists()
     assert dest2.read_bytes() == b"Sample XLSX binary payload for PMO Workbook"
+
+    # 4b. Download file bytes directly
+    b1 = download_file_bytes(run_id, "startup_kit.docx")
+    b2 = download_file_bytes(run_id, f"runs/{run_id}/delivery_workbook.xlsx")
+    assert b1 == b"Sample DOCX binary payload for Startup Kit"
+    assert b2 == b"Sample XLSX binary payload for PMO Workbook"
 
     # 5. Delete files
     deleted_count = delete_run_files(run_id)

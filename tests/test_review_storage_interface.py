@@ -118,6 +118,16 @@ def test_put_generated_files_returns_local_path_reference_and_files_exist(storag
     assert os.path.exists(stored_path)
     assert open(stored_path, "rb").read() == b"fake docx bytes"
 
+    # HTL-38: Test get_file_bytes and list_generated_files on LocalReviewStorage
+    assert storage.get_file_bytes(run_id, stored_path) == b"fake docx bytes"
+    assert storage.get_file_bytes(run_id, "Acme_Startup_Kit.docx") == b"fake docx bytes"
+    with pytest.raises(FileNotFoundError):
+        storage.get_file_bytes(run_id, "non_existent.docx")
+
+    gen_files = storage.list_generated_files(run_id)
+    assert "Acme_Startup_Kit.docx" in gen_files
+    assert gen_files["Acme_Startup_Kit.docx"] == stored_path
+
 
 def test_review_storage_backend_defaults_to_local():
     assert config.review_storage_backend == "local"

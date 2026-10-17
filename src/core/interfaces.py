@@ -134,3 +134,12 @@ class ReviewStorage(ABC):
         """Store a run's generated output files and return {filename: download_reference}; a
         local path for the local backend, a signed URL for the cloud backend."""
         pass
+
+    @abstractmethod
+    def get_file_bytes(self, run_id: str, reference: str) -> bytes:
+        """Fetch the raw bytes of a generated file by its reference (HTL-38)."""
+        pass
+
+    def list_generated_files(self, run_id: str) -> Dict[str, str]:
+        """Return a mapping of {filename: reference} for all generated files for a run."""
+        return {}

@@ -1683,3 +1683,146 @@ def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, mon
 
     assert run_1_flag_captured == [True]
     assert run_2_flag_captured == [False]
+
+
+def test_fact_review_download_button_failure_logs_exception_and_warns(tmp_path, monkeypatch, caplog):
+    """When storage.get_file_bytes raises an exception during download-button rendering,
+    the failure logs a warning containing run_id, filename, and exception, and displays
+    st.warning without crashing."""
+    import logging
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Download Error Test Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Download Error Test Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Download Error Test Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+    storage.update_status(run_id, "generated", if_state="approved")
+
+    # Write a dummy generated file in the run directory so generated_references finds it
+    run_dir = storage._run_dir(run_id)
+    doc_file = run_dir / "Project_Startup_Kit.docx"
+    doc_file.write_bytes(b"dummy docx bytes")
+
+    # Mock storage.get_file_bytes to raise an exception
+    def _failing_get_bytes(r_id, path_str):
+        raise FileNotFoundError("Storage connection lost or object missing")
+
+    monkeypatch.setattr(storage, "get_file_bytes", _failing_get_bytes)
+
+    with caplog.at_level(logging.WARNING):
+        at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+        at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+        at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+
+    assert not at.exception
+    # Verify download buttons are not rendered for the failed file
+    assert len(at.download_button) == 0
+
+    # Verify warning is displayed to the user
+    warnings = [w.value for w in at.warning if "Could not load 'Project_Startup_Kit.docx' for download" in w.value]
+    assert len(warnings) == 1
+    assert "Storage connection lost or object missing" in warnings[0]
+
+    # Verify real exception is logged with run_id, filename, and exception
+    app_log_records = [
+        r for r in caplog.records
+        if r.levelno == logging.WARNING and "Project_Startup_Kit.docx" in r.getMessage()
+    ]
+    assert len(app_log_records) >= 1
+    rec = app_log_records[0]
+    assert run_id in rec.getMessage()
+    assert "Project_Startup_Kit.docx" in rec.getMessage()
+    assert "Storage connection lost or object missing" in rec.getMessage()
+
+
+def test_fact_review_download_button_partial_failure_renders_available_and_warns_missing(tmp_path, monkeypatch, caplog):
+    """When some files succeed and others fail during download button rendering,
+    available files get download buttons while missing files log warnings and show st.warning."""
+    import logging
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Partial Download Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Partial Download Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Partial Download Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+    storage.update_status(run_id, "generated", if_state="approved")
+
+    run_dir = storage._run_dir(run_id)
+    (run_dir / "Project_Startup_Kit.docx").write_bytes(b"good docx")
+    (run_dir / "Corrupt_File.xlsx").write_bytes(b"corrupt")
+
+    orig_get_file_bytes = storage.get_file_bytes
+
+    def _mock_get_bytes(r_id, path_str):
+        if "Corrupt_File" in path_str:
+            raise PermissionError("Access denied on storage object")
+        return orig_get_file_bytes(r_id, path_str)
+
+    monkeypatch.setattr(storage, "get_file_bytes", _mock_get_bytes)
+
+    with caplog.at_level(logging.WARNING):
+        at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+        at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+        at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+
+    assert not at.exception
+    # Verify download button rendered for the good file
+    assert len(at.download_button) == 1
+    assert "Project_Startup_Kit.docx" in at.download_button[0].key
+
+    # Verify warning rendered for the corrupt/missing file
+    warnings = [w.value for w in at.warning if "Could not load 'Corrupt_File.xlsx' for download" in w.value]
+    assert len(warnings) == 1
+    assert "Access denied on storage object" in warnings[0]
+
+    # Verify log
+    corrupt_logs = [r for r in caplog.records if r.levelno == logging.WARNING and "Corrupt_File.xlsx" in r.getMessage()]
+    assert len(corrupt_logs) >= 1
+    rec = corrupt_logs[0]
+    assert run_id in rec.getMessage()
+    assert "Corrupt_File.xlsx" in rec.getMessage()
+    assert "Access denied on storage object" in rec.getMessage()

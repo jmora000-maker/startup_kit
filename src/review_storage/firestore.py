@@ -26,6 +26,8 @@ from src.storage.gcs_client import (
     get_bucket_name,
     get_storage_client,
     upload_file as gcs_upload_file,
+    download_file_bytes as gcs_download_file_bytes,
+    list_run_files as gcs_list_run_files,
 )
 
 PENDING_REVIEW = "pending_review"
@@ -234,3 +236,19 @@ class FirestoreReviewStorage(ReviewStorage):
             )
             references[src_path.name] = blob_path
         return references
+
+    def get_file_bytes(self, run_id: str, reference: str) -> bytes:
+        return gcs_download_file_bytes(
+            run_id=run_id,
+            document_name=reference,
+            client=get_storage_client(),
+            bucket_name=self.bucket_name,
+        )
+
+    def list_generated_files(self, run_id: str) -> Dict[str, str]:
+        blob_names = gcs_list_run_files(
+            run_id=run_id,
+            client=get_storage_client(),
+            bucket_name=self.bucket_name,
+        )
+        return {Path(b).name: b for b in blob_names}

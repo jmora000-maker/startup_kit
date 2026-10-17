@@ -12,6 +12,7 @@ from src.storage.gcs_client import (
     get_storage_client,
     upload_file,
     download_file,
+    download_file_bytes,
     list_run_files,
     delete_run_files,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "get_storage_client",
     "upload_file",
     "download_file",
+    "download_file_bytes",
     "list_run_files",
     "delete_run_files",
 ]

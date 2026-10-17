@@ -278,6 +278,18 @@ def test_put_generated_files_uploads_to_gcs(storage, tmp_path):
     download_file(run_id, "Project_Startup_Kit.docx", dest1)
     assert dest1.read_bytes() == b"Simulated DOCX content"
 
+    # Test get_file_bytes and list_generated_files (HTL-38)
+    bytes_kit = storage.get_file_bytes(run_id, "Project_Startup_Kit.docx")
+    assert bytes_kit == b"Simulated DOCX content"
+
+    bytes_wb = storage.get_file_bytes(run_id, f"runs/{run_id}/Project_Delivery_Workbook.xlsx")
+    assert bytes_wb == b"Simulated XLSX content"
+
+    gen_files = storage.list_generated_files(run_id)
+    assert "Project_Startup_Kit.docx" in gen_files
+    assert "Project_Delivery_Workbook.xlsx" in gen_files
+    assert gen_files["Project_Startup_Kit.docx"] == f"runs/{run_id}/Project_Startup_Kit.docx"
+
 
 def test_full_round_trip_resume_generation_with_firestore_storage(storage, tmp_path):
     """End-to-end lifecycle test against FirestoreReviewStorage: create -> correct -> approve -> generate."""

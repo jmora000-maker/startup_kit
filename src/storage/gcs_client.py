@@ -100,6 +100,28 @@ def download_file(
     return dest
 
 
+def download_file_bytes(
+    run_id: str,
+    document_name: str,
+    client: Optional[storage.Client] = None,
+    bucket_name: Optional[str] = None,
+) -> bytes:
+    """Download a file's raw bytes from runs/{run_id}/{document_name}.
+    
+    Returns the file content as bytes.
+    """
+    cl = client or get_storage_client()
+    b_name = get_bucket_name(bucket_name)
+    bucket = _get_or_create_bucket(cl, b_name)
+
+    blob_name = document_name if document_name.startswith(f"runs/{run_id}/") else f"runs/{run_id}/{document_name}"
+    blob = bucket.blob(blob_name)
+    if not blob.exists():
+        raise FileNotFoundError(f"Object not found in bucket {b_name}: {blob_name}")
+
+    return blob.download_as_bytes()
+
+
 def list_run_files(
     run_id: str,
     client: Optional[storage.Client] = None,
