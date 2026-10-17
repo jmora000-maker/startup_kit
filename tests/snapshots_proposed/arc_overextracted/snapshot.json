@@ -30,7 +30,7 @@
         ],
         [
           "1-Day SLA Status",
-          "Not determinable - award date not stated",
+          "Breached (Exception Logged)",
           "Workflow State",
           "Clarification Pending"
         ]
@@ -54,7 +54,7 @@
         ],
         [
           "Turnaround SLA & PMO Authorization",
-          "Not determinable - award date not stated [ACT-REQ-01: Log retroactive PMO waiver for SLA (+2.0% Recovery)]"
+          "SLA Met (No - Retroactive PMO Waiver Required)"
         ],
         [
           "Escalation Path & Decision Hierarchy",
@@ -1296,7 +1296,7 @@
       "rows_count": 1,
       "rows": [
         [
-          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 50.4% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 55.3% | Acceptance Rigor: 85.8% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Not determinable - award date not stated\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 6 | Open Clarifications: 23\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
+          "G-01 READINESS GATE DECISION: REWORK REQUIRED\nStartup Readiness Score: 50.4% — NOT READY / REWORK REQUIRED (Red)\nScore Breakdown: Controls: 55.3% | Acceptance Rigor: 85.8% | Staffing: 0.0% | Commercial/Risk: 45.7%\n\n• Author / Drafter: [UNASSIGNED - TO BE CONFIRMED] (PMO Lead)\n• Independent Reviewers: Delivery Manager, Technical Lead\n• Approval Authority: [UNASSIGNED - TO BE CONFIRMED]\n• 1-Day Creation SLA Status: Breached (Exception Logged)\n• Role Segregation: Verified (Author, Reviewers, Approver segregated)\n• Open Exceptions: 7 | Open Clarifications: 22\n• Workflow State: Clarification Pending\n• Decision Comments: Readiness baseline verified against Section 4 requirements. 6 exceptions noted; open validation items flagged for Mobilize kickoff.\n• Exception Note: Baseline drafted within 1 day; pending minor client confirmations (Authority: PMO Lead)"
         ]
       ]
     },
@@ -1318,11 +1318,11 @@
           "G01-01",
           "Startup Kit created within 1 day of delivery handoff (SLA)",
           "Project Startup Charter",
-          "Confirmation Required",
+          "Exception Required",
           "[UNASSIGNED - TO BE CONFIRMED]",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "Startup Kit drafted on 2026-10-01. Award date not stated in SOW [CONFIRMATION REQUIRED]."
+          "Startup Kit drafted on 2026-10-01 (Project awarded 2026-10-12). SLA Breached.\n[EXCEPTION: Startup Kit creation exceeded 1 business day SLA.]"
         ],
         [
           "G01-02",
@@ -1462,7 +1462,7 @@
           "[UNASSIGNED - TO BE CONFIRMED]",
           "PMO Lead",
           "PMO Lead / Director, PMO",
-          "23 validation points logged for mobilization confirmation. [ACT-09]"
+          "22 validation points logged for mobilization confirmation. [ACT-09]"
         ]
       ]
     },
@@ -1534,7 +1534,7 @@
     },
     {
       "table_index": 3,
-      "rows_count": 24,
+      "rows_count": 23,
       "rows": [
         [
           "Question ID",
@@ -1673,12 +1673,6 @@
           "PMO Lead role is unassigned. [CONFIRMATION REQUIRED]",
           "Talent PM / Delivery Manager",
           "Open - Confirmation Required"
-        ],
-        [
-          "Q-23",
-          "What is the formal SOW contract award and execution date?",
-          "Delivery Manager / Client Sponsor",
-          "Open"
         ]
       ]
     },
@@ -1924,7 +1918,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Provided) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -2702,7 +2696,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Provided) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -7918,7 +7912,7 @@
         ""
       ],
       [
-        "Start Date: 2026-10-12 (Assumed - first Monday after generation date; confirm) | Generated <DATE> from the project baseline",
+        "Start Date: 2026-10-12 (Provided) | Generated <DATE> from the project baseline",
         "",
         "",
         "",
@@ -9428,33 +9422,6 @@
         "Baseline - Open Questions",
         "Q-19",
         "Refers to extracted M4 (now M2)"
-      ],
-      [
-        "RAID-55",
-        "Issue",
-        "What is the formal SOW contract award and execution date?",
-        "Not cited",
-        "Open Question",
-        "Cross-phase",
-        "",
-        "",
-        "",
-        "Talent PM",
-        "",
-        "",
-        "=IF(OR(K60=\"\",L60=\"\"),\"\",IF(OR(AND(K60=\"High\",L60=\"High\"),AND(K60=\"High\",L60=\"Medium\"),AND(K60=\"Medium\",L60=\"High\")),\"High\",IF(AND(K60=\"Low\",L60=\"Low\"),\"Low\",\"Medium\")))",
-        "=IF(OR(K60=\"\",L60=\"\"),\"\",(IF(K60=\"High\",3,IF(K60=\"Medium\",2,1)))*(IF(L60=\"High\",3,IF(L60=\"Medium\",2,1))))",
-        "",
-        "",
-        "",
-        "Open",
-        "<DATE>",
-        "<DATE>",
-        "",
-        "",
-        "Baseline - Open Questions",
-        "Q-23",
-        ""
       ]
     ]
   },
@@ -9472,7 +9439,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers ARC Genomics Platform for Syngenta.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• This deck is for the Talent PM and the Talent Project Team; use these notes as a script and for later reference.\n• This deck covers ARC Genomics Platform for Syngenta.\n• The start date is 2026-10-12, and it was provided.\n\nSOURCES: Startup Kit · header table; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 2,
@@ -9528,7 +9495,7 @@
           ],
           [
             "Start Date",
-            "2026-10-12 (Assumed - first Monday after generation date; confirm)"
+            "2026-10-12 (Provided)"
           ],
           [
             "Talent PM",
@@ -9544,7 +9511,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.\n• The contract type is Fixed Bid, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-12, and it was assumed - first monday after generation date; confirm.\n• The project runs in 4 phases, from 2026-10-12 to 2027-04-09.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
+      "notes": "TALKING POINTS:\n• Purpose: Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.\n• The contract type is Fixed Bid, and the governance tier is Partnered.\n• Delivery Manager: to be confirmed; Talent PM: to be confirmed; PMO Lead: to be confirmed.\n• Issues escalate along this path: Talent PM / Delivery Manager -> PMO Lead -> Director, PMO.\n• The start date is 2026-10-12, and it was provided.\n• The project runs in 4 phases, from 2026-10-12 to 2027-04-09.\n\nSOURCES: Startup Kit · header table, Project Startup Charter, SOW Interpretation Summary; Project Delivery Workbook · Project Schedule"
     },
     {
       "slide_index": 3,
@@ -9807,7 +9774,7 @@
         ]
       ],
       "tables": [],
-      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Client Contact (designated).\n• Kickoff Call: One-time.\n• Daily Standups: Daily.\n• Biweekly Sprint Demo: Biweekly (every sprint).\n• Before P1 Foundation starts on 2026-10-12, the client prerequisite is: Client provides design system access (code library, tokens, design files, guidelines, named contact).\n• 20 open questions are waiting on the client; the first is RAID-36.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
+      "notes": "TALKING POINTS:\n• Milestone sign-off sits with Client Contact (designated).\n• Kickoff Call: One-time.\n• Daily Standups: Daily.\n• Biweekly Sprint Demo: Biweekly (every sprint).\n• Before P1 Foundation starts on 2026-10-12, the client prerequisite is: Client provides design system access (code library, tokens, design files, guidelines, named contact).\n• 19 open questions are waiting on the client; the first is RAID-36.\n\nSOURCES: Startup Kit · Communications and Reporting Plan, Stakeholder and Responsibility Model; Project Delivery Workbook · Project Schedule, RAID Log"
     },
     {
       "slide_index": 7,

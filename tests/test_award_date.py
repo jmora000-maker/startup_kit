@@ -114,7 +114,7 @@ def _load_fixture_baseline(name):
 
 def test_val_05_sla_status_requires_stated_provenance(tmp_path):
     """VAL-05: Kit/Checklist SLA status is determinate only for an award date with VAL-11 'stated' provenance."""
-    baseline = _load_fixture_baseline("mock_sow")
+    baseline = _load_fixture_baseline("mock_sow").model_copy(update={"sow_awarded_date": date(2026, 9, 30), "award_date_source": None})
     # Recorded with the retired date.today()-1 fallback: a date, but no provenance
     assert baseline.sow_awarded_date == date(2026, 9, 30) and baseline.award_date_source is None
 
@@ -130,7 +130,7 @@ def test_val_05_sla_status_requires_stated_provenance(tmp_path):
 
 def test_val_05_sla_status_determinate_with_stated_provenance(tmp_path):
     """VAL-05: A VAL-11 stated award date still yields a determinate SLA status."""
-    baseline = _load_fixture_baseline("mock_sow").model_copy(update={"award_date_source": "stated"})
+    baseline = _load_fixture_baseline("mock_sow").model_copy(update={"sow_awarded_date": date(2026, 9, 30), "award_date_source": "stated"})
 
     kit_header, kit_charter, chk_summary, g01_01 = _render_sla_text(baseline, tmp_path / "stated")
     assert kit_header == "Met (Drafted <= 1 day)"
@@ -151,7 +151,7 @@ def test_val_05_kit_reingestion_preserves_kit_sla_verdict(tmp_path):
         return baseline, StartupKitDocxParser().parse_startup_kit_docx(kit_path)
 
     # Kit generated from a stated award date shows 'Met'; re-ingestion keeps it without inventing 'stated' provenance
-    src, parsed = roundtrip(_load_fixture_baseline("mock_sow").model_copy(update={"award_date_source": "stated"}), tmp_path / "met")
+    src, parsed = roundtrip(_load_fixture_baseline("mock_sow").model_copy(update={"sow_awarded_date": date(2026, 9, 30), "award_date_source": "stated"}), tmp_path / "met")
     src_g01 = next(i for i in src.readiness_checklist if i.item_id == "G01-01")
     parsed_g01 = next(i for i in parsed.readiness_checklist if i.item_id == "G01-01")
     assert parsed.award_date_source is None and parsed.sla_verdict_source == "kit_reingested"
@@ -160,7 +160,7 @@ def test_val_05_kit_reingestion_preserves_kit_sla_verdict(tmp_path):
     assert parsed_g01.evidence == src_g01.evidence
 
     # Kit generated from an unprovenanced date shows 'Not determinable'; re-ingestion must not upgrade it
-    src, parsed = roundtrip(_load_fixture_baseline("mock_sow"), tmp_path / "nd")
+    src, parsed = roundtrip(_load_fixture_baseline("mock_sow").model_copy(update={"sow_awarded_date": date(2026, 9, 30), "award_date_source": None}), tmp_path / "nd")
     parsed_g01 = next(i for i in parsed.readiness_checklist if i.item_id == "G01-01")
     assert parsed.award_date_source is None and parsed.sla_verdict_source is None
     assert parsed.sla_met is False
