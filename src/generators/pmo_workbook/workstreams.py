@@ -71,12 +71,12 @@ WORKSTREAM_NAMES = {code: name for code, name, _ in TAXONOMY}
 WORKSTREAM_CODES = [code for code, _, _ in TAXONOMY]
 
 PHASE_LABEL_REGEX = re.compile(
-    r"^\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)\s+(?P<name>[^:]*?)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?\s*:\s*(?P<scope>.+)$",
+    r"^\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)(?:\s+(?P<name>[^:]*?))?\s*(?:accepted|completed|complete|approved|sign[- ]?off)?\s*:\s*(?P<scope>.+)$",
     re.IGNORECASE
 )
 
 WRAPPED_PHASE_LABEL_REGEX = re.compile(
-    r"^\s*(?:Milestone\s+\d+\s+)?\(\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)\s+(?P<name>[^():]*?)\s*\)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?(?:\s+\w[\w\s]*?)?\s*:\s*(?P<scope>.+)$",
+    r"^\s*(?:Milestone\s+\d+\s+)?\(\s*(?P<code>(?:P|Phase\s*)\d+[a-z]?)(?:\s+(?P<name>[^():]*?))?\s*\)\s*(?:accepted|completed|complete|approved|sign[- ]?off)?(?:\s+\w[\w\s]*?)?\s*:\s*(?P<scope>.+)$",
     re.IGNORECASE
 )
 
@@ -120,15 +120,25 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
         if not match:
             match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)
         if match:
-            raw_name = match.group("name").strip()
+            raw_name = (match.group("name") or "").strip()
             raw_name = re.sub(r'^\((.*)\)$', r'\1', raw_name).strip()
             raw_name = re.sub(r',?\s*weeks?\s*[\d–— -]+', '', raw_name).strip()
-            workstream = f"{code} {raw_name}" if raw_name else code
+            has_dash_prefix = bool(re.match(r"^[-–—]\s*", raw_name))
+            name_clean = re.sub(r"^[-–—]\s*", "", raw_name).strip()
+
+            if has_dash_prefix and name_clean:
+                workstream = f"{code} - {name_clean}"
+            elif name_clean:
+                workstream = f"{code} {name_clean}"
+            else:
+                workstream = code
+
             milestone_name = clean_desc.split(":", 1)[0].strip()
             scope = match.group("scope").strip()
             scope_clean = strip_week_range_parenthetical(scope)
+            norm_code = re.sub(r"^Phase\s*", "P", code, flags=re.IGNORECASE) if re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE) else code
             return ParsedMilestonePhase(
-                phase_code=code,
+                phase_code=norm_code,
                 workstream_name=workstream,
                 milestone_name=milestone_name,
                 milestone_scope=scope,
@@ -146,8 +156,9 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
             scope_clean = strip_week_range_parenthetical(scope)
             # Check if code is a known workstream code or name, or custom string
             ws_resolved = WORKSTREAM_NAMES.get(code, code)
+            norm_code = re.sub(r"^Phase\s*", "P", code, flags=re.IGNORECASE) if re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE) else None
             return ParsedMilestonePhase(
-                phase_code=code if re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE) else None,
+                phase_code=norm_code,
                 workstream_name=ws_resolved,
                 milestone_name=milestone_name,
                 milestone_scope=scope,
@@ -161,15 +172,25 @@ def parse_milestone_phase(milestone: Union[Milestone, str]) -> ParsedMilestonePh
         match = WRAPPED_PHASE_LABEL_REGEX.match(clean_desc)
     if match:
         code = match.group("code")
-        raw_name = match.group("name").strip()
+        raw_name = (match.group("name") or "").strip()
         raw_name = re.sub(r'^\((.*)\)$', r'\1', raw_name).strip()
         raw_name = re.sub(r',?\s*weeks?\s*[\d–— -]+', '', raw_name).strip()
-        workstream = f"{code} {raw_name}" if raw_name else code
+        has_dash_prefix = bool(re.match(r"^[-–—]\s*", raw_name))
+        name_clean = re.sub(r"^[-–—]\s*", "", raw_name).strip()
+
+        if has_dash_prefix and name_clean:
+            workstream = f"{code} - {name_clean}"
+        elif name_clean:
+            workstream = f"{code} {name_clean}"
+        else:
+            workstream = code
+
         milestone_name = clean_desc.split(":", 1)[0].strip()
         scope = match.group("scope").strip()
         scope_clean = strip_week_range_parenthetical(scope)
+        norm_code = re.sub(r"^Phase\s*", "P", code, flags=re.IGNORECASE) if re.match(r"^(?:P|Phase\s*)\d+[a-z]?", code, re.IGNORECASE) else code
         return ParsedMilestonePhase(
-            phase_code=code,
+            phase_code=norm_code,
             workstream_name=workstream,
             milestone_name=milestone_name,
             milestone_scope=scope,

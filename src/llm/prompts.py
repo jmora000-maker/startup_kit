@@ -66,11 +66,12 @@ CONSTRAINTS:
 1. Extract key delivery milestones and phase gates (maximum 15 milestones).
 2. Anchor extraction to the SOW's own explicitly enumerated milestones (such as a fee schedule, milestone table, or numbered 'Milestone N' list) when one exists — extract exactly those, not more.
 3. Explicitly exclude trigger conditions, prerequisite events, or assumptions that merely describe when a milestone begins or what causes it to start (e.g. 'production go-live, which starts the Hypercare Period') — these are context for an existing milestone, never a separate milestone of their own.
-4. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.
+4. When the SOW explicitly states a delivery phase for a milestone — whether in abbreviated form ('P1', 'P2a') or spelled-out word form ('Phase 1', 'Phase 2') — you MUST preserve that phase label at the start of the milestone's description (e.g. 'Phase 2 - LLM Enrichment Layer: ...' or 'P1 Foundation: ...'). Never strip or omit the stated phase name or number.
+5. Keep milestone descriptions concise and direct (1 sentence). Do NOT mention or refer to the SOW or other documents.
 
 For each milestone:
 - id: Sequential identifier (e.g., M1, M2, M3...)
-- description: Concise milestone name or phase completion outcome. Do NOT mention or refer to the SOW or other documents.
+- description: Concise milestone name or phase completion outcome (preserving any stated 'Phase N' or 'Pn' prefix). Do NOT mention or refer to the SOW or other documents.
 - external_date: Contractual or committed target date in ISO format YYYY-MM-DD. If no specific date is found, set to null.
 - internal_buffer_date: Internal target date with contingency buffer in ISO format YYYY-MM-DD if explicitly mentioned, else null.
 - source_reference: The source document name, section/page, and confidence score.

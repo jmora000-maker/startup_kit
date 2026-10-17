@@ -36,7 +36,7 @@ PHASE_RESTATEMENT_REGEX = re.compile(
     r'\b(acceptance\s+review|sign-?off|gating\s+the\s+start)\b',
     re.IGNORECASE
 )
-PHASE_CODE_REGEX = re.compile(r'\b(P\d+[a-z]?)\b', re.IGNORECASE)
+PHASE_CODE_REGEX = re.compile(r'\b(?:Phase\s*|P)(\d+[a-z]?)\b', re.IGNORECASE)
 PLACEHOLDER_REGEX = re.compile(
     r'\[(?:CONFIRMATION REQUIRED|TBD|UNASSIGNED|TO BE CONFIRMED|ACT-[^\]]+)\]',
     re.IGNORECASE
@@ -68,14 +68,14 @@ def determine_sow_gate_count(baseline: StartupKitBaseline) -> Optional[int]:
     comm_phases: Set[str] = set()
     for comm in baseline.communications_plan:
         found = PHASE_CODE_REGEX.findall(comm.name + " " + (comm.audience or ""))
-        comm_phases.update(p.upper() for p in found)
+        comm_phases.update(f"P{p.upper()}" for p in found)
     if comm_phases:
         return len(comm_phases)
 
     deliv_phases: Set[str] = set()
     for d in baseline.deliverables:
         found = PHASE_CODE_REGEX.findall(d.name + " " + d.description)
-        deliv_phases.update(p.upper() for p in found)
+        deliv_phases.update(f"P{p.upper()}" for p in found)
     if deliv_phases:
         return len(deliv_phases)
 
@@ -103,8 +103,8 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
             m_desc = ms.description or ""
             phase_m = PHASE_CODE_REGEX.search(m_desc)
             if phase_m:
-                phase_code_raw = phase_m.group(1)
-                phase_code = phase_code_raw.upper()
+                phase_code_raw = phase_m.group(0).strip()
+                phase_code = f"P{phase_m.group(1).upper()}"
                 last_phase = phase_code
                 last_phase_display = phase_code_raw
             else:
@@ -112,7 +112,7 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
                 is_checkpoint = bool(re.search(r'\b(checkpoint|interim)\b', m_desc, re.IGNORECASE))
                 has_following_same_phase = any(
                     bool(PHASE_CODE_REGEX.search(sub_m.description or "") and 
-                         PHASE_CODE_REGEX.search(sub_m.description or "").group(1).upper() == last_phase)
+                         f"P{PHASE_CODE_REGEX.search(sub_m.description or '').group(1).upper()}" == last_phase)
                     for sub_m in baseline.milestones[i+1:]
                 )
                 if is_restatement or is_checkpoint or has_following_same_phase:
@@ -133,7 +133,7 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
     checkpoints: List[Milestone] = []
 
     gate_trigger_regex = re.compile(
-        r'^\s*P\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b',
+        r'^\s*(?:Phase\s*|P)\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b',
         re.IGNORECASE
     )
 
@@ -143,7 +143,7 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
         gate_candidate: Optional[Milestone] = None
         for ms in ms_list:
             m_desc = ms.description or ""
-            if re.search(r'^\s*P\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
+            if re.search(r'^\s*(?:Phase\s*|P)\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
                 gate_candidate = ms
                 break
         if not gate_candidate:
@@ -203,8 +203,8 @@ def reconcile_gates_and_checkpoints(baseline: StartupKitBaseline, findings: List
         if not cp.phase or cp.phase.strip() == "" or cp.phase.upper() == "N/A":
             phase_m = PHASE_CODE_REGEX.search(cp.description or "")
             if phase_m:
-                cp.phase = phase_m.group(1).upper()
-                cp.phase_display = phase_m.group(1)
+                cp.phase = f"P{phase_m.group(1).upper()}"
+                cp.phase_display = phase_m.group(0).strip()
             else:
                 cp.phase = "P3"
                 cp.phase_display = None
@@ -227,7 +227,11 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
     for ms in baseline.milestones:
         pm = PHASE_CODE_REGEX.search(ms.description or "")
         if pm:
-            phase_to_gate[pm.group(1).upper()] = ms.id
+            phase_to_gate[f"P{pm.group(1).upper()}"] = ms.id
+            if ms.phase_display:
+                phase_to_gate[ms.phase_display.upper()] = ms.id
+        if ms.phase:
+            phase_to_gate[ms.phase.upper()] = ms.id
     if not phase_to_gate and baseline.milestones:
         for idx, ms in enumerate(baseline.milestones, start=1):
             phase_to_gate[f"P{idx}"] = ms.id
@@ -239,13 +243,13 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
         if not item.phase:
             pm = PHASE_CODE_REGEX.search(f"{item.reference} {item.title}")
             if pm:
-                item.phase = pm.group(1).upper()
+                item.phase = pm.group(0).strip()
             elif item.deliverable_id:
                 parent_d = next((d for d in baseline.deliverables if d.id == item.deliverable_id), None)
                 if parent_d:
                     pm_d = PHASE_CODE_REGEX.search(f"{parent_d.name} {parent_d.description}")
                     if pm_d:
-                        item.phase = pm_d.group(1).upper()
+                        item.phase = pm_d.group(0).strip()
 
         if not item.phase:
             findings.append(ValidationFinding(
@@ -274,9 +278,11 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
 
         # 3. Match by deliverable name similarity / phase
         if not matched_deliv and item.phase:
+            item_pm = PHASE_CODE_REGEX.search(item.phase)
+            item_phase_norm = f"P{item_pm.group(1).upper()}" if item_pm else item.phase.upper()
             for d in baseline.deliverables:
                 d_phase_m = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
-                if d_phase_m and d_phase_m.group(1).upper() == item.phase.upper():
+                if d_phase_m and f"P{d_phase_m.group(1).upper()}" == item_phase_norm:
                     matched_deliv = d
                     break
 
@@ -289,9 +295,11 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
     for item in unmatched_items:
         assigned = False
         if item.phase:
+            item_pm = PHASE_CODE_REGEX.search(item.phase)
+            item_phase_norm = f"P{item_pm.group(1).upper()}" if item_pm else item.phase.upper()
             for d in baseline.deliverables:
                 d_phase_m = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
-                if d_phase_m and d_phase_m.group(1).upper() == item.phase.upper():
+                if d_phase_m and f"P{d_phase_m.group(1).upper()}" == item_phase_norm:
                     deliv_to_items[d.id].append(item)
                     assigned = True
                     break
@@ -313,11 +321,13 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
 
                 # Determine linked milestone from work item phase (VAL-02)
                 item_phase = (item.phase or "").upper()
+                item_pm = PHASE_CODE_REGEX.search(item.phase or "")
+                item_phase_norm = f"P{item_pm.group(1).upper()}" if item_pm else item_phase
                 linked_ms = []
                 if item_phase in phase_to_gate:
                     linked_ms = [phase_to_gate[item_phase]]
-                elif item_phase.startswith("P") and item_phase in phase_to_gate:
-                    linked_ms = [phase_to_gate[item_phase]]
+                elif item_phase_norm in phase_to_gate:
+                    linked_ms = [phase_to_gate[item_phase_norm]]
 
                 # VAL-08, REF-05: Work package title
                 raw_title = item.title.strip() if item.title else ""
@@ -547,7 +557,7 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
     for d in baseline.deliverables:
         pm = PHASE_CODE_REGEX.search(f"{d.name} {d.description}")
         if pm:
-            deliv_phase_map[d.id] = pm.group(1).upper()
+            deliv_phase_map[d.id] = f"P{pm.group(1).upper()}"
         else:
             deliv_phase_map[d.id] = "P1 Foundation"
 

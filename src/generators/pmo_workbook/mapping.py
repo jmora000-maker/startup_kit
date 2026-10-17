@@ -128,13 +128,13 @@ def build_milestone_scope_text_for_scoring(
     current_phase_code: Optional[str] = None
 
     if contracted_deliverables:
-        phase_prefix_regex = re.compile(r"^\s*(?P<code>P\d+[a-z]?)\b", re.IGNORECASE)
+        phase_prefix_regex = re.compile(r"^\s*(?P<code>(?:Phase\s*|P)\d+[a-z]?)\b", re.IGNORECASE)
         for entry in contracted_deliverables:
             if not entry:
                 continue
             m = phase_prefix_regex.match(entry)
             if m:
-                current_phase_code = m.group("code").upper()
+                current_phase_code = re.sub(r"^Phase\s*", "P", m.group("code"), flags=re.IGNORECASE).upper()
             if current_phase_code:
                 contracted_by_phase.setdefault(current_phase_code, []).append(entry)
 
@@ -155,11 +155,11 @@ def build_milestone_scope_text_for_scoring(
 
 
 def _extract_phase_codes_from_text(text: str) -> List[str]:
-    """Extract phase codes like P1, P2a, P2b, P3 from text."""
+    """Extract phase codes like P1, P2a, Phase 1, Phase 2 from text."""
     if not text:
         return []
-    matches = re.findall(r"\b(P\d+[a-z]?)\b", text, re.IGNORECASE)
-    return [m.upper() for m in matches]
+    matches = re.finditer(r"\b(?:Phase\s*|P)(\d+[a-z]?)\b", text, re.IGNORECASE)
+    return [f"P{m.group(1).upper()}" for m in matches]
 
 
 def _extract_milestone_n_from_text(text: str) -> List[int]:
@@ -304,9 +304,9 @@ def get_reference_phase(ref: str) -> Optional[str]:
     num_m = re.search(r'Deliverable\s+(\d+)\.', ref_clean, re.IGNORECASE)
     if num_m:
         return f"P{num_m.group(1)}"
-    pm = re.search(r'\b(P\d+[a-z]?)\b', ref_clean, re.IGNORECASE)
+    pm = re.search(r'\b(?:Phase\s*|P)(\d+[a-z]?)\b', ref_clean, re.IGNORECASE)
     if pm:
-        return pm.group(1)
+        return f"P{pm.group(1).upper()}"
     return None
 
 
@@ -857,8 +857,8 @@ def link_raid_item_v2(
     checkpoint_to_gate: Dict[str, Tuple[Milestone, str]] = {}
     if checkpoints:
         for idx, cp in enumerate(checkpoints, 1):
-            cp_phase_m = re.search(r'\b(P\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
-            cp_phase = cp.phase or (cp_phase_m.group(1).upper() if cp_phase_m else "P3")
+            cp_phase_m = re.search(r'\b(?:Phase\s*|P)(\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
+            cp_phase = cp.phase or (f"P{cp_phase_m.group(1).upper()}" if cp_phase_m else "P3")
             target_gate = ms_by_phase.get(cp_phase, milestones[-1] if milestones else None)
             if target_gate:
                 checkpoint_to_gate[cp.id] = (target_gate, f"Refers to {cp.id} (checkpoint of {target_gate.id})")

@@ -88,7 +88,7 @@ SCHEDULE_TRIGGER_REGEX = re.compile(
 )
 
 # Phase regexes for milestone reconciliation
-PHASE_CODE_REGEX = re.compile(r"\b(P\d+[a-z]?)\b", re.IGNORECASE)
+PHASE_CODE_REGEX = re.compile(r"\b(?:Phase\s*|P)(\d+[a-z]?)\b", re.IGNORECASE)
 PHASE_RESTATEMENT_REGEX = re.compile(r"acceptance\s+review|sign-?off|gating\s+the\s+start", re.IGNORECASE)
 
 # Sequential-gate predecessor regex (v4 A15)
@@ -555,14 +555,14 @@ def build_workbook_model(
         for i, ms in enumerate(filtered_milestones):
             pm = PHASE_CODE_REGEX.search(ms.description or "")
             if pm:
-                p_code = pm.group(1).upper()
+                p_code = f"P{pm.group(1).upper()}"
                 last_p = p_code
             else:
                 is_restatement = bool(PHASE_RESTATEMENT_REGEX.search(ms.description or ""))
                 is_checkpoint = bool(re.search(r'\b(checkpoint|interim)\b', ms.description or "", re.IGNORECASE))
                 has_following_same_phase = any(
                     bool(PHASE_CODE_REGEX.search(sub_m.description or "") and 
-                         PHASE_CODE_REGEX.search(sub_m.description or "").group(1).upper() == last_p)
+                         f"P{PHASE_CODE_REGEX.search(sub_m.description or '').group(1).upper()}" == last_p)
                     for sub_m in filtered_milestones[i+1:]
                 )
                 if is_restatement or is_checkpoint or has_following_same_phase:
@@ -576,13 +576,13 @@ def build_workbook_model(
             g_cand: Optional[Milestone] = None
             for ms in ms_list:
                 m_desc = ms.description or ""
-                if re.search(r'^\s*P\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
+                if re.search(r'^\s*(?:Phase\s*|P)\d+[a-z]?\s+.*?\baccepted\b', m_desc, re.IGNORECASE):
                     g_cand = ms
                     break
             if not g_cand:
                 for ms in ms_list:
                     m_desc = ms.description or ""
-                    if re.search(r'^\s*P\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b', m_desc, re.IGNORECASE) and not re.search(r'\b(testing|uat|smoke\s+tests?)\s+completed\b', m_desc, re.IGNORECASE):
+                    if re.search(r'^\s*(?:Phase\s*|P)\d+[a-z]?\s+.*?\b(accepted|completed|complete|approved|sign[- ]?off)\b', m_desc, re.IGNORECASE) and not re.search(r'\b(testing|uat|smoke\s+tests?)\s+completed\b', m_desc, re.IGNORECASE):
                         g_cand = ms
                         break
             if not g_cand:
@@ -1019,7 +1019,7 @@ def build_workbook_model(
     checkpoints_by_phase: Dict[str, List[Milestone]] = {}
     for cp in filtered_checkpoints:
         pm = PHASE_CODE_REGEX.search(cp.description or "")
-        p_code = pm.group(1).upper() if pm else "P3"
+        p_code = f"P{pm.group(1).upper()}" if pm else "P3"
         checkpoints_by_phase.setdefault(p_code, []).append(cp)
 
     # Calculate WBS numbers

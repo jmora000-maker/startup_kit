@@ -190,3 +190,122 @@ def test_phase_display_with_terse_colonless_gpt4o_shape():
     assert p.milestone_scope == "P1 Foundation completion."
     assert p.milestone_scope_clean == "P1 Foundation completion."
     assert p.has_phase_label is True
+
+
+def test_ms_13_spelled_out_phase_label_parsing():
+    """MS-13: Test spelled-out 'Phase N - Name' milestone descriptions are recognized by MS-01 pattern."""
+    desc1 = "Phase 1 - Data and Backend Foundation: Postgres schema and Drizzle migrations with 25 MVP facility records."
+    p1 = parse_milestone_phase(desc1)
+    assert p1.phase_code == "P1"
+    assert p1.workstream_name == "Phase 1 - Data and Backend Foundation"
+    assert p1.milestone_name == "Phase 1 - Data and Backend Foundation"
+    assert p1.has_phase_label is True
+    assert p1.milestone_scope == "Postgres schema and Drizzle migrations with 25 MVP facility records."
+
+    desc2 = "Phase 2 - LLM Enrichment Layer: enrichment service with schema validation, confidence-score capture and review queue."
+    p2 = parse_milestone_phase(desc2)
+    assert p2.phase_code == "P2"
+    assert p2.workstream_name == "Phase 2 - LLM Enrichment Layer"
+    assert p2.milestone_name == "Phase 2 - LLM Enrichment Layer"
+    assert p2.has_phase_label is True
+
+    desc3 = "Phase 3 - Access Control, Observability, and Pilot Readiness: RBAC for four personas, observability stack and CI/CD."
+    p3 = parse_milestone_phase(desc3)
+    assert p3.phase_code == "P3"
+    assert p3.workstream_name == "Phase 3 - Access Control, Observability, and Pilot Readiness"
+    assert p3.has_phase_label is True
+
+    desc4 = "Phase 4 - Launch and Handoff: platform production deployment, pilot partner onboarding support, and runbooks."
+    p4 = parse_milestone_phase(desc4)
+    assert p4.phase_code == "P4"
+    assert p4.workstream_name == "Phase 4 - Launch and Handoff"
+    assert p4.has_phase_label is True
+
+    # Wrapped spelled-out format
+    desc_wrapped = "Milestone 2 (Phase 2 - LLM Enrichment Layer) accepted: enrichment service and prompt versioning."
+    p_wrapped = parse_milestone_phase(desc_wrapped)
+    assert p_wrapped.phase_code == "P2"
+    assert p_wrapped.workstream_name == "Phase 2 - LLM Enrichment Layer"
+    assert p_wrapped.has_phase_label is True
+
+
+def test_ms_13_undivide_project_sow_milestone_reconciliation_produces_real_phase_display():
+    """MS-13: Full real Undivide Project SOW milestone shape produces real phase_display values, not synthetic G_N codes."""
+    from src.core.models import StartupKitBaseline
+    from src.llm.validation import reconcile_gates_and_checkpoints
+
+    milestones = [
+        Milestone(id="M1", description="Phase 1 - Data and Backend Foundation: Postgres schema, normalization layer, and scraper connector."),
+        Milestone(id="M2", description="Phase 2 - LLM Enrichment Layer: enrichment service with schema validation and confidence scoring."),
+        Milestone(id="M3", description="Phase 3 - Access Control, Observability, and Pilot Readiness: RBAC and staging deployment."),
+        Milestone(id="M4", description="Phase 4 - Launch and Handoff: production deployment and handover checklist."),
+    ]
+
+    baseline = StartupKitBaseline(
+        project_name="The Undivide Project",
+        deliverables=[],
+        milestones=milestones,
+        sow_stories_catalogue=[],
+        backlog_seed=[]
+    )
+
+    findings = []
+    reconcile_gates_and_checkpoints(baseline, findings)
+
+    # Verify that milestones receive real canonical phase codes and stated phase_display values
+    assert [m.phase for m in baseline.milestones] == ["P1", "P2", "P3", "P4"]
+    assert [m.phase_display for m in baseline.milestones] == ["Phase 1", "Phase 2", "Phase 3", "Phase 4"]
+
+    # Verify Workbook Schedule Level 1 Workstream rows reflect the stated phase names
+    wb = build_workbook_model(baseline, start_date=date(2026, 10, 16))
+    ws_rows = [r for r in wb.schedule_rows if r.row_type == "Workstream"]
+    assert len(ws_rows) == 4
+    assert ws_rows[0].name == "Phase 1 - Data and Backend Foundation"
+    assert ws_rows[1].name == "Phase 2 - LLM Enrichment Layer"
+    assert ws_rows[2].name == "Phase 3 - Access Control, Observability, and Pilot Readiness"
+    assert ws_rows[3].name == "Phase 4 - Launch and Handoff"
+
+    # Verify no Unclassified workstreams or G_N placeholders exist
+    for r in wb.schedule_rows:
+        assert "Unclassified" not in r.workstream
+        assert not r.workstream.startswith("G_")
+
+
+def test_ms_13_genuinely_phase_less_sow_still_exercises_map_09_keyword_fallback():
+    """MS-13: A genuinely phase-less SOW still correctly falls through to MAP-09 keyword classifier."""
+    from src.core.models import StartupKitBaseline
+    from src.llm.validation import reconcile_gates_and_checkpoints
+
+    ms1 = Milestone(id="M1", description="Initial Kickoff, Architecture Discovery and Workshop: discovery and scoping")
+    ms2 = Milestone(id="M2", description="Data Integration and ETL Pipeline Implementation: data pipelines")
+    ms3 = Milestone(id="M3", description="Arbitrary Generic Activity with No Known Keywords: foobar baz qux")
+
+    p1 = parse_milestone_phase(ms1)
+    assert p1.phase_code is None
+    assert p1.workstream_name == "Discovery & Requirements"
+    assert p1.has_phase_label is False
+
+    p2 = parse_milestone_phase(ms2)
+    assert p2.phase_code is None
+    assert p2.workstream_name == "Data & Integration"
+    assert p2.has_phase_label is False
+
+    p3 = parse_milestone_phase(ms3)
+    assert p3.phase_code is None
+    assert p3.workstream_name == "Unclassified"
+    assert p3.has_phase_label is False
+
+    baseline = StartupKitBaseline(
+        project_name="Phase-less Project",
+        deliverables=[],
+        milestones=[ms1, ms2, ms3],
+        sow_stories_catalogue=[],
+        backlog_seed=[]
+    )
+
+    findings = []
+    reconcile_gates_and_checkpoints(baseline, findings)
+
+    # In a phase-less SOW, internal phase codes remain G_1, G_2, G_3 and phase_display is None
+    assert [m.phase for m in baseline.milestones] == ["G_1", "G_2", "G_3"]
+    assert [m.phase_display for m in baseline.milestones] == [None, None, None]
