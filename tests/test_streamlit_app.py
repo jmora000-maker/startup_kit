@@ -1826,3 +1826,133 @@ def test_fact_review_download_button_partial_failure_renders_available_and_warns
     assert run_id in rec.getMessage()
     assert "Corrupt_File.xlsx" in rec.getMessage()
     assert "Access denied on storage object" in rec.getMessage()
+
+
+def test_demo_fixture_hidden_when_backend_is_gcp(tmp_path, monkeypatch):
+    """When REVIEW_STORAGE_BACKEND is 'gcp', the demo fixture option is hidden from run selector."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.config import config
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+    from src.review_ui.facts import DEMO_FIXTURE_OPTION
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+    monkeypatch.setattr(config, "review_storage_backend", "gcp")
+
+    baseline = StartupKitBaseline(
+        project_name="GCP Backend Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="GCP Backend Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="GCP Backend Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+
+    assert not at.exception
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert not any(DEMO_FIXTURE_OPTION in opt for opt in selector.options)
+    assert any(run_id in opt for opt in selector.options)
+
+
+def test_demo_fixture_hidden_when_fixture_file_missing(tmp_path, monkeypatch):
+    """When the demo fixture baseline file does not exist on disk, the demo fixture option is hidden."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+    from src.review_ui import facts as review_facts
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+    monkeypatch.setattr(review_facts, "FIXTURE_BASELINE_PATH", tmp_path / "nonexistent" / "baseline.json")
+
+    baseline = StartupKitBaseline(
+        project_name="Missing Fixture Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Missing Fixture Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Missing Fixture Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+
+    assert not at.exception
+    selector = at.selectbox(key="fact_review_run_selector")
+    assert not any(review_facts.DEMO_FIXTURE_OPTION in opt for opt in selector.options)
+    assert any(run_id in opt for opt in selector.options)
+
+
+def test_demo_fixture_load_run_baseline_defensive_fallback(tmp_path, monkeypatch):
+    """load_run_baseline returns None when demo fixture file is missing, and UI gracefully handles it."""
+    from streamlit.testing.v1 import AppTest
+    from src.review_storage.local import LocalReviewStorage
+    from src.review_ui import facts as review_facts
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+    monkeypatch.setattr(review_facts, "FIXTURE_BASELINE_PATH", tmp_path / "nonexistent" / "baseline.json")
+
+    # Direct unit test of load_run_baseline
+    result = review_facts.load_run_baseline(review_facts.DEMO_FIXTURE_OPTION)
+    assert result is None
+
+    # Test UI when no runs exist and fixture is missing
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+
+    assert not at.exception
+    info_messages = [i.value for i in at.info]
+    assert any("No runs available for review" in msg for msg in info_messages)
+
+
+def test_demo_fixture_selected_when_file_missing_shows_info_message(tmp_path, monkeypatch):
+    """When DEMO_FIXTURE_LABEL is selected but fixture baseline is missing, UI renders info banner without crashing."""
+    from streamlit.testing.v1 import AppTest
+    from src.review_storage.local import LocalReviewStorage
+    from src.review_ui import facts as review_facts
+    from src.review_ui import state_persistence
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    # Pre-seed session state / persistence store with DEMO_FIXTURE_LABEL as selected_run_id
+    state_persistence.get_store("fact_review_page")["selected_run_id"] = review_facts.DEMO_FIXTURE_OPTION
+    monkeypatch.setattr(review_facts, "FIXTURE_BASELINE_PATH", tmp_path / "nonexistent" / "baseline.json")
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+
+    assert not at.exception
+    info_messages = [i.value for i in at.info]
+    assert any("The demo fixture is only available in local development environments." in msg or "No runs available for review" in msg for msg in info_messages)

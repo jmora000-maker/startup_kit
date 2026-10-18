@@ -88,9 +88,11 @@ def load_baseline(path: Path = FIXTURE_BASELINE_PATH) -> StartupKitBaseline:
 def load_run_baseline(
     run_id: str,
     storage: Optional[Any] = None,
-) -> StartupKitBaseline:
+) -> Optional[StartupKitBaseline]:
     """Load and prepare a baseline from review storage (HTL-13) or the demo fixture."""
     if run_id == DEMO_FIXTURE_OPTION:
+        if not FIXTURE_BASELINE_PATH.exists():
+            return None
         raw = load_baseline(FIXTURE_BASELINE_PATH)
     else:
         from src.review_storage import get_review_storage

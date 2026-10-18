@@ -25,6 +25,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 import streamlit as st  # noqa: E402
 
+from src.config import config
 from src.review_storage import get_review_storage  # noqa: E402
 from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
@@ -93,15 +94,27 @@ def _render_fact_review_page() -> None:
             if len(parts) == 3 and parts[1] not in approved_run_ids:
                 st.session_state[k] = False
 
-    # Build run selection options: active runs first, followed by the demo fixture
-    options = [r.run_id for r in runs] + [DEMO_FIXTURE_LABEL]
+    # Build run selection options: active runs first, followed by the demo fixture if available and local
+    show_demo_fixture = (
+        config.review_storage_backend not in ("gcp", "firestore")
+        and review.FIXTURE_BASELINE_PATH.exists()
+    )
+    options = [r.run_id for r in runs]
+    if show_demo_fixture:
+        options.append(DEMO_FIXTURE_LABEL)
+
+    if not options:
+        st.info("No runs available for review.")
+        return
+
     label_map = {
         r.run_id: f"{r.project_name or r.run_id} ({r.run_id})"
         if r.state == "pending_review"
         else f"{r.project_name or r.run_id} ({r.run_id}) [{r.state}]"
         for r in runs
     }
-    label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
+    if show_demo_fixture:
+        label_map[DEMO_FIXTURE_LABEL] = DEMO_FIXTURE_LABEL
 
     def _canonical_run_id(val: Any) -> str:
         if not val:
@@ -117,7 +130,7 @@ def _render_fact_review_page() -> None:
                 return opt
         return val_str
 
-    default_run_id = options[0] if options else DEMO_FIXTURE_LABEL
+    default_run_id = options[0] if options else ""
     current_selected = _canonical_run_id(
         state_persistence.persisted_value("fact_review_page", "selected_run_id", default_run_id)
     )
@@ -145,6 +158,9 @@ def _render_fact_review_page() -> None:
     is_fixture = selected_run_id == DEMO_FIXTURE_LABEL
     if is_fixture:
         baseline = review.load_run_baseline(DEMO_FIXTURE_LABEL)
+        if baseline is None:
+            st.info("The demo fixture is only available in local development environments.")
+            return
         categories = review.build_fact_categories(baseline)
         st.caption(
             f"Standalone review of `{review.FIXTURE_BASELINE_PATH.relative_to(review.REPO_ROOT).as_posix()}` "

@@ -1,0 +1,56 @@
+# Git & Version Control
+.git/
+.gitignore
+
+# Environment & Secrets (Crucial: never bake secrets into image)
+.env
+.env.*
+*.env
+
+# Local Review Queue & Scratch Storage (GCP Firestore/GCS used in production)
+review_queue/
+review_ui_scratch/
+review_uploads/
+
+# Input & Output data directories
+inputs/
+output/
+
+# Python Virtual Environments & Bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test suites, fixtures, and coverage artifacts
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE, Assistant & Editor metadata
+.idea/
+.vscode/
+.junie/
+.claude/
+.agents/
+
+# Local logs and emulator output
+*.log
+firestore-debug.log
+firebase-debug.log
+
+# PowerShell scripts & Windows local dev utilities
+*.ps1
+
+# Documentation, specifications, instructions & design reports
+docs/
+spec/
+reports/
+instructions/
+
+# Local temporary test files
+temp_test*
