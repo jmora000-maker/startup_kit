@@ -549,7 +549,6 @@ def _build_schedule(ctx: _Ctx, kicker: str) -> SlideSpec:
     b, wb = ctx.baseline, ctx.wb
     names = {d.id: (d.name or d.description) for d in b.deliverables}
     level2 = [r for r in wb.schedule_rows if r.row_type in ("Milestone", "Checkpoint")]
-    show_names = len(b.deliverables) <= 20
 
     def build_rows(with_names: bool) -> List[RowSpec]:
         rows: List[RowSpec] = []
@@ -603,7 +602,7 @@ def _build_schedule(ctx: _Ctx, kicker: str) -> SlideSpec:
     table = TableSpec("Table: Schedule", L.CONTENT_X0, L.CONTENT_Y0, list(L.SCHEDULE_COLS), list(FT.TABLE_HEADERS[3]), [], deliverables_pt=L.TABLE_BODY_PT)
     avail = round(L.CONTENT_Y1 - table.y, 2)
     omitted = 0
-    plans = [(True, L.TABLE_BODY_PT), (True, L.TABLE_DELIVERABLES_MIN_PT), (False, L.TABLE_BODY_PT)] if show_names else [(False, L.TABLE_BODY_PT)]
+    plans = [(True, L.TABLE_BODY_PT), (True, L.TABLE_DELIVERABLES_MIN_PT)]
     for with_names, pt in plans:
         table.deliverables_pt = pt
         all_rows = build_rows(with_names)
