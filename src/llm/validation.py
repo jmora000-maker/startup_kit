@@ -236,7 +236,15 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
         for idx, ms in enumerate(baseline.milestones, start=1):
             phase_to_gate[f"P{idx}"] = ms.id
 
-    catalogue = baseline.sow_stories_catalogue or []
+    has_real_work_items = any(
+        detect_sow_reference_kind(item.reference or "") != "Section"
+        for item in (baseline.sow_stories_catalogue or [])
+    )
+    catalogue = [
+        item for item in (baseline.sow_stories_catalogue or [])
+        if not (has_real_work_items and detect_sow_reference_kind(item.reference or "") == "Section")
+    ]
+    baseline.sow_stories_catalogue = catalogue
     
     # VAL-09, REF-05: Assign title and phase to catalogue items from grouping or references
     for item in catalogue:
@@ -314,9 +322,27 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
     for d in baseline.deliverables:
         items = deliv_to_items.get(d.id, [])
         if items:
+            # MAP-16: Roll up linked catalogue/work package references to deliverable sow_reference if missing or only section citation
+            existing_clean_refs = [
+                r for r in extract_sow_references(d.sow_reference or "")
+                if not has_real_work_items or detect_sow_reference_kind(r) != "Section"
+            ]
+            if existing_clean_refs:
+                d.sow_reference = ", ".join(existing_clean_refs)
+            else:
+                d_refs = [
+                    item.reference for item in items
+                    if item.reference and (not has_real_work_items or detect_sow_reference_kind(item.reference) != "Section")
+                    and (item.deliverable_id == d.id or (not item.deliverable_id and item not in unmatched_items))
+                ]
+                d.sow_reference = ", ".join(d_refs) if d_refs else None
+
             for item in items:
                 ref_str = item.reference or ""
-                clean_refs = extract_sow_references(ref_str)
+                clean_refs = [
+                    r for r in extract_sow_references(ref_str)
+                    if not has_real_work_items or detect_sow_reference_kind(r) != "Section"
+                ]
                 sow_ref_val = ", ".join(clean_refs) if clean_refs else ref_str
 
                 # Determine linked milestone from work item phase (VAL-02)
@@ -373,7 +399,10 @@ def rebuild_backlog_from_catalogue(baseline: StartupKitBaseline, findings: List[
                 wp_idx += 1
         else:
             # Deliverable has no individual catalogue items: create single package
-            clean_refs = extract_sow_references(d.sow_reference or "")
+            clean_refs = [
+                r for r in extract_sow_references(d.sow_reference or "")
+                if not has_real_work_items or detect_sow_reference_kind(r) != "Section"
+            ]
             sow_ref_val = ", ".join(clean_refs) if clean_refs else ""
             
             # Determine phase from deliverable name/description
@@ -763,6 +792,33 @@ def validate_commercial_guardrails(baseline: StartupKitBaseline, findings: List[
         cg.escalation_threshold = "Milestone slip > 3 days or client acceptance rejection [Standard PMO guardrail - confirm]."
 
 
+def validate_deliverable_work_output_count(baseline: StartupKitBaseline, findings: List[ValidationFinding]) -> None:
+    """VAL-12 / INV-39: Flag mismatch between count of distinct Work Output items and Deliverable count."""
+    catalogue = baseline.sow_stories_catalogue or []
+    if not catalogue or not baseline.deliverables:
+        return
+
+    # Check for Work Output / Deliverable / Synthetic scope items representing SOW Work Output table bullets
+    wo_items = [
+        item for item in catalogue
+        if detect_sow_reference_kind(item.reference or "") != "Section"
+        and (
+            item.reference_kind in ("Deliverable number", "Task or WBS code", "Synthetic")
+            or any(k in (item.reference or "").upper() for k in ("WO", "WORK OUTPUT", "DELIVERABLE", "SOW-"))
+        )
+    ]
+
+    if wo_items and len(baseline.deliverables) != len(wo_items):
+        findings.append(ValidationFinding(
+            invariant_id="INV-39",
+            severity="warning",
+            message=(
+                f"Deliverable count ({len(baseline.deliverables)}) does not match SOW Work Output item count ({len(wo_items)}). "
+                f"SOW has {len(wo_items)} distinct work output items in catalogue; check for consolidated or missing deliverables."
+            )
+        ))
+
+
 def validate_and_repair_baseline(
     baseline: StartupKitBaseline,
     date_conflict_warning: Optional[str] = None,
@@ -802,6 +858,9 @@ def validate_and_repair_baseline(
 
     # 10. CHK-06: Commercial guardrails cleaning
     validate_commercial_guardrails(baseline, findings)
+
+    # 10b. VAL-12/INV-39: Work output count vs Deliverable count mismatch check
+    validate_deliverable_work_output_count(baseline, findings)
 
     # 11. Synchronize checklist with repaired baseline state
     from src.scoring.readiness_engine import ReadinessScoringEngine

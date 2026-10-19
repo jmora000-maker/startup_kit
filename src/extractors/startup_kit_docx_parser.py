@@ -358,6 +358,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
             for s_id in extract_sow_references(text_block):
+                if detect_sow_reference_kind(s_id) == "Section":
+                    continue
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
                     sow_stories_catalogue.append(SOWWorkItem(
@@ -379,6 +381,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 if re.match(r'^[A-Za-z0-9_\-]+$', parts[0].strip()):
                     extracted_title = parts[1].strip()
             for s_id in extract_sow_references(text_block):
+                if detect_sow_reference_kind(s_id) == "Section":
+                    continue
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
                     sow_stories_catalogue.append(SOWWorkItem(

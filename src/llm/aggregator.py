@@ -142,7 +142,9 @@ class BaselineAggregator:
                         if getattr(acc_item, "owner", None) and (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")):
                             d.owner = getattr(acc_item, "owner")
                         if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
-                            d.sow_reference = getattr(acc_item, "sow_reference")
+                            acc_ref = getattr(acc_item, "sow_reference")
+                            if detect_sow_reference_kind(acc_ref) != "Section":
+                                d.sow_reference = acc_ref
                         if getattr(acc_item, "rejection_rework_path", None) and not d.rejection_rework_path:
                             d.rejection_rework_path = getattr(acc_item, "rejection_rework_path")
                         rw_val = getattr(acc_item, "review_window", None)
@@ -188,7 +190,9 @@ class BaselineAggregator:
                     if (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")) and acc_item.owner and acc_item.owner not in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]"):
                         d.owner = acc_item.owner
                     if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
-                        d.sow_reference = getattr(acc_item, "sow_reference")
+                        acc_ref = getattr(acc_item, "sow_reference")
+                        if detect_sow_reference_kind(acc_ref) != "Section":
+                            d.sow_reference = acc_ref
 
             for d in deliverables:
                 if not d.review_window or d.review_window.strip().lower() == "5 business days" or "[CONFIRMATION REQUIRED]" in d.review_window:
@@ -481,17 +485,34 @@ class BaselineAggregator:
         # 9. Build SOW Story / Work Item Catalogue & Scope Decomposition Backlog Seed (Layer 2, v4 B4, v5 B13, v6 Section 1.1)
         sow_stories_catalogue: List[SOWWorkItem] = []
         seen_catalogue_stories: Set[str] = set()
+        deliv_to_catalogue_refs: dict[str, list[str]] = {}
 
         if backlog_ext and getattr(backlog_ext, "work_items", None):
             for item in backlog_ext.work_items:
                 ref = (item.reference or "").strip()
-                if ref and ref not in seen_catalogue_stories:
-                    seen_catalogue_stories.add(ref)
-                    sow_stories_catalogue.append(item)
+                if ref and detect_sow_reference_kind(ref) != "Section":
+                    if ref not in seen_catalogue_stories:
+                        seen_catalogue_stories.add(ref)
+                        sow_stories_catalogue.append(item)
+                    if item.deliverable_id:
+                        deliv_to_catalogue_refs.setdefault(item.deliverable_id, []).append(ref)
+
+        # Roll up linked catalogue references to deliverables (clean work-item identifiers only)
+        for d in deliverables:
+            if d.id in deliv_to_catalogue_refs:
+                d.sow_reference = ", ".join(deliv_to_catalogue_refs[d.id])
+            elif d.sow_reference:
+                clean_refs = [
+                    r for r in extract_sow_references(d.sow_reference)
+                    if detect_sow_reference_kind(r) != "Section"
+                ]
+                d.sow_reference = ", ".join(clean_refs) if clean_refs else None
 
         for d in deliverables:
             text_block = f"{d.name or ''} {d.description or ''} {d.sow_reference or ''}"
             for s_id in extract_sow_references(text_block):
+                if detect_sow_reference_kind(s_id) == "Section":
+                    continue
                 if s_id not in seen_catalogue_stories:
                     seen_catalogue_stories.add(s_id)
                     sow_stories_catalogue.append(SOWWorkItem(

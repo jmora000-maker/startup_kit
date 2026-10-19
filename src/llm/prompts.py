@@ -42,10 +42,12 @@ DOCUMENTS CONTENT:
 
 DELIVERABLES_PROMPT = """Analyze the provided project documents and extract key contractual project deliverables.
 
-CONSTRAINTS:
-1. Focus strictly on top key contractual deliverables and major deliverables (maximum 15-20 deliverables).
-2. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.
-3. Keep acceptance criteria concise and direct (1-2 sentences). If not explicitly stated, you MUST set acceptance_criteria to null.
+INSTRUCTIONS:
+1. When the SOW presents Work Output as distinct bullet points, table rows, or numbered scope items (e.g. under Milestones or in a Work Output / Acceptance Criteria table), extract EVERY single distinct, separately-bulleted Work Output item as its own separate Deliverable object (strict 1:1 mapping, no consolidation or merging of distinct bullets into single deliverables).
+2. For SOWs that do NOT use bulleted or numbered Work Output lists (e.g. narrative prose paragraphs), extract each distinct contractual commitment or deliverable stated in the text without artificially inflating or inventing items, preserving the true granularity stated in the source.
+3. For each deliverable, attach its exact paired Acceptance Criteria from the SOW (e.g., from the corresponding row or bullet in the Acceptance Criteria table). Ensure every Acceptance Criteria bullet corresponding to a given Work Output bullet is preserved and attached to that bullet's own deliverable — never dropped or reassigned to a different deliverable.
+4. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.
+5. If explicit acceptance criteria are provided in the text, extract them concisely and directly without referencing documents. If NOT explicitly stated, you MUST set acceptance_criteria to null.
 
 For each deliverable:
 - id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)
@@ -53,7 +55,7 @@ For each deliverable:
 - description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.
 - owner: Named owner or role if stated, else 'Unassigned'.
 - acceptance_criteria: Exact explicit acceptance criteria if provided in the text (state concisely and directly without referencing the SOW or documents). If NOT explicitly stated, you MUST set this to null.
-- sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or section references) if mentioned, else null.
+- sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or synthetic work item codes such as WO-M1-01) if mentioned, else null. Do NOT include section or clause citations here; section/clause locations belong in source_reference.
 - source_reference: The source document name, section/clause, and confidence score.
 
 DOCUMENTS CONTENT:
@@ -170,7 +172,7 @@ DOCUMENTS CONTENT:
 ACCEPTANCE_PROCESS_PROMPT = """Analyze the deliverables in the provided documents and extract explicit acceptance process details. Keep descriptions concise, direct, and self-contained without referencing the SOW or other documents.
 
 CONSTRAINTS:
-1. Focus only on primary deliverables and major acceptance gates (maximum 15 deliverables).
+1. Extract acceptance process details for each distinct contractual deliverable identified in the SOW (matching the 1:1 granularity of the SOW's Work Output and Acceptance Criteria).
 2. Keep all text fields (description, acceptance criteria, evidence, rework path) brief and direct (1-2 sentences maximum).
 3. Do NOT cite or reference the SOW, contracts, or source documents in descriptions or criteria.
 
@@ -178,7 +180,7 @@ For each deliverable:
 - id: Deliverable ID (DEL-01, etc.)
 - name: Deliverable title
 - description: Concise deliverable description (1-2 sentences)
-- sow_reference: Section or clause reference
+- sow_reference: SOW work item reference (e.g. story ID, deliverable number, task code) if mentioned, else null. Do NOT include section or clause citations.
 - acceptance_criteria: Explicit criteria or null (do not cite documents)
 - evidence_required: Documents, artifacts, or sign-offs required as proof (1-2 sentences)
 - client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'
