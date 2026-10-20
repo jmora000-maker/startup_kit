@@ -1,2 +1,2 @@
 # src/version.py
-__version__ = "0.8.37"
+__version__ = "0.8.38"
