@@ -18,12 +18,21 @@ The tool reads a Statement of Work (SOW) and produces four standardized project 
 - the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
 - the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
 
+### Execution Interfaces & Storage Architecture
+The tool supports two primary workflows:
+- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to upload SOWs, inspect and edit extracted baseline facts, approve readiness scoring, and generate deliverables through a web interface.
+- **Command-Line Interface (CLI)**: Run `python main.py` for batch extraction, headless processing, and automated pipeline execution.
+
+**Dual Storage Backend**: Review run states and generated documents are managed through the `ReviewStorage` abstraction (`src/review_storage/`):
+- `LocalReviewStorage` (default): Persists run metadata and documents to the local file system (`review_queue/` and `output/`).
+- `FirestoreReviewStorage`: Persists run metadata to Google Cloud Firestore and generated files to Google Cloud Storage (`toptal-startup-kit-outputs` bucket). Selected dynamically via `get_review_storage()` when `REVIEW_STORAGE_BACKEND=gcp`.
+
 ---
 
 ## 2. Setup
 
 ### Prerequisites & Python Environment
-- Python 3.10+ (Python 3.11+ recommended)
+- Python 3.14 (matches `Dockerfile` and `.venv`)
 - Virtual environment (`venv`)
 
 ```bash
@@ -40,8 +49,25 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Local Development Stack (Emulators & Dev Servers)
+For local development and running the complete test suite or Human Review UI with cloud storage features, two local emulators are used:
+- **Firestore Emulator**: Port `8080` (`127.0.0.1:8080`, UI on port `4000`). Start with:
+  ```powershell
+  firebase emulators:start --only firestore
+  ```
+- **Cloud Storage Emulator (`fake-gcs-server`)**: Port `4443` (`http://localhost:4443`). Start with:
+  ```powershell
+  fake-gcs-server.exe -scheme http -port 4443
+  ```
+- **One-Command Dev Startup**: Run `start-dev-servers.ps1` to launch the Firestore emulator, Cloud Storage emulator, and the Streamlit app together in separate PowerShell windows:
+  ```powershell
+  .\start-dev-servers.ps1
+  ```
+
+For complete local emulator prerequisites (Node.js, Java JDK, Firebase CLI, fake-gcs-server) and configuration details, see [docs/GCP_Firestore_CloudStorage_Setup.md](docs/GCP_Firestore_CloudStorage_Setup.md).
+
 ### Environment Configuration (`.env`)
-Create a `.env` file in the project root to configure application paths and API keys:
+Create a `.env` file in the project root to configure application paths, API keys, and storage settings:
 
 - `INPUTS_DIR`: Path to the default inputs directory containing SOWs and input documents.
 - `MOCK_INPUTS_DIR`: Path to the mock inputs directory used during offline `--mock` runs.
@@ -59,6 +85,14 @@ Create a `.env` file in the project root to configure application paths and API 
 - `LLM_CACHE_MODE`: Default LLM caching mode (`off`, `record`, or `replay`).
 - `LLM_CACHE_DIR`: Directory path where LLM request/response cache fixtures are stored.
 - `DECK_TEMPLATE_PATH`: Path to PowerPoint presentation template (default: `templates/Toptal_Presentation_Template.pptx`).
+- `REVIEW_STORAGE_BACKEND`: Storage backend selector (`local` [default] or `gcp` / `firestore`). Determines whether paused human review runs are stored locally in `review_queue/` or in Google Cloud Firestore and Cloud Storage.
+- `ADMIN_PASSPHRASE`: Passphrase protecting the Streamlit UI "Advanced (admin)" section. **WARNING**: The default value `dev-only-change-me` is intended strictly for local development and MUST be changed for any deployment beyond local development.
+- `GCS_BUCKET_NAME`: Target Google Cloud Storage bucket name for generated deliverables (default: `toptal-startup-kit-outputs`).
+- `GOOGLE_CLOUD_PROJECT`: Google Cloud Platform project ID (default: `toptal-delivery-apps`).
+- `FIRESTORE_EMULATOR_HOST`: Host/port override for connecting to local Firestore emulator (e.g. `127.0.0.1:8080`).
+- `STORAGE_EMULATOR_HOST`: Endpoint URL override for connecting to local Cloud Storage emulator (e.g. `http://localhost:4443`).
+- `SOFFICE_PATH`: Optional explicit path to LibreOffice executable (`soffice`) for rendering presentation slides to PNG images (`src.tools.render_deck`).
+- `NO_COLOR`: Set to disable ANSI color formatting in CLI output reports.
 
 ---
 
@@ -162,6 +196,20 @@ The testing framework employs a multi-tiered validation architecture:
    ```bash
    pytest -q
    ```
+   *Note on Emulator Dependencies*: Three test suites (`tests/test_firestore_client.py`, `tests/test_gcs_client.py`, and `tests/test_firestore_review_storage.py`) test the Firestore and Cloud Storage integrations and require both local emulators to be running. To avoid connection timeouts when running the full test suite, start both emulators beforehand:
+   - Via the one-command startup script:
+     ```powershell
+     .\start-dev-servers.ps1
+     ```
+   - Or by starting each emulator in a separate terminal:
+     ```powershell
+     # Terminal 1: Firestore Emulator (port 8080)
+     firebase emulators:start --only firestore
+
+     # Terminal 2: Cloud Storage Emulator (port 4443)
+     fake-gcs-server.exe -scheme http -port 4443
+     ```
+   Offline unit test suites without emulator dependencies (e.g. `pytest tests/test_models.py`, `pytest tests/test_scoring.py`) can be executed independently at any time.
 
 ---
 
@@ -206,13 +254,27 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 
 ---
 
+## Cloud Run Deployment
+
+The Startup Kit application is containerized with Docker (`Dockerfile` based on `python:3.14-slim`) for deployment to Google Cloud Run in the `toptal-delivery-apps` GCP project:
+- The app runs headless Streamlit (`src/review_ui/app.py`).
+- The storage layer is configured with `REVIEW_STORAGE_BACKEND=gcp`, persisting run metadata in Google Cloud Firestore and generated documents in Google Cloud Storage (`toptal-startup-kit-outputs`).
+- Secrets (such as `ANTHROPIC_API_KEY`) are injected at container startup via Secret Manager.
+- Service access is restricted with `--no-allow-unauthenticated`, requiring explicit IAM invoker permissions (`roles/run.invoker`).
+
+For full deployment instructions, IAM prerequisites, Secret Manager setup, and verification checklists, see [docs/Cloud_Run_Deployment.md](docs/Cloud_Run_Deployment.md) and [docs/GCP_Firestore_CloudStorage_Setup.md](docs/GCP_Firestore_CloudStorage_Setup.md).
+
+---
+
 ## 8. Project Structure
 
 ```text
 startup_kit/
+├── docs/                   # Architecture, GCP emulator setup, and Cloud Run deployment guides
 ├── inputs/                 # Input directory for SOWs and project documentation (.pdf, .docx, .pptx, .txt)
 ├── output/                 # Output directory for generated Word reports and Excel workbooks
 ├── reports/                # Specification revision and verification reports
+├── review_queue/           # Local file storage for Human Review run metadata and documents
 ├── review_uploads/         # Staging directory for review bundles collected by make_review_copies.ps1
 ├── spec/                   # Authoritative specification documents and revision history
 ├── src/
@@ -220,16 +282,26 @@ startup_kit/
 │   ├── extractors/         # Multi-format document parsers and ingestion coordinator
 │   ├── generators/         # Document writers for Word reports (.docx) and Project Delivery Workbook (.xlsx)
 │   ├── llm/                # LLM clients, prompt templates, structured domain extractors, and caching
+│   ├── review_storage/     # Dual storage backends (LocalReviewStorage, FirestoreReviewStorage)
+│   ├── review_ui/          # Streamlit web interface for human review and deliverable generation
 │   ├── scoring/            # 4-dimension readiness scoring engine and CLI telemetry reporting
+│   ├── storage/            # Standalone Firestore and Google Cloud Storage client modules
 │   └── tools/              # Utility scripts for artifact checking, normalization, and fixture recording
+├── templates/              # PowerPoint presentation templates for onboarding deck generation
 ├── tests/
 │   ├── fixtures/           # SOW inputs and recorded LLM cache payloads
 │   ├── oracles/            # Human-curated ground truth facts per SOW
 │   ├── snapshots/          # Approved golden snapshots for regression testing
 │   └── snapshots_proposed/ # Proposed snapshot updates generated during test runs
+├── .dockerignore           # Exclusions for Docker image builds
+├── Dockerfile              # Container configuration for Cloud Run deployment (Python 3.14-slim)
+├── firebase.json           # Firebase local emulator configuration
+├── firestore.indexes.json  # Firestore composite index definitions
+├── firestore.rules         # Firestore security rules
 ├── main.py                 # CLI entry point
 ├── make_review_copies.ps1  # Helper script to assemble snapshot review bundles
 ├── promote_snapshots.ps1   # Safe snapshot promotion and verification script
+├── README.md               # Tool documentation and user guide
 ├── requirements.txt        # Python package dependencies
-└── README.md               # Tool documentation and user guide
+└── start-dev-servers.ps1   # Local development server orchestrator (emulators + Streamlit)
 ```
