@@ -137,7 +137,7 @@ TOOL_RESERVED_PREFIXES: set[str] = {
 # Configurable, ordered list of (Kind, Pattern) tuples for SOW reference detection (v6 Section 1.1)
 SOW_REFERENCE_PATTERNS: list[tuple[str, str]] = [
     ("Story ID", r"\b[A-Z][A-Z0-9]{1,9}-\d{2,6}\b"),
-    ("Deliverable number", r"\b(?:Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Work\s+Output\s+\d+(?:\.\d+)*|WO-\d+)\b"),
+    ("Deliverable number", r"\b(?:Deliverable\s+\d+(?:\.\d+)*|D\d+(?:\.\d+)*|Work\s+Output\s+\d+(?:\.\d+)*|WO-\d+(?:\.\d+)*)\b"),
     ("Task or WBS code", r"\b(?:Task|WBS)\s+\d+(?:\.\d+)*\b"),
     ("Section", r"\b(?:Section|Clause|§)\s*\d+(?:\.\d+)*\b"),
 ]
