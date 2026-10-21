@@ -11,7 +11,7 @@ import json
 import re
 import shutil
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -88,6 +88,33 @@ class LocalReviewStorage(ReviewStorage):
         self._write_json(self._status_path(run_id), status_data)
         return run_id
 
+    @staticmethod
+    def _parse_timestamp(raw_val: Optional[str]) -> Optional[datetime]:
+        if not raw_val:
+            return None
+        try:
+            iso_clean = raw_val.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(iso_clean)
+            if dt.tzinfo is not None:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt
+        except (ValueError, TypeError):
+            return None
+
+    def mark_generation_started(self, run_id: str, when: Optional[datetime] = None) -> None:
+        """HTL-39: Record when document generation began to detect interrupted runs."""
+        status_path = self._status_path(run_id)
+        if when is None:
+            ts = datetime.now(timezone.utc)
+        elif when.tzinfo is not None:
+            ts = when.astimezone(timezone.utc)
+        else:
+            ts = when
+        with _UPDATE_LOCK:
+            status_data = self._read_json(status_path)
+            status_data["generation_started_at"] = ts.isoformat()
+            self._write_json(status_path, status_data)
+
     def get_run(self, run_id: str) -> ReviewRun:
         baseline = self._read_json(self._baseline_path(run_id))
         validation_report = self._read_json(self._validation_report_path(run_id))
@@ -97,6 +124,7 @@ class LocalReviewStorage(ReviewStorage):
             project_name=baseline.get("project_name", ""),
             state=status["state"],
             created_at=self._created_at(run_id),
+            generation_started_at=self._parse_timestamp(status.get("generation_started_at")),
             baseline=baseline,
             validation_report=validation_report,
             outputs=status.get("outputs"),
@@ -114,7 +142,8 @@ class LocalReviewStorage(ReviewStorage):
             baseline_path = self._baseline_path(run_id)
             if not status_path.exists() or not baseline_path.exists():
                 continue
-            run_state = self._read_json(status_path)["state"]
+            status_dict = self._read_json(status_path)
+            run_state = status_dict["state"]
             if state is not None and run_state != state:
                 continue
             project_name = self._read_json(baseline_path).get("project_name", "")
@@ -124,6 +153,7 @@ class LocalReviewStorage(ReviewStorage):
                     project_name=project_name,
                     state=run_state,
                     created_at=self._created_at(run_id),
+                    generation_started_at=self._parse_timestamp(status_dict.get("generation_started_at")),
                 )
             )
         return summaries

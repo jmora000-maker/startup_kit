@@ -544,6 +544,9 @@ def generate_approved_run(
             f"Cannot generate documents for run {run_id!r}: run state is {run.state!r}, expected 'approved'."
         )
 
+    if hasattr(storage, "mark_generation_started"):
+        storage.mark_generation_started(run_id)
+
     baseline = StartupKitBaseline.model_validate(run.baseline)
     if baseline.validation_report is None and run.validation_report:
         baseline.validation_report = ValidationReport.model_validate(run.validation_report)

@@ -339,3 +339,56 @@ def test_full_round_trip_resume_generation_with_firestore_storage(storage, tmp_p
     assert len(gcs_blobs) >= 3
     for ref_key, ref_blob in references.items():
         assert ref_blob in gcs_blobs
+
+
+def test_firestore_mark_generation_started_persists_timestamp(storage):
+    """HTL-39: mark_generation_started sets generation_started_at in Firestore doc."""
+    ts = int(datetime.now(timezone.utc).timestamp())
+    project = f"Interrupted Test {ts}"
+    initial_baseline = _create_sample_baseline(project_name=project)
+
+    run_id = storage.create_run(
+        project_name=project,
+        baseline=initial_baseline.model_dump(mode="json"),
+        validation_report={"summary": "Valid baseline"},
+    )
+    storage.update_status(run_id, APPROVED, if_state=PENDING_REVIEW)
+
+    run_before = storage.get_run(run_id)
+    assert run_before.generation_started_at is None
+
+    test_time = datetime(2026, 10, 21, 10, 30, 0)
+    storage.mark_generation_started(run_id, when=test_time)
+
+    run_after = storage.get_run(run_id)
+    assert run_after.generation_started_at is not None
+    assert run_after.generation_started_at.year == 2026
+    assert run_after.generation_started_at.month == 10
+    assert run_after.generation_started_at.day == 21
+
+    summaries = storage.list_runs()
+    matching_summary = next(s for s in summaries if s.run_id == run_id)
+    assert matching_summary.generation_started_at is not None
+
+
+def test_firestore_mark_generation_started_default_records_utc_timestamp(storage):
+    """HTL-39: mark_generation_started without when arg uses firestore.SERVER_TIMESTAMP in UTC."""
+    from datetime import timedelta
+    ts = int(datetime.now(timezone.utc).timestamp())
+    project = f"Interrupted Default {ts}"
+    initial_baseline = _create_sample_baseline(project_name=project)
+
+    run_id = storage.create_run(
+        project_name=project,
+        baseline=initial_baseline.model_dump(mode="json"),
+        validation_report={"summary": "Valid baseline"},
+    )
+    storage.update_status(run_id, APPROVED, if_state=PENDING_REVIEW)
+
+    before = datetime.now(timezone.utc).replace(tzinfo=None)
+    storage.mark_generation_started(run_id)
+    after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    run = storage.get_run(run_id)
+    assert run.generation_started_at is not None
+    assert before - timedelta(seconds=5) <= run.generation_started_at <= after + timedelta(seconds=5)

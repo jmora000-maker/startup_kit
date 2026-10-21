@@ -83,6 +83,7 @@ def write_run(
     validation_report: Any,
     outputs: Optional[Dict[str, Any]] = None,
     review_audit: Optional[Dict[str, Any]] = None,
+    generation_started_at: Optional[Any] = None,
     client: Optional[firestore.Client] = None,
 ) -> Dict[str, Any]:
     """Create or overwrite the runs/{run_id} document.
@@ -116,6 +117,11 @@ def write_run(
         run_data["created_at"] = existing_data["created_at"]
     else:
         run_data["created_at"] = firestore.SERVER_TIMESTAMP
+
+    if generation_started_at is not None:
+        run_data["generation_started_at"] = generation_started_at
+    elif existing_data and "generation_started_at" in existing_data:
+        run_data["generation_started_at"] = existing_data["generation_started_at"]
 
     if outputs is not None:
         run_data["outputs"] = _sanitize_for_firestore(outputs)

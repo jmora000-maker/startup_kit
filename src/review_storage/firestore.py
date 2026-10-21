@@ -5,7 +5,7 @@ Per schema design in docs/GCP_Firestore_CloudStorage_Setup.md Section 8.
 Uses existing tested storage functions in src/storage/firestore_client.py and src/storage/gcs_client.py.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional
@@ -103,6 +103,35 @@ class FirestoreReviewStorage(ReviewStorage):
 
         return run_id
 
+    @staticmethod
+    def _parse_timestamp(raw_val: Any) -> Optional[datetime]:
+        """Parse or recover a timestamp from datetime or ISO string in UTC."""
+        if raw_val is None:
+            return None
+        if isinstance(raw_val, datetime):
+            if raw_val.tzinfo is not None:
+                return raw_val.astimezone(timezone.utc).replace(tzinfo=None)
+            return raw_val
+        if isinstance(raw_val, str):
+            try:
+                iso_clean = raw_val.replace("Z", "+00:00")
+                dt = datetime.fromisoformat(iso_clean)
+                if dt.tzinfo is not None:
+                    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+                return dt
+            except ValueError:
+                pass
+        return None
+
+    def mark_generation_started(self, run_id: str, when: Optional[datetime] = None) -> None:
+        """HTL-39: Record when document generation began to detect interrupted runs."""
+        doc_ref = self.client.collection("runs").document(run_id)
+        ts = when if when is not None else firestore.SERVER_TIMESTAMP
+        doc_ref.update({
+            "generation_started_at": ts,
+            "updated_at": firestore.SERVER_TIMESTAMP,
+        })
+
     def get_run(self, run_id: str) -> ReviewRun:
         doc = fs_get_run(run_id, client=self.client)
         if doc is None:
@@ -113,6 +142,7 @@ class FirestoreReviewStorage(ReviewStorage):
         state = doc.get("status") or doc.get("state") or PENDING_REVIEW
         project_name = doc.get("project_name") or baseline.get("project_name", "")
         created_at = self._created_at(run_id, doc.get("created_at"))
+        generation_started_at = self._parse_timestamp(doc.get("generation_started_at"))
         outputs = doc.get("outputs")
 
         return ReviewRun(
@@ -120,6 +150,7 @@ class FirestoreReviewStorage(ReviewStorage):
             project_name=project_name,
             state=state,
             created_at=created_at,
+            generation_started_at=generation_started_at,
             baseline=baseline,
             validation_report=validation_report,
             outputs=outputs,
@@ -143,12 +174,14 @@ class FirestoreReviewStorage(ReviewStorage):
             project_name = doc.get("project_name") or baseline.get("project_name", "")
             run_state = doc.get("status") or doc.get("state") or PENDING_REVIEW
             created_at = self._created_at(run_id, doc.get("created_at"))
+            generation_started_at = self._parse_timestamp(doc.get("generation_started_at"))
             summaries.append(
                 ReviewRunSummary(
                     run_id=run_id,
                     project_name=project_name,
                     state=run_state,
                     created_at=created_at,
+                    generation_started_at=generation_started_at,
                 )
             )
         return summaries

@@ -210,3 +210,39 @@ def test_list_pending_runs_returns_only_runs_awaiting_review(storage):
 
     all_runs = storage.list_runs()
     assert {r.run_id for r in all_runs} == {id_pending, id_approved, id_rejected, id_generated}
+
+
+def test_mark_generation_started_persists_and_surfaces_timestamp(storage):
+    """HTL-39: mark_generation_started records timestamp on the run and is returned by get_run and list_runs."""
+    from datetime import datetime
+    run_id = storage.create_run("Timestamp Project", BASELINE, VALIDATION_REPORT)
+
+    run = storage.get_run(run_id)
+    assert run.generation_started_at is None
+
+    test_time = datetime(2026, 10, 21, 10, 30, 0)
+    storage.mark_generation_started(run_id, when=test_time)
+
+    # get_run reflects generation_started_at
+    updated_run = storage.get_run(run_id)
+    assert updated_run.generation_started_at == test_time
+
+    # list_runs reflects generation_started_at
+    summaries = storage.list_runs()
+    summary = next(s for s in summaries if s.run_id == run_id)
+    assert summary.generation_started_at == test_time
+
+
+def test_mark_generation_started_default_records_utc_timestamp(storage):
+    """HTL-39: Calling mark_generation_started(run_id) with no `when` argument records a UTC timestamp."""
+    from datetime import datetime, timezone, timedelta
+    run_id = storage.create_run("Default UTC Project", BASELINE, VALIDATION_REPORT)
+
+    before = datetime.now(timezone.utc).replace(tzinfo=None)
+    storage.mark_generation_started(run_id)
+    after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    run = storage.get_run(run_id)
+    assert run.generation_started_at is not None
+    # Confirm timestamp falls within the expected UTC time window
+    assert before - timedelta(seconds=2) <= run.generation_started_at <= after + timedelta(seconds=2)

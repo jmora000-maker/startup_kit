@@ -1,6 +1,7 @@
 """Abstract interfaces for the Startup Kit application."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Type, TypeVar, Optional, Any
 from src.core.models import ExtractedDocument, ReviewRun, ReviewRunSummary, StartupKitBaseline
@@ -121,6 +122,11 @@ class ReviewStorage(ABC):
         """Move a run to new_state. Raises if if_state is given and does not match the run's
         current state -- this is what makes a single Approve click uncontested (HTL-09); the
         check and the write must be atomic, with no update applied when the guard fails."""
+        pass
+
+    def mark_generation_started(self, run_id: str, when: Optional[datetime] = None) -> None:
+        """Record a timestamp indicating that document generation has started for run_id (HTL-39).
+        Allows detecting interrupted/timed-out generation runs on subsequent page loads."""
         pass
 
     @abstractmethod

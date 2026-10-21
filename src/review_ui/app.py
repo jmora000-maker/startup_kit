@@ -223,6 +223,13 @@ def _render_fact_review_page() -> None:
     if is_fixture:
         saved = st.button("Save review", key="fact_review_save_button")
     elif run.state == "approved":
+        if getattr(run, "generation_started_at", None) and not is_generating:
+            formatted_time = run.generation_started_at.strftime("%Y-%m-%d %H:%M:%S")
+            st.warning(
+                f"A previous document generation attempt for run '{selected_run_id}' was started at "
+                f"{formatted_time} UTC but did not complete (it may have been interrupted or timed out). "
+                f"You can safely retry generation by clicking 'Generate documents' below."
+            )
         generate_clicked = st.button(
             "Generate documents",
             key="fact_review_generate_button",

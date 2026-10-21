@@ -755,6 +755,7 @@ class ReviewRunSummary(BaseModel):
     project_name: str
     state: str
     created_at: datetime
+    generation_started_at: Optional[datetime] = Field(default=None)
 
 
 class ReviewRun(ReviewRunSummary):

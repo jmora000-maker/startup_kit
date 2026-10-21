@@ -1956,3 +1956,157 @@ def test_demo_fixture_selected_when_file_missing_shows_info_message(tmp_path, mo
     assert not at.exception
     info_messages = [i.value for i in at.info]
     assert any("The demo fixture is only available in local development environments." in msg or "No runs available for review" in msg for msg in info_messages)
+
+
+# HTL-39: Stuck-state detection on interrupted/timed-out document generation runs
+
+
+def test_htl_39_stuck_state_warning_displayed_on_interrupted_run(tmp_path, monkeypatch):
+    """HTL-39: When an approved run had a generation attempt that was interrupted/timed-out,
+    reloading or reconnecting to Fact Review surfaces a clear warning to the user with the
+    timestamp and an actionable 'Generate documents' button to retry."""
+    from datetime import datetime, date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Interrupted Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Interrupted Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Interrupted Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    # Approve the run
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    # Simulate an interrupted generation attempt that timed out (e.g. at 2026-10-21 02:45:00 UTC)
+    gen_started_ts = datetime(2026, 10, 21, 2, 45, 0)
+    storage.mark_generation_started(run_id, when=gen_started_ts)
+
+    # Launch app and open Fact Review
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    # Select the interrupted run
+    at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+    assert not at.exception
+
+    # Verify that a clear warning message is surfaced to the user
+    warnings = [w.value for w in at.warning]
+    assert len(warnings) >= 1
+    assert any("previous document generation attempt" in w and "interrupted or timed out" in w and "2026-10-21 02:45:00" in w for w in warnings)
+
+    # Verify that the 'Generate documents' button is present so the user can easily retry
+    gen_buttons = [b for b in at.button if b.key == "fact_review_generate_button"]
+    assert len(gen_buttons) == 1
+    assert not gen_buttons[0].disabled
+
+
+def test_htl_39_clean_approved_run_without_generation_attempt_has_no_interrupted_warning(tmp_path, monkeypatch):
+    """HTL-39: A freshly approved run with no prior generation attempt shows the normal
+    'Generate documents' button without any interrupted-run warning."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Fresh Approved Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Fresh Approved Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Fresh Approved Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+    assert not at.exception
+
+    warnings = [w.value for w in at.warning]
+    assert not any("interrupted or timed out" in w for w in warnings)
+
+    gen_buttons = [b for b in at.button if b.key == "fact_review_generate_button"]
+    assert len(gen_buttons) == 1
+
+
+def test_htl_39_stuck_state_warning_displayed_with_default_timestamp(tmp_path, monkeypatch):
+    """HTL-39: When mark_generation_started is called with no `when` argument, the UI warning
+    is still properly displayed with UTC timestamp formatting."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Interrupted Default Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 12, 1),
+        award_date_source="stated",
+        charter=ProjectStartupCharter(
+            project_name="Interrupted Default Project",
+            client_name="Test Corp",
+            governance_tier="Elevated",
+            contract_type="Fixed Bid",
+        ),
+    )
+    run_id = storage.create_run(
+        project_name="Interrupted Default Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    # Call with NO when argument
+    storage.mark_generation_started(run_id)
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+
+    at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+    assert not at.exception
+
+    warnings = [w.value for w in at.warning]
+    assert len(warnings) >= 1
+    assert any("previous document generation attempt" in w and "interrupted or timed out" in w and "UTC" in w for w in warnings)
