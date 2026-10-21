@@ -116,6 +116,18 @@ def collect_download_targets(run_result: RunResult) -> List[DownloadTarget]:
     return targets
 
 
+def is_admin_unlocked(entered_passphrase: str, configured_passphrase: str) -> bool:
+    """HTL-27: the Advanced (admin) section unlocks only on an exact, non-empty match against the
+    configured passphrase (``config.admin_passphrase``: an env var locally, a Secret Manager value
+    in production). An empty configured passphrase never unlocks, even against an empty entry --
+    there is always a non-empty value configured in practice (the dev-only placeholder, at worst),
+    so this is a defensive refusal, not a usable bypass.
+    """
+    if not configured_passphrase:
+        return False
+    return entered_passphrase == configured_passphrase
+
+
 def resolve_llm_settings(
     admin_unlocked: bool,
     provider: str = "",
@@ -479,19 +491,34 @@ def _persisted_selectbox(
 
 
 def _render_admin_gate(key_prefix: str) -> bool:
-    """HTL-27: a collapsed, closed-by-default "Advanced (admin)" expander.
-    Production defaults are used unless overridden via explicit confirmation checkbox."""
+    """HTL-27: a collapsed, closed-by-default "Advanced (admin)" expander. An ordinary user never
+    sees provider/model/mock/cache-mode controls at all -- they render only after this gate
+    reports unlocked. Rendered outside any st.form, since a passphrase check needs to take effect
+    immediately (a form only reacts on its own submit button)."""
     import streamlit as st
 
+    unlocked_key = f"{key_prefix}_admin_unlocked"
+    if unlocked_key not in st.session_state:
+        st.session_state[unlocked_key] = False
+
     with st.expander("Advanced (admin)", expanded=False):
-        st.caption(
-            "Custom LLM settings for administrative overrides. Production defaults are used unless overridden."
-        )
-        override = st.checkbox(
-            "Override default model configuration",
-            key=f"{key_prefix}_override_model_config",
-        )
-    return bool(override)
+        if st.session_state[unlocked_key]:
+            st.caption("Unlocked: LLM provider/model, mock mode, and cache mode are set below.")
+        else:
+            st.caption(
+                "Locked. Ordinary users do not need this section -- a run uses the server's "
+                "configured real provider with mock off and caching off until an admin unlocks it."
+            )
+            entered = st.text_input(
+                "Admin passphrase", type="password", key=f"{key_prefix}_admin_passphrase_input"
+            )
+            if st.button("Unlock", key=f"{key_prefix}_admin_unlock_button"):
+                if is_admin_unlocked(entered, config.admin_passphrase):
+                    st.session_state[unlocked_key] = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect passphrase.")
+    return st.session_state[unlocked_key]
 
 
 def render() -> None:
