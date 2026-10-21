@@ -46,3 +46,6 @@ firestore-debug.log
 firebase-debug.log
 
 sow/
+
+env-vars.yaml
+cloud-run-logs.txt
