@@ -185,7 +185,7 @@ gcloud run deploy startup-kit-app `
   --source . `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
-  --set-env-vars REVIEW_STORAGE_BACKEND=gcp,GCS_BUCKET_NAME=toptal-startup-kit-outputs,GOOGLE_CLOUD_PROJECT=toptal-delivery-apps,LLM_PROVIDER=anthropic `
+  --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
   --no-allow-unauthenticated
 ```
@@ -216,6 +216,21 @@ Confirm it exists with the right settings:
 gcloud storage buckets describe gs://toptal-delivery-apps_cloudbuild
 ```
 Check `retentionDurationSeconds: '0'` in the output. Then retry the build/deploy command above.
+
+**Deviation log, confirmed real on this project — a SECOND, separate bucket hits the same
+issue.** `gcloud run deploy --source` (as opposed to plain `gcloud builds submit`) stages its
+source upload through a *different* auto-created bucket, named `run-sources-<PROJECT_ID>-<REGION>`
+— fixing the `<PROJECT_ID>_cloudbuild` bucket above does **not** cover this one; it hit the exact
+same `softDeletePolicySeconds` error independently. Pre-create it the same way, with the real
+project ID and region substituted in:
+
+```powershell
+gcloud storage buckets create gs://run-sources-toptal-delivery-apps-us-east1 `
+  --location=us-east1 `
+  --soft-delete-duration=0
+```
+
+Confirm it exists with `retentionDurationSeconds: '0'` the same way as above, then retry.
 
 ### Manual two-step build (only if `--source` genuinely can't be used)
 
@@ -254,15 +269,55 @@ printed alongside the error.
 
 ## 6. Real deployment command (once `artifactregistry.writer` is granted)
 
+**Deviation log, confirmed real on this project — use a YAML file for environment variables, not
+the inline `--set-env-vars a=1,b=2,c=3` form.** The inline comma-separated form was tried first
+and failed: in this PowerShell invocation, all four variables were collapsed into a single string
+and assigned entirely to `REVIEW_STORAGE_BACKEND`, which the app correctly rejected
+(`Unknown REVIEW_STORAGE_BACKEND: 'gcp gcs_bucket_name=... ...'`). Rather than fight PowerShell's
+quoting/comma handling, create a YAML file and pass it instead — `gcloud` parses this directly
+with no shell-escaping ambiguity:
+
+```powershell
+cd C:\Users\james\PycharmProjects\PythonProject\Startup_Kit
+@"
+REVIEW_STORAGE_BACKEND: "gcp"
+GCS_BUCKET_NAME: "toptal-startup-kit-outputs"
+GOOGLE_CLOUD_PROJECT: "toptal-delivery-apps"
+LLM_PROVIDER: "anthropic"
+MAX_TOKENS: "65536"
+"@ | Set-Content -Path env-vars.yaml -Encoding utf8
+```
+
+(`MAX_TOKENS` is explained below, under "If extraction fails with a truncated-response error.")
+This file is local-only scaffolding for the deploy command, not part of the app's own source —
+add it to `.gitignore` rather than committing it, and regenerate it (or edit it directly) whenever
+a value needs to change, before the next deploy.
+
 ```powershell
 gcloud run deploy startup-kit-app `
   --source . `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
-  --set-env-vars REVIEW_STORAGE_BACKEND=gcp,GCS_BUCKET_NAME=toptal-startup-kit-outputs,GOOGLE_CLOUD_PROJECT=toptal-delivery-apps,LLM_PROVIDER=anthropic `
+  --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
   --no-allow-unauthenticated
 ```
+
+### If extraction fails with a truncated-response error
+
+```
+extraction failed: Anthropic response was truncated due to reaching max_tokens (16384). Payload is incomplete and cannot be parsed safely.
+```
+
+This means the model's real response for a given SOW was larger than the configured `MAX_TOKENS`
+ceiling, and the app correctly refused to parse an incomplete payload rather than silently
+producing wrong data. The configured model (`claude-sonnet-5-5`, as of this writing) supports up
+to 128K output tokens on the standard synchronous API — well above the default `MAX_TOKENS=16384`
+some SOWs can exceed, especially larger or more structurally complex ones, or ones that produce
+many distinct deliverables (see `MAP-16` in the spec). Raise `MAX_TOKENS` in `env-vars.yaml` (e.g.
+to `32768` or `65536` — a conservative step up rather than jumping straight to the full 128K, since
+a higher ceiling can mean higher cost/latency if the model actually uses that much space) and
+redeploy.
 
 ### Why each flag is set the way it is
 
@@ -356,6 +411,19 @@ person.
       **A redeploy is required after adding a new secret version** — Cloud Run reads a referenced
       secret at container startup only, not continuously, so an already-running revision keeps
       using whatever value it started with.
-- [ ] Confirm a real Generate succeeds end-to-end against the corrected secret (in progress)
+- [x] **Real deviation, now fixed in Section 6 above:** the inline `--set-env-vars a=1,b=2,c=3`
+      form failed in PowerShell, collapsing all four variables into one and being assigned
+      entirely to `REVIEW_STORAGE_BACKEND`. Switched to `--env-vars-file env-vars.yaml`, which
+      sidesteps shell quoting/comma-splitting ambiguity entirely.
+- [x] **Real deviation, now fixed:** once connectivity and the secret were both correct,
+      extraction still failed with `Anthropic response was truncated due to reaching max_tokens
+      (16384)` — the configured ceiling was too low for a real SOW's full response (the model
+      supports up to 128K). Raised `MAX_TOKENS` via `env-vars.yaml` (see Section 6).
+- [ ] Confirm a real Generate succeeds end-to-end against the corrected secret and raised
+      `MAX_TOKENS` (in progress)
 - [ ] Complete the rest of the post-deployment verification checklist (Section 8): confirm real
       Firestore/Storage data, confirm download buttons work against real cloud data
+- [ ] Interim access control (shared app-level passphrase via `ADMIN_PASSPHRASE`, gating the
+      whole app, with Cloud Run switched to `--allow-unauthenticated`) — agreed as a stopgap while
+      Identity-Aware Proxy is built out separately for real Google-account-based access; not yet
+      implemented as of this writing
