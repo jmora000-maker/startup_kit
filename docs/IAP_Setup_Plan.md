@@ -64,14 +64,22 @@ new restriction to work around.
 
 - [ ] Real current pricing for an External HTTPS Load Balancer, confirmed directly against
       Google's current pricing page, so the ongoing cost is a known, deliberate decision
-- [ ] Confirm whether `toptal-delivery-apps` already has an OAuth consent screen configured for
-      any other purpose (check `https://console.cloud.google.com/apis/credentials/consent?project=toptal-delivery-apps`)
-      — if one exists, confirm it's suitable for internal use; if not, one must be created
-- [ ] Decide: use a custom domain for the load balancer (e.g. `startup-kit.toptal.com`, requiring
-      DNS access and a managed SSL certificate), or use the load balancer's own default IP with a
-      Google-managed certificate against no custom domain. A custom domain is cleaner for
-      colleagues to remember and type, but needs DNS access this plan doesn't yet confirm is
-      available
+- [ ] **In progress:** checking `https://console.cloud.google.com/apis/credentials/consent?project=toptal-delivery-apps`
+      hit a real, confirmed permission gap: `clientauthconfig.clients.get`,
+      `clientauthconfig.clients.list`, `oauthconfig.verification.get`,
+      `resourcemanager.projects.get`, and `serviceusage.quotas.get` are all missing. The real role
+      that covers the first three (confirmed directly against Google's own OAuthConfig roles
+      documentation) is `roles/oauthconfig.editor`. The other two are more basic permissions that
+      may already be covered by existing project roles — worth confirming either way. Requested
+      from IT; pending as of this writing. Once granted, check this page directly to see whether an
+      OAuth consent screen already exists for any other purpose and, if so, whether it's suitable
+      for internal use; if not, one must be created.
+- [ ] **In progress:** DNS access for a custom domain (e.g. `startup-kit.toptal.com`) is not
+      confirmed either way — asked IT directly who manages `toptal.com`'s DNS and whether access
+      is available; pending as of this writing. A custom domain is cleaner for colleagues to
+      remember and type, but isn't required — the load balancer's own IP with a Google-managed
+      certificate against no custom domain is a fully workable fallback if DNS access isn't
+      available or would take too long to arrange.
 - [ ] Decide the real list of people (or a Google Group, if one exists/can be created) who should
       be granted `roles/iap.httpsResourceAccessor` — this replaces today's `run.invoker` list
 

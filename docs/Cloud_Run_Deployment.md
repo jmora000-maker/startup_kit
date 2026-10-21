@@ -188,7 +188,6 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-  --timeout 1800 `
   --no-allow-unauthenticated
 ```
 
@@ -302,7 +301,6 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-  --timeout 1800 `
   --no-allow-unauthenticated
 ```
 
@@ -336,17 +334,6 @@ redeploy.
 - **`--set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest`** — injects the real key at
   container start from Secret Manager; `:latest` means "always use the most recent version"
   without needing to redeploy when the key rotates.
-- **`--timeout 1800`** — sets the request timeout to 1800 seconds (30 minutes). Cloud Run's default
-  is 300 seconds (5 minutes), which applies to the persistent WebSocket connection Streamlit uses.
-  In real production testing (`HTL-39`), a genuine end-to-end user session (SOW upload, live
-  multi-domain LLM extraction, human review across all categories, artifact generation, and GCS
-  upload) was silently terminated at 301.001331s latency without raising a Python exception because
-  the platform severed the connection. Per Google Cloud's official documentation
-  ([Configure request timeout for services](https://docs.cloud.google.com/run/docs/configuring/request-timeout)),
-  the maximum allowed request timeout for Cloud Run services is 3600 seconds (60 minutes). We
-  configure `--timeout 1800` (30 minutes) — a generous 6x increase over the default that comfortably
-  accommodates genuine human review time plus large SOW multi-pass extraction and generation, without
-  setting the bare technical maximum for its own sake.
 - **`--no-allow-unauthenticated`** — deliberate choice given this app handles real client SOW
   content: nobody can reach the deployed URL without being explicitly granted access (Section 7).
 
@@ -408,6 +395,15 @@ cd C:\Users\james\PycharmProjects\PythonProject\Startup_Kit
 .\deploy-and-verify.ps1
 ```
 It stops immediately if the push or the deploy fails, rather than proceeding on top of a failure.
+
+For simply reconnecting to the already-deployed app on a normal day (no redeploy needed),
+`open-deployed-app.ps1`, also in the repo root, wraps just the authenticated proxy step:
+```powershell
+.\open-deployed-app.ps1
+```
+This is the one real limitation of today's `run.invoker`-based access model, worth remembering
+until IAP (see `docs/IAP_Setup_Plan.md`) replaces it: there is no way to just open a URL directly
+in a browser yet, this proxy step is required every time.
 
 ---
 
