@@ -119,12 +119,35 @@ current roles directly.)
 
 ## 4. Create the Secret Manager secret
 
-Run this **once**, from the repo root, with your real local Anthropic API key:
+**Deviation log, confirmed real on this project — do not use `echo ... | gcloud secrets create ...`
+for this.** This was tried first and failed twice, for two different real reasons:
+
+1. The placeholder text in an earlier draft of this instruction (`<your real Anthropic API key>`)
+   was literally piped in as the secret's value instead of being replaced with a real key first —
+   Secret Manager has no way to know a value isn't real, so it stored the placeholder text as-is,
+   and the app failed trying to use it as an API credential.
+2. Once the real key was used instead, it *still* failed the same way — PowerShell's `echo` (an
+   alias for `Write-Output`) always appends a trailing newline to its output, and
+   `--data-file=-` reads stdin completely literally, so that trailing newline became part of the
+   stored secret value. An HTTP header can't legally contain a newline, so every real API call
+   failed with `httpcore2.LocalProtocolError: Illegal header value b'sk-ant-...\r\n'` — surfaced
+   confusingly by higher layers as a generic `anthropic.APIConnectionError: Connection error`,
+   which looks like a network problem and is not one.
+
+**The correct way**, which writes the value with no trailing newline:
 
 ```powershell
-cd C:\Users\james\PycharmProjects\PythonProject\Startup_Kit
-echo "<your real Anthropic API key>" | gcloud secrets create anthropic-api-key --data-file=-
+$key = "<your real Anthropic API key, pasted directly — not a placeholder>"
+[System.IO.File]::WriteAllText("$env:TEMP\anthropic-key.txt", $key)
+gcloud secrets create anthropic-api-key --data-file="$env:TEMP\anthropic-key.txt"
+Remove-Item "$env:TEMP\anthropic-key.txt"
 ```
+
+If the secret already exists and you're rotating the key instead of creating it for the first
+time, use `gcloud secrets versions add anthropic-api-key --data-file="$env:TEMP\anthropic-key.txt"`
+in place of the `create` line, then redeploy (Section 6) so the running revision picks up the new
+version — Cloud Run reads a referenced secret at container startup, not continuously, so an
+existing running revision won't see a new secret version until it's redeployed.
 
 Confirm it was created:
 
@@ -311,13 +334,28 @@ person.
 
 - [x] `gcloud` installed, authenticated as `james.mora@toptal.com`, project set correctly
 - [x] `secretmanager.googleapis.com` and `cloudbuild.googleapis.com` enabled
-- [x] `anthropic-api-key` secret created; `cloudrun-sa` granted `secretmanager.secretAccessor`
-- [x] Cloud Build staging bucket soft-delete issue hit and fixed
-- [x] A real container image build completed successfully (confirmed via
-      `gcloud builds describe <BUILD_ID>`, status `SUCCESS`)
-- [ ] `roles/artifactregistry.writer` — requested from IT, pending as of this writing. **Blocks
-      the actual deploy step** — both the `--source` path and the pre-built-image path fail
-      without it (see Section 5's deviation log)
-- [ ] Run the actual `gcloud run deploy` command successfully
-- [ ] Grant `roles/run.invoker` to everyone who needs access
-- [ ] Complete the post-deployment verification checklist (Section 8)
+- [x] `roles/artifactregistry.writer` granted — this did resolve both deploy-path permission
+      errors described in Section 5's deviation log
+- [x] Cloud Build staging bucket soft-delete issue hit and fixed (`<PROJECT_ID>_cloudbuild`)
+- [x] A **second**, different staging bucket required the same fix: `gcloud run deploy --source`
+      uses its own bucket, named `run-sources-<PROJECT_ID>-<REGION>`, separate from the
+      `<PROJECT_ID>_cloudbuild` one `gcloud builds submit` uses — pre-create it the same way
+      (`gcloud storage buckets create gs://run-sources-toptal-delivery-apps-us-east1 --location=us-east1 --soft-delete-duration=0`)
+      before the first `--source` deploy
+- [x] The first real `gcloud run deploy` succeeded — service `startup-kit-app` is live in
+      `us-east1`
+- [x] Confirmed reachable via `gcloud run services proxy` (which required installing the
+      `cloud-run-proxy` component on first use — accept the prompt)
+- [x] `roles/run.invoker` granted to `james.mora@toptal.com`
+- [x] **Real deviation, now fixed in Section 4 above:** the secret was created twice incorrectly
+      before working — once with a literal placeholder string piped in by mistake, and once with
+      the real key but a trailing newline appended by PowerShell's `echo`, which produced an
+      illegal HTTP header value. Both surfaced as a misleading `anthropic.APIConnectionError:
+      Connection error` that looked like a network problem and wasn't one. Section 4 now uses
+      `[System.IO.File]::WriteAllText` instead of `echo | ...`, which avoids the trailing newline.
+      **A redeploy is required after adding a new secret version** — Cloud Run reads a referenced
+      secret at container startup only, not continuously, so an already-running revision keeps
+      using whatever value it started with.
+- [ ] Confirm a real Generate succeeds end-to-end against the corrected secret (in progress)
+- [ ] Complete the rest of the post-deployment verification checklist (Section 8): confirm real
+      Firestore/Storage data, confirm download buttons work against real cloud data
