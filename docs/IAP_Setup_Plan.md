@@ -79,16 +79,38 @@ new restriction to work around.
 
 ## 4. Planned steps (to execute in a future session, in order)
 
+**Note on a point worth confirming at execution time, not assumed here either way:** Google
+now supports a Google-managed OAuth client for IAP by default, meaning `--iap=enabled` alone may
+work without supplying an explicit `oauth2-client-id`/`oauth2-client-secret` at all. Supplying
+your own (Step 5 below shows both forms) is for a *custom* OAuth client — useful for specific
+consent-screen branding or reusing an existing client, but not a universal requirement. Try the
+plain `--iap=enabled` form first; only create and supply explicit credentials if that doesn't
+give the result wanted.
+
 1. **Confirm/create the OAuth consent screen** for `toptal-delivery-apps`, scoped to internal
    use (Google Workspace organization only, not "External").
-2. **Create the serverless NEG**, pointing at the existing `startup-kit-app` service:
+2. **Reserve a global static external IP** and note its address:
+   ```powershell
+   gcloud compute addresses create startup-kit-ip --global
+   gcloud compute addresses describe startup-kit-ip --global --format="value(address)"
+   ```
+3. **Point the chosen custom domain's DNS `A` record** at that static IP (requires DNS access
+   confirmed in Section 3 — a Google-managed SSL certificate cannot attach to a bare IP address
+   with no domain, so a real, resolvable domain is required, not optional).
+4. **Create a Google-managed SSL certificate** for that domain:
+   ```powershell
+   gcloud compute ssl-certificates create startup-kit-cert `
+     --domains="startup-kit.toptal.com" `
+     --global
+   ```
+5. **Create the serverless NEG**, pointing at the existing `startup-kit-app` service:
    ```powershell
    gcloud compute network-endpoint-groups create startup-kit-app-neg `
      --region=us-east1 `
      --network-endpoint-type=serverless `
      --cloud-run-service=startup-kit-app
    ```
-3. **Create a backend service** and attach the NEG to it:
+6. **Create a backend service** and attach the NEG to it:
    ```powershell
    gcloud compute backend-services create startup-kit-app-backend `
      --global `
@@ -99,31 +121,55 @@ new restriction to work around.
      --network-endpoint-group=startup-kit-app-neg `
      --network-endpoint-group-region=us-east1
    ```
-4. **Create the load balancer's remaining components** (URL map, target HTTPS proxy, forwarding
-   rule, and either a Google-managed SSL certificate for a custom domain or one for the load
-   balancer's own IP) — the exact commands depend on the custom-domain decision from Section 3
-   and should be confirmed against Google's current documentation at execution time, not copied
-   from this plan verbatim, since load balancer setup commands are detailed and
-   environment-specific.
-5. **Enable IAP on the backend service**:
+7. **Create the URL map, target HTTPS proxy, and forwarding rule**:
    ```powershell
+   gcloud compute url-maps create startup-kit-url-map `
+     --default-service=startup-kit-app-backend `
+     --global
+
+   gcloud compute target-https-proxies create startup-kit-https-proxy `
+     --url-map=startup-kit-url-map `
+     --ssl-certificates=startup-kit-cert `
+     --global
+
+   gcloud compute forwarding-rules create startup-kit-fwd-rule `
+     --load-balancing-scheme=EXTERNAL_MANAGED `
+     --network-tier=PREMIUM `
+     --address=startup-kit-ip `
+     --target-https-proxy=startup-kit-https-proxy `
+     --ports=443 `
+     --global
+   ```
+8. **Enable IAP on the backend service** — try the plain form first (see the note above this
+   list); fall back to the explicit-credentials form only if needed:
+   ```powershell
+   gcloud compute backend-services update startup-kit-app-backend --global --iap=enabled
+
+   # Only if a custom OAuth client is genuinely needed:
    gcloud compute backend-services update startup-kit-app-backend `
      --global `
-     --iap=enabled
+     --iap=enabled,oauth2-client-id="<CLIENT_ID>",oauth2-client-secret="<CLIENT_SECRET>"
    ```
-6. **Grant IAP's own service agent permission to invoke the Cloud Run service** (a separate,
-   required identity from `cloudrun-sa` — IAP calls Cloud Run on the authenticated user's behalf):
+9. **Grant IAP's own service agent permission to invoke the Cloud Run service** (a separate
+   identity from `cloudrun-sa` — IAP calls Cloud Run on the authenticated user's behalf, using the
+   real numeric project number, not the project ID):
    ```powershell
+   $PROJECT_NUM = (gcloud projects describe toptal-delivery-apps --format="value(projectNumber)")
+
    gcloud beta services identity create --service=iap.googleapis.com --project=toptal-delivery-apps
-   # then grant the resulting service agent roles/run.invoker on startup-kit-app
+
+   gcloud run services add-iam-policy-binding startup-kit-app `
+     --region=us-east1 `
+     --member="serviceAccount:service-$PROJECT_NUM@gcp-sa-iap.iam.gserviceaccount.com" `
+     --role="roles/run.invoker"
    ```
-7. **Change `startup-kit-app`'s ingress** to prevent the direct Cloud Run URL from bypassing IAP:
-   ```powershell
-   gcloud run services update startup-kit-app `
-     --region us-east1 `
-     --ingress internal-and-cloud-load-balancing
-   ```
-8. **Grant real people access**:
+10. **Change `startup-kit-app`'s ingress** to prevent the direct Cloud Run URL from bypassing IAP:
+    ```powershell
+    gcloud run services update startup-kit-app `
+      --region us-east1 `
+      --ingress internal-and-cloud-load-balancing
+    ```
+11. **Grant real people access**:
    ```powershell
    gcloud iap web add-iam-policy-binding `
      --resource-type=backend-services `
@@ -132,11 +178,12 @@ new restriction to work around.
      --role="roles/iap.httpsResourceAccessor"
    ```
    Repeat per person, or use a `group:` member if a Google Group is set up for this instead.
-9. **Verify end-to-end**: open the load balancer's URL (or custom domain) in a browser as a
-   granted user with no `gcloud` running at all, confirm the real Google sign-in redirect appears,
-   and confirm a real Generate → Fact Review → Approve → Generate documents cycle works through
-   it — the same hands-on verification standard used for every other piece of this project.
-10. **Update `docs/Cloud_Run_Deployment.md`** once this is live: replace Section 7's
+12. **Verify end-to-end**: open the load balancer's URL (or custom domain) in a browser as a
+    granted user with no `gcloud` running at all, confirm the real Google sign-in redirect
+    appears, and confirm a real Generate → Fact Review → Approve → Generate documents cycle works
+    through it — the same hands-on verification standard used for every other piece of this
+    project.
+13. **Update `docs/Cloud_Run_Deployment.md`** once this is live: replace Section 7's
     `run.invoker`-based access instructions with the new IAP-based flow, and update this plan's
     own checklist to reflect what's actually been done versus what's still open — the same way
     the Cloud Run and Firestore/Storage docs were kept honest and current throughout tonight's
@@ -144,7 +191,18 @@ new restriction to work around.
 
 ---
 
-## 5. Explicitly out of scope for this plan
+## 5. For later: per-user identity inside the app (not needed for this plan's goal)
+
+IAP only governs perimeter access (who can reach the app at all) — it does not, by itself, give
+the Streamlit app any way to know *which* authenticated person is making a given request. If a
+future need arises for per-user logic inside the app (e.g., auditing who approved or generated a
+given run), IAP injects identity headers into every proxied request that the app could read:
+`X-Goog-Authenticated-User-Email`, `X-Goog-Authenticated-User-Id`, and a signed
+`X-Goog-IAP-JWT-Assertion` for verifying the other two haven't been spoofed. Not needed for this
+plan's actual goal (replacing `run.invoker`/`gcloud` with a normal browser sign-in) — noted here
+only so it doesn't need re-researching if a real need for it comes up later.
+
+## 6. Explicitly out of scope for this plan
 
 - Migrating away from the existing Cloud Run service itself — this plan only adds a load balancer
   and IAP in front of what already exists; `startup-kit-app`'s own configuration, environment
