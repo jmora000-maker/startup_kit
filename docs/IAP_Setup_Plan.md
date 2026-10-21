@@ -4,12 +4,61 @@ This document plans the work to put Identity-Aware Proxy in front of the deploye
 `startup-kit-app` Cloud Run service, replacing today's per-person `run.invoker` + `gcloud`
 access model with a normal Google sign-in redirect that works in any browser, no CLI needed.
 It builds on `docs/Cloud_Run_Deployment.md` (the service that already exists) and
-`docs/GCP_Firestore_CloudStorage_Setup.md` (the storage layer behind it). This is a plan to
-execute in a future session, not yet started.
+`docs/GCP_Firestore_CloudStorage_Setup.md` (the storage layer behind it).
 
 ---
 
-## 1. Why this is needed
+## 0. Real outcome — DONE, confirmed working, same night this plan was written
+
+**This was completed faster and more simply than planned, using a different, newer mechanism
+than Sections 1–4 below describe.** The app is now live at **`https://startup-kit.toptal.tech/`**,
+protected by a genuine Google sign-in redirect — no `gcloud`, no proxy tunnel, no CLI needed on
+the user's end at all.
+
+**What actually happened, vs. what this plan assumed:** Sections 1–4 below were written around
+the older, more widely-documented IAP pattern — enabling IAP on an External HTTPS Load Balancer's
+*backend service* (`gcloud compute backend-services update ... --iap=enabled`), which requires
+building the full load-balancer stack (static IP, NEG, backend service, URL map, proxy,
+forwarding rule) by hand. IT instead used a newer, genuinely simpler mechanism: **IAP enabled
+directly on the Cloud Run service itself**, confirmed real via Google's own IAP release notes
+("Preview: You can now enable IAP directly on your Cloud Run services without configuring load
+balancers"). IT still built a load balancer and managed certificate for the custom domain
+(`startup-kit.toptal.tech`), but IAP enforcement itself lives on the Cloud Run service's own
+configuration, not a separate backend-service resource — exactly matching what Guilherme meant by
+"IAP will still be managed at the service, not the backend service."
+
+**Real division of labor, as it actually happened:**
+- IT: built the load balancer, static IP, DNS record, and managed certificate for
+  `startup-kit.toptal.tech`
+- IT: enabled IAP directly on the `startup-kit-app` Cloud Run service, and set its ingress to
+  `internal-and-cloud-load-balancing`
+- This project: nothing further was needed — IT's setup already produced a fully working result
+
+**Real, independent verification performed (not just trusting the UI):**
+1. Opened `https://startup-kit.toptal.tech/` in a fresh private/incognito browser window (no
+   existing Google session) — confirmed a genuine Google sign-in redirect appeared, and signing in
+   as `james.mora@toptal.com` landed in the real app
+2. Ran a complete real session through it: Generate → Fact Review → Approve → Generate documents
+   (run `Pilot-Ready_Product_Implementation_20261021_221841`)
+3. Independently confirmed via direct Firestore and Cloud Storage REST calls (not the app's own
+   UI): the real Firestore document shows `status: "generated"`, and all five expected files
+   (Startup Kit, Readiness Checklist, Workbook, Deck, trace manifest) exist in the real bucket
+   with real sizes and checksums — the same standard of evidence used for every other
+   verification in this project
+
+**Still open:** confirming with IT whether granting future colleagues access is self-service
+(presumably via `gcloud run services add-iam-policy-binding` with
+`roles/iap.httpsResourceAccessor` or an equivalent role on the Cloud Run service itself, now that
+IAP lives there rather than on a backend-service resource) or needs to go through IT each time.
+
+**Sections 1–4 below are kept as reference** for the alternative, classic load-balancer-centric
+IAP pattern — useful if a future need arises where the native Cloud Run IAP path doesn't fit
+(e.g., needing Cloud Armor, CDN, or other load-balancer-specific features alongside IAP), but they
+describe a path that was not, in the end, the one actually used.
+
+---
+
+## 1. Why this is needed (background on the original plan)
 
 Confirmed during the real Cloud Run deployment work: this org's effective
 `constraints/iam.allowedPolicyMemberDomains` policy makes `--allow-unauthenticated` permanently
@@ -64,22 +113,27 @@ new restriction to work around.
 
 - [ ] Real current pricing for an External HTTPS Load Balancer, confirmed directly against
       Google's current pricing page, so the ongoing cost is a known, deliberate decision
-- [ ] **In progress:** checking `https://console.cloud.google.com/apis/credentials/consent?project=toptal-delivery-apps`
-      hit a real, confirmed permission gap: `clientauthconfig.clients.get`,
-      `clientauthconfig.clients.list`, `oauthconfig.verification.get`,
-      `resourcemanager.projects.get`, and `serviceusage.quotas.get` are all missing. The real role
-      that covers the first three (confirmed directly against Google's own OAuthConfig roles
-      documentation) is `roles/oauthconfig.editor`. The other two are more basic permissions that
-      may already be covered by existing project roles — worth confirming either way. Requested
-      from IT; pending as of this writing. Once granted, check this page directly to see whether an
-      OAuth consent screen already exists for any other purpose and, if so, whether it's suitable
-      for internal use; if not, one must be created.
-- [ ] **In progress:** DNS access for a custom domain (e.g. `startup-kit.toptal.com`) is not
-      confirmed either way — asked IT directly who manages `toptal.com`'s DNS and whether access
-      is available; pending as of this writing. A custom domain is cleaner for colleagues to
-      remember and type, but isn't required — the load balancer's own IP with a Google-managed
-      certificate against no custom domain is a fully workable fallback if DNS access isn't
-      available or would take too long to arrange.
+- [x] `roles/oauthconfig.editor` granted by IT. Check
+      `https://console.cloud.google.com/apis/credentials/consent?project=toptal-delivery-apps`
+      directly to see whether an OAuth consent screen already exists for any other purpose and, if
+      so, whether it's suitable for internal use; if not, create one, scoped to internal
+      (Google Workspace organization only, not "External").
+- [x] **Domain and load balancer ownership resolved — a real, favorable change to the plan.**
+      IT's response: use `toptal.tech` (the organization's standard domain for new services, not
+      `toptal.com`), and IT offered to build and own the load balancer and certificate directly,
+      given the real Cloud Run service name. Real values to give IT: service `startup-kit-app`,
+      region `us-east1`, project `toptal-delivery-apps`, proposed subdomain
+      `startup-kit.toptal.tech`. (Note: this is deliberately a different domain than people's own
+      `@toptal.com` email addresses used elsewhere in this plan for IAM grants — `toptal.tech` is
+      specifically the org's domain for new service URLs, not a typo or inconsistency.)
+      **Real division of ownership, confirmed with IT:** IT builds the networking/TLS layer
+      (static IP, DNS record, managed certificate, NEG, backend service, URL map, proxy,
+      forwarding rule — Section 4 Steps 2–7, 12, and 14 below). IT's own words: "IAP will still be
+      managed at the service" — meaning enabling IAP itself (Step 8), locking Cloud Run's ingress
+      to the load balancer (Step 10), granting IAP's own service agent permission to invoke the
+      service (Step 9), and granting real people access via `roles/iap.httpsResourceAccessor`
+      (Step 11) all stay this project's own responsibility, not IT's. Once IT confirms the backend
+      service name/ID they create, Step 8 onward can proceed on that real resource.
 - [ ] Decide the real list of people (or a Google Group, if one exists/can be created) who should
       be granted `roles/iap.httpsResourceAccessor` — this replaces today's `run.invoker` list
 
@@ -108,7 +162,7 @@ give the result wanted.
 4. **Create a Google-managed SSL certificate** for that domain:
    ```powershell
    gcloud compute ssl-certificates create startup-kit-cert `
-     --domains="startup-kit.toptal.com" `
+     --domains="startup-kit.toptal.tech" `
      --global
    ```
 5. **Create the serverless NEG**, pointing at the existing `startup-kit-app` service:
