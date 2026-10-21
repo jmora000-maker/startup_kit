@@ -151,6 +151,8 @@ def test_pytest_uses_local_backend_even_when_review_storage_backend_env_is_gcp(m
 
 
 def test_gcp_backend_returns_firestore_review_storage(monkeypatch):
+    from unittest.mock import MagicMock
+    monkeypatch.setattr("src.review_storage.firestore.get_firestore_client", lambda: MagicMock())
     monkeypatch.setattr(config, "review_storage_backend", "gcp")
     storage = get_review_storage()
     assert isinstance(storage, FirestoreReviewStorage)
