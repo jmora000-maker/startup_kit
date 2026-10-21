@@ -102,6 +102,7 @@ to do it myself."* Re-run the `gcloud services list --enabled` check above once 
 |---|---|---|
 | `roles/datastore.user` | Project-wide | Already granted |
 | `roles/storage.objectAdmin` | `toptal-startup-kit-outputs` bucket only | Already granted |
+| `roles/storage.legacyBucketReader` | `toptal-startup-kit-outputs` bucket only | **Deviation log, confirmed real:** `objectAdmin` alone is not enough. A real Generate-documents run failed with `403 ... does not have storage.buckets.get access`. `storage.buckets.get` (reading the bucket's own metadata, which the client library calls to confirm the bucket exists before uploading) is a distinct permission from reading/writing/deleting the objects inside it, which is all `objectAdmin` actually covers. Grant both roles together: `gcloud storage buckets add-iam-policy-binding gs://toptal-startup-kit-outputs --member="serviceAccount:cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com" --role="roles/storage.legacyBucketReader"`. This takes effect immediately -- no redeploy needed. |
 | `roles/secretmanager.secretAccessor` | The `anthropic-api-key` secret only | Granted in Section 4 below |
 
 ### How to check your own current roles
@@ -383,6 +384,18 @@ person.
    was the subject of `HTL-38`'s fix — re-confirm it specifically against the real cloud
    deployment, not just the local emulators).
 
+### Convenience script
+
+`deploy-and-verify.ps1`, in the repo root, packages the redeploy and verification sequence into
+one script: pushes pending commits, confirms `env-vars.yaml` exists, runs the real deploy command
+from Section 6, shows who currently has `run.invoker`, and launches the authenticated proxy with
+on-screen instructions. Run with:
+```powershell
+cd C:\Users\james\PycharmProjects\PythonProject\Startup_Kit
+.\deploy-and-verify.ps1
+```
+It stops immediately if the push or the deploy fails, rather than proceeding on top of a failure.
+
 ---
 
 ## 9. Status as of this writing
@@ -419,11 +432,36 @@ person.
       extraction still failed with `Anthropic response was truncated due to reaching max_tokens
       (16384)` — the configured ceiling was too low for a real SOW's full response (the model
       supports up to 128K). Raised `MAX_TOKENS` via `env-vars.yaml` (see Section 6).
-- [ ] Confirm a real Generate succeeds end-to-end against the corrected secret and raised
-      `MAX_TOKENS` (in progress)
-- [ ] Complete the rest of the post-deployment verification checklist (Section 8): confirm real
-      Firestore/Storage data, confirm download buttons work against real cloud data
-- [ ] Interim access control (shared app-level passphrase via `ADMIN_PASSPHRASE`, gating the
-      whole app, with Cloud Run switched to `--allow-unauthenticated`) — agreed as a stopgap while
-      Identity-Aware Proxy is built out separately for real Google-account-based access; not yet
-      implemented as of this writing
+- [x] **Real deviation, now fixed (Section 3 above):** `storage.objectAdmin` alone was not
+      enough for Generate documents to succeed — it covers objects inside the bucket but not
+      `storage.buckets.get` (reading the bucket's own metadata), which the client library checks
+      first. Real failure: `403 ... does not have storage.buckets.get access`. Fixed by also
+      granting `roles/storage.legacyBucketReader` on the same bucket. Took effect immediately,
+      no redeploy needed.
+- [x] **Confirmed: a real Generate succeeded end-to-end** against the deployed service — a real
+      run (`Pilot-Ready_Product_Implementation_20261021_024339`) was created, reviewed in Fact
+      Review, approved, and successfully generated documents, with the corrected secret, the
+      raised `MAX_TOKENS`, and both `cloudrun-sa` Storage roles in place.
+- [ ] Independently re-confirm the generated run's data in the real Firestore Console and the
+      real bucket browser directly (Section 8, steps 4-5) — the in-app success was observed, but
+      hasn't yet been independently cross-checked against the Firestore/Storage Console UIs the
+      way local-emulator runs were earlier this project
+- [ ] Confirm download buttons work against the real deployed Cloud Storage data specifically
+      (Section 8, step 6; `HTL-38`'s original fix was confirmed working against the local
+      emulators, not yet re-confirmed against this real deployment)
+- [x] **Interim access control attempted, then reverted — do not retry this approach.** An
+      app-level `ADMIN_PASSPHRASE` gate (replacing the per-person `run.invoker` IAM model with
+      `--allow-unauthenticated` plus a shared in-app passphrase) was built, tested, and committed,
+      then deployed. The deploy succeeded, but Cloud Run's own `Setting IAM Policy` step failed
+      with a warning when granting `allUsers` the `run.invoker` role needed for
+      `--allow-unauthenticated` to actually work. Investigation confirmed the real cause: this
+      org's effective `constraints/iam.allowedPolicyMemberDomains` policy permits only specific
+      Workspace customer IDs, and `allUsers` can never satisfy a domain restriction by definition
+      — meaning **unauthenticated public access to this service is permanently disallowed by org
+      policy**, not a temporary permission gap. The passphrase-gate commit was reverted
+      (`git revert`) and the service redeployed with `--no-allow-unauthenticated`, the original,
+      correct posture. **Conclusion: real Google-account-based access (per-person `run.invoker`
+      grants, Section 7) is the only access model this org's policy permits short of a proper
+      Identity-Aware Proxy setup — don't attempt a shared-passphrase/public-access workaround
+      again.** IAP remains the right path for a smoother, no-CLI browser experience for
+      colleagues, and is still a real, separate piece of future work, not yet started.
