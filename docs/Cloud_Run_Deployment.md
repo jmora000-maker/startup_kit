@@ -186,8 +186,8 @@ gcloud run deploy startup-kit-app `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
-  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-  --no-allow-unauthenticated
+  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest,ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --allow-unauthenticated
 ```
 
 This single command builds the image via Cloud Build **and** deploys it — skip the manual build
@@ -253,9 +253,9 @@ gcloud run deploy startup-kit-app `
   --image gcr.io/toptal-delivery-apps/startup-kit-app `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
-  --set-env-vars REVIEW_STORAGE_BACKEND=gcp,GCS_BUCKET_NAME=toptal-startup-kit-outputs,GOOGLE_CLOUD_PROJECT=toptal-delivery-apps,LLM_PROVIDER=anthropic `
-  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-  --no-allow-unauthenticated
+  --env-vars-file env-vars.yaml `
+  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest,ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --allow-unauthenticated
 ```
 
 **Note on log streaming:** `gcloud builds submit` may return
@@ -299,8 +299,8 @@ gcloud run deploy startup-kit-app `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
-  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-  --no-allow-unauthenticated
+  --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest,ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --allow-unauthenticated
 ```
 
 ### If extraction fails with a truncated-response error
@@ -327,14 +327,15 @@ redeploy.
 - **`--service-account cloudrun-sa@...`** — the identity the running container authenticates as.
   With no `FIRESTORE_EMULATOR_HOST`/`STORAGE_EMULATOR_HOST` set, the real client libraries fall
   through to Application Default Credentials — i.e. this service account's real identity.
-- **`REVIEW_STORAGE_BACKEND=gcp`** — selects `FirestoreReviewStorage` over the local-file backend.
-- **`GCS_BUCKET_NAME` / `GOOGLE_CLOUD_PROJECT`** — read by `src/storage/firestore_client.py` and
-  `src/storage/gcs_client.py` as their defaults; set explicitly for clarity.
-- **`--set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest`** — injects the real key at
-  container start from Secret Manager; `:latest` means "always use the most recent version"
-  without needing to redeploy when the key rotates.
-- **`--no-allow-unauthenticated`** — deliberate choice given this app handles real client SOW
-  content: nobody can reach the deployed URL without being explicitly granted access (Section 7).
+- **`--env-vars-file env-vars.yaml`** — passes environment variables (`REVIEW_STORAGE_BACKEND=gcp`,
+  `GCS_BUCKET_NAME`, `GOOGLE_CLOUD_PROJECT`, `LLM_PROVIDER`, `MAX_TOKENS`) without PowerShell
+  quote-escaping or comma-splitting issues.
+- **`--set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest,ADMIN_PASSPHRASE=admin-passphrase:latest`** —
+  injects sensitive credentials directly from Secret Manager at container launch; `:latest`
+  automatically tracks rotations.
+- **`--allow-unauthenticated`** — allows colleagues to open the service URL directly in their browser
+  without requiring Google Cloud IAM accounts; application entry is protected by the interim
+  access control passphrase gate (Section 7).
 
 ### Explicitly NOT set
 
@@ -343,26 +344,29 @@ work; these exist only for local development against the emulators.
 
 ---
 
-## 7. Grant access (required, since the service rejects unauthenticated requests)
+## 7. Interim Access Control (pending IAP)
 
-Confirm the service exists and check who currently has access:
+The application is deployed with `--allow-unauthenticated` on Cloud Run, delegating perimeter
+access control to an application-level passphrase gate implemented in Streamlit (`src/review_ui/app.py`).
 
-```powershell
-gcloud run services describe startup-kit-app --region us-east1 --format="value(status.url)"
-gcloud run services get-iam-policy startup-kit-app --region us-east1
-```
+### How it works
+1. **Passphrase Gate**: When any colleague opens the Cloud Run service URL in their browser, the
+   app intercepts the session and displays only an access passphrase prompt. No sidebar navigation,
+   SOW data, or generation controls are rendered until the correct passphrase is submitted.
+2. **Session Persistence**: Once entered correctly, the unlocked state is recorded in Streamlit's
+   in-memory `st.session_state` and persists throughout that browser tab's active session without
+   re-prompting.
+3. **Secret Storage**: The required passphrase value is stored in Secret Manager as `admin-passphrase`
+   and injected as `ADMIN_PASSPHRASE` at container start.
 
-Grant each person who needs access:
-
-```powershell
-gcloud run services add-iam-policy-binding startup-kit-app `
-  --region us-east1 `
-  --member="user:james.mora@toptal.com" `
-  --role="roles/run.invoker"
-```
-
-Repeat with a different `--member` value (e.g. `user:colleague@toptal.com`) for each additional
-person.
+### Security Tradeoff & Operational Boundary
+- **Weaker than IAM / IAP**: Anyone with the public URL who knows (or guesses) the shared passphrase
+  can use the app and trigger LLM generation requests.
+- **Interim Justification**: This setup is a deliberate, temporary stopgap designed to allow team
+  colleagues to collaborate and review generated Startup Kits without requiring each user to have
+  an individual Google Cloud IAM account or `gcloud` CLI installed.
+- **Migration Path**: A production-grade Identity-Aware Proxy (IAP) backed by Google Workspace OAuth
+  will replace this interim gate in a future milestone.
 
 ---
 
@@ -423,7 +427,7 @@ person.
       `MAX_TOKENS` (in progress)
 - [ ] Complete the rest of the post-deployment verification checklist (Section 8): confirm real
       Firestore/Storage data, confirm download buttons work against real cloud data
-- [ ] Interim access control (shared app-level passphrase via `ADMIN_PASSPHRASE`, gating the
-      whole app, with Cloud Run switched to `--allow-unauthenticated`) — agreed as a stopgap while
-      Identity-Aware Proxy is built out separately for real Google-account-based access; not yet
-      implemented as of this writing
+- [x] Interim access control (shared app-level passphrase via `ADMIN_PASSPHRASE`, gating the
+      whole app, with Cloud Run switched to `--allow-unauthenticated` and `admin-passphrase` secret) —
+      implemented as a stopgap while Identity-Aware Proxy is built out separately for real
+      Google-account-based access

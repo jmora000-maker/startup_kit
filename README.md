@@ -259,8 +259,8 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 The Startup Kit application is containerized with Docker (`Dockerfile` based on `python:3.14-slim`) for deployment to Google Cloud Run in the `toptal-delivery-apps` GCP project:
 - The app runs headless Streamlit (`src/review_ui/app.py`).
 - The storage layer is configured with `REVIEW_STORAGE_BACKEND=gcp`, persisting run metadata in Google Cloud Firestore and generated documents in Google Cloud Storage (`toptal-startup-kit-outputs`).
-- Secrets (such as `ANTHROPIC_API_KEY`) are injected at container startup via Secret Manager.
-- Service access is restricted with `--no-allow-unauthenticated`, requiring explicit IAM invoker permissions (`roles/run.invoker`).
+- Secrets (such as `ANTHROPIC_API_KEY` and `ADMIN_PASSPHRASE`) are injected at container startup via Secret Manager.
+- Service access uses `--allow-unauthenticated` with application-level passphrase gating (`ADMIN_PASSPHRASE`) as an interim access control mechanism pending Identity-Aware Proxy (IAP).
 
 For full deployment instructions, IAM prerequisites, Secret Manager setup, and verification checklists, see [docs/Cloud_Run_Deployment.md](docs/Cloud_Run_Deployment.md) and [docs/GCP_Firestore_CloudStorage_Setup.md](docs/GCP_Firestore_CloudStorage_Setup.md).
 

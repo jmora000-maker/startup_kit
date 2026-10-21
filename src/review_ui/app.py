@@ -342,8 +342,42 @@ def _render_fact_review_page() -> None:
                 )
 
 
+def is_app_unlocked(entered_passphrase: str, configured_passphrase: str) -> bool:
+    """Check if the entered passphrase matches the configured ADMIN_PASSPHRASE.
+
+    An empty configured passphrase never unlocks (defensive refusal).
+    """
+    if not configured_passphrase:
+        return False
+    return entered_passphrase == configured_passphrase
+
+
+def _render_app_gate() -> bool:
+    """Render the application-level access gate before any page content.
+
+    Returns True if the user has authenticated with the correct passphrase,
+    False otherwise. Once authenticated, the state persists in session_state.
+    """
+    if st.session_state.get("app_unlocked", False):
+        return True
+
+    st.title("PMO Startup Kit")
+    st.caption("Please enter the access passphrase to use the application.")
+
+    entered = st.text_input("Access passphrase", type="password", key="app_passphrase_input")
+    if st.button("Sign in", key="app_unlock_button"):
+        if is_app_unlocked(entered, config.admin_passphrase):
+            st.session_state["app_unlocked"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect passphrase. Access denied.")
+    return False
+
+
 def main() -> None:
     st.set_page_config(page_title="PMO Startup Kit", layout="wide")
+    if not _render_app_gate():
+        return
     page = st.sidebar.radio(
         "Page",
         ["Generate / Re-ingest", "Fact Review (fixture)"],

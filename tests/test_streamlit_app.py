@@ -17,6 +17,7 @@ from src.review_ui.constants import (
     MODEL_OPTIONS_BY_PROVIDER,
     resolve_select_index,
 )
+from src.review_ui.app import is_app_unlocked
 from src.review_ui.generate import (
     DownloadTarget,
     LLM_CACHE_MODES_IN_APP,
@@ -26,7 +27,6 @@ from src.review_ui.generate import (
     format_provider_name,
     format_run_error,
     collect_download_targets,
-    is_admin_unlocked,
     progress_status_label,
     resolve_app_role,
     resolve_fallback_provider,
@@ -94,24 +94,34 @@ def test_llm_cache_modes_in_app_excludes_record():
     assert set(LLM_CACHE_MODES_IN_APP) == {"off", "replay"}
 
 
-def test_is_admin_unlocked_correct_passphrase_unlocks():
-    assert is_admin_unlocked("correct-horse-battery-staple", "correct-horse-battery-staple") is True
+def test_is_app_unlocked_correct_passphrase_unlocks():
+    assert is_app_unlocked("correct-horse-battery-staple", "correct-horse-battery-staple") is True
 
 
-def test_is_admin_unlocked_wrong_passphrase_does_not_unlock():
-    # HTL-27: a wrong passphrase must never unlock the Advanced (admin) section.
-    assert is_admin_unlocked("wrong-guess", "correct-horse-battery-staple") is False
+def test_is_app_unlocked_wrong_passphrase_does_not_unlock():
+    assert is_app_unlocked("wrong-guess", "correct-horse-battery-staple") is False
 
 
-def test_is_admin_unlocked_empty_configured_passphrase_never_unlocks():
-    assert is_admin_unlocked("", "") is False
-    assert is_admin_unlocked("anything", "") is False
+def test_is_app_unlocked_empty_configured_passphrase_never_unlocks():
+    assert is_app_unlocked("", "") is False
+    assert is_app_unlocked("anything", "") is False
 
 
-def test_is_admin_unlocked_against_real_configured_passphrase():
-    # Exercises the real config.admin_passphrase (env var or its documented dev placeholder).
-    assert is_admin_unlocked(config.admin_passphrase, config.admin_passphrase) is True
-    assert is_admin_unlocked(config.admin_passphrase + "-wrong", config.admin_passphrase) is False
+def test_is_app_unlocked_against_real_configured_passphrase():
+    assert is_app_unlocked(config.admin_passphrase, config.admin_passphrase) is True
+    assert is_app_unlocked(config.admin_passphrase + "-wrong", config.admin_passphrase) is False
+
+
+def test_admin_section_override_checkbox_controls_settings_exposure():
+    """Admin controls (provider/model) only render when the override checkbox is checked."""
+    at = create_app_test(authenticated=True).run()
+    assert at.checkbox(key="gen_override_model_config").value is False
+    assert not any(sb.key == "gen_provider" for sb in at.selectbox)
+
+    at.checkbox(key="gen_override_model_config").check().run()
+    assert not at.exception
+    assert at.checkbox(key="gen_override_model_config").value is True
+    assert any(sb.key == "gen_provider" for sb in at.selectbox)
 
 
 def test_resolve_llm_settings_locked_forces_fixed_safe_defaults():
@@ -519,12 +529,76 @@ def test_format_run_error_blank_exception_message_falls_back_to_class_name():
 APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
 
 
+def create_app_test(default_timeout: int = 10, authenticated: bool = True):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE, default_timeout=default_timeout)
+    if authenticated:
+        at.session_state["app_unlocked"] = True
+    return at
+
+
+def test_app_gate_unauthenticated_blocks_main_content():
+    """Unauthenticated session renders only the login form; main content and sidebar are blocked."""
+    at = create_app_test(authenticated=False).run()
+    assert not at.exception
+    # Passphrase prompt is present
+    assert len(at.text_input) == 1
+    assert at.text_input(key="app_passphrase_input") is not None
+    assert len(at.button) == 1
+    assert at.button(key="app_unlock_button") is not None
+
+    # Main content / sidebar navigation is not rendered
+    assert len(at.radio) == 0
+    assert len(at.file_uploader) == 0
+    assert len(at.tabs) == 0
+
+
+def test_app_gate_wrong_passphrase_shows_clear_error_and_stays_locked():
+    """Entering an incorrect passphrase displays a clear error and keeps the app locked."""
+    at = create_app_test(authenticated=False).run()
+    at.text_input(key="app_passphrase_input").input("wrong-guess-passphrase")
+    at.button(key="app_unlock_button").click().run()
+    assert not at.exception
+
+    # Error message displayed
+    assert len(at.error) == 1
+    assert "Incorrect passphrase" in at.error[0].value
+    assert "Access denied" in at.error[0].value
+
+    # App remains locked
+    assert at.session_state.get("app_unlocked") is not True
+    assert len(at.radio) == 0
+
+
+def test_app_gate_correct_passphrase_unlocks_and_persists():
+    """Entering the correct passphrase unlocks the app, reveals navigation, and persists across actions."""
+    at = create_app_test(authenticated=False).run()
+    at.text_input(key="app_passphrase_input").input(config.admin_passphrase)
+    at.button(key="app_unlock_button").click().run()
+    assert not at.exception
+
+    # Session is now unlocked
+    assert at.session_state.get("app_unlocked") is True
+    assert len(at.error) == 0
+
+    # Navigation is now visible
+    assert len(at.radio) == 1
+    assert at.radio(key="app_page_selector").value == "Generate / Re-ingest"
+
+    # Subsequent interaction persists unlocked state without re-prompting
+    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    assert not at.exception
+    assert at.session_state.get("app_unlocked") is True
+    assert not any(ti.key == "app_passphrase_input" for ti in at.text_input)
+
+
 def test_generate_retains_uploaded_sow_across_page_switches():
     """Upload a file, switch to Fact Review, switch back to Generate, confirm stored bytes are used for generate."""
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     # 1. Upload file
     at.file_uploader(key="gen_uploader").upload("project_sow.docx", b"binary-sow-content").run()
     assert not at.exception
@@ -565,7 +639,7 @@ def test_upload_replacement_replaces_stored_file_without_merging():
     """After an upload is stored, selecting a genuinely different file replaces the stored one, not merges."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     # Initial upload
     at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
 
@@ -586,7 +660,7 @@ def test_using_previously_uploaded_message_rendering():
     """Verify 'Using previously uploaded: {filename}' renders when stored file exists and does not render when none uploaded."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     # 1. Initially nothing uploaded -> message does not render
     gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
     assert len(gen_info) == 0
@@ -606,7 +680,7 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="reingest_file").upload("Existing_Startup_Kit.docx", b"existing-kit-docx").run()
 
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
@@ -672,7 +746,7 @@ def test_generate_results_renders_fallback_confirmation_empty():
     from unittest.mock import patch, MagicMock
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -696,7 +770,7 @@ def test_generate_results_renders_fallback_warning_non_empty():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -721,7 +795,7 @@ def test_reingest_results_renders_fallback_domains():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="reingest_file").upload("Kit.docx", b"kit-bytes").run()
 
     mock_result = RunResult(
@@ -747,7 +821,7 @@ def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     # Confirm default state of checkbox is checked (True)
     checkboxes = [cb for cb in at.checkbox if cb.label == "Review before finalizing"]
     assert len(checkboxes) == 1
@@ -783,7 +857,7 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Uncheck the review toggle
@@ -850,7 +924,7 @@ def test_fact_review_loads_selected_run_baseline(tmp_path, monkeypatch):
         validation_report={},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -901,7 +975,7 @@ def test_fact_review_edit_and_save_real_run_updates_storage(tmp_path, monkeypatc
         validation_report={},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -930,7 +1004,7 @@ def test_fact_review_demo_fixture_option_saves_to_scratch():
     from streamlit.testing.v1 import AppTest
     from src.review_ui import facts as review
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1003,7 +1077,7 @@ def test_fact_review_approve_blocked_by_error_severity_finding(tmp_path, monkeyp
         validation_report=validation_report,
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1073,7 +1147,7 @@ def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monke
         validation_report=validation_report,
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1137,7 +1211,7 @@ def test_fact_review_approved_run_shows_generate_button_and_renders_downloads(tm
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1202,7 +1276,7 @@ def test_fact_review_pending_run_does_not_show_generate_documents_button(tmp_pat
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1273,7 +1347,7 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1362,7 +1436,7 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
     )
     run_2 = storage.create_run("Run Beta", baseline_2.model_dump(mode="json"), {"findings": []})
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
 
     # Pre-populate session state store with the formatted display label of run_2
     formatted_label = f"Run Beta ({run_2})"
@@ -1385,7 +1459,7 @@ def test_htl_35_document_type_checkboxes_all_default_to_true():
     defaults to checked (True)."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
 
     # Generate tab checkboxes
     gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
@@ -1422,7 +1496,7 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     in_progress_flag_captured = []
@@ -1460,7 +1534,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Initial state: button is enabled
@@ -1494,7 +1568,7 @@ def test_htl_35_safeguard_clears_stuck_running_flags_without_inputs():
     in session_state when no files are uploaded, render() clears them to False."""
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.session_state["gen_is_running"] = True
     at.session_state["reingest_is_running"] = True
 
@@ -1509,7 +1583,7 @@ def test_htl_35_reingest_two_phase_rerun_and_disabled_button():
     from unittest.mock import patch
     from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.file_uploader(key="reingest_file").upload("Project_Startup_Kit.docx", b"docx-bytes").run()
 
     # Initial state: button enabled
@@ -1578,7 +1652,7 @@ def test_fact_review_generate_button_in_progress_state_during_long_running_call(
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
     assert not at.exception
 
@@ -1654,7 +1728,7 @@ def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, mon
     run_gen = storage.create_run("Generated Run", baseline_2.model_dump(mode="json"), {"findings": []})
     storage.update_status(run_gen, "generated", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     # Set non-approved runs as generating to test safeguard
     at.session_state[f"fact_review::{run_gen}::is_generating"] = True
     at.session_state["fact_review::stuck_nonexistent_run::is_generating"] = True
@@ -1732,7 +1806,7 @@ def test_fact_review_download_button_failure_logs_exception_and_warns(tmp_path, 
     monkeypatch.setattr(storage, "get_file_bytes", _failing_get_bytes)
 
     with caplog.at_level(logging.WARNING):
-        at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+        at = create_app_test().run()
         at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
         at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
 
@@ -1805,7 +1879,7 @@ def test_fact_review_download_button_partial_failure_renders_available_and_warns
     monkeypatch.setattr(storage, "get_file_bytes", _mock_get_bytes)
 
     with caplog.at_level(logging.WARNING):
-        at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+        at = create_app_test().run()
         at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
         at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
 
@@ -1861,7 +1935,7 @@ def test_demo_fixture_hidden_when_backend_is_gcp(tmp_path, monkeypatch):
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
 
     assert not at.exception
@@ -1902,7 +1976,7 @@ def test_demo_fixture_hidden_when_fixture_file_missing(tmp_path, monkeypatch):
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
 
     assert not at.exception
@@ -1927,7 +2001,7 @@ def test_demo_fixture_load_run_baseline_defensive_fallback(tmp_path, monkeypatch
     assert result is None
 
     # Test UI when no runs exist and fixture is missing
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
 
     assert not at.exception
@@ -1950,7 +2024,7 @@ def test_demo_fixture_selected_when_file_missing_shows_info_message(tmp_path, mo
     state_persistence.get_store("fact_review_page")["selected_run_id"] = review_facts.DEMO_FIXTURE_OPTION
     monkeypatch.setattr(review_facts, "FIXTURE_BASELINE_PATH", tmp_path / "nonexistent" / "baseline.json")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = create_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
 
     assert not at.exception
