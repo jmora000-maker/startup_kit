@@ -110,17 +110,32 @@ give the result wanted.
      --network-endpoint-type=serverless `
      --cloud-run-service=startup-kit-app
    ```
-6. **Create a backend service** and attach the NEG to it:
+6. **Create a backend service** and attach the NEG to it. **Critical, confirmed directly against
+   Google's own `gcloud` CLI reference:** `backend-services create`'s `--timeout` flag defaults to
+   **30 seconds** — far shorter than Cloud Run's own request timeout. Left at the default, the
+   load balancer itself would silently kill a long-running session at 30 seconds, reintroducing
+   the exact class of failure `HTL-39` diagnosed and fixed, just sooner. Set `--timeout` to match
+   the already-researched and justified Cloud Run value (`1800`, see
+   `docs/Cloud_Run_Deployment.md` Section 6) — not a new, separately-chosen number:
    ```powershell
    gcloud compute backend-services create startup-kit-app-backend `
      --global `
-     --load-balancing-scheme=EXTERNAL_MANAGED
+     --load-balancing-scheme=EXTERNAL_MANAGED `
+     --timeout=1800
 
    gcloud compute backend-services add-backend startup-kit-app-backend `
      --global `
      --network-endpoint-group=startup-kit-app-neg `
      --network-endpoint-group-region=us-east1
    ```
+   **Worth investigating, not yet confirmed either way:** whether `--session-affinity` is actually
+   needed for Streamlit's persistent WebSocket connection. A single already-established WebSocket
+   connection stays bound to one backend instance for its own lifetime by the nature of the
+   protocol — session affinity typically matters for routing *separate, repeated* requests to the
+   same backend, not one continuous open stream — so it may be unnecessary here. Also unconfirmed:
+   whether `GENERATED_COOKIE` session affinity is even supported for a serverless NEG backend at
+   all. Don't add `--session-affinity` speculatively; only investigate and add it if real testing
+   in Step 12 actually shows session-continuity problems.
 7. **Create the URL map, target HTTPS proxy, and forwarding rule**:
    ```powershell
    gcloud compute url-maps create startup-kit-url-map `
@@ -178,12 +193,49 @@ give the result wanted.
      --role="roles/iap.httpsResourceAccessor"
    ```
    Repeat per person, or use a `group:` member if a Google Group is set up for this instead.
-12. **Verify end-to-end**: open the load balancer's URL (or custom domain) in a browser as a
+12. **Before testing in a browser, confirm the SSL certificate has actually finished
+    provisioning.** A Google-managed certificate typically takes 15–60 minutes to provision after
+    the forwarding rule is active and DNS has propagated; testing too early produces a confusing
+    `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` or privacy error that looks like a setup mistake but is
+    actually just a timing issue. Check status directly rather than guessing:
+    ```powershell
+    gcloud compute ssl-certificates describe startup-kit-cert `
+      --global `
+      --format="value(managed.status, managed.domainStatus)"
+    ```
+    Wait for `ACTIVE` before proceeding.
+13. **Verify end-to-end**: open the load balancer's URL (or custom domain) in a browser as a
     granted user with no `gcloud` running at all, confirm the real Google sign-in redirect
     appears, and confirm a real Generate → Fact Review → Approve → Generate documents cycle works
     through it — the same hands-on verification standard used for every other piece of this
     project.
-13. **Update `docs/Cloud_Run_Deployment.md`** once this is live: replace Section 7's
+14. **Optional polish: redirect plain HTTP to HTTPS.** As planned, only port 443 is bound to the
+    forwarding rule — a colleague typing the bare domain without `https://` would fail to connect
+    on port 80. A standard redirect setup:
+    ```powershell
+    gcloud compute url-maps import startup-kit-http-redirect --global --source=- <<EOF
+    name: startup-kit-http-redirect
+    defaultUrlRedirect:
+      redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+      httpsRedirect: true
+      stripQuery: false
+    EOF
+
+    gcloud compute target-http-proxies create startup-kit-http-proxy `
+      --url-map=startup-kit-http-redirect `
+      --global
+
+    gcloud compute forwarding-rules create startup-kit-http-fwd-rule `
+      --load-balancing-scheme=EXTERNAL_MANAGED `
+      --network-tier=PREMIUM `
+      --address=startup-kit-ip `
+      --target-http-proxy=startup-kit-http-proxy `
+      --ports=80 `
+      --global
+    ```
+    Genuinely optional — skip if typing the full `https://` URL is an acceptable ask of
+    colleagues; include if a more forgiving, typical-browser experience matters.
+15. **Update `docs/Cloud_Run_Deployment.md`** once this is live: replace Section 7's
     `run.invoker`-based access instructions with the new IAP-based flow, and update this plan's
     own checklist to reflect what's actually been done versus what's still open — the same way
     the Cloud Run and Firestore/Storage docs were kept honest and current throughout tonight's
