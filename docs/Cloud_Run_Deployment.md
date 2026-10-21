@@ -8,6 +8,16 @@ covers running the app itself in the cloud.
 Every step below is written to be re-run from scratch by someone who has never done this
 before — each check includes the actual command to run, not just a statement of what was found.
 
+## Architecture
+
+![Startup Kit App architecture: browser through IAP, load balancer, Cloud Run, to Firestore, Cloud Storage, Secret Manager, and the external Anthropic API](cloud-run-architecture.svg)
+
+A request from a browser is authenticated by Identity-Aware Proxy, passes through the load
+balancer (`startup-kit.toptal.tech`, managed certificate), and reaches the Cloud Run service,
+which runs as the `cloudrun-sa` identity. From there, the running app reads and writes Firestore
+and Cloud Storage, reads the Anthropic API key from Secret Manager, and calls the external
+Anthropic API for LLM extraction (the only component outside this GCP project entirely).
+
 ---
 
 ## 1. Prerequisites
@@ -344,16 +354,23 @@ work; these exist only for local development against the emulators.
 
 ---
 
-## 7. Grant access (required, since the service rejects unauthenticated requests)
+## 7. Grant access
 
-Confirm the service exists and check who currently has access:
+**Update — superseded by IAP, which is now the real, working access method.** As of the real IAP
+rollout (see `docs/IAP_Setup_Plan.md` Section 0), the app is reachable at
+**`https://startup-kit.toptal.tech/`** with a genuine Google sign-in redirect — no `gcloud`, no
+proxy, no CLI needed. This is now the normal way to use the app; the `run.invoker` /
+`gcloud run services proxy` method below still works as a fallback (e.g., accessing the service
+directly during troubleshooting) but is no longer the primary access path for real users.
+
+Confirm the service exists and check who currently has `run.invoker` (the fallback path):
 
 ```powershell
 gcloud run services describe startup-kit-app --region us-east1 --format="value(status.url)"
 gcloud run services get-iam-policy startup-kit-app --region us-east1
 ```
 
-Grant each person who needs access:
+Grant each person who needs the fallback access:
 
 ```powershell
 gcloud run services add-iam-policy-binding startup-kit-app `
@@ -364,6 +381,11 @@ gcloud run services add-iam-policy-binding startup-kit-app `
 
 Repeat with a different `--member` value (e.g. `user:colleague@toptal.com`) for each additional
 person.
+
+**For real, day-to-day use, grant access via IAP instead** — see `docs/IAP_Setup_Plan.md`
+Section 0 for the real, current status of how new colleagues are granted access through
+`startup-kit.toptal.tech` (confirming with IT whether this is self-service or needs to go through
+them is still an open item as of this writing).
 
 ---
 
