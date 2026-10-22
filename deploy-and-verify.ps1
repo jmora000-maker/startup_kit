@@ -33,7 +33,7 @@ gcloud run deploy startup-kit-app `
     --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
     --env-vars-file env-vars.yaml `
     --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
-    --timeout 1800 `
+    --min-instances=1 `
     --no-allow-unauthenticated
 if ($LASTEXITCODE -ne 0) { throw "gcloud run deploy failed -- see the error above before continuing." }
 

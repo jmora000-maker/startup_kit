@@ -198,6 +198,7 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
+  --min-instances=1 `
   --no-allow-unauthenticated
 ```
 
@@ -311,6 +312,7 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
+  --min-instances=1 `
   --no-allow-unauthenticated
 ```
 
@@ -344,6 +346,17 @@ redeploy.
 - **`--set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest`** — injects the real key at
   container start from Secret Manager; `:latest` means "always use the most recent version"
   without needing to redeploy when the key rotates.
+- **`--min-instances=1`** — **deviation log, confirmed real:** without this, Cloud Run's default
+  (`minScale` unset, i.e. `0`) lets the service scale down to zero containers whenever idle. The
+  next request after any idle period then triggers a full cold start — pulling the image, starting
+  Python, importing this app's genuinely large dependency tree (`pandas`, `python-docx`,
+  `python-pptx`, `openpyxl`, the Anthropic/LangChain SDKs, `google-cloud-firestore`,
+  `google-cloud-storage`, `pymupdf`, and more), then initializing Streamlit itself — confirmed as
+  the real cause of a slow startup noticed in practice, by checking the service's actual
+  `minScale` annotation (it was empty/unset). Keeping one instance warm at all times fixes this,
+  at a real, honest tradeoff: the service is never fully "off," so there's a small ongoing cost
+  for that one warm instance even when nobody's using the app — worth it for a frequently-used
+  internal tool, worth reconsidering if usage turns out to be rare.
 - **`--no-allow-unauthenticated`** — deliberate choice given this app handles real client SOW
   content: nobody can reach the deployed URL without being explicitly granted access (Section 7).
 
