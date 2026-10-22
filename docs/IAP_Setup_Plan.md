@@ -10,22 +10,35 @@ It builds on `docs/Cloud_Run_Deployment.md` (the service that already exists) an
 
 ## 0. Real outcome — DONE, confirmed working, same night this plan was written
 
-**This was completed faster and more simply than planned, using a different, newer mechanism
-than Sections 1–4 below describe.** The app is now live at **`https://startup-kit.toptal.tech/`**,
+**This was completed faster than planned, using a more layered, defense-in-depth setup than
+Sections 1–4 below describe on their own.** The app is now live at
+**`https://startup-kit.toptal.tech/`**,
 protected by a genuine Google sign-in redirect — no `gcloud`, no proxy tunnel, no CLI needed on
 the user's end at all.
 
-**What actually happened, vs. what this plan assumed:** Sections 1–4 below were written around
-the older, more widely-documented IAP pattern — enabling IAP on an External HTTPS Load Balancer's
-*backend service* (`gcloud compute backend-services update ... --iap=enabled`), which requires
-building the full load-balancer stack (static IP, NEG, backend service, URL map, proxy,
-forwarding rule) by hand. IT instead used a newer, genuinely simpler mechanism: **IAP enabled
-directly on the Cloud Run service itself**, confirmed real via Google's own IAP release notes
-("Preview: You can now enable IAP directly on your Cloud Run services without configuring load
-balancers"). IT still built a load balancer and managed certificate for the custom domain
-(`startup-kit.toptal.tech`), but IAP enforcement itself lives on the Cloud Run service's own
-configuration, not a separate backend-service resource — exactly matching what Guilherme meant by
-"IAP will still be managed at the service, not the backend service."
+**What actually happened, vs. what this plan assumed — corrected twice, the second time for
+real, after checking the Console carefully:** Sections 1–4 below were written around the older,
+more widely-documented IAP pattern — enabling IAP on an External HTTPS Load Balancer's *backend
+service*. The real IAP Console
+(`https://console.cloud.google.com/security/iap?project=toptal-delivery-apps`) lists two
+IAP-eligible resources for `startup-kit-app` — a **Backend Services** entry (from the load
+balancer IT built) and a **Cloud Run Services** entry (the Cloud Run service itself) — which
+initially looked like both were deliberately enabled together. **That reading was wrong, and was
+corrected after checking Google's own documentation directly**, which states a real, hard
+limitation: *"You cannot configure IAP on both the load balancer and the Cloud Run service."*
+Checking the actual per-resource toggle in the Console confirmed which one is genuinely real: the
+**Cloud Run Services** entry shows IAP checked/enabled; the **Backend Services** entry does not —
+it only appears in the list because it's associated via the load balancer's connection, not
+because it's independently enforcing anything. This matches Google's newer native Cloud Run IAP
+support (confirmed via Google's own IAP release notes: "Preview: You can now enable IAP directly
+on your Cloud Run services without configuring load balancers") and matches Guilherme's own stated
+intent: *"IAP should be set in your app deployment, not in the backend service (otherwise
+`*.run.app` would allow access without auth)."*
+
+**The one practical thing this means for managing access:** on that Console page, always select
+the **"Cloud Run Services — `startup-kit-app`"** row specifically when granting or checking
+someone's access — not the "Backend Services" row, which isn't the real gatekeeper and granting
+access there would do nothing.
 
 **Real division of labor, as it actually happened:**
 - IT: built the load balancer, static IP, DNS record, and managed certificate for
@@ -46,10 +59,21 @@ configuration, not a separate backend-service resource — exactly matching what
    with real sizes and checksums — the same standard of evidence used for every other
    verification in this project
 
-**Still open:** confirming with IT whether granting future colleagues access is self-service
-(presumably via `gcloud run services add-iam-policy-binding` with
-`roles/iap.httpsResourceAccessor` or an equivalent role on the Cloud Run service itself, now that
-IAP lives there rather than on a backend-service resource) or needs to go through IT each time.
+**Resolved — granting future colleagues access is genuinely self-service, via the Console (not
+`gcloud`), confirmed by IT:**
+
+- Go to `https://console.cloud.google.com/security/iap?project=toptal-delivery-apps`
+- Find the **"Cloud Run Services — `startup-kit-app`"** row specifically (not the "Backend
+  Services" row, which also appears in the list but isn't the one actually enforcing IAP — see the
+  confirmed explanation in Section 0 above), grant the person access, and set **Role → Cloud IAP →
+  IAP-secured Web App User**
+- **Good news, confirmed:** everyone in the `core@toptal.com` Google Group already has access,
+  granted at the project level by IT — most colleagues likely need no individual grant at all.
+  Only grant someone individually if they're not already a member of that group. Ping IT
+  (Guilherme) if `core@toptal.com`'s own membership needs to change.
+- Access changes take effect within a minute or two. If someone still sees "access denied" right
+  after being granted, have them sign out and back in, or try a private/incognito window — this
+  is a normal propagation delay, not a sign anything is actually wrong.
 
 **Sections 1–4 below are kept as reference** for the alternative, classic load-balancer-centric
 IAP pattern — useful if a future need arises where the native Cloud Run IAP path doesn't fit
