@@ -4,7 +4,9 @@ This document plans the work to put Identity-Aware Proxy in front of the deploye
 `startup-kit-app` Cloud Run service, replacing today's per-person `run.invoker` + `gcloud`
 access model with a normal Google sign-in redirect that works in any browser, no CLI needed.
 It builds on `docs/Cloud_Run_Deployment.md` (the service that already exists) and
-`docs/GCP_Firestore_CloudStorage_Setup.md` (the storage layer behind it).
+`docs/GCP_Firestore_CloudStorage_Setup.md` (the storage layer behind it). For a plain-language
+overview of what the app actually does and how it uses AI, see
+`docs/How_the_Startup_Kit_App_Works.md`.
 
 ---
 

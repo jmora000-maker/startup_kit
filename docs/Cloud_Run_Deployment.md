@@ -3,7 +3,8 @@
 This document covers deploying the Startup Kit app to Google Cloud Run in the real
 `toptal-delivery-apps` project, building on the Firestore/Cloud Storage backend set up in
 `docs/GCP_Firestore_CloudStorage_Setup.md`. That document covers the storage layer; this one
-covers running the app itself in the cloud.
+covers running the app itself in the cloud. For a plain-language overview of what the app actually
+does and how it uses AI, see `docs/How_the_Startup_Kit_App_Works.md`.
 
 Every step below is written to be re-run from scratch by someone who has never done this
 before — each check includes the actual command to run, not just a statement of what was found.
