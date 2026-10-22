@@ -357,6 +357,12 @@ redeploy.
   at a real, honest tradeoff: the service is never fully "off," so there's a small ongoing cost
   for that one warm instance even when nobody's using the app — worth it for a frequently-used
   internal tool, worth reconsidering if usage turns out to be rare.
+  **Confirmed real behavior worth knowing:** changing `--min-instances` (or any config flag)
+  creates a *new* revision, and that new revision's first warm instance still takes a moment to
+  actually finish starting up right after the rollout — a request landing in that brief window can
+  still see one cold-start-like delay even with `--min-instances=1` already set. This is expected
+  and temporary, confirmed by testing twice in a row shortly after applying the change: the first
+  attempt was still slow, the second (moments later) was not.
 - **`--no-allow-unauthenticated`** — deliberate choice given this app handles real client SOW
   content: nobody can reach the deployed URL without being explicitly granted access (Section 7).
 
