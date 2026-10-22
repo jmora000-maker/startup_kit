@@ -417,7 +417,7 @@ def _render_results(run_result: RunResult) -> None:
     if run_result.validation_report is not None and run_result.validation_report.findings:
         with st.expander(f"Validation findings ({len(run_result.validation_report.findings)})"):
             for finding in run_result.validation_report.findings:
-                st.write(f"**[{finding.severity}] {finding.invariant_id}** -- {finding.message}")
+                st.write(f"**[{finding.severity.upper()}]** {finding.message} :gray[({finding.invariant_id})]")
 
     targets = collect_download_targets(run_result)
     if targets:
@@ -506,8 +506,7 @@ def _render_admin_gate(key_prefix: str) -> bool:
             st.caption("Unlocked: LLM provider/model, mock mode, and cache mode are set below.")
         else:
             st.caption(
-                "Locked. Ordinary users do not need this section -- a run uses the server's "
-                "configured real provider with mock off and caching off until an admin unlocks it."
+                "Standard settings are pre-configured for production generation. Administrator credentials are only required for developer diagnostics and model overrides."
             )
             entered = st.text_input(
                 "Admin passphrase", type="password", key=f"{key_prefix}_admin_passphrase_input"
@@ -537,9 +536,7 @@ def render() -> None:
 
     st.title("Generate / Re-ingest a Startup Kit")
     st.caption(
-        "Upload documents, set the same options the CLI (main.py) exposes, trigger a run, and "
-        "download the generated files -- a complete second front end to the shared orchestrator "
-        "(HTL-16/HTL-17)."
+        "Upload a Statement of Work (SOW) or supporting project documents to automatically generate a complete PMO Startup Kit, Delivery Workbook, and Onboarding Deck."
     )
 
     tab_generate, tab_reingest = st.tabs(["Generate from SOW upload", "Re-ingest an existing Kit"])

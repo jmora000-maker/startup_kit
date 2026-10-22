@@ -530,7 +530,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
     assert not at.exception
 
     # 2. Switch away to Fact Review
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
     assert len(at.file_uploader) == 0
 
@@ -570,7 +570,7 @@ def test_upload_replacement_replaces_stored_file_without_merging():
     at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
 
     # Switch away and return
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
 
     # Select a genuinely different file
@@ -593,7 +593,7 @@ def test_using_previously_uploaded_message_rendering():
 
     # 2. Upload file and switch away and back -> message renders
     at.file_uploader(key="gen_uploader").upload("statement_of_work.docx", b"sow-data").run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
 
     gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
@@ -609,7 +609,7 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
     at.file_uploader(key="reingest_file").upload("Existing_Startup_Kit.docx", b"existing-kit-docx").run()
 
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
 
     reingest_info = [i.value for i in at.info if "Using previously uploaded: Existing_Startup_Kit.docx" in i.value]
@@ -851,7 +851,7 @@ def test_fact_review_loads_selected_run_baseline(tmp_path, monkeypatch):
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm run selector is present and defaults to the real pending run
@@ -862,7 +862,7 @@ def test_fact_review_loads_selected_run_baseline(tmp_path, monkeypatch):
     assert any(sh.value == "Beta Health Analytics" for sh in at.subheader)
 
     # Confirm caption references the stored run
-    assert any(f"Reviewing run `{run_id}`" in cap.value for cap in at.caption)
+    assert any(f"Project Run ID: `{run_id}`" in cap.value for cap in at.caption)
 
 
 def test_fact_review_edit_and_save_real_run_updates_storage(tmp_path, monkeypatch):
@@ -902,7 +902,7 @@ def test_fact_review_edit_and_save_real_run_updates_storage(tmp_path, monkeypatc
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Edit the Delivery Manager field
@@ -931,7 +931,7 @@ def test_fact_review_demo_fixture_option_saves_to_scratch():
     from src.review_ui import facts as review
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Select the Demo fixture option
@@ -1004,7 +1004,7 @@ def test_fact_review_approve_blocked_by_error_severity_finding(tmp_path, monkeyp
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm run selector is on the created run
@@ -1074,7 +1074,7 @@ def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monke
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm run selector is on the created run
@@ -1138,7 +1138,7 @@ def test_fact_review_approved_run_shows_generate_button_and_renders_downloads(tm
     storage.update_status(run_id, "approved", if_state="pending_review")
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm run selector is on the approved run
@@ -1203,7 +1203,7 @@ def test_fact_review_pending_run_does_not_show_generate_documents_button(tmp_pat
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm Generate documents button is absent
@@ -1274,7 +1274,7 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Select target run
@@ -1299,7 +1299,7 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
     assert not at.exception
 
     # Navigate back to Fact Review
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm selected run did NOT revert to options[0] (pending_run_id)
@@ -1368,7 +1368,7 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
     formatted_label = f"Run Beta ({run_2})"
     at.session_state["fact_review_page"] = {"selected_run_id": formatted_label}
 
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Confirm it selected run_2 (raw run ID), not run_1 (options[0])
@@ -1579,7 +1579,7 @@ def test_fact_review_generate_button_in_progress_state_during_long_running_call(
     storage.update_status(run_id, "approved", if_state="pending_review")
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Initially enabled
@@ -1660,7 +1660,7 @@ def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, mon
     at.session_state["fact_review::stuck_nonexistent_run::is_generating"] = True
 
     # Navigate to Fact Review
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Safeguard cleared stuck flags for non-approved runs
@@ -1733,7 +1733,7 @@ def test_fact_review_download_button_failure_logs_exception_and_warns(tmp_path, 
 
     with caplog.at_level(logging.WARNING):
         at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-        at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+        at.radio(key="app_page_selector").set_value("Fact Review").run()
         at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
 
     assert not at.exception
@@ -1806,7 +1806,7 @@ def test_fact_review_download_button_partial_failure_renders_available_and_warns
 
     with caplog.at_level(logging.WARNING):
         at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-        at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+        at.radio(key="app_page_selector").set_value("Fact Review").run()
         at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
 
     assert not at.exception
@@ -1862,7 +1862,7 @@ def test_demo_fixture_hidden_when_backend_is_gcp(tmp_path, monkeypatch):
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
 
     assert not at.exception
     selector = at.selectbox(key="fact_review_run_selector")
@@ -1903,7 +1903,7 @@ def test_demo_fixture_hidden_when_fixture_file_missing(tmp_path, monkeypatch):
     )
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
 
     assert not at.exception
     selector = at.selectbox(key="fact_review_run_selector")
@@ -1928,7 +1928,7 @@ def test_demo_fixture_load_run_baseline_defensive_fallback(tmp_path, monkeypatch
 
     # Test UI when no runs exist and fixture is missing
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
 
     assert not at.exception
     info_messages = [i.value for i in at.info]
@@ -1951,7 +1951,7 @@ def test_demo_fixture_selected_when_file_missing_shows_info_message(tmp_path, mo
     monkeypatch.setattr(review_facts, "FIXTURE_BASELINE_PATH", tmp_path / "nonexistent" / "baseline.json")
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
 
     assert not at.exception
     info_messages = [i.value for i in at.info]
@@ -2001,7 +2001,7 @@ def test_htl_39_stuck_state_warning_displayed_on_interrupted_run(tmp_path, monke
 
     # Launch app and open Fact Review
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     # Select the interrupted run
@@ -2052,7 +2052,7 @@ def test_htl_39_clean_approved_run_without_generation_attempt_has_no_interrupted
     storage.update_status(run_id, "approved", if_state="pending_review")
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
@@ -2101,7 +2101,7 @@ def test_htl_39_stuck_state_warning_displayed_with_default_timestamp(tmp_path, m
     storage.mark_generation_started(run_id)
 
     at = AppTest.from_file(APP_FILE, default_timeout=10).run()
-    at.radio(key="app_page_selector").set_value("Fact Review (fixture)").run()
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
     at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
@@ -2110,3 +2110,29 @@ def test_htl_39_stuck_state_warning_displayed_with_default_timestamp(tmp_path, m
     warnings = [w.value for w in at.warning]
     assert len(warnings) >= 1
     assert any("previous document generation attempt" in w and "interrupted or timed out" in w and "UTC" in w for w in warnings)
+
+
+def test_htl_40_sidebar_version_display_matches_runtime_source_of_truth():
+    """HTL-40: The Streamlit app renders the runtime version from src.version in the sidebar caption on all pages."""
+    import tomllib
+    from streamlit.testing.v1 import AppTest
+    from src.version import __version__
+
+    # Verify against .bumpversion.toml source of truth config file
+    bump_config_path = Path(__file__).resolve().parents[1] / ".bumpversion.toml"
+    assert bump_config_path.exists(), "Source of truth config file .bumpversion.toml must exist"
+    with open(bump_config_path, "rb") as f:
+        toml_data = tomllib.load(f)
+    config_version = toml_data["tool"]["bumpversion"]["current_version"]
+    assert __version__ == config_version, f"src.version.__version__ ({__version__}) must match .bumpversion.toml ({config_version})"
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    assert not at.exception
+    sidebar_captions = [c.value for c in at.sidebar.caption]
+    assert f"v{__version__}" in sidebar_captions, f"Expected 'v{__version__}' in sidebar captions, found {sidebar_captions}"
+
+    # Also verify visible when switching to the Fact Review page
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
+    assert not at.exception
+    sidebar_captions_review = [c.value for c in at.sidebar.caption]
+    assert f"v{__version__}" in sidebar_captions_review

@@ -7,7 +7,7 @@ This is the one app entry point with two pages, selected from the sidebar:
 - "Generate / Re-ingest" (HTL-17): the full second front end to the CLI -- upload, every CLI
   option, trigger a run, download results. All logic lives in src/review_ui/generate.py, which
   calls src/orchestrator.py's shared service layer (HTL-16); this file only renders.
-- "Fact Review (fixture)" (HTL-06, HTL-07; section 17 step 1): the standalone fact-review screen,
+- "Fact Review" (HTL-06, HTL-07; section 17 step 1): the standalone fact-review screen,
   unchanged, reading one recorded fixture baseline directly (read-only) and writing
   corrected_baseline.json and review_audit.json to review_ui_scratch/. All logic lives in
   src/review_ui/facts.py; this file only renders. This page does not yet route through the
@@ -31,6 +31,7 @@ from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
 from src.review_ui import state_persistence  # noqa: E402
 from src.review_ui.constants import CONTRACT_TYPES, GOVERNANCE_TIERS, resolve_select_index  # noqa: E402
+from src.version import __version__  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> 
         st.caption(field.context)
     st.text(f"Extracted value:  {field.value or '(empty)'}")
     if field.basis_label:
-        st.text(f"Basis (tool-generated label, not a quote):  {field.basis_label}")
+        st.text(f"Inferred categorization: {field.basis_label}")
     if field.self_describing:
         st.caption(field.source_text)
     else:
@@ -162,18 +163,17 @@ def _render_fact_review_page() -> None:
             st.info("The demo fixture is only available in local development environments.")
             return
         categories = review.build_fact_categories(baseline)
-        st.caption(
-            f"Standalone review of `{review.FIXTURE_BASELINE_PATH.relative_to(review.REPO_ROOT).as_posix()}` "
-            f"(read-only). Saving writes to `{(review.SCRATCH_ROOT / review.FIXTURE_NAME).relative_to(review.REPO_ROOT).as_posix()}/`."
-        )
+        st.caption("Reviewing sample project baseline (read-only demo mode).")
     else:
         run = storage.get_run(selected_run_id)
         baseline = review.load_run_baseline(selected_run_id, storage=storage)
         categories = review.build_fact_categories(baseline)
-        st.caption(
-            f"Reviewing run `{selected_run_id}` (state: `{run.state}`). "
-            "Saving updates this run in review storage."
-        )
+        state_display = {
+            "pending_review": "Pending Review",
+            "approved": "Approved (Ready to Generate)",
+            "generated": "Completed",
+        }.get(run.state, run.state)
+        st.caption(f"Project Run ID: `{selected_run_id}` | Status: **{state_display}**")
 
     st.subheader(baseline.project_name)
 
@@ -353,9 +353,10 @@ def main() -> None:
     st.set_page_config(page_title="PMO Startup Kit", layout="wide")
     page = st.sidebar.radio(
         "Page",
-        ["Generate / Re-ingest", "Fact Review (fixture)"],
+        ["Generate / Re-ingest", "Fact Review"],
         key="app_page_selector",
     )
+    st.sidebar.caption(f"v{__version__}")
     if page == "Generate / Re-ingest":
         generate_page.render()
     else:
