@@ -198,6 +198,8 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
+  --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --timeout=1800 `
   --min-instances=1 `
   --no-allow-unauthenticated
 ```
@@ -312,6 +314,8 @@ gcloud run deploy startup-kit-app `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
+  --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --timeout=1800 `
   --min-instances=1 `
   --no-allow-unauthenticated
 ```
@@ -346,6 +350,15 @@ redeploy.
 - **`--set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest`** — injects the real key at
   container start from Secret Manager; `:latest` means "always use the most recent version"
   without needing to redeploy when the key rotates.
+- **`--set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest`** — **deviation log, confirmed
+  real:** this was missing from every deploy command after the interim app-wide passphrase gate
+  was reverted (see Section 0 history) — but the revert only removed the *outer* gate; the app's
+  pre-existing, separate "Advanced (admin)" section inside the Generate page (its own passphrase
+  check, unrelated to that reverted experiment) still reads `config.admin_passphrase` at runtime.
+  With no secret wired in, the deployed container silently fell back to `config.py`'s hardcoded
+  default, `"dev-only-change-me"` — meaning the real admin section was accessible in production
+  with a well-known, publicly-visible-in-source-code value, not actually protected at all. Confirm
+  the real secret's value and access are in place (see Section 4) before relying on this.
 - **`--min-instances=1`** — **deviation log, confirmed real:** without this, Cloud Run's default
   (`minScale` unset, i.e. `0`) lets the service scale down to zero containers whenever idle. The
   next request after any idle period then triggers a full cold start — pulling the image, starting
