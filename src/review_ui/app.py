@@ -230,11 +230,25 @@ def _render_fact_review_page() -> None:
                 f"{formatted_time} UTC but did not complete (it may have been interrupted or timed out). "
                 f"You can safely retry generation by clicking 'Generate documents' below."
             )
-        generate_clicked = st.button(
-            "Generate documents",
-            key="fact_review_generate_button",
-            disabled=is_generating,
-        )
+        if not st.session_state.get("generation_unlocked", False):
+            st.caption("Enter generation passphrase to proceed with document generation.")
+            entered = st.text_input(
+                "Generation passphrase",
+                type="password",
+                key=f"fact_review_{selected_run_id}_gen_passphrase_input",
+            )
+            if st.button("Unlock generation", key=f"fact_review_{selected_run_id}_gen_unlock_button"):
+                if generate_page.is_generation_unlocked(entered, config.generation_passphrase):
+                    st.session_state["generation_unlocked"] = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect generation passphrase.")
+        else:
+            generate_clicked = st.button(
+                "Generate documents",
+                key="fact_review_generate_button",
+                disabled=is_generating,
+            )
     elif run.state == "pending_review":
         blocking_errors = review.get_blocking_validation_errors(run.validation_report)
         if blocking_errors:

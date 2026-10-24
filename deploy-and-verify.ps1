@@ -34,6 +34,7 @@ gcloud run deploy startup-kit-app `
     --env-vars-file env-vars.yaml `
     --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
     --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+    --set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest `
     --timeout=1800 `
     --min-instances=1 `
     --no-allow-unauthenticated

@@ -124,6 +124,10 @@ class AppConfig:
     # the variable is unset, it falls back to a clear, documented, non-secret placeholder (never a
     # hardcoded real secret) so a developer can still reach the admin section locally.
     admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "dev-only-change-me")
+    # HTL-46: the app's shared generation passphrase gate protecting billed LLM generation actions.
+    # In production this is read from Secret Manager (generation-passphrase); for local development,
+    # when unset, it falls back to a distinct placeholder that never collides with admin_passphrase.
+    generation_passphrase: str = os.getenv("GENERATION_PASSPHRASE", "dev-generation-only-change-me")
 
 
 DECK_TEMPLATE_PATH: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))

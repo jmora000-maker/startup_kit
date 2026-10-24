@@ -519,12 +519,20 @@ def test_format_run_error_blank_exception_message_falls_back_to_class_name():
 APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
 
 
+def _make_app_test(unlocked: bool = True):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10)
+    if unlocked:
+        at.session_state["generation_unlocked"] = True
+    return at
+
+
 def test_generate_retains_uploaded_sow_across_page_switches():
     """Upload a file, switch to Fact Review, switch back to Generate, confirm stored bytes are used for generate."""
     from unittest.mock import patch, MagicMock
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     # 1. Upload file
     at.file_uploader(key="gen_uploader").upload("project_sow.docx", b"binary-sow-content").run()
     assert not at.exception
@@ -563,9 +571,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
 
 def test_upload_replacement_replaces_stored_file_without_merging():
     """After an upload is stored, selecting a genuinely different file replaces the stored one, not merges."""
-    from streamlit.testing.v1 import AppTest
-
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     # Initial upload
     at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
 
@@ -584,9 +590,7 @@ def test_upload_replacement_replaces_stored_file_without_merging():
 
 def test_using_previously_uploaded_message_rendering():
     """Verify 'Using previously uploaded: {filename}' renders when stored file exists and does not render when none uploaded."""
-    from streamlit.testing.v1 import AppTest
-
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     # 1. Initially nothing uploaded -> message does not render
     gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
     assert len(gen_info) == 0
@@ -604,9 +608,8 @@ def test_using_previously_uploaded_message_rendering():
 def test_reingest_retains_uploaded_kit_across_page_switches():
     """Verify Re-ingest tab retains uploaded kit file and passes stored bytes to _run_reingest."""
     from unittest.mock import patch, MagicMock
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="reingest_file").upload("Existing_Startup_Kit.docx", b"existing-kit-docx").run()
 
     at.radio(key="app_page_selector").set_value("Fact Review").run()
@@ -670,9 +673,8 @@ def test_format_fallback_message_single_domain():
 def test_generate_results_renders_fallback_confirmation_empty():
     """When fallback_domains is empty, info widget renders 'Ran entirely on {provider}'."""
     from unittest.mock import patch, MagicMock
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -694,9 +696,8 @@ def test_generate_results_renders_fallback_confirmation_empty():
 def test_generate_results_renders_fallback_warning_non_empty():
     """When fallback_domains is non-empty, warning widget renders 'Fell back to {provider} for: ...'."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     mock_result = RunResult(
@@ -719,9 +720,8 @@ def test_generate_results_renders_fallback_warning_non_empty():
 def test_reingest_results_renders_fallback_domains():
     """Re-ingest tab results also render the fallback/provider confirmation."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="reingest_file").upload("Kit.docx", b"kit-bytes").run()
 
     mock_result = RunResult(
@@ -745,9 +745,8 @@ def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting
     """HTL-29: When 'Review before finalizing' is checked (the default), submitting passes
     pause_for_review=True, displays the 'awaiting review' message, and renders no download buttons."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     # Confirm default state of checkbox is checked (True)
     checkboxes = [cb for cb in at.checkbox if cb.label == "Review before finalizing"]
     assert len(checkboxes) == 1
@@ -781,9 +780,8 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
     """HTL-29: When 'Review before finalizing' is unchecked, submitting passes pause_for_review=False
     and displays the normal results screen with download buttons."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Uncheck the review toggle
@@ -1073,7 +1071,7 @@ def test_fact_review_approve_succeeds_with_only_warning_findings(tmp_path, monke
         validation_report=validation_report,
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -1137,7 +1135,7 @@ def test_fact_review_approved_run_shows_generate_button_and_renders_downloads(tm
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -1273,7 +1271,7 @@ def test_htl33_fact_review_run_selection_persists_and_downloads_survive(tmp_path
         validation_report={"findings": []},
     )
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -1383,9 +1381,7 @@ def test_htl_35_document_type_checkboxes_all_default_to_true():
     """HTL-35 (1): Every document-type checkbox (Startup Kit, Readiness Checklist,
     Delivery Workbook, and Onboarding Deck) on both Generate and Re-ingest tabs
     defaults to checked (True)."""
-    from streamlit.testing.v1 import AppTest
-
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
 
     # Generate tab checkboxes
     gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
@@ -1420,9 +1416,8 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
     """HTL-35 (2): The Generate button tracks in-progress execution via session state
     flag (gen_is_running) during a mocked long-running generation pipeline call."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     in_progress_flag_captured = []
@@ -1458,9 +1453,8 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
     message appears, the Generate button becomes disabled (disabled=True). Uploading a new file
     resets the result state and re-enables the Generate button."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
 
     # Initial state: button is enabled
@@ -1492,9 +1486,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
 def test_htl_35_safeguard_clears_stuck_running_flags_without_inputs():
     """HTL-35 safeguard: If gen_is_running or reingest_is_running is somehow set to True
     in session_state when no files are uploaded, render() clears them to False."""
-    from streamlit.testing.v1 import AppTest
-
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.session_state["gen_is_running"] = True
     at.session_state["reingest_is_running"] = True
 
@@ -1507,9 +1499,8 @@ def test_htl_35_reingest_two_phase_rerun_and_disabled_button():
     """HTL-35: Re-ingest tab uses the two-phase pattern and disables the Re-ingest button
     during execution and after completion."""
     from unittest.mock import patch
-    from streamlit.testing.v1 import AppTest
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.file_uploader(key="reingest_file").upload("Project_Startup_Kit.docx", b"docx-bytes").run()
 
     # Initial state: button enabled
@@ -1578,7 +1569,7 @@ def test_fact_review_generate_button_in_progress_state_during_long_running_call(
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -1654,7 +1645,7 @@ def test_fact_review_generate_button_per_run_scoping_and_safeguard(tmp_path, mon
     run_gen = storage.create_run("Generated Run", baseline_2.model_dump(mode="json"), {"findings": []})
     storage.update_status(run_gen, "generated", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     # Set non-approved runs as generating to test safeguard
     at.session_state[f"fact_review::{run_gen}::is_generating"] = True
     at.session_state["fact_review::stuck_nonexistent_run::is_generating"] = True
@@ -2000,7 +1991,7 @@ def test_htl_39_stuck_state_warning_displayed_on_interrupted_run(tmp_path, monke
     storage.mark_generation_started(run_id, when=gen_started_ts)
 
     # Launch app and open Fact Review
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -2051,7 +2042,7 @@ def test_htl_39_clean_approved_run_without_generation_attempt_has_no_interrupted
     )
     storage.update_status(run_id, "approved", if_state="pending_review")
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 
@@ -2100,7 +2091,7 @@ def test_htl_39_stuck_state_warning_displayed_with_default_timestamp(tmp_path, m
     # Call with NO when argument
     storage.mark_generation_started(run_id)
 
-    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at = _make_app_test().run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     assert not at.exception
 

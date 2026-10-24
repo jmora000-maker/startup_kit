@@ -182,6 +182,24 @@ gcloud secrets get-iam-policy anthropic-api-key
 ```
 You should see `cloudrun-sa@...` listed under `roles/secretmanager.secretAccessor`.
 
+### Generation Passphrase Secret (HTL-46)
+
+The shared generation passphrase gate (`HTL-46`) protects billed LLM generation actions (uploading files on Generate and clicking "Generate documents" on Fact Review). Provision the dedicated secret `generation-passphrase` and bind accessor permissions for Cloud Run:
+
+```powershell
+gcloud secrets create generation-passphrase --replication-policy="automatic"
+echo -n "<passphrase>" | gcloud secrets versions add generation-passphrase --data-file=-
+gcloud secrets add-iam-policy-binding generation-passphrase `
+  --member="serviceAccount:cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com" `
+  --role="roles/secretmanager.secretAccessor"
+```
+
+Confirm the binding:
+
+```powershell
+gcloud secrets get-iam-policy generation-passphrase
+```
+
 **Never** put the real key value directly in a deploy command, a committed file, or a plain
 `--set-env-vars` value — only ever via `--set-secrets`, which keeps the real value out of Cloud
 Run's own revision metadata and logs.
@@ -200,6 +218,7 @@ gcloud run deploy startup-kit-app `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
   --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest `
   --timeout=1800 `
   --min-instances=1 `
   --no-allow-unauthenticated
@@ -316,6 +335,7 @@ gcloud run deploy startup-kit-app `
   --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
   --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest `
   --timeout=1800 `
   --min-instances=1 `
   --no-allow-unauthenticated
@@ -360,6 +380,11 @@ redeploy.
   default, `"dev-only-change-me"` — meaning the real admin section was accessible in production
   with a well-known, publicly-visible-in-source-code value, not actually protected at all. Confirm
   the real secret's value and access are in place (see Section 4) before relying on this.
+- **`--set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest`** — **HTL-46:** protects
+  all billed LLM generation actions (SOW uploads and document generation on approved runs) behind a
+  dedicated generation passphrase gate, separate from `ADMIN_PASSPHRASE`. With this secret wired in,
+  the deployed container reads the production passphrase from Secret Manager, refusing all generation
+  actions to users who do not possess it while leaving fact review and inspection ungated.
 - **`--min-instances=1`** — **deviation log, confirmed real:** without this, Cloud Run's default
   (`minScale` unset, i.e. `0`) lets the service scale down to zero containers whenever idle. The
   next request after any idle period then triggers a full cold start — pulling the image, starting

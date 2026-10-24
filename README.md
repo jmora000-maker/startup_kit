@@ -87,6 +87,7 @@ Create a `.env` file in the project root to configure application paths, API key
 - `DECK_TEMPLATE_PATH`: Path to PowerPoint presentation template (default: `templates/Toptal_Presentation_Template.pptx`).
 - `REVIEW_STORAGE_BACKEND`: Storage backend selector (`local` [default] or `gcp` / `firestore`). Determines whether paused human review runs are stored locally in `review_queue/` or in Google Cloud Firestore and Cloud Storage.
 - `ADMIN_PASSPHRASE`: Passphrase protecting the Streamlit UI "Advanced (admin)" section. **WARNING**: The default value `dev-only-change-me` is intended strictly for local development and MUST be changed for any deployment beyond local development.
+- `GENERATION_PASSPHRASE`: Passphrase protecting billed LLM generation actions (SOW upload and document generation). **WARNING**: The default value `dev-generation-only-change-me` is intended strictly for local development and MUST be set via Secret Manager in production (`generation-passphrase`).
 - `GCS_BUCKET_NAME`: Target Google Cloud Storage bucket name for generated deliverables (default: `toptal-startup-kit-outputs`).
 - `GOOGLE_CLOUD_PROJECT`: Google Cloud Platform project ID (default: `toptal-delivery-apps`).
 - `FIRESTORE_EMULATOR_HOST`: Host/port override for connecting to local Firestore emulator (e.g. `127.0.0.1:8080`).
