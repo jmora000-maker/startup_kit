@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.core.models import SourceReference, StartupKitBaseline, ValidationReport
 from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook.builder import build_workbook_model
+from src.generators.pmo_workbook.workstreams import parse_milestone_phase
 from src.llm.validation import validate_and_repair_baseline
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -231,7 +232,9 @@ def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
             loc = _location(m.source_reference)
             ctx = f"{kind} (VAL-01): {m.description}"
             basis = row.date_basis if row else None
-            ms_fields.append(FactField(f"milestones.{m.id}.phase", f"{m.id} phase",
+            parsed = parse_milestone_phase(m)
+            phase_label = f"{m.id} phase" if parsed.has_phase_label else f"{m.id} workstream"
+            ms_fields.append(FactField(f"milestones.{m.id}.phase", phase_label,
                                        (row.workstream if row else None) or (m.phase or ""),
                                        source_location=loc, context=ctx))
             ms_fields.append(FactField(f"milestones.{m.id}.external_date", f"{m.id} external date",

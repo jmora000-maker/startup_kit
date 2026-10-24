@@ -68,12 +68,18 @@ def test_gate_count_phases_and_external_dates_match_oracle(categories, values, o
 
     arc_oracle = json.loads((ORACLE_PATH.parent / f"{oracle['extends_reference_phase_map_from']}.json").read_text(encoding="utf-8"))
     assert [values[f"milestones.{g}.phase"] for g in gate_ids] == arc_oracle["phases"]
+    # HTL-37: Gates with native phase codes are labeled "{m.id} phase"
+    labels = {f.key: f.label for f in categories["milestones"].fields}
+    assert [labels[f"milestones.{g}.phase"] for g in gate_ids] == [f"{g} phase" for g in gate_ids]
 
 
 def test_checkpoint_phases_match_oracle(categories, values, oracle):
     cp_ids = sorted({f.key.split(".")[1] for f in categories["milestones"].fields
                      if f.context and f.context.startswith("Checkpoint")})
     assert {cp: values[f"milestones.{cp}.phase"].split()[0] for cp in cp_ids} == oracle["checkpoint_phases"]
+    # HTL-37: Checkpoints with native phase codes are labeled "{cp} phase"
+    labels = {f.key: f.label for f in categories["milestones"].fields}
+    assert [labels[f"milestones.{cp}.phase"] for cp in cp_ids] == [f"{cp} phase" for cp in cp_ids]
 
 
 def test_milestone_date_basis_is_the_generated_label(categories):
