@@ -521,6 +521,8 @@ def label_for_generated_file(filename: str) -> str:
         return "Project Delivery Workbook (.xlsx)"
     if filename.endswith("_Talent_Onboarding_Deck.pptx"):
         return "Talent Onboarding Deck (.pptx)"
+    if filename.endswith("_Client_Kickoff_Deck.pptx"):
+        return "Client Kickoff Deck (.pptx)"
     if filename.endswith(".trace.json") or filename.endswith("_Deck_Trace_Manifest.json"):
         return "Deck Trace Manifest (.json)"
     return filename
@@ -564,9 +566,10 @@ def generate_approved_run(
             checklist=bool(run.outputs.get("checklist")),
             workbook=bool(run.outputs.get("workbook")),
             slides=bool(run.outputs.get("slides")),
+            client_deck=bool(run.outputs.get("client_deck")),
         )
     elif outputs is None:
-        outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True)
+        outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True, client_deck=True)
 
     result = controller.generate_from_baseline(
         baseline=baseline,
@@ -588,6 +591,11 @@ def generate_approved_run(
             written_paths.append(result.slides.file_path)
         if result.slides.manifest_path.exists():
             written_paths.append(result.slides.manifest_path)
+    if result.client_deck is not None:
+        if result.client_deck.file_path.exists():
+            written_paths.append(result.client_deck.file_path)
+        if result.client_deck.manifest_path.exists():
+            written_paths.append(result.client_deck.manifest_path)
 
     references = storage.put_generated_files(run_id, written_paths)
     storage.update_status(run_id, "generated", if_state="approved")

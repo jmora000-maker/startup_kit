@@ -7,6 +7,7 @@ from typing import List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from src.generators.pmo_workbook import PMOWorkbookResult
     from src.generators.onboarding_deck import OnboardingDeckResult
+    from src.generators.client_deck import ClientDeckResult
     from src.core.models import StartupKitBaseline, ValidationReport
 
 
@@ -16,6 +17,7 @@ class OutputSelection:
     checklist: bool = False
     workbook: bool = True
     slides: bool = False
+    client_deck: bool = False
 
     @classmethod
     def from_flags(
@@ -26,15 +28,16 @@ class OutputSelection:
         checklist: bool = False,
         export_tools: bool = False,
         slides: bool = False,
+        client_deck: bool = False,
     ) -> "OutputSelection":
         if all_:
-            return cls(kit=True, checklist=True, workbook=True, slides=True)
+            return cls(kit=True, checklist=True, workbook=True, slides=True, client_deck=True)
         if slides:
             # DECK-02: --slides implies writing Kit and Workbook as deck sources
-            return cls(kit=True, checklist=checklist, workbook=True, slides=True)
-        if not (kit or checklist or export_tools or slides):
+            return cls(kit=True, checklist=checklist, workbook=True, slides=True, client_deck=client_deck)
+        if not (kit or checklist or export_tools or slides or client_deck):
             return cls()  # default: workbook only
-        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=slides)
+        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=slides, client_deck=client_deck)
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,8 @@ class RunResult:
     workbook: Optional["PMOWorkbookResult"] = None
     slides: Optional["OnboardingDeckResult"] = None
     slides_path: Optional[Path] = None
+    client_deck: Optional["ClientDeckResult"] = None
+    client_deck_path: Optional[Path] = None
     readiness_score: float = 0.0
     # HTL-24: structured fields so both front ends can render their own presentation from the
     # same underlying data, instead of only being able to read it off stdout/logs. The CLI's
