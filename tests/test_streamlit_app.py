@@ -1379,39 +1379,42 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
 # HTL-35: Generate/Re-ingest page fixes (checkbox defaults, button disabling during and after run)
 
 
-def test_htl_35_document_type_checkboxes_all_default_to_true():
-    """HTL-35 (1): Every document-type checkbox (Startup Kit, Readiness Checklist,
+def test_htl_45_document_type_checkboxes_all_default_to_false():
+    """HTL-45 / OUT-13a: Every active document-type checkbox (Startup Kit,
     Delivery Workbook, and Onboarding Deck) on both Generate and Re-ingest tabs
-    defaults to checked (True)."""
+    defaults to unchecked (False), and Readiness Checklist is discontinued."""
     at = _make_app_test().run()
 
     # Generate tab checkboxes
     gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
     assert len(gen_deck_cb) == 1
-    assert gen_deck_cb[0].value is True
+    assert gen_deck_cb[0].value is False
+
+    # Confirm Readiness Checklist is NOT present (OUT-13a)
+    assert len([cb for cb in at.checkbox if cb.key == "gen_out_checklist"]) == 0
 
     gen_labels = {
         "Startup Kit": "gen_out_kit",
-        "Readiness Checklist": "gen_out_checklist",
         "Delivery Workbook": "gen_out_workbook",
         "Onboarding Deck": "gen_out_slides",
     }
     for label, key in gen_labels.items():
         cbs = [cb for cb in at.checkbox if cb.key == key]
         assert len(cbs) == 1, f"Missing checkbox {key}"
-        assert cbs[0].value is True, f"Checkbox {label} ({key}) did not default to True"
+        assert cbs[0].value is False, f"Checkbox {label} ({key}) did not default to False"
 
     # Re-ingest tab checkboxes
+    assert len([cb for cb in at.checkbox if cb.key == "reingest_out_checklist"]) == 0
+
     reingest_labels = {
         "Startup Kit": "reingest_out_kit",
-        "Readiness Checklist": "reingest_out_checklist",
         "Delivery Workbook": "reingest_out_workbook",
         "Onboarding Deck": "reingest_out_slides",
     }
     for label, key in reingest_labels.items():
         cbs = [cb for cb in at.checkbox if cb.key == key]
         assert len(cbs) == 1, f"Missing checkbox {key}"
-        assert cbs[0].value is True, f"Checkbox {label} ({key}) did not default to True"
+        assert cbs[0].value is False, f"Checkbox {label} ({key}) did not default to False"
 
 
 def test_htl_35_generate_button_in_progress_state_during_long_running_call():

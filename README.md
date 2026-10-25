@@ -1,8 +1,7 @@
 # PMO Startup Kit Generator
 
-The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kickoff materials to extract structured project management baselines via LLMs. It produces four core project delivery documents:
-- the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, and RAID items;
-- the **Startup Readiness Checklist** (`.docx`), containing the G-01 executive gateway dashboard, 15-row readiness checklist, commercial guardrails, actionable clarification questions, and contract ambiguities;
+The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kickoff materials to extract structured project management baselines via LLMs. It produces three core project delivery documents:
+- the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, RAID items, and assurance logs;
 - the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log;
 - the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), containing an executive 7-slide briefing deck for talent onboarding (cover, five content slides, and a closing Your Project Kit slide), built with strict traceability back to the Kit and Workbook.
 
@@ -12,9 +11,8 @@ For detailed specification rules and background, see [spec/PMO_Startup_Kit_Conso
 
 ## 1. Purpose
 
-The tool reads a Statement of Work (SOW) and produces four standardized project management documents:
+The tool reads a Statement of Work (SOW) and produces three standardized project management documents:
 - the **Startup Kit** (`.docx`);
-- the **Startup Readiness Checklist** (`.docx`);
 - the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
 - the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
 
@@ -103,9 +101,9 @@ Create a `.env` file in the project root to configure application paths, API key
 By default, when no output flag is provided, only the Project Delivery Workbook (`.xlsx`) is generated.
 - `--export-tools`: Write the Project Delivery Workbook Excel workbook (`.xlsx`) (default when no output flag is given).
 - `--kit`: Write the Startup Kit Word document (`.docx`).
-- `--checklist`: Write the Startup Readiness Checklist Word document (`.docx`).
 - `--slides`: Write the Talent Team Onboarding Deck (`.pptx`) and its trace manifest (`.trace.json`). Writing the deck automatically generates its source Kit and Workbook.
-- `--all`: Write all four outputs: the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck.
+- `--all`: Write all three outputs: the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck.
+- `--checklist`: Deprecated (OUT-13a: Readiness Checklist deliverable is discontinued).
 
 ### Re-ingestion Workflow
 When updating an existing project, re-ingesting an approved `*_Startup_Kit.docx` via `--reingest-docx <path>` is recommended over regenerating from the raw SOW. The input Kit serves as the source of truth; it is not rewritten unless `--kit` or `--all` is explicitly passed.
@@ -135,9 +133,9 @@ All options as provided by `python main.py --help`:
 - `--start-date START_DATE`: Project Start Date in ISO format (`YYYY-MM-DD`); planned dates are derived from this date.
 - `--export-tools`: Write the Project Delivery Workbook Excel workbook (default when no output flag is given).
 - `--kit`: Write the Startup Kit Word document.
-- `--checklist`: Write the Startup Readiness Checklist Word document.
+- `--checklist`: Deprecated (discontinued per OUT-13a).
 - `--slides`: Write the Talent Team Onboarding Deck PowerPoint presentation.
-- `--all`: Write the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck.
+- `--all`: Write the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck.
 - `-v, --verbose`: Enable verbose debug logging.
 
 ### Input and Output Paths

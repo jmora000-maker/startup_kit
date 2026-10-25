@@ -134,25 +134,24 @@ def test_controller_run_output_matrix(populated_inputs_dir, tmp_path):
     assert len(list(out_dir_b.glob("*.docx"))) == 1
     assert len(list(out_dir_b.glob("*.xlsx"))) == 0
 
-    # Case C: --checklist only
+    # Case C: --checklist only (OUT-13a: checklist output suppressed)
     out_dir_c = tmp_path / "out_c"
     res_c = controller.run(inputs_dir=populated_inputs_dir, output_dir=out_dir_c, outputs=OutputSelection(kit=False, checklist=True, workbook=False))
     assert res_c.kit_path is None
-    assert res_c.checklist_path is not None
+    assert res_c.checklist_path is None
     assert res_c.workbook is None
-    assert len(list(out_dir_c.glob("*_Startup_Readiness_Checklist.docx"))) == 1
-    assert len(list(out_dir_c.glob("*.docx"))) == 1
+    assert len(list(out_dir_c.glob("*.docx"))) == 0
     assert len(list(out_dir_c.glob("*.xlsx"))) == 0
 
-    # Case D: --all (all three files)
+    # Case D: --all (all files without deprecated checklist)
     out_dir_d = tmp_path / "out_d"
     res_d = controller.run(inputs_dir=populated_inputs_dir, output_dir=out_dir_d, outputs=OutputSelection.from_flags(all_=True, kit=False, checklist=False, export_tools=False))
     assert res_d.kit_path is not None
-    assert res_d.checklist_path is not None
+    assert res_d.checklist_path is None
     assert res_d.workbook is not None
     assert len(list(out_dir_d.glob("*_Startup_Kit.docx"))) == 1
-    assert len(list(out_dir_d.glob("*_Startup_Readiness_Checklist.docx"))) == 1
-    assert len(list(out_dir_d.glob("*.docx"))) == 2
+    assert len(list(out_dir_d.glob("*_Startup_Readiness_Checklist.docx"))) == 0
+    assert len(list(out_dir_d.glob("*.docx"))) == 1
     assert len(list(out_dir_d.glob("*.xlsx"))) == 1
 
 

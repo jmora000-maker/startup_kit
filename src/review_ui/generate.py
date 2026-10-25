@@ -496,8 +496,13 @@ def _render_results(run_result: RunResult) -> None:
                 )
 
 
-def _output_selection_from_checkboxes(kit: bool, checklist: bool, workbook: bool, slides: bool) -> OutputSelection:
-    return OutputSelection(kit=kit, checklist=checklist, workbook=workbook, slides=slides)
+def _output_selection_from_checkboxes(
+    kit: bool = False,
+    checklist: bool = False,
+    workbook: bool = False,
+    slides: bool = False,
+) -> OutputSelection:
+    return OutputSelection(kit=kit, checklist=False, workbook=workbook, slides=slides)
 
 
 # Item 3 / HTL-31: both the Generate and Re-ingest tabs used to wrap all their fields in st.form,
@@ -701,16 +706,13 @@ def render() -> None:
             else:
                 provider, model, mock, cache_mode = "", "", False, "off"
             st.caption("Outputs to produce")
-            col1, col2, col3, col4 = st.columns(4)
-            kit = _persisted_checkbox(GENERATE_STORE, "gen_out_kit", "Startup Kit", True, widget_fn=col1.checkbox)
-            checklist = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_checklist", "Readiness Checklist", True, widget_fn=col2.checkbox
-            )
+            col1, col2, col3 = st.columns(3)
+            kit = _persisted_checkbox(GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col1.checkbox)
             workbook = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", True, widget_fn=col3.checkbox
+                GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col2.checkbox
             )
             slides = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_slides", "Onboarding Deck", True, widget_fn=col4.checkbox
+                GENERATE_STORE, "gen_out_slides", "Onboarding Deck", False, widget_fn=col3.checkbox
             )
             # HTL-29: "Review before finalizing" toggle, checked by default.
             review_before_finalizing = _persisted_checkbox(
@@ -739,7 +741,7 @@ def render() -> None:
                 else:
                     last_stage: List[Optional[str]] = [None]
                     try:
-                        outputs = _output_selection_from_checkboxes(kit, checklist, workbook, slides)
+                        outputs = _output_selection_from_checkboxes(kit=kit, workbook=workbook, slides=slides)
                         resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
                             admin_unlocked_gen, provider=provider, model=model, mock=mock, cache_mode=cache_mode
                         )
@@ -853,16 +855,13 @@ def render() -> None:
             else:
                 provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
             st.caption("Outputs to regenerate")
-            rcol1, rcol2, rcol3, rcol4 = st.columns(4)
-            kit_r = _persisted_checkbox(REINGEST_STORE, "reingest_out_kit", "Startup Kit", True, widget_fn=rcol1.checkbox)
-            checklist_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_checklist", "Readiness Checklist", True, widget_fn=rcol2.checkbox
-            )
+            rcol1, rcol2, rcol3 = st.columns(3)
+            kit_r = _persisted_checkbox(REINGEST_STORE, "reingest_out_kit", "Startup Kit", False, widget_fn=rcol1.checkbox)
             workbook_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", True, widget_fn=rcol3.checkbox
+                REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", False, widget_fn=rcol2.checkbox
             )
             slides_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", True, widget_fn=rcol4.checkbox
+                REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", False, widget_fn=rcol3.checkbox
             )
             is_reingest_running = st.session_state.get("reingest_is_running", False)
             has_reingest_result = st.session_state.get("reingest_run_result") is not None
@@ -889,7 +888,7 @@ def render() -> None:
                 else:
                     last_stage_r: List[Optional[str]] = [None]
                     try:
-                        outputs_r = _output_selection_from_checkboxes(kit_r, checklist_r, workbook_r, slides_r)
+                        outputs_r = _output_selection_from_checkboxes(kit=kit_r, workbook=workbook_r, slides=slides_r)
                         resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
                             admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
                         )

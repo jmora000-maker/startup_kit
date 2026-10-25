@@ -592,10 +592,7 @@ class StartupKitController:
 
         if outputs.checklist:
             progress("generating", "Readiness Checklist")
-            logger.info("Generating Word Startup Readiness Checklist document in %s...", out_path)
-            if hasattr(self.doc_writer, "write_checklist_docx"):
-                checklist_path = self.doc_writer.write_checklist_docx(baseline, out_path)
-                written_paths.append(checklist_path)
+            logger.info("Readiness Checklist deliverable generation skipped (discontinued per OUT-13a)")
 
         if outputs.workbook:
             progress("generating", "Delivery Workbook")

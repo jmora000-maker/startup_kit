@@ -644,7 +644,11 @@ class BaselineAggregator:
 
         stakeholders: List[Stakeholder] = []
         if stakeholders_ext and stakeholders_ext.stakeholders:
-            stakeholders = list(stakeholders_ext.stakeholders)
+            # OUT-13c: Filter out executive signatory / CFO roles
+            stakeholders = [
+                s for s in stakeholders_ext.stakeholders
+                if not any(w in s.role.lower() or w in (s.name or "").lower() for w in ("cfo", "signatory"))
+            ]
             # Ensure PMO Lead and Director, PMO exist
             has_pmo = any("pmo lead" in s.role.lower() for s in stakeholders)
             has_dir = any("director" in s.role.lower() and "pmo" in s.role.lower() for s in stakeholders)
@@ -717,11 +721,12 @@ class BaselineAggregator:
                 )
             ]
 
+        # KIT-14: RACI Matrix with "Work at risk" and exact spec cell values
         raci_matrix = [
-            RACIItem(decision_or_activity="Startup readiness (G-01 gate)", pmo_lead="R, A", delivery_manager="C", talent_pm="C", sales_accounts="C", client="I"),
-            RACIItem(decision_or_activity="Talent staffing & replacement", pmo_lead="R, A", delivery_manager="C", talent_pm="C", sales_accounts="C", client="I"),
-            RACIItem(decision_or_activity="Work at risk / commercial exceptions", pmo_lead="R, A", delivery_manager="I", talent_pm="I", sales_accounts="C", client="I"),
-            RACIItem(decision_or_activity="Scope & change", pmo_lead="R", delivery_manager="A", talent_pm="—", sales_accounts="C, R", client="A"),
+            RACIItem(decision_or_activity="Startup readiness (G-01 gate)", pmo_lead="R, A", delivery_manager="R", talent_pm="C", sales_accounts="I", client="C"),
+            RACIItem(decision_or_activity="Talent staffing & replacement", pmo_lead="R", delivery_manager="R, A", talent_pm="I", sales_accounts="I", client="I"),
+            RACIItem(decision_or_activity="Work at risk", pmo_lead="R, A", delivery_manager="C", talent_pm="C", sales_accounts="I", client="I"),
+            RACIItem(decision_or_activity="Scope & change", pmo_lead="R", delivery_manager="R", talent_pm="C", sales_accounts="I", client="A"),
             RACIItem(decision_or_activity="Delivery risk & recovery", pmo_lead="R, A", delivery_manager="C", talent_pm="R", sales_accounts="I", client="I"),
         ]
 

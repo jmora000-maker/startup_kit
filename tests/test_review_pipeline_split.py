@@ -93,8 +93,7 @@ def test_pause_for_review_false_generates_documents_and_creates_no_stored_run(po
     assert result.run_id is None
     assert result.kit_path is not None
     assert result.kit_path.exists()
-    assert result.checklist_path is not None
-    assert result.checklist_path.exists()
+    assert result.checklist_path is None
     assert result.workbook is not None
     assert result.workbook.file_path.exists()
 

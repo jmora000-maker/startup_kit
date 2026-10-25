@@ -2,7 +2,7 @@
   "kit_tables": [
     {
       "table_index": 0,
-      "rows_count": 5,
+      "rows_count": 4,
       "rows": [
         [
           "Project Name",
@@ -27,12 +27,6 @@
           "[UNASSIGNED - TO BE CONFIRMED]",
           "Generated Date",
           "2026-10-01"
-        ],
-        [
-          "1-Day SLA Status",
-          "Met (Drafted <= 1 day)",
-          "Workflow State",
-          "Clarification Pending"
         ]
       ]
     },
@@ -76,7 +70,7 @@
         ],
         [
           "Contracted Deliverables",
-          "• Milestone 1 (P1 Foundation, $26,808, est. Nov 17, 2026): micro-frontend shell with navigation, routing and the client design system, Azure AD/MSAL authentication, an E2E test harness, pipeline quality-gate/smoke automation, auth negative and security testing, and data model and governance validation.\n• Milestone 2 (P2a Services and Data, $60,356, est. Jan 26, 2027): FastAPI faceted search/detail endpoints, async long-query processing, backend integration and load tests, a performance engineering spike, the OneGWAS direct-write integration with its tests, and validation of client-built ingestion and taxonomy work.\n• Milestone 3 (P2b Application Surface, $68,210, est. Mar 2, 2027): ARC micro-frontend faceted search and results table, result detail and interval visualization, haplotype filter/comparison and endpoints, the nomenclature service, and the related frontend/backend test suites.\n• Milestone 4 (P3 Launch, $44,991, est. Apr 6, 2027): integration, performance, security and cross-browser (Chrome/Edge) test suites, test data and fixtures, UAT execution and defect triage, a pre-launch hardening iteration, production smoke tests with a 48-hour defect watch, and MTA Store parity confirmation.\n• Training materials and user documentation, delivered and reviewed in Milestone 4.\n• QA output is automated test scripts, their execution, and defect reports rather than manual QA, and covers testing against the full platform including SSO and external integrations.\n• Certification tests for client-built components (pipeline gates, data model, governance, ingestion, extraction, taxonomy, MTA parity): test scripts, execution, and a defect report measured against the stated targets.\n• Total fixed fee of $200,365 across four sequential milestones over about 26 weeks, starting Oct 7, 2026, with each milestone billed on completion."
+          "• Milestone 1 (P1 Foundation, Fixed Bid engagement -- rate and total value withheld from Talent-facing copy, est. Nov 17, 2026): micro-frontend shell with navigation, routing and the client design system, Azure AD/MSAL authentication, an E2E test harness, pipeline quality-gate/smoke automation, auth negative and security testing, and data model and governance validation.\n• Milestone 2 (P2a Services and Data, Fixed Bid engagement -- rate and total value withheld from Talent-facing copy, est. Jan 26, 2027): FastAPI faceted search/detail endpoints, async long-query processing, backend integration and load tests, a performance engineering spike, the OneGWAS direct-write integration with its tests, and validation of client-built ingestion and taxonomy work.\n• Milestone 3 (P2b Application Surface, Fixed Bid engagement -- rate and total value withheld from Talent-facing copy, est. Mar 2, 2027): ARC micro-frontend faceted search and results table, result detail and interval visualization, haplotype filter/comparison and endpoints, the nomenclature service, and the related frontend/backend test suites.\n• Milestone 4 (P3 Launch, Fixed Bid engagement -- rate and total value withheld from Talent-facing copy, est. Apr 6, 2027): integration, performance, security and cross-browser (Chrome/Edge) test suites, test data and fixtures, UAT execution and defect triage, a pre-launch hardening iteration, production smoke tests with a 48-hour defect watch, and MTA Store parity confirmation.\n• Training materials and user documentation, delivered and reviewed in Milestone 4.\n• QA output is automated test scripts, their execution, and defect reports rather than manual QA, and covers testing against the full platform including SSO and external integrations.\n• Certification tests for client-built components (pipeline gates, data model, governance, ingestion, extraction, taxonomy, MTA parity): test scripts, execution, and a defect report measured against the stated targets.\n• Total fixed fee of Fixed Bid engagement -- rate and total value withheld from Talent-facing copy across four sequential milestones over about 26 weeks, starting Oct 7, 2026, with each milestone billed on completion."
         ],
         [
           "Explicit Exclusions & Out-of-Scope",
@@ -952,7 +946,7 @@
         ],
         [
           "DEC-01",
-          "The engagement is Fixed Fee with milestone billing, totaling $200,365 across four milestones, each invoiced on completion.",
+          "The engagement is Fixed Fee with milestone billing, totaling Fixed Bid engagement -- rate and total value withheld from Talent-facing copy across four milestones, each invoiced on completion.",
           "Toptal",
           "Approved"
         ],
@@ -1131,7 +1125,7 @@
     },
     {
       "table_index": 11,
-      "rows_count": 12,
+      "rows_count": 11,
       "rows": [
         [
           "Stakeholder Name",
@@ -1176,13 +1170,6 @@
           "Not specified."
         ],
         [
-          "Carlos Aguirre",
-          "Executive Signatory (CFO)",
-          "Toptal",
-          "Signs the commercial agreement on behalf of Toptal (fixed fee of $200,365, four milestones).",
-          "Possible participant in Level Three executive escalation; not explicitly named."
-        ],
-        [
           "Toptal Manager of the Delivery Manager (TBD)",
           "Level Two Escalation Manager",
           "Toptal",
@@ -1224,7 +1211,7 @@
       "rows_count": 6,
       "rows": [
         [
-          "Startup Control / Decision Activity",
+          "Decision Activity",
           "PMO Lead",
           "Delivery Manager",
           "Talent PM",
@@ -1248,7 +1235,7 @@
           "I"
         ],
         [
-          "Work at risk / commercial exceptions",
+          "Work at risk",
           "R, A",
           "I",
           "I",

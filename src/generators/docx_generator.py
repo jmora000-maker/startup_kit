@@ -46,6 +46,47 @@ WHOLE_CELL_PLACEHOLDER_REGEX = re.compile(
 
 PLACEHOLDER_REGEX = BRACKETED_PLACEHOLDER_REGEX
 
+# OUT-13d: Systematic financial pattern matching currency amounts, rates, and fee numbers
+FINANCIAL_PATTERN = re.compile(
+    r'(?:'
+    # Currency symbol or ISO code preceding numbers: $100, $100.00, $100,000, USD 100, $100k, $100M (optional trailing currency e.g. $250,000 USD)
+    r'(?:\$|USD\b|EUR\b|GBP\b|CAD\b)\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?(?:\s*(?:USD|CAD|EUR|GBP|dollars?))?'
+    # Optional rate suffix: /hr, /hour, / day, per hour, etc.
+    r'(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month))?'
+    r'|'
+    # Numbers followed by currency: 100 USD, 100 dollars, 250,000.00 USD
+    r'\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:USD|CAD|EUR|GBP|dollars?)\b(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month))?'
+    r'|'
+    # Number followed by /hr, /hour, per hour: e.g. 150/hr, 120/hour, 120 / hr
+    r'\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month)\b'
+    r')',
+    flags=re.IGNORECASE
+)
+
+
+def obfuscate_financials(text: Optional[str], contract_type: str = "Time and Materials") -> str:
+    """OUT-13d: Systematically obfuscate real dollar figures, hourly rates, and total fee values in talent-facing copy."""
+    if not text:
+        return ""
+    text_str = str(text)
+    if not FINANCIAL_PATTERN.search(text_str):
+        return text_str
+
+    is_fixed = "fixed" in (contract_type or "").lower()
+    placeholder = (
+        "Fixed Bid engagement -- rate and total value withheld from Talent-facing copy"
+        if is_fixed
+        else "Time & Materials engagement -- rate and total value withheld from Talent-facing copy"
+    )
+
+    obfuscated = FINANCIAL_PATTERN.sub(placeholder, text_str)
+    dup_pattern = re.compile(
+        re.escape(placeholder) + r'(?:\s*(?:and|with|at|to|,|-|/|\bor\b)\s*' + re.escape(placeholder) + r')+',
+        flags=re.IGNORECASE
+    )
+    obfuscated = dup_pattern.sub(placeholder, obfuscated)
+    return obfuscated
+
 
 def is_placeholder_text(text: Optional[str]) -> bool:
     """Check if text contains whole-line or bracketed placeholder tokens (v4 B6)."""
@@ -89,12 +130,14 @@ def format_cell_with_action(
     fallback_checklist_id: Optional[str] = None,
     fallback_action_desc: Optional[str] = None,
     fallback_delta: float = 2.0,
+    contract_type: str = "Time and Materials",
 ) -> None:
-    """Formats cell text, cleanly subsumes raw placeholder tokens, attaches exactly ONE [ACT-XX: Remediation (+Delta%)], and applies amber fill."""
+    """Formats cell text, cleanly subsumes raw placeholder tokens, attaches exactly ONE [ACT-XX: Remediation (+Delta%)], applies financial obfuscation, and applies amber fill."""
     if text is None:
         text = ""
 
     raw_text = sanitize_report_text(str(text).strip())
+    raw_text = obfuscate_financials(raw_text, contract_type=contract_type)
     # Strip any preexisting/corrupted action badges or residual recovery markers
     cleaned_raw = re.sub(r'\[ACT(?:-REQ)?-.*?\+\d+(?:\.\d+)?%\s*Recovery\]', '', raw_text, flags=re.IGNORECASE)
     cleaned_raw = re.sub(r'\[ACT-[^\]]+\]', '', cleaned_raw, flags=re.IGNORECASE)
@@ -322,18 +365,16 @@ class DocxGenerator(IDocumentWriter):
         logger.info("Successfully generated Startup Readiness Checklist Word document at: %s", target_file)
         return target_file
 
-    def write_documents(self, baseline: StartupKitBaseline, output_path: Path) -> tuple[Path, Path]:
-        """Render both the Section 4 Startup Kit Word document and the second Startup Readiness Checklist document."""
-        kit_file, checklist_file = self._resolve_output_paths(baseline, output_path)
+    def write_documents(self, baseline: StartupKitBaseline, output_path: Path) -> tuple[Path, Optional[Path]]:
+        """Render the Section 4 Startup Kit Word document (Readiness Checklist deliverable discontinued per OUT-13a)."""
+        kit_file, _ = self._resolve_output_paths(baseline, output_path)
         self.write_kit_docx(baseline, kit_file)
-        self.write_checklist_docx(baseline, checklist_file)
-        return kit_file, checklist_file
+        return kit_file, None
 
     def write_docx(self, baseline: StartupKitBaseline, output_path: Path) -> Path:
-        """Render the complete Section 4 Startup Kit Word document and second Startup Readiness Checklist document, writing both to disk."""
-        kit_file, checklist_file = self._resolve_output_paths(baseline, output_path)
+        """Render the complete Section 4 Startup Kit Word document, writing to disk (OUT-13a: checklist discontinued)."""
+        kit_file, _ = self._resolve_output_paths(baseline, output_path)
         self.write_kit_docx(baseline, kit_file)
-        self.write_checklist_docx(baseline, checklist_file)
         return kit_file
 
     def write_kit_docx(self, baseline: StartupKitBaseline, output_path: Path) -> Path:
@@ -354,6 +395,7 @@ class DocxGenerator(IDocumentWriter):
         charter = baseline.charter
         talent_rec = baseline.talent_onboarding
         used_actions = set()
+        c_type = baseline.contract_type or "Time and Materials"
 
         # ==========================================
         # Document Header
@@ -369,27 +411,22 @@ class DocxGenerator(IDocumentWriter):
 
         subtitle_p = doc.add_paragraph()
         subtitle_p.paragraph_format.space_after = Pt(14)
-        subtitle_run = subtitle_p.add_run(f"Project Baseline: {baseline.project_name}")
+        subtitle_run = subtitle_p.add_run(f"Project Baseline: {obfuscate_financials(baseline.project_name, contract_type=c_type)}")
         subtitle_run.font.name = "Arial"
         subtitle_run.font.size = Pt(13)
         subtitle_run.font.color.rgb = RGBColor(37, 99, 235)
 
-        # Metadata Header Table
-        meta_table = doc.add_table(rows=5, cols=4)
-        if has_determinate_sla(baseline):
-            sla_status_str = "Met (Drafted <= 1 day)" if baseline.sla_met else "Breached (Exception Logged)"
-        else:
-            sla_status_str = "Not determinable - award date not stated"
+        # Metadata Header Table (OUT-13b: 4 rows, 1-Day SLA Status and Workflow State removed)
+        meta_table = doc.add_table(rows=4, cols=4)
         header = kit_header_values(baseline)
         dm_meta, tpm_meta, pmo_meta, client_meta = header["delivery_manager"], header["talent_pm"], header["pmo_lead"], header["client_sponsor"]
 
         gen_d = self.generated_date or datetime.now().strftime("%Y-%m-%d")
         meta_data = [
-            ("Project Name", baseline.project_name, "Client Sponsor", client_meta),
+            ("Project Name", obfuscate_financials(baseline.project_name, contract_type=c_type), "Client Sponsor", obfuscate_financials(client_meta, contract_type=c_type)),
             ("Governance Tier", baseline.governance_tier, "Contract Type", baseline.contract_type),
-            ("Delivery Manager", dm_meta, "Talent PM", tpm_meta),
-            ("PMO Lead", pmo_meta, "Generated Date", gen_d),
-            ("1-Day SLA Status", sla_status_str, "Workflow State", baseline.workflow_state),
+            ("Delivery Manager", obfuscate_financials(dm_meta, contract_type=c_type), "Talent PM", obfuscate_financials(tpm_meta, contract_type=c_type)),
+            ("PMO Lead", obfuscate_financials(pmo_meta, contract_type=c_type), "Generated Date", gen_d),
         ]
 
         for row_idx, (l1, v1, l2, v2) in enumerate(meta_data):
@@ -451,7 +488,7 @@ class DocxGenerator(IDocumentWriter):
                 r = charter_table.add_row()
                 r.cells[0].text = dim
                 is_flagged = bool(act or is_placeholder_text(val))
-                format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
+                format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc, contract_type=c_type)
 
             style_table(charter_table, col_widths=[2.4, 4.8])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -462,21 +499,21 @@ class DocxGenerator(IDocumentWriter):
                 p_obj = doc.add_paragraph()
                 p_obj.add_run("Delivery Objectives & Success Criteria:").bold = True
                 for obj in charter.delivery_objectives:
-                    clean_obj = re.sub(r'^[•\-\*]\s*', '', obj).strip()
+                    clean_obj = obfuscate_financials(re.sub(r'^[•\-\*]\s*', '', obj).strip(), contract_type=c_type)
                     doc.add_paragraph(clean_obj, style='List Bullet')
                 for sc in charter.success_criteria:
                     clean_sc = re.sub(r'^[•\-\*]\s*', '', sc).strip()
                     if not clean_sc.lower().startswith("success criteria:"):
-                        doc.add_paragraph(f"Success Criteria: {clean_sc}", style='List Bullet')
+                        doc.add_paragraph(f"Success Criteria: {obfuscate_financials(clean_sc, contract_type=c_type)}", style='List Bullet')
                     else:
-                        doc.add_paragraph(clean_sc, style='List Bullet')
+                        doc.add_paragraph(obfuscate_financials(clean_sc, contract_type=c_type), style='List Bullet')
 
             if charter.exclusions:
                 doc.add_paragraph().paragraph_format.space_after = Pt(2)
                 p_exc = doc.add_paragraph()
                 p_exc.add_run("High-Level Scope Exclusions:").bold = True
                 for exc in charter.exclusions:
-                    clean_exc = re.sub(r'^[•\-\*]\s*', '', exc).strip()
+                    clean_exc = obfuscate_financials(re.sub(r'^[•\-\*]\s*', '', exc).strip(), contract_type=c_type)
                     doc.add_paragraph(clean_exc, style='List Bullet')
 
         # 1.2 SOW Interpretation Summary
@@ -521,9 +558,9 @@ class DocxGenerator(IDocumentWriter):
                 )
                 # Contract Ambiguities Logged row carries no action tag (v5 B14)
                 if dim == "Contract Ambiguities Logged":
-                    r.cells[1].text = val
+                    r.cells[1].text = obfuscate_financials(val, contract_type=c_type)
                 else:
-                    format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc)
+                    format_cell_with_action(r.cells[1], val, action=act, is_warning=is_flagged, fallback_checklist_id=fallback_id, fallback_action_desc=fallback_desc, contract_type=c_type)
 
             style_table(sow_table, col_widths=[2.2, 5.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -549,10 +586,10 @@ class DocxGenerator(IDocumentWriter):
             owner_act = find_cell_action(baseline, "Milestone Delivery Plan", "Owner", entity_id=m.id, used_actions=used_actions)
 
             row.cells[0].text = m.id
-            row.cells[1].text = m.description
-            format_cell_with_action(row.cells[2], ext_str, action=ext_act, is_warning=(not m.external_date or bool(ext_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Lock client milestone date for {m.id}")
-            format_cell_with_action(row.cells[3], buf_str, action=buf_act, is_warning=(m.internal_buffer_date is None or bool(buf_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Log 7-day internal buffer date for {m.id}")
-            format_cell_with_action(row.cells[4], m.owner, action=owner_act, is_warning=("UNASSIGNED" in m.owner.upper() or m.owner == "Unassigned" or bool(owner_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Assign delivery owner for {m.id}")
+            row.cells[1].text = obfuscate_financials(m.description, contract_type=c_type)
+            format_cell_with_action(row.cells[2], ext_str, action=ext_act, is_warning=(not m.external_date or bool(ext_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Lock client milestone date for {m.id}", contract_type=c_type)
+            format_cell_with_action(row.cells[3], buf_str, action=buf_act, is_warning=(m.internal_buffer_date is None or bool(buf_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Log 7-day internal buffer date for {m.id}", contract_type=c_type)
+            format_cell_with_action(row.cells[4], m.owner, action=owner_act, is_warning=("UNASSIGNED" in m.owner.upper() or m.owner == "Unassigned" or bool(owner_act)), fallback_checklist_id="G01-04", fallback_action_desc=f"Assign delivery owner for {m.id}", contract_type=c_type)
             row.cells[5].text = src_str
 
         style_table(ms_table, col_widths=[0.9, 2.2, 1.1, 1.1, 1.0, 1.5])
@@ -571,7 +608,7 @@ class DocxGenerator(IDocumentWriter):
                 phase_m = re.search(r'\b(?:Phase\s*|P)(\d+[a-z]?)\b', cp.description or "", re.IGNORECASE)
                 phase_str = cp.phase_display or cp.phase or (f"P{phase_m.group(1).upper()}" if phase_m else "P3")
                 row.cells[1].text = phase_str
-                row.cells[2].text = cp.description or ""
+                row.cells[2].text = obfuscate_financials(cp.description or "", contract_type=c_type)
                 src_doc = sanitize_report_text(cp.source_reference.document_name) if cp.source_reference else "Project Baseline"
                 if not src_doc or any(k in src_doc.lower() for k in ("input document", "sow")):
                     src_doc = "Project Baseline"
@@ -600,9 +637,9 @@ class DocxGenerator(IDocumentWriter):
 
                 row.cells[0].text = wp.id
                 row.cells[1].text = wp.parent_deliverable_id or ""
-                row.cells[2].text = wp.title
+                row.cells[2].text = obfuscate_financials(wp.title, contract_type=c_type)
                 row.cells[3].text = str(wp.preliminary_sequence)
-                format_cell_with_action(row.cells[4], wp.owner, action=act, is_warning=is_unassigned or bool(act), fallback_checklist_id="G01-03", fallback_action_desc="Assign work package delivery owner")
+                format_cell_with_action(row.cells[4], wp.owner, action=act, is_warning=is_unassigned or bool(act), fallback_checklist_id="G01-03", fallback_action_desc="Assign work package delivery owner", contract_type=c_type)
                 row.cells[5].text = sow_stories_str
                 row.cells[6].text = wp.status
 
@@ -632,13 +669,13 @@ class DocxGenerator(IDocumentWriter):
             approver_act = find_cell_action(baseline, "Deliverables and Acceptance Matrix", "Client Approver", entity_id=d.id, linked_action_id=d.linked_action_id, used_actions=used_actions)
 
             row.cells[0].text = d.id
-            row.cells[1].text = d.name or d.description
-            format_cell_with_action(row.cells[2], ac_text, action=ac_act, is_warning=is_criteria_unconfirmed or bool(ac_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize acceptance test criteria and evidence expectations for {d.id}")
-            format_cell_with_action(row.cells[3], d.evidence_required, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.evidence_required), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize deliverable evidence expectations for {d.id}")
-            format_cell_with_action(row.cells[4], approver_text, action=approver_act, is_warning=is_approver_unassigned or bool(approver_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Confirm client sign-off approver for {d.id}")
-            format_cell_with_action(row.cells[5], owner_text, action=owner_act, is_warning=is_owner_unassigned or bool(owner_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Assign named delivery owner for {d.id}")
+            row.cells[1].text = obfuscate_financials(d.name or d.description, contract_type=c_type)
+            format_cell_with_action(row.cells[2], ac_text, action=ac_act, is_warning=is_criteria_unconfirmed or bool(ac_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize acceptance test criteria and evidence expectations for {d.id}", contract_type=c_type)
+            format_cell_with_action(row.cells[3], d.evidence_required, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.evidence_required), fallback_checklist_id="G01-03", fallback_action_desc=f"Finalize deliverable evidence expectations for {d.id}", contract_type=c_type)
+            format_cell_with_action(row.cells[4], approver_text, action=approver_act, is_warning=is_approver_unassigned or bool(approver_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Confirm client sign-off approver for {d.id}", contract_type=c_type)
+            format_cell_with_action(row.cells[5], owner_text, action=owner_act, is_warning=is_owner_unassigned or bool(owner_act), fallback_checklist_id="G01-03", fallback_action_desc=f"Assign named delivery owner for {d.id}", contract_type=c_type)
             row.cells[6].text = sow_stories_str
-            format_cell_with_action(row.cells[7], d.review_window, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.review_window), fallback_checklist_id="G01-03", fallback_action_desc="Confirm deliverable review window")
+            format_cell_with_action(row.cells[7], d.review_window, action=None, is_warning=("[CONFIRMATION REQUIRED]" in d.review_window), fallback_checklist_id="G01-03", fallback_action_desc="Confirm deliverable review window", contract_type=c_type)
 
         style_table(deliv_table, col_widths=[0.7, 1.6, 1.8, 1.2, 1.0, 0.8, 1.0, 0.8])
         doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -659,10 +696,10 @@ class DocxGenerator(IDocumentWriter):
 
                 row.cells[0].text = da.id
                 row.cells[1].text = da.type
-                row.cells[2].text = da.description
+                row.cells[2].text = obfuscate_financials(da.description, contract_type=c_type)
                 row.cells[3].text = da.category
-                format_cell_with_action(row.cells[4], da.owner, action=act if is_unassigned else None, is_warning=is_unassigned, fallback_checklist_id="G01-05", fallback_action_desc="Assign dependency/assumption owner")
-                format_cell_with_action(row.cells[5], da.status, action=act if (is_open and not is_unassigned) else None, is_warning=is_open, fallback_checklist_id="G01-05", fallback_action_desc="Confirm dependency status")
+                format_cell_with_action(row.cells[4], da.owner, action=act if is_unassigned else None, is_warning=is_unassigned, fallback_checklist_id="G01-05", fallback_action_desc="Assign dependency/assumption owner", contract_type=c_type)
+                format_cell_with_action(row.cells[5], da.status, action=act if (is_open and not is_unassigned) else None, is_warning=is_open, fallback_checklist_id="G01-05", fallback_action_desc="Confirm dependency status", contract_type=c_type)
 
             style_table(da_table, col_widths=[0.8, 1.0, 3.2, 1.0, 1.2, 0.8])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -702,12 +739,12 @@ class DocxGenerator(IDocumentWriter):
 
             row.cells[0].text = item_id
             row.cells[1].text = item_type
-            row.cells[2].text = item.description
+            row.cells[2].text = obfuscate_financials(item.description, contract_type=c_type)
             row.cells[3].text = item.category if hasattr(item, "category") and item.category else "Delivery Risk"
             row.cells[4].text = item.probability or "Medium"
             row.cells[5].text = item.impact or "Medium"
-            format_cell_with_action(row.cells[6], item.owner, action=owner_act, is_warning=is_unowned or bool(owner_act), fallback_checklist_id="G01-05", fallback_action_desc="Assign risk owner")
-            format_cell_with_action(row.cells[7], mitigation_text, action=mit_act, is_warning=is_mitigation_missing or bool(mit_act), fallback_checklist_id="G01-05", fallback_action_desc="Document fallback mitigation workflow")
+            format_cell_with_action(row.cells[6], item.owner, action=owner_act, is_warning=is_unowned or bool(owner_act), fallback_checklist_id="G01-05", fallback_action_desc="Assign risk owner", contract_type=c_type)
+            format_cell_with_action(row.cells[7], mitigation_text, action=mit_act, is_warning=is_mitigation_missing or bool(mit_act), fallback_checklist_id="G01-05", fallback_action_desc="Document fallback mitigation workflow", contract_type=c_type)
             row.cells[8].text = item.status
 
         style_table(raid_table, col_widths=[0.8, 0.8, 2.2, 1.0, 0.7, 0.7, 1.1, 1.8, 0.7])
@@ -726,9 +763,9 @@ class DocxGenerator(IDocumentWriter):
             for dec in baseline.decisions:
                 row = dec_table.add_row()
                 row.cells[0].text = dec.id
-                format_cell_with_action(row.cells[1], dec.decision_text, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.decision_text), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision text")
-                format_cell_with_action(row.cells[2], dec.decision_owner, action=None, is_warning=("UNASSIGNED" in dec.decision_owner.upper() or dec.decision_owner == "Unassigned"), fallback_checklist_id="G01-10", fallback_action_desc="Assign decision owner")
-                format_cell_with_action(row.cells[3], dec.status, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.status), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision status")
+                format_cell_with_action(row.cells[1], dec.decision_text, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.decision_text), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision text", contract_type=c_type)
+                format_cell_with_action(row.cells[2], dec.decision_owner, action=None, is_warning=("UNASSIGNED" in dec.decision_owner.upper() or dec.decision_owner == "Unassigned"), fallback_checklist_id="G01-10", fallback_action_desc="Assign decision owner", contract_type=c_type)
+                format_cell_with_action(row.cells[3], dec.status, action=None, is_warning=("[CONFIRMATION REQUIRED]" in dec.status), fallback_checklist_id="G01-10", fallback_action_desc="Confirm decision status", contract_type=c_type)
 
             style_table(dec_table, col_widths=[1.0, 4.4, 1.4, 1.0])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
@@ -753,7 +790,7 @@ class DocxGenerator(IDocumentWriter):
 
                 row.cells[0].text = com_id
                 row.cells[1].text = com.name
-                format_cell_with_action(row.cells[2], com.audience, action=act, is_warning=is_unconfirmed_aud, fallback_checklist_id="G01-11", fallback_action_desc="Confirm weekly status distribution list")
+                format_cell_with_action(row.cells[2], com.audience, action=act, is_warning=is_unconfirmed_aud, fallback_checklist_id="G01-11", fallback_action_desc="Confirm weekly status distribution list", contract_type=c_type)
                 row.cells[3].text = com.content_owner
                 row.cells[4].text = com.cadence
                 row.cells[5].text = com.format
@@ -776,31 +813,38 @@ class DocxGenerator(IDocumentWriter):
                 stk_table.cell(0, idx).text = h
 
             for stk in baseline.stakeholders:
+                # OUT-13c: Remove CFO / Executive Signatory and VP / Client Executive Signatory rows
+                stk_role_lower = stk.role.lower() if stk.role else ""
+                stk_name_lower = stk.name.lower() if stk.name else ""
+                if any(w in stk_role_lower or w in stk_name_lower for w in ("cfo", "signatory")):
+                    continue
+
                 row = stk_table.add_row()
                 is_unconfirmed = ("[CONFIRMATION REQUIRED]" in stk.decision_rights or "UNASSIGNED" in stk.name.upper())
                 act = find_cell_action(baseline, "Stakeholder and Responsibility Model", "Decision Rights", entity_id=stk.name, linked_action_id=stk.linked_action_id, used_actions=used_actions) if is_unconfirmed else None
 
-                format_cell_with_action(row.cells[0], stk.name, action=None, is_warning=("UNASSIGNED" in stk.name.upper()), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder named representative")
-                format_cell_with_action(row.cells[1], stk.role, action=None, is_warning=("UNASSIGNED" in stk.role.upper() or "[CONFIRMATION REQUIRED]" in stk.role), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder role")
-                format_cell_with_action(row.cells[2], stk.organization, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.organization), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder organization")
-                format_cell_with_action(row.cells[3], stk.decision_rights, action=act, is_warning=is_unconfirmed, fallback_checklist_id="G01-09", fallback_action_desc="Confirm client sign-off sponsor authority")
-                format_cell_with_action(row.cells[4], stk.escalation_responsibility, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.escalation_responsibility), fallback_checklist_id="G01-09", fallback_action_desc="Confirm escalation responsibility")
+                format_cell_with_action(row.cells[0], stk.name, action=None, is_warning=("UNASSIGNED" in stk.name.upper()), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder named representative", contract_type=c_type)
+                format_cell_with_action(row.cells[1], stk.role, action=None, is_warning=("UNASSIGNED" in stk.role.upper() or "[CONFIRMATION REQUIRED]" in stk.role), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder role", contract_type=c_type)
+                format_cell_with_action(row.cells[2], stk.organization, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.organization), fallback_checklist_id="G01-09", fallback_action_desc="Confirm stakeholder organization", contract_type=c_type)
+                format_cell_with_action(row.cells[3], stk.decision_rights, action=act, is_warning=is_unconfirmed, fallback_checklist_id="G01-09", fallback_action_desc="Confirm client sign-off sponsor authority", contract_type=c_type)
+                format_cell_with_action(row.cells[4], stk.escalation_responsibility, action=None, is_warning=("[CONFIRMATION REQUIRED]" in stk.escalation_responsibility), fallback_checklist_id="G01-09", fallback_action_desc="Confirm escalation responsibility", contract_type=c_type)
 
             style_table(stk_table, col_widths=[1.6, 1.4, 1.0, 2.6, 1.4])
             doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-        # 3.2 RACI / Decision Rights Matrix
+        # 3.2 RACI / Decision Rights Matrix (KIT-14)
         add_section_heading(doc, "RACI / Decision Rights Matrix", level=2)
         if baseline.raci_matrix:
             raci_table = doc.add_table(rows=1, cols=6)
-            raci_headers = ["Startup Control / Decision Activity", "PMO Lead", "Delivery Manager", "Talent PM", "Sales / Accts", "Client"]
+            raci_headers = ["Decision Activity", "PMO Lead", "Delivery Manager", "Talent PM", "Sales / Accts", "Client"]
             for idx, h in enumerate(raci_headers):
                 raci_table.cell(0, idx).text = h
 
-            g01_10_act = find_cell_action(baseline, "RACI / Decision Rights Matrix", "Startup Control / Decision Activity", used_actions=used_actions)
+            g01_10_act = find_cell_action(baseline, "RACI / Decision Rights Matrix", "Decision Activity", used_actions=used_actions) or find_cell_action(baseline, "RACI / Decision Rights Matrix", "Startup Control / Decision Activity", used_actions=used_actions)
             for r in baseline.raci_matrix:
                 row = raci_table.add_row()
-                format_cell_with_action(row.cells[0], r.decision_or_activity, action=g01_10_act, is_warning=bool(g01_10_act), fallback_checklist_id="G01-10", fallback_action_desc="Align RACI matrix decision rights with client")
+                activity_name = "Work at risk" if r.decision_or_activity == "Work at risk / commercial exceptions" else r.decision_or_activity
+                format_cell_with_action(row.cells[0], activity_name, action=g01_10_act, is_warning=bool(g01_10_act), fallback_checklist_id="G01-10", fallback_action_desc="Align RACI matrix decision rights with client", contract_type=c_type)
                 row.cells[1].text = r.pmo_lead
                 row.cells[2].text = r.delivery_manager
                 row.cells[3].text = r.talent_pm

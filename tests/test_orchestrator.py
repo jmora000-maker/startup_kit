@@ -87,7 +87,7 @@ def test_cli_main_execution_with_export_tools(populated_inputs_dir, tmp_path, mo
 
     created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
-    assert len(list(output_dir.glob("*.docx"))) == 2
+    assert len(list(output_dir.glob("*.docx"))) == 1
 
     created_xlsx = list(output_dir.glob("*.xlsx"))
     assert len(created_xlsx) == 1

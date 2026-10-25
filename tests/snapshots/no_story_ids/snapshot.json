@@ -2,7 +2,7 @@
   "kit_tables": [
     {
       "table_index": 0,
-      "rows_count": 5,
+      "rows_count": 4,
       "rows": [
         [
           "Project Name",
@@ -27,12 +27,6 @@
           "[UNASSIGNED - TO BE CONFIRMED]",
           "Generated Date",
           "2026-10-01"
-        ],
-        [
-          "1-Day SLA Status",
-          "Met (Drafted <= 1 day)",
-          "Workflow State",
-          "Clarification Pending"
         ]
       ]
     },
@@ -592,7 +586,7 @@
       "rows_count": 6,
       "rows": [
         [
-          "Startup Control / Decision Activity",
+          "Decision Activity",
           "PMO Lead",
           "Delivery Manager",
           "Talent PM",
@@ -616,7 +610,7 @@
           "I"
         ],
         [
-          "Work at risk / commercial exceptions",
+          "Work at risk",
           "R, A",
           "I",
           "I",

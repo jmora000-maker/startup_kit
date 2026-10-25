@@ -71,7 +71,7 @@ def setup_logging(verbose: bool = False):
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Toptal PMO Startup Kit Generator - Automated Document Ingestion and Word Report Generation.",
-        epilog="Output: by default only the PMO Startup Toolkit workbook is written. Add --kit, --checklist, or --all to also write Word documents."
+        epilog="Output: by default only the PMO Startup Toolkit workbook is written. Add --kit, --slides, or --all to also write Word documents/decks."
     )
     parser.add_argument(
         "--inputs-dir",
@@ -208,7 +208,7 @@ def parse_args():
     parser.add_argument(
         "--checklist",
         action="store_true",
-        help="Write the Startup Readiness Checklist Word document"
+        help="Deprecated (OUT-13a): Startup Readiness Checklist deliverable is discontinued"
     )
     parser.add_argument(
         "--slides",
@@ -219,7 +219,7 @@ def parse_args():
         "--all",
         action="store_true",
         dest="all_outputs",
-        help="Write the Startup Kit, the Readiness Checklist, the Project Delivery Workbook, and the Talent Onboarding Deck"
+        help="Write the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -383,9 +383,8 @@ def main():
             slides=args.slides,
         )
         logger.info(
-            "Outputs -> Kit: %s | Checklist: %s | Workbook: %s | Slides: %s",
+            "Outputs -> Kit: %s | Workbook: %s | Slides: %s",
             "yes" if outputs.kit else "no",
-            "yes" if outputs.checklist else "no",
             "yes" if outputs.workbook else "no",
             "yes" if outputs.slides else "no",
         )

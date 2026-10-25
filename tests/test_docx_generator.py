@@ -45,8 +45,8 @@ def test_docx_generator_output(sample_baseline, tmp_path):
     assert generated_file.name == "Pfizer_Cloud_Migration_Startup_Kit.docx"
     assert generated_file.suffix == ".docx"
 
-    # Verify second document (Startup_Readiness_Checklist) is created
-    checklist_file = output_dir / "Pfizer_Cloud_Migration_Startup_Readiness_Checklist.docx"
+    # Explicitly test standalone write_checklist_docx
+    checklist_file = generator.write_checklist_docx(sample_baseline, output_dir)
     assert checklist_file.exists()
     assert checklist_file.suffix == ".docx"
 
@@ -280,6 +280,7 @@ def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
     ]
     generator = DocxGenerator()
     out_file = generator.write_docx(sample_baseline, tmp_path / "Action_Order_Test.docx")
+    cl_file = generator.write_checklist_docx(sample_baseline, tmp_path / "Action_Order_Test_Startup_Readiness_Checklist.docx")
     doc = docx.Document(str(out_file))
 
     # Verify main Startup Kit document does not contain the Checklist gateway heading (moved to second document)
@@ -287,7 +288,6 @@ def test_checklist_table_rendered_as_last_section(sample_baseline, tmp_path):
     assert "Executive Readiness Gateway: Startup Readiness Checklist (G-01)" not in main_text
 
     # Verify second document contains the Gateway and Checklist
-    cl_file = tmp_path / "Action_Order_Test_Startup_Readiness_Checklist.docx"
     assert cl_file.exists()
     cl_doc = docx.Document(str(cl_file))
 
@@ -438,18 +438,17 @@ def test_write_documents_and_write_checklist_docx(sample_baseline, tmp_path):
     assert cl_res == cl_custom_file
     assert cl_custom_file.exists()
 
-    # Test write_documents with directory
+    # Test write_documents with directory (OUT-13a: checklist discontinued, cl_p is None)
     kit_p, cl_p = generator.write_documents(sample_baseline, tmp_path / "docs_dir")
     assert kit_p.exists() and kit_p.name == "Pfizer_Cloud_Migration_Startup_Kit.docx"
-    assert cl_p.exists() and cl_p.name == "Pfizer_Cloud_Migration_Startup_Readiness_Checklist.docx"
+    assert cl_p is None
 
     # Test write_documents with explicit file path
     target_kit = tmp_path / "custom_dir" / "ProjectX_Startup_Kit.docx"
     kit_p2, cl_p2 = generator.write_documents(sample_baseline, target_kit)
     assert kit_p2 == target_kit
     assert kit_p2.exists()
-    assert cl_p2.exists()
-    assert cl_p2.name == "ProjectX_Startup_Readiness_Checklist.docx"
+    assert cl_p2 is None
 
 
 def test_commercial_and_margin_guardrails_table_rendering_and_reingest(sample_baseline, tmp_path):
@@ -474,7 +473,8 @@ def test_commercial_and_margin_guardrails_table_rendering_and_reingest(sample_ba
     )
 
     generator = DocxGenerator()
-    kit_file, cl_file = generator.write_documents(sample_baseline, tmp_path / "CG_Test_Startup_Kit.docx")
+    kit_file = generator.write_docx(sample_baseline, tmp_path / "CG_Test_Startup_Kit.docx")
+    cl_file = generator.write_checklist_docx(sample_baseline, tmp_path / "CG_Test_Startup_Readiness_Checklist.docx")
 
     assert cl_file.exists()
     cl_doc = docx.Document(str(cl_file))
@@ -546,7 +546,8 @@ def test_actionable_questions_and_contract_ambiguities_tables_rendering_and_rein
     ]
 
     generator = DocxGenerator()
-    kit_file, cl_file = generator.write_documents(sample_baseline, tmp_path / "Tables_Test_Startup_Kit.docx")
+    kit_file = generator.write_docx(sample_baseline, tmp_path / "Tables_Test_Startup_Kit.docx")
+    cl_file = generator.write_checklist_docx(sample_baseline, tmp_path / "Tables_Test_Startup_Readiness_Checklist.docx")
 
     assert cl_file.exists()
     cl_doc = docx.Document(str(cl_file))

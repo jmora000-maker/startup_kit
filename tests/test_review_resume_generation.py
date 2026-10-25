@@ -182,10 +182,9 @@ def test_put_generated_files_called_and_returns_valid_file_references(tmp_path):
 
     references, result = review.generate_approved_run(run_id, storage=storage)
 
-    # Expected artifact types: Kit, Checklist, Workbook, Deck, Deck Manifest
+    # Expected artifact types: Kit, Workbook, Deck, Deck Manifest (Checklist removed per OUT-13a)
     expected_filenames = [
         "References_Project_Startup_Kit.docx",
-        "References_Project_Startup_Readiness_Checklist.docx",
         "References_Project_Project_Delivery_Workbook.xlsx",
         "References_Project_Talent_Onboarding_Deck.pptx",
         "References_Project_Talent_Onboarding_Deck.trace.json",
@@ -196,6 +195,8 @@ def test_put_generated_files_called_and_returns_valid_file_references(tmp_path):
         target_path = Path(references[fname])
         assert target_path.exists(), f"Referenced file {target_path} does not exist"
         assert target_path.parent == storage_dir / run_id
+
+    assert "References_Project_Startup_Readiness_Checklist.docx" not in references
 
 
 def test_htl_36_document_selection_checkboxes_honored_in_generation(tmp_path):

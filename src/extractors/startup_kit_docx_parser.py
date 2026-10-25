@@ -192,7 +192,19 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         open_questions = self._parse_open_questions(doc, all_tables, exceptions_count=exceptions_count, c_doc=c_doc)
 
         # 4. Project Startup Charter
-        charter = self._parse_charter(doc, tables, project_name, client_name, governance_tier, contract_type, delivery_manager, talent_pm, pmo_lead, src_ref)
+        charter, charter_sla_det, charter_sla_met = self._parse_charter(doc, tables, project_name, client_name, governance_tier, contract_type, delivery_manager, talent_pm, pmo_lead, src_ref)
+
+        if "sla_determinate" in meta_dict:
+            sla_determinate = meta_dict["sla_determinate"]
+            sla_met = meta_dict.get("sla_met", True)
+        elif charter_sla_det is not None:
+            sla_determinate = charter_sla_det
+            sla_met = charter_sla_met
+        else:
+            sla_determinate = True
+            sla_met = True
+
+        sla_verdict_source = SLA_VERDICT_SOURCE_KIT_REINGESTED if sla_determinate else None
 
         # 5. SOW Interpretation Summary & Contract Ambiguities
         sow_interpretation, contract_ambiguities = self._parse_sow_interpretation(all_tables, src_ref)
@@ -732,7 +744,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         tpm: str,
         pmo: str,
         src_ref: SourceReference
-    ) -> ProjectStartupCharter:
+    ) -> Tuple[ProjectStartupCharter, Optional[bool], Optional[bool]]:
         """Parse Charter details from paragraphs, callout boxes, and list items."""
         project_purpose = f"Delivery mobilization and execution of {project_name}."
         delivery_model = f"Toptal {tier} Managed Delivery"
@@ -742,6 +754,8 @@ class StartupKitDocxParser(IStartupKitDocxParser):
         delivery_objectives: List[str] = []
         success_criteria: List[str] = []
         exclusions: List[str] = []
+        charter_sla_det: Optional[bool] = None
+        charter_sla_met: Optional[bool] = None
 
         in_charter = False
         in_objectives = False
@@ -820,6 +834,10 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                         m_gov = re.search(r'Governance:\s*(.*?)(?:$)', val)
                         if m_gov and m_gov.group(1).strip():
                             governance_model = m_gov.group(1).strip()
+                    elif "sla" in dim or "turnaround" in dim:
+                        determinate = "not determinable" not in val.lower()
+                        charter_sla_det = determinate
+                        charter_sla_met = determinate and not ("no" in val.lower() or "breached" in val.lower())
                     elif "escalation path" in dim and val:
                         escalation_path = val
                     elif "assumptions" in dim and val:
@@ -843,7 +861,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
             high_level_scope=[f"Delivery scope defined in {project_name} SOW baseline."],
             exclusions=exclusions or ["Out-of-scope tasks defined in SOW."],
             source_reference=src_ref
-        )
+        ), charter_sla_det, charter_sla_met
 
     def _parse_sow_interpretation(
         self,
@@ -1299,8 +1317,10 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                         escalation_responsibility=cells[4]
                     ))
 
-        # RACI Matrix
-        raci_tbl = self._find_table_by_header(tables, ["startup control", "pmo lead", "delivery manager"])
+        # RACI Matrix (KIT-14: "decision activity" header support)
+        raci_tbl = self._find_table_by_header(tables, ["decision activity", "pmo lead", "delivery manager"])
+        if not raci_tbl:
+            raci_tbl = self._find_table_by_header(tables, ["startup control", "pmo lead", "delivery manager"])
         if not raci_tbl:
             raci_tbl = self._find_table_by_header(tables, ["decision or activity", "pmo", "delivery manager"])
 

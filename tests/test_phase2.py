@@ -80,21 +80,42 @@ def test_pmo_stakeholder_incorporation_and_raci(phase2_source_ref):
     assert "Elevated Tier" in dir_pmo.decision_rights
     assert dir_pmo.escalation_responsibility == "VP, Delivery / Executive Leadership"
 
-    # 2. RACI Matrix enforces AR-10 decision rights
+    # 2. RACI Matrix enforces AR-10 / KIT-14 decision rights
     raci_map = {r.decision_or_activity: r for r in baseline.raci_matrix}
     assert "Startup readiness (G-01 gate)" in raci_map
     assert raci_map["Startup readiness (G-01 gate)"].pmo_lead == "R, A"
-    assert raci_map["Startup readiness (G-01 gate)"].delivery_manager == "C"
+    assert raci_map["Startup readiness (G-01 gate)"].delivery_manager == "R"
+    assert raci_map["Startup readiness (G-01 gate)"].talent_pm == "C"
+    assert raci_map["Startup readiness (G-01 gate)"].sales_accounts == "I"
+    assert raci_map["Startup readiness (G-01 gate)"].client == "C"
 
     assert "Talent staffing & replacement" in raci_map
-    assert raci_map["Talent staffing & replacement"].pmo_lead == "R, A"
+    assert raci_map["Talent staffing & replacement"].pmo_lead == "R"
+    assert raci_map["Talent staffing & replacement"].delivery_manager == "R, A"
+    assert raci_map["Talent staffing & replacement"].talent_pm == "I"
+    assert raci_map["Talent staffing & replacement"].sales_accounts == "I"
+    assert raci_map["Talent staffing & replacement"].client == "I"
 
-    assert "Work at risk / commercial exceptions" in raci_map
-    assert raci_map["Work at risk / commercial exceptions"].pmo_lead == "R, A"
+    assert "Work at risk" in raci_map
+    assert raci_map["Work at risk"].pmo_lead == "R, A"
+    assert raci_map["Work at risk"].delivery_manager == "C"
+    assert raci_map["Work at risk"].talent_pm == "C"
+    assert raci_map["Work at risk"].sales_accounts == "I"
+    assert raci_map["Work at risk"].client == "I"
 
     assert "Scope & change" in raci_map
-    assert raci_map["Scope & change"].delivery_manager == "A"
     assert raci_map["Scope & change"].pmo_lead == "R"
+    assert raci_map["Scope & change"].delivery_manager == "R"
+    assert raci_map["Scope & change"].talent_pm == "C"
+    assert raci_map["Scope & change"].sales_accounts == "I"
+    assert raci_map["Scope & change"].client == "A"
+
+    assert "Delivery risk & recovery" in raci_map
+    assert raci_map["Delivery risk & recovery"].pmo_lead == "R, A"
+    assert raci_map["Delivery risk & recovery"].delivery_manager == "C"
+    assert raci_map["Delivery risk & recovery"].talent_pm == "R"
+    assert raci_map["Delivery risk & recovery"].sales_accounts == "I"
+    assert raci_map["Delivery risk & recovery"].client == "I"
 
 
 def test_startup_readiness_scoring_engine(phase2_source_ref):
@@ -221,7 +242,8 @@ def test_contract_ambiguity_and_conflict_engine(phase2_source_ref, tmp_path):
 
     # 3. Render in Word document and check that ambiguities table is present in checklist document
     generator = DocxGenerator()
-    kit_file, cl_file = generator.write_documents(baseline, tmp_path / "Ambiguity_Test_Startup_Kit.docx")
+    kit_file = generator.write_docx(baseline, tmp_path / "Ambiguity_Test_Startup_Kit.docx")
+    cl_file = generator.write_checklist_docx(baseline, tmp_path / "Ambiguity_Test_Startup_Readiness_Checklist.docx")
     cl_doc = docx.Document(str(cl_file))
 
     cl_full_text = "\n".join(p.text for p in cl_doc.paragraphs)

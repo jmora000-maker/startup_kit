@@ -295,11 +295,12 @@ def test_100_percent_action_traceability_in_tables(tmp_path: Path, baseline_with
     assert len(baseline.action_required_items) > 0, "Baseline must contain active ActionRequiredItems"
 
     output_file = tmp_path / "Traceability_Audit_Startup_Kit.docx"
+    checklist_file = tmp_path / "Traceability_Audit_Startup_Readiness_Checklist.docx"
     DocxGenerator().write_docx(baseline, output_file)
+    DocxGenerator().write_checklist_docx(baseline, checklist_file)
     assert output_file.exists()
 
     doc = docx.Document(str(output_file))
-    checklist_file = tmp_path / "Traceability_Audit_Startup_Readiness_Checklist.docx"
     cl_doc = docx.Document(str(checklist_file)) if checklist_file.exists() else None
 
     # Exclude Table 0 (Metadata) and any trailing Action Required Table

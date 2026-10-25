@@ -260,7 +260,7 @@ def test_cli_main_with_explicit_roles(populated_inputs_dir, tmp_path, monkeypatc
 
     created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
-    assert len(list(output_dir.glob("*.docx"))) == 2
+    assert len(list(output_dir.glob("*.docx"))) == 1
 
     doc = docx.Document(str(created_docx[0]))
     full_text = "\n".join(p.text for p in doc.paragraphs)
@@ -293,7 +293,7 @@ def test_cli_main_with_delivery_manager_alias(populated_inputs_dir, tmp_path, mo
 
     created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
-    assert len(list(output_dir.glob("*.docx"))) == 2
+    assert len(list(output_dir.glob("*.docx"))) == 1
 
     doc = docx.Document(str(created_docx[0]))
     table_texts = "\n".join(cell.text for t in doc.tables for row in t.rows for cell in row.cells)
@@ -319,7 +319,7 @@ def test_cli_main_default_unassigned_roles(populated_inputs_dir, tmp_path, monke
 
     created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
-    assert len(list(output_dir.glob("*.docx"))) == 2
+    assert len(list(output_dir.glob("*.docx"))) == 1
 
     doc = docx.Document(str(created_docx[0]))
     table_texts = "\n".join(cell.text for t in doc.tables for row in t.rows for cell in row.cells)
@@ -353,7 +353,7 @@ def test_cli_main_interactive_directories_and_roles(populated_inputs_dir, tmp_pa
 
     created_docx = list(output_dir.glob("*_Startup_Kit.docx"))
     assert len(created_docx) == 1
-    assert len(list(output_dir.glob("*.docx"))) == 2
+    assert len(list(output_dir.glob("*.docx"))) == 1
 
     doc = docx.Document(str(created_docx[0]))
     full_text = "\n".join(p.text for p in doc.paragraphs)

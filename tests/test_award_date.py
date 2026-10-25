@@ -82,7 +82,7 @@ def test_val_11_aggregator_sets_provenance_only_with_a_date():
 
 
 def _render_sla_text(baseline, tmp_path):
-    """Render Kit and Checklist and return (kit header SLA, kit charter SLA, checklist summary, G01-01 evidence)."""
+    """Render Kit and Checklist and return (kit charter SLA, checklist summary, G01-01 evidence)."""
     import docx
     from src.generators.docx_generator import DocxGenerator
 
@@ -102,7 +102,7 @@ def _render_sla_text(baseline, tmp_path):
 
     summary = next(t.cell(0, 0).text for t in chk.tables if "1-Day Creation SLA Status" in t.cell(0, 0).text)
     g01_01 = next(i.evidence for i in baseline.readiness_checklist if i.item_id == "G01-01")
-    return cell_after(kit, "1-Day SLA Status"), cell_after(kit, "Turnaround SLA & PMO Authorization"), summary, g01_01
+    return cell_after(kit, "Turnaround SLA & PMO Authorization"), summary, g01_01
 
 
 def _load_fixture_baseline(name):
@@ -118,8 +118,7 @@ def test_val_05_sla_status_requires_stated_provenance(tmp_path):
     # Recorded with the retired date.today()-1 fallback: a date, but no provenance
     assert baseline.sow_awarded_date == date(2026, 9, 30) and baseline.award_date_source is None
 
-    kit_header, kit_charter, chk_summary, g01_01 = _render_sla_text(baseline, tmp_path)
-    assert kit_header == "Not determinable - award date not stated"
+    kit_charter, chk_summary, g01_01 = _render_sla_text(baseline, tmp_path)
     assert kit_charter.startswith("Not determinable - award date not stated")
     assert "1-Day Creation SLA Status: Not determinable - award date not stated" in chk_summary
     assert "Project awarded" not in g01_01 and "SLA Met" not in g01_01
@@ -132,8 +131,7 @@ def test_val_05_sla_status_determinate_with_stated_provenance(tmp_path):
     """VAL-05: A VAL-11 stated award date still yields a determinate SLA status."""
     baseline = _load_fixture_baseline("mock_sow").model_copy(update={"sow_awarded_date": date(2026, 9, 30), "award_date_source": "stated"})
 
-    kit_header, kit_charter, chk_summary, g01_01 = _render_sla_text(baseline, tmp_path / "stated")
-    assert kit_header == "Met (Drafted <= 1 day)"
+    kit_charter, chk_summary, g01_01 = _render_sla_text(baseline, tmp_path / "stated")
     assert kit_charter.startswith("SLA Met (Yes)")
     assert "1-Day Creation SLA Status: Met (Drafted within 1 business day)" in chk_summary
     assert "(Project awarded 2026-09-30). SLA Met." in g01_01
