@@ -138,6 +138,53 @@ def is_generation_unlocked(entered_passphrase: str, configured_passphrase: str) 
     return entered_passphrase == configured_passphrase
 
 
+DEFAULT_GENERATION_TTL_SECONDS = 1800  # 30 minutes
+
+
+def is_generation_session_unlocked(
+    ttl_seconds: int = DEFAULT_GENERATION_TTL_SECONDS,
+    now: Optional[float] = None,
+) -> bool:
+    """Checks whether generation is currently unlocked and within the active TTL window.
+    If the unlock timestamp is missing, invalid, or expired, purges session keys and returns False.
+    """
+    import time
+    import streamlit as st
+
+    current_time = time.time() if now is None else now
+    unlocked_at = st.session_state.get("generation_unlocked_at")
+
+    if unlocked_at is None or not isinstance(unlocked_at, (int, float)):
+        st.session_state.pop("generation_unlocked", None)
+        st.session_state.pop("generation_unlocked_at", None)
+        return False
+
+    if (current_time - unlocked_at) > ttl_seconds or unlocked_at > current_time:
+        st.session_state.pop("generation_unlocked", None)
+        st.session_state.pop("generation_unlocked_at", None)
+        return False
+
+    return True
+
+
+def unlock_generation_session(now: Optional[float] = None) -> None:
+    """Sets the generation unlock timestamp in session state."""
+    import time
+    import streamlit as st
+
+    current_time = time.time() if now is None else now
+    st.session_state["generation_unlocked_at"] = current_time
+    st.session_state["generation_unlocked"] = True
+
+
+def lock_generation_session() -> None:
+    """Explicitly clears the generation unlock session keys."""
+    import streamlit as st
+
+    st.session_state.pop("generation_unlocked", None)
+    st.session_state.pop("generation_unlocked_at", None)
+
+
 def resolve_llm_settings(
     admin_unlocked: bool,
     provider: str = "",
@@ -533,14 +580,11 @@ def _render_admin_gate(key_prefix: str) -> bool:
 def _render_generation_gate(key_prefix: str) -> bool:
     """HTL-46: Shared generation passphrase gate protecting billed LLM generation actions.
     When locked, hides file uploader and generation trigger widgets completely and renders
-    a passphrase unlock input. Unlocking sets shared st.session_state['generation_unlocked'] = True.
+    a passphrase unlock input. Unlocking sets shared timestamped session state.
     """
     import streamlit as st
 
-    if "generation_unlocked" not in st.session_state:
-        st.session_state["generation_unlocked"] = False
-
-    if st.session_state["generation_unlocked"]:
+    if is_generation_session_unlocked():
         st.caption("Generation unlocked for this session.")
         return True
 
@@ -550,7 +594,7 @@ def _render_generation_gate(key_prefix: str) -> bool:
     )
     if st.button("Unlock generation", key=f"{key_prefix}_gen_unlock_button"):
         if is_generation_unlocked(entered, config.generation_passphrase):
-            st.session_state["generation_unlocked"] = True
+            unlock_generation_session()
             st.rerun()
         else:
             st.error("Incorrect generation passphrase.")

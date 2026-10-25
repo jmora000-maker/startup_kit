@@ -520,11 +520,13 @@ APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
 
 
 def _make_app_test(unlocked: bool = True):
+    import time
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_file(APP_FILE, default_timeout=10)
     if unlocked:
         at.session_state["generation_unlocked"] = True
+        at.session_state["generation_unlocked_at"] = time.time()
     return at
 
 
