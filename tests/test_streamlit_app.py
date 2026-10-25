@@ -551,6 +551,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
     assert at.file_uploader(key="gen_uploader").value == []
 
     # 4. Trigger Generate and verify stored bytes are passed to _run_generate
+    at.checkbox(key="gen_out_kit").check().run()
     with patch("src.review_ui.generate._run_generate") as mock_run:
         mock_run.return_value = MagicMock(
             readiness_score=100.0,
@@ -620,6 +621,8 @@ def test_reingest_retains_uploaded_kit_across_page_switches():
     reingest_info = [i.value for i in at.info if "Using previously uploaded: Existing_Startup_Kit.docx" in i.value]
     assert len(reingest_info) == 1
 
+    at.checkbox(key="reingest_out_kit").check().run()
+
     with patch("src.review_ui.generate._run_reingest") as mock_run:
         mock_run.return_value = MagicMock(
             readiness_score=95.0,
@@ -678,6 +681,7 @@ def test_generate_results_renders_fallback_confirmation_empty():
 
     at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     mock_result = RunResult(
         readiness_score=90.0,
@@ -701,6 +705,7 @@ def test_generate_results_renders_fallback_warning_non_empty():
 
     at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     mock_result = RunResult(
         readiness_score=85.0,
@@ -725,6 +730,7 @@ def test_reingest_results_renders_fallback_domains():
 
     at = _make_app_test().run()
     at.file_uploader(key="reingest_file").upload("Kit.docx", b"kit-bytes").run()
+    at.checkbox(key="reingest_out_kit").check().run()
 
     mock_result = RunResult(
         readiness_score=92.5,
@@ -755,6 +761,7 @@ def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting
     assert checkboxes[0].value is True
 
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     mock_paused_result = RunResult(
         readiness_score=88.0,
@@ -785,6 +792,7 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
 
     at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     # Uncheck the review toggle
     for cb in at.checkbox:
@@ -1424,6 +1432,7 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
 
     at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     in_progress_flag_captured = []
 
@@ -1461,6 +1470,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
 
     at = _make_app_test().run()
     at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.checkbox(key="gen_out_kit").check().run()
 
     # Initial state: button is enabled
     assert at.button(key="gen_submit_button").disabled is False
@@ -1507,6 +1517,7 @@ def test_htl_35_reingest_two_phase_rerun_and_disabled_button():
 
     at = _make_app_test().run()
     at.file_uploader(key="reingest_file").upload("Project_Startup_Kit.docx", b"docx-bytes").run()
+    at.checkbox(key="reingest_out_kit").check().run()
 
     # Initial state: button enabled
     assert at.button(key="reingest_submit_button").disabled is False

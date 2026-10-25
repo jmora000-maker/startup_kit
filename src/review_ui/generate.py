@@ -68,18 +68,56 @@ def validate_start_date_text(start_date_text: str) -> Optional[str]:
     return None
 
 
-def validate_generate_inputs(uploaded_file_names: Sequence[str], start_date_text: str) -> Optional[str]:
+def validate_output_selection(
+    outputs: Optional[OutputSelection] = None,
+    kit: Optional[bool] = None,
+    workbook: Optional[bool] = None,
+    slides: Optional[bool] = None,
+) -> Optional[str]:
+    """HTL-47: validates that at least one output deliverable is selected. Returns an error message, or None if valid."""
+    if outputs is not None:
+        selected = bool(outputs.kit or outputs.workbook or outputs.slides)
+    elif kit is not None or workbook is not None or slides is not None:
+        selected = bool(kit or workbook or slides)
+    else:
+        selected = True
+    if not selected:
+        return "Select at least one output deliverable (Startup Kit, Delivery Workbook, or Onboarding Deck) before generating."
+    return None
+
+
+def validate_generate_inputs(
+    uploaded_file_names: Sequence[str],
+    start_date_text: str,
+    outputs: Optional[OutputSelection] = None,
+    kit: Optional[bool] = None,
+    workbook: Optional[bool] = None,
+    slides: Optional[bool] = None,
+) -> Optional[str]:
     """Pure validation for the "Generate" form. Returns an error message, or None if valid."""
     if not uploaded_file_names:
         return "Please upload at least one SOW or supporting document (PDF, DOCX, PPTX, or TXT)."
-    return validate_start_date_text(start_date_text)
+    date_err = validate_start_date_text(start_date_text)
+    if date_err:
+        return date_err
+    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides)
 
 
-def validate_reingest_inputs(uploaded_file_name: Optional[str], start_date_text: str) -> Optional[str]:
+def validate_reingest_inputs(
+    uploaded_file_name: Optional[str],
+    start_date_text: str,
+    outputs: Optional[OutputSelection] = None,
+    kit: Optional[bool] = None,
+    workbook: Optional[bool] = None,
+    slides: Optional[bool] = None,
+) -> Optional[str]:
     """Pure validation for the "Re-ingest" form. Returns an error message, or None if valid."""
     if not uploaded_file_name:
         return "Please upload an existing *_Startup_Kit.docx file to re-ingest."
-    return validate_start_date_text(start_date_text)
+    date_err = validate_start_date_text(start_date_text)
+    if date_err:
+        return date_err
+    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides)
 
 
 def resolve_app_role(field_value: str) -> Optional[str]:
@@ -725,7 +763,8 @@ def render() -> None:
 
             if submitted:
                 file_names = [f.name for f in (effective_files or [])]
-                error = validate_generate_inputs(file_names, start_date_text)
+                outputs = _output_selection_from_checkboxes(kit=kit, workbook=workbook, slides=slides)
+                error = validate_generate_inputs(file_names, start_date_text, outputs=outputs)
                 if error:
                     st.error(error)
                 else:
@@ -734,14 +773,14 @@ def render() -> None:
 
             if is_gen_running:
                 file_names = [f.name for f in (effective_files or [])]
-                error = validate_generate_inputs(file_names, start_date_text)
+                outputs = _output_selection_from_checkboxes(kit=kit, workbook=workbook, slides=slides)
+                error = validate_generate_inputs(file_names, start_date_text, outputs=outputs)
                 if error:
                     st.session_state["gen_is_running"] = False
                     st.error(error)
                 else:
                     last_stage: List[Optional[str]] = [None]
                     try:
-                        outputs = _output_selection_from_checkboxes(kit=kit, workbook=workbook, slides=slides)
                         resolved_provider, resolved_model, resolved_mock, resolved_cache_mode = resolve_llm_settings(
                             admin_unlocked_gen, provider=provider, model=model, mock=mock, cache_mode=cache_mode
                         )
@@ -869,8 +908,11 @@ def render() -> None:
             submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button", disabled=reingest_disabled)
 
             if submitted_r:
+                outputs_r = _output_selection_from_checkboxes(kit=kit_r, workbook=workbook_r, slides=slides_r)
                 error = validate_reingest_inputs(
-                    effective_kit_file.name if effective_kit_file else None, start_date_text_r
+                    effective_kit_file.name if effective_kit_file else None,
+                    start_date_text_r,
+                    outputs=outputs_r,
                 )
                 if error:
                     st.error(error)
@@ -879,8 +921,11 @@ def render() -> None:
                     st.rerun()
 
             if is_reingest_running:
+                outputs_r = _output_selection_from_checkboxes(kit=kit_r, workbook=workbook_r, slides=slides_r)
                 error = validate_reingest_inputs(
-                    effective_kit_file.name if effective_kit_file else None, start_date_text_r
+                    effective_kit_file.name if effective_kit_file else None,
+                    start_date_text_r,
+                    outputs=outputs_r,
                 )
                 if error:
                     st.session_state["reingest_is_running"] = False
@@ -888,7 +933,6 @@ def render() -> None:
                 else:
                     last_stage_r: List[Optional[str]] = [None]
                     try:
-                        outputs_r = _output_selection_from_checkboxes(kit=kit_r, workbook=workbook_r, slides=slides_r)
                         resolved_provider_r, resolved_model_r, resolved_mock_r, resolved_cache_mode_r = resolve_llm_settings(
                             admin_unlocked_r, provider=provider_r, model=model_r, mock=mock_r, cache_mode=cache_mode_r
                         )
