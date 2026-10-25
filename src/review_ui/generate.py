@@ -580,7 +580,7 @@ def _render_admin_gate(key_prefix: str) -> bool:
 def _render_generation_gate(key_prefix: str) -> bool:
     """HTL-46: Shared generation passphrase gate protecting billed LLM generation actions.
     When locked, hides file uploader and generation trigger widgets completely and renders
-    a passphrase unlock input. Unlocking sets shared timestamped session state.
+    a passphrase unlock input inside a collapsed expander. Unlocking sets shared timestamped session state.
     """
     import streamlit as st
 
@@ -588,16 +588,17 @@ def _render_generation_gate(key_prefix: str) -> bool:
         st.caption("Generation unlocked for this session.")
         return True
 
-    st.caption("Enter the generation passphrase to unlock document generation and file upload.")
-    entered = st.text_input(
-        "Generation passphrase", type="password", key=f"{key_prefix}_gen_passphrase_input"
-    )
-    if st.button("Unlock generation", key=f"{key_prefix}_gen_unlock_button"):
-        if is_generation_unlocked(entered, config.generation_passphrase):
-            unlock_generation_session()
-            st.rerun()
-        else:
-            st.error("Incorrect generation passphrase.")
+    with st.expander("Generation access", expanded=False):
+        st.caption("Enter the generation passphrase to unlock document generation and file upload.")
+        entered = st.text_input(
+            "Generation passphrase", type="password", key=f"{key_prefix}_gen_passphrase_input"
+        )
+        if st.button("Unlock generation", key=f"{key_prefix}_gen_unlock_button"):
+            if is_generation_unlocked(entered, config.generation_passphrase):
+                unlock_generation_session()
+                st.rerun()
+            else:
+                st.error("Incorrect generation passphrase.")
     return False
 
 

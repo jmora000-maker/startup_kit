@@ -125,7 +125,11 @@ def test_generate_page_locked_state_hides_widgets():
     assert len(at.file_uploader) == 0
     # 2. Submit button is completely hidden
     assert len([b for b in at.button if b.key == "gen_submit_button"]) == 0
-    # 3. Generation gate input and unlock button are rendered
+    # 3. Generation gate is wrapped in a collapsed expander labeled "Generation access"
+    gen_expanders = [e for e in at.expander if e.label == "Generation access"]
+    assert len(gen_expanders) >= 1
+    assert not gen_expanders[0].proto.expanded
+    # 4. Generation gate input and unlock button are rendered inside the expander
     assert at.text_input(key="gen_gen_passphrase_input") is not None
     assert at.button(key="gen_gen_unlock_button") is not None
 
@@ -164,6 +168,10 @@ def test_reingest_tab_locked_and_unlocked_states():
     # When generation is locked:
     # 1. Re-ingest uploader is completely hidden
     assert len([u for u in at.file_uploader if u.key == "reingest_file"]) == 0
+    # 2. Re-ingest tab has collapsed "Generation access" expander
+    reingest_expanders = [e for e in at.expander if e.label == "Generation access"]
+    assert len(reingest_expanders) >= 1
+    assert not reingest_expanders[0].proto.expanded
     assert at.text_input(key="reingest_gen_passphrase_input") is not None
     assert at.button(key="reingest_gen_unlock_button") is not None
 
@@ -267,8 +275,11 @@ def test_fact_review_approved_run_is_gated(tmp_path, monkeypatch):
     at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
     assert not at.exception
 
-    # 1. Locked state: "Generate documents" button is hidden, generation gate is rendered
+    # 1. Locked state: "Generate documents" button is hidden, generation gate is rendered in collapsed expander
     assert len([b for b in at.button if b.key == "fact_review_generate_button"]) == 0
+    fr_expanders = [e for e in at.expander if e.label == "Generation access"]
+    assert len(fr_expanders) == 1
+    assert not fr_expanders[0].proto.expanded
     gate_input_key = f"fact_review_{run_id}_gen_passphrase_input"
     gate_unlock_key = f"fact_review_{run_id}_gen_unlock_button"
     assert at.text_input(key=gate_input_key) is not None
@@ -408,8 +419,53 @@ def test_direct_fact_review_landing_fresh_session_is_gated(tmp_path, monkeypatch
     at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
     assert not at.exception
 
-    # Confirm strictly locked and gate rendered
+    # Confirm strictly locked and gate rendered inside collapsed expander
     assert at.session_state.get("generation_unlocked") is not True
     assert len([b for b in at.button if b.key == "fact_review_generate_button"]) == 0
+    fr_expanders = [e for e in at.expander if e.label == "Generation access"]
+    assert len(fr_expanders) == 1
+    assert not fr_expanders[0].proto.expanded
     assert at.text_input(key=f"fact_review_{run_id}_gen_passphrase_input") is not None
     assert at.button(key=f"fact_review_{run_id}_gen_unlock_button") is not None
+
+
+def test_generation_gate_expander_collapsed_by_default_across_all_surfaces(tmp_path, monkeypatch):
+    """HTL-46: Generation gate locked-state content is wrapped in st.expander('Generation access', expanded=False)
+    across the Generate tab, Re-ingest tab, and Fact Review page for approved runs."""
+    from datetime import date
+    from streamlit.testing.v1 import AppTest
+    from src.core.models import ProjectStartupCharter, StartupKitBaseline
+    from src.review_storage.local import LocalReviewStorage
+
+    storage_dir = tmp_path / "review_queue"
+    storage = LocalReviewStorage(base_dir=storage_dir)
+    monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
+
+    baseline = StartupKitBaseline(
+        project_name="Expander Test Project",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 11, 1),
+        charter=ProjectStartupCharter(client_name="Expander Corp"),
+    )
+    run_id = storage.create_run(
+        project_name="Expander Test Project",
+        baseline=baseline.model_dump(mode="json"),
+        validation_report={"findings": []},
+    )
+    storage.update_status(run_id, "approved", if_state="pending_review")
+
+    # 1. Generate tab & Re-ingest tab
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    gen_expanders = [e for e in at.expander if e.label == "Generation access"]
+    # Two generation access expanders rendered on Generate/Re-ingest page (one per tab)
+    assert len(gen_expanders) == 2
+    for exp in gen_expanders:
+        assert not exp.proto.expanded
+
+    # 2. Fact Review page (approved run)
+    at.radio(key="app_page_selector").set_value("Fact Review").run()
+    at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
+    fr_expanders = [e for e in at.expander if e.label == "Generation access"]
+    assert len(fr_expanders) == 1
+    assert not fr_expanders[0].proto.expanded

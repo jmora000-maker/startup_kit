@@ -231,18 +231,19 @@ def _render_fact_review_page() -> None:
                 f"You can safely retry generation by clicking 'Generate documents' below."
             )
         if not generate_page.is_generation_session_unlocked():
-            st.caption("Enter generation passphrase to proceed with document generation.")
-            entered = st.text_input(
-                "Generation passphrase",
-                type="password",
-                key=f"fact_review_{selected_run_id}_gen_passphrase_input",
-            )
-            if st.button("Unlock generation", key=f"fact_review_{selected_run_id}_gen_unlock_button"):
-                if generate_page.is_generation_unlocked(entered, config.generation_passphrase):
-                    generate_page.unlock_generation_session()
-                    st.rerun()
-                else:
-                    st.error("Incorrect generation passphrase.")
+            with st.expander("Generation access", expanded=False):
+                st.caption("Enter generation passphrase to proceed with document generation.")
+                entered = st.text_input(
+                    "Generation passphrase",
+                    type="password",
+                    key=f"fact_review_{selected_run_id}_gen_passphrase_input",
+                )
+                if st.button("Unlock generation", key=f"fact_review_{selected_run_id}_gen_unlock_button"):
+                    if generate_page.is_generation_unlocked(entered, config.generation_passphrase):
+                        generate_page.unlock_generation_session()
+                        st.rerun()
+                    else:
+                        st.error("Incorrect generation passphrase.")
         else:
             generate_clicked = st.button(
                 "Generate documents",
