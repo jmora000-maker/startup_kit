@@ -501,6 +501,7 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | 87 | Adds `HTL-48`: the Client Kickoff Deck's Slides 5, 6, 12, and 15 overflow and overlap badly with real, realistic-length SOW text, confirmed via a real generated deck -- every prior OUT-14 visual QA pass was only ever tested against short synthetic fixtures, which never exposed this. |
 | 88 | Marks `HTL-48` Done -- the Client Kickoff Deck's real-world text overflow is fixed via content scoping plus a deterministic text-fit engine, confirmed with real visual QA against the exact deck that originally exposed the defect. |
 | 89 | Adds `HTL-49`: the Client Kickoff Deck's Slide 6 workstream-to-deliverable mapping has real, confirmed font-size inconsistency across rows and deliverable text that looks fabricated rather than matching the real Startup Kit/Onboarding Deck deliverables, including a cross-contamination bug where one phase's deliverable appears in another phase's box. |
+| 90 | Extends `HTL-49` to cover Slide 1's native normAutofit shrink-to-fit mechanism, confirmed via real XML inspection -- never touched by `HTL-48`'s fix, the exact renderer-dependency risk that fix deliberately avoided for the other four slides. |
 
 
 ## Appendix A: Workbook column layouts
