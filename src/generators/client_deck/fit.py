@@ -122,6 +122,29 @@ def estimate_deliverables_height(
     return total_lines * LINE_HEIGHT_FACTOR * font_size_pt + spacing_pt
 
 
+def extract_deliverable_id(item: str) -> str:
+    """Extract deliverable ID (e.g. 'D-01', 'DEL-01', 'M-01') from deliverable string."""
+    clean = str(item or "").strip()
+    match = re.match(r"^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)+|[A-Za-z]\d+)\b", clean)
+    if match:
+        return match.group(1)
+    tokens = clean.split()
+    if tokens:
+        first = tokens[0].rstrip(":")
+        return first
+    return clean
+
+
+def format_deliverables_overflow(omitted_items: Sequence[str]) -> str:
+    """Format Slide 3-style explicit-ID overflow summary line (HTL-50)."""
+    clean_omitted = [it for it in omitted_items if it and it.strip()]
+    if not clean_omitted:
+        return ""
+    ids = [extract_deliverable_id(it) for it in clean_omitted]
+    id_list_str = ", ".join(ids)
+    return f"+{len(clean_omitted)} more: {id_list_str} (see Project Delivery Workbook · Project Schedule)"
+
+
 def fit_deliverables_for_block(
     deliverables: Sequence[str],
     width_in: float,
@@ -129,11 +152,12 @@ def fit_deliverables_for_block(
     font_size_pt: float,
     bullet_indent_in: float = 0.27,
 ) -> Tuple[List[str], int]:
-    """Determine how many deliverables fit in (width_in, max_height_in) at font_size_pt (HTL-49).
+    """Determine how many deliverables fit in (width_in, max_height_in) at font_size_pt (HTL-49 / HTL-50).
 
     Returns (displayed_items, overflow_count).
     If all deliverables fit, returns (list(deliverables), 0).
-    If not all fit, returns (deliverables[:k] + [summary_line], len(deliverables) - k).
+    If not all fit, returns (deliverables[:k] + [summary_line], len(deliverables) - k)
+    where summary_line explicitly lists omitted deliverable IDs matching Onboarding Deck Slide 3.
     """
     clean_delivs = [d for d in deliverables if d and d.strip()]
     if not clean_delivs:
@@ -144,18 +168,30 @@ def fit_deliverables_for_block(
     if estimate_deliverables_height(clean_delivs, width_in, font_size_pt, bullet_indent_in) <= max_h_pt + 1e-4:
         return list(clean_delivs), 0
 
-    # 2. Iteratively test k deliverables + summary line, from len(clean_delivs) - 1 down to 1
+    # 2. Iteratively test k deliverables + summary line, from len(clean_delivs) - 1 down to 0
     total = len(clean_delivs)
-    for k in range(total - 1, 0, -1):
-        ovf = total - k
-        summary = f"+ {ovf} additional deliverables (see Project Delivery Workbook)"
-        cand = list(clean_delivs[:k]) + [summary]
+    for k in range(total - 1, -1, -1):
+        cand_delivs = list(clean_delivs[:k])
+        omitted = clean_delivs[k:]
+        ovf = len(omitted)
+        summary = format_deliverables_overflow(omitted)
+        cand = cand_delivs + [summary] if summary else cand_delivs
         if estimate_deliverables_height(cand, width_in, font_size_pt, bullet_indent_in) <= max_h_pt + 1e-4:
             return cand, ovf
 
-    # 3. Fallback: 1 deliverable + summary line if total > 1, else 1 deliverable
-    if total > 1:
-        ovf = total - 1
-        summary = f"+ {ovf} additional deliverables (see Project Delivery Workbook)"
-        return [clean_delivs[0], summary], ovf
-    return [clean_delivs[0]], 0
+    # 3. Fallback: If even k=0 full summary doesn't fit, truncate the ID list in the summary line so it fits within max_height_in
+    omitted = clean_delivs
+    ovf = len(omitted)
+    ids = [extract_deliverable_id(it) for it in omitted]
+    inner_w = max(0.5, width_in - bullet_indent_in)
+    summary = format_deliverables_overflow(omitted)
+    for m in range(len(ids) - 1, 0, -1):
+        short_ids = ", ".join(ids[:m]) + "..."
+        cand_summary = f"+{ovf} more: {short_ids} (see Project Delivery Workbook · Project Schedule)"
+        if estimate_text_height(cand_summary, inner_w, font_size_pt) <= max_h_pt:
+            summary = cand_summary
+            break
+    else:
+        summary = f"+{ovf} more deliverables (see Project Delivery Workbook · Project Schedule)"
+
+    return [summary], ovf

@@ -25,18 +25,45 @@ from src.generators.client_deck.spec import (
 from src.generators.client_deck.trace import ClientDeckTraceManifest, TraceRef
 
 COMMERCIAL_EXCLUSION_REGEX = re.compile(
-    r"\b(hourly\s*rate|billing\s*rate|profit\s*margin|margin\s*erosion|fee\s*cap|fee\s*ceiling|budget\s*overrun|financial\s*burn|burn\s*rate|engagement\s*spend|contract\s*value|commercial\s*risk|commercial\s*terms|fixed[\s-]*fee|prepayment|billed\s*by\s*milestone|invoice\(s\)|change\s*order|payment\s*schedule)\b|\$\s*\d+",
+    r"(?:\$\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[kKmMbB](?:illion)?)?)"
+    r"|\b(?:\d+\s*(?:USD|dollars?))\b"
+    r"|\b(?:hourly|billing|blended|daily|day)\s*rates?\b"
+    r"|\b(?:rate|fee|budget)\s*caps?\b"
+    r"|\b(?:fee\s*ceiling|budget\s*overrun|margin\s*erosion|profit\s*margin|financial\s*burn|burn\s*rate|engagement\s*spend|contract\s*value)\b"
+    r"|\b(?:fixed[\s-]*fee|fixed[\s-]*bid|time\s*(?:and|&)\s*materials|T&M)\b"
+    r"|\b(?:change\s*orders?|commercial\s*risks?|commercial\s*terms?|pricing\s*terms?|commercial\s*acceptance|deposit\s*acceptance|payment\s*gates?)\b"
+    r"|\b(?:invoices?|invoicing|invoiced|billed\s*by\s*milestone|billing\s*milestones?|payment\s*schedules?|prepayments?|payment\s*terms?)\b"
+    r"|\b(?:expense\s*reimbursements?|travel\s*expenses?)\b",
     re.IGNORECASE,
 )
 
 
+def scrub_commercial_clauses(text: str) -> str:
+    """Scrub financial and commercial clauses/sentences from continuous prose text (HTL-50)."""
+    if not text or not text.strip():
+        return ""
+    # Split into sentences
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    clean_sentences = []
+    for s in sentences:
+        s_clean = s.strip()
+        if not s_clean:
+            continue
+        if not COMMERCIAL_EXCLUSION_REGEX.search(s_clean):
+            clean_sentences.append(s_clean)
+    if clean_sentences:
+        return " ".join(clean_sentences)
+    return ""
+
+
 def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
-    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48)."""
-    purpose = (
+    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50)."""
+    purpose_raw = (
         baseline.charter.project_purpose
         if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]"
         else ""
     ).strip()
+    purpose = scrub_commercial_clauses(purpose_raw)
     if purpose.endswith("."):
         purpose = purpose[:-1]
 
@@ -74,14 +101,14 @@ def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
 
 
 def format_success_criteria_prose(criteria: Sequence[str]) -> str:
-    """Distill success criteria list into narrative prose sentences (OUT-14.2)."""
+    """Distill success criteria list into narrative prose sentences (OUT-14.2 / HTL-50)."""
     clean_items = [
         c.strip().rstrip(".")
         for c in (criteria or [])
-        if c.strip() and c.strip() != "[CONFIRMATION REQUIRED]"
+        if c.strip() and c.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(c)
     ]
     if not clean_items:
-        return "Success will be achieved upon fulfilling all contracted deliverables, meeting defined quality benchmarks, and securing formal stakeholder acceptance."
+        return "[To be confirmed in Project Success Agreement]"
 
     norm_items = [
         (it[0].lower() + it[1:] if len(it) > 1 else it.lower())
@@ -108,12 +135,15 @@ def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
 
 
 def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
-    """Build Slide 5 model (Project Success Agreement - Why We're Here)."""
-    why = (
+    """Build Slide 5 model (Project Success Agreement - Why We're Here) with financial scrubbing (HTL-50)."""
+    why_raw = (
         (baseline.charter.project_purpose if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]" else None)
         or (baseline.governance_context.executive_summary if baseline.governance_context and baseline.governance_context.executive_summary else None)
-        or "Establish core platform capabilities and deliver contracted business outcomes."
     )
+    why = scrub_commercial_clauses(why_raw) if why_raw else ""
+    if not why:
+        why = "Establish core platform capabilities and deliver contracted business outcomes." if not why_raw or not COMMERCIAL_EXCLUSION_REGEX.search(why_raw) else "[To be confirmed in Project Success Agreement]"
+
     problem = synthesize_problem_statement(baseline)
     success = format_success_criteria_prose(baseline.charter.success_criteria if baseline.charter else [])
     return Slide5Model(
@@ -124,7 +154,7 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
 
 
 def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
-    """Build Slide 6 model (What We Will Deliver) using canonical PMO Workbook schedule rows (HTL-49)."""
+    """Build Slide 6 model (What We Will Deliver) using canonical PMO Workbook schedule rows (HTL-49 / HTL-50)."""
     wb = build_workbook_model(baseline)
     names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
     m_dict = {m.id: m for m in (baseline.milestones or [])}
@@ -139,9 +169,16 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
         for r in level2:
             m = m_dict.get(r.milestone_id)
             if m and m.description and (not r.name or r.name in [f"Phase {i}" for i in range(1, 10)] + [f"Milestone {i}" for i in range(1, 10)]):
-                title = m.description
+                raw_title = m.description
             else:
-                title = r.name or (m.description if m else "") or r.workstream or "Phase Delivery"
+                raw_title = r.name or (m.description if m else "") or r.workstream or "Phase Delivery"
+
+            if COMMERCIAL_EXCLUSION_REGEX.search(raw_title):
+                title = scrub_commercial_clauses(raw_title)
+                if not title:
+                    title = r.workstream or "Phase Delivery"
+            else:
+                title = raw_title
 
             linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
 
@@ -149,28 +186,45 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
             for did in linked_ids:
                 d_name = names.get(did)
                 if d_name:
+                    if COMMERCIAL_EXCLUSION_REGEX.search(d_name):
+                        continue
                     if d_name.startswith(did):
                         deliv_items.append(d_name)
                     else:
                         deliv_items.append(f"{did} {d_name}")
                 else:
-                    deliv_items.append(did)
+                    if not COMMERCIAL_EXCLUSION_REGEX.search(did):
+                        deliv_items.append(did)
+
+            if not deliv_items:
+                deliv_items = ["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"]
 
             workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
     elif baseline.deliverables:
         chunk_size = 3
-        for i in range(0, len(baseline.deliverables), chunk_size):
-            chunk = baseline.deliverables[i : i + chunk_size]
-            title = f"Phase {i // chunk_size + 1} Delivery"
-            deliv_items = []
-            for d in chunk:
-                d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
-                did = d.id or ""
-                if did and not d_name.startswith(did):
-                    deliv_items.append(f"{did} {d_name}")
-                else:
-                    deliv_items.append(d_name)
-            workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
+        non_comm_delivs = [d for d in baseline.deliverables if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")]
+        active_delivs = non_comm_delivs if non_comm_delivs else []
+        if active_delivs:
+            for i in range(0, len(active_delivs), chunk_size):
+                chunk = active_delivs[i : i + chunk_size]
+                title = f"Phase {i // chunk_size + 1} Delivery"
+                deliv_items = []
+                for d in chunk:
+                    d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
+                    did = d.id or ""
+                    if did and not d_name.startswith(did):
+                        deliv_items.append(f"{did} {d_name}")
+                    else:
+                        deliv_items.append(d_name)
+                workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
+        else:
+            workstreams.append(
+                WorkstreamBlock(
+                    title="Phase 1 Delivery",
+                    deliverables=["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"],
+                    overflow_count=0,
+                )
+            )
     else:
         workstreams.append(
             WorkstreamBlock(
@@ -183,20 +237,22 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
     # Solution Overview
     overview = ""
     if baseline.charter and baseline.charter.high_level_scope:
-        overview = " ".join([s.strip().rstrip(".") + "." for s in baseline.charter.high_level_scope if s.strip()])
+        non_comm_scope = [s for s in baseline.charter.high_level_scope if s.strip() and not COMMERCIAL_EXCLUSION_REGEX.search(s)]
+        if non_comm_scope:
+            overview = " ".join([s.strip().rstrip(".") + "." for s in non_comm_scope])
     if not overview and baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]":
-        overview = baseline.charter.project_purpose
+        overview = scrub_commercial_clauses(baseline.charter.project_purpose)
     if not overview:
         overview = "Comprehensive milestone-based delivery establishing core platform capabilities in alignment with contracted specifications."
 
     # Out of Scope
     out_of_scope: List[str] = []
     if baseline.charter and baseline.charter.exclusions:
-        out_of_scope.extend([e.strip() for e in baseline.charter.exclusions if e.strip() and e.strip() != "[CONFIRMATION REQUIRED]"])
+        out_of_scope.extend([e.strip() for e in baseline.charter.exclusions if e.strip() and e.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(e)])
     if not out_of_scope and baseline.sow_interpretation and baseline.sow_interpretation.out_of_scope_items:
-        out_of_scope.extend([e.strip() for e in baseline.sow_interpretation.out_of_scope_items if e.strip() and e.strip() != "[CONFIRMATION REQUIRED]"])
+        out_of_scope.extend([e.strip() for e in baseline.sow_interpretation.out_of_scope_items if e.strip() and e.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(e)])
     if not out_of_scope:
-        out_of_scope = ["Uncontracted feature modifications", "Third-party platform licensing costs", "Infrastructure hosting fees"]
+        out_of_scope = ["None explicitly identified in SOW exclusions."]
 
     return Slide6Model(
         workstreams=workstreams,
@@ -215,7 +271,7 @@ def is_commercial_risk(risk: RiskAssumption) -> bool:
 
 
 def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
-    """Build Slide 12 model (Initial Risk Register) excluding commercial risks."""
+    """Build Slide 12 model (Initial Risk Register) excluding commercial risks with zero-fabrication fallback."""
     prob_map = {"high": 3, "medium": 2, "med": 2, "low": 1}
     impact_map = {"high": 3, "medium": 2, "med": 2, "low": 1}
 
@@ -257,18 +313,30 @@ def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
             )
         )
 
+    if not risk_items:
+        risk_items.append(
+            RiskItem(
+                id="RSK-01",
+                description="[No non-commercial risks identified at kickoff · See RAID Log]",
+                prob_impact="—",
+                mitigation="Active monitoring by Delivery Manager and PMO",
+                target_date="TBD",
+                severity_score=0,
+            )
+        )
+
     return Slide12Model(risks=risk_items)
 
 
 def build_slide15_model(baseline: StartupKitBaseline) -> Slide15Model:
-    """Build Slide 15 model (Next Steps) with literal TBD due dates."""
+    """Build Slide 15 model (Next Steps) with literal TBD due dates and financial scrubbing."""
     candidates: List[NextStepItem] = []
 
     # 1. Customer obligations
     if baseline.sow_interpretation and baseline.sow_interpretation.customer_obligations:
         for ob in baseline.sow_interpretation.customer_obligations:
             clean_ob = ob.strip()
-            if clean_ob and clean_ob != "[CONFIRMATION REQUIRED]":
+            if clean_ob and clean_ob != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(clean_ob):
                 candidates.append(NextStepItem(owner="[Client]", action=clean_ob, due="TBD"))
 
     # 2. Open dependencies & assumptions
@@ -292,15 +360,13 @@ def build_slide15_model(baseline: StartupKitBaseline) -> Slide15Model:
     # 4. Open contract ambiguities
     if baseline.sow_interpretation and baseline.sow_interpretation.ambiguity_notes:
         for amb in baseline.sow_interpretation.ambiguity_notes:
-            if amb.strip() and amb.strip() != "[CONFIRMATION REQUIRED]":
+            if amb.strip() and amb.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(amb):
                 candidates.append(NextStepItem(owner="[Client]", action=f"Clarify ambiguity: {amb.strip()}", due="TBD"))
 
-    # Default fallback steps if none found
+    # Zero-fabrication fallback if all candidates were scrubbed
     if not candidates:
         candidates = [
-            NextStepItem(owner="[Client]", action="Provide access to target systems, repositories, and environments", due="TBD"),
-            NextStepItem(owner="[Toptal]", action="Finalize Project Success Agreement and team onboarding with sponsor", due="TBD"),
-            NextStepItem(owner="[Client]", action="Confirm named reviewer(s) and sign-off cadence for deliverables", due="TBD"),
+            NextStepItem(owner="[PMO]", action="[None identified in SOW · Open items tracked in Project Delivery Workbook]", due="TBD")
         ]
 
     return Slide15Model(next_steps=candidates[:4])

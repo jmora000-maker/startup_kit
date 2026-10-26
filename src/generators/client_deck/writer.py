@@ -342,16 +342,9 @@ def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, ov
 
     # Collect items to display
     items_to_display: List[Tuple[str, bool]] = []
-    has_overflow_item = any(d_text.strip().startswith("+") and "additional deliverables" in d_text for d_text in deliverables)
-
     for d_text in deliverables:
-        is_ovf = d_text.strip().startswith("+") and "additional deliverables" in d_text
+        is_ovf = d_text.strip().startswith("+") and ("more:" in d_text or "additional deliverables" in d_text or "Project Delivery Workbook" in d_text)
         items_to_display.append((d_text, is_ovf))
-
-    if overflow_count > 0 and not has_overflow_item:
-        items_to_display.append(
-            (f"+ {overflow_count} additional deliverables (see Project Delivery Workbook)", True)
-        )
 
     if not items_to_display:
         p_elem = tf.paragraphs[0]._p
@@ -521,9 +514,8 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
     if not d_candidate_sizes:
         d_candidate_sizes = [float(d_font_size.pt)]
 
-    # Pass 1: Compute uniform column font sizes across all blocks (HTL-49)
+    # Pass 1: Compute uniform column font sizes across all blocks (HTL-49 / HTL-50)
     header_sizes = []
-    deliv_sizes = []
     processed_titles = []
 
     for ws in workstreams:
@@ -534,18 +526,21 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         h_pt, _ = select_fitting_font_size(ws_title_raw, width_in=2.15, max_height_in=header_max_h, candidate_sizes=h_candidate_sizes)
         header_sizes.append(h_pt)
 
-        if ws.deliverables:
-            best_d_pt = d_candidate_sizes[-1]
-            for sz in d_candidate_sizes:
-                cand_items, _ = fit_deliverables_for_block(ws.deliverables, width_in=3.00, max_height_in=deliv_max_h, font_size_pt=sz)
-                if cand_items:
-                    if len(cand_items) == len(ws.deliverables) and not any("additional deliverables" in it for it in cand_items):
-                        best_d_pt = sz
-                        break
-            deliv_sizes.append(best_d_pt)
+    # Deliverables column font size: check candidate sizes from highest to lowest (10.5 down to 8.0)
+    col_deliv_font_pt = d_candidate_sizes[-1]
+    for sz in d_candidate_sizes:
+        all_blocks_fit = True
+        for ws in workstreams:
+            if ws.deliverables:
+                cand_items, ovf = fit_deliverables_for_block(ws.deliverables, width_in=3.00, max_height_in=deliv_max_h, font_size_pt=sz)
+                if ovf > 0 or len(cand_items) != len([d for d in ws.deliverables if d and d.strip()]):
+                    all_blocks_fit = False
+                    break
+        if all_blocks_fit:
+            col_deliv_font_pt = sz
+            break
 
     col_header_font_pt = min(header_sizes) if header_sizes else float(h_font_size.pt)
-    col_deliv_font_pt = min(deliv_sizes) if deliv_sizes else float(d_font_size.pt)
 
     # Pass 2: Render workstream blocks using uniform column font sizes
     for i in range(n_ws):

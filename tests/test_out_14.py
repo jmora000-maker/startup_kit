@@ -403,9 +403,9 @@ def test_slide5_why_problem_success_synthesis(rich_client_deck_baseline):
 
 
 def test_format_success_criteria_prose_variations():
-    """OUT-14.2: format_success_criteria_prose correctly formats 0, 1, 2, and 3+ criteria."""
-    # 0 criteria
-    assert "Success will be achieved upon fulfilling all contracted deliverables" in format_success_criteria_prose([])
+    """OUT-14.2 / HTL-50: format_success_criteria_prose correctly formats 0, 1, 2, and 3+ criteria with zero-fabrication fallback."""
+    # 0 criteria -> explicit system placeholder
+    assert format_success_criteria_prose([]) == "[To be confirmed in Project Success Agreement]"
 
     # 1 criterion
     c1 = format_success_criteria_prose(["Complete platform deployment on AWS"])
@@ -541,7 +541,8 @@ def test_slide6_dynamic_layout_n6_and_overflow(tmp_path):
     all_text = "\n".join(s.text_frame.text for s in slide6.shapes if s.has_text_frame)
     assert "Phase 1: Discovery" in all_text
     assert "Phase 6: Multi-Region Deployment" in all_text
-    assert "+ 3 additional deliverables (see Project Delivery Workbook)" in all_text
+    assert "more:" in all_text
+    assert "(see Project Delivery Workbook · Project Schedule)" in all_text
 
     # Exactly 7 divider lines (N + 1)
     lines = [s for s in slide6.shapes if not s.has_text_frame and not s.has_table and s.height == 0]
@@ -587,7 +588,7 @@ def test_slide12_commercial_risk_exclusion_and_ranking(rich_client_deck_baseline
 
 
 def test_slide12_only_commercial_risks_graceful_handling(tmp_path):
-    """OUT-14.4: When baseline has only commercial risks, Slide 12 handles empty/fewer risks cleanly."""
+    """OUT-14.4 / HTL-50: When baseline has only commercial risks, Slide 12 uses zero-fabrication fallback and table shrinks to 1 row."""
     baseline = StartupKitBaseline(
         project_name="Commercial Only",
         raid_items=[
@@ -606,7 +607,8 @@ def test_slide12_only_commercial_risks_graceful_handling(tmp_path):
         ],
     )
     model = build_slide12_model(baseline)
-    assert len(model.risks) == 0
+    assert len(model.risks) == 1
+    assert model.risks[0].description == "[No non-commercial risks identified at kickoff · See RAID Log]"
 
     full_model = build_client_deck_model(baseline)
     out_file = tmp_path / "slide12_empty.pptx"
@@ -615,7 +617,8 @@ def test_slide12_only_commercial_risks_graceful_handling(tmp_path):
     slide12 = prs.slides[11]
 
     tbl = next(s.table for s in slide12.shapes if s.has_table)
-    assert len(tbl.rows) == 1  # Only header row remains
+    assert len(tbl.rows) == 2  # Header + 1 explicit placeholder row
+    assert "[No non-commercial risks identified at kickoff · See RAID Log]" in tbl.rows[1].cells[0].text
 
 
 # =========================================================================
@@ -821,7 +824,7 @@ def test_htl_48_real_failing_baseline_slide5_fit(sample_real_failing_client_base
 
 
 def test_htl_48_real_failing_baseline_slide6_fit(sample_real_failing_client_baseline, tmp_path):
-    """HTL-48: Slide 6 dynamically scales deliverable font size and handles 18 deliverables overflow."""
+    """HTL-48 / HTL-50: Slide 6 dynamically scales deliverable font size and handles 18 deliverables overflow with explicit IDs."""
     out_file = tmp_path / "htl48_slide6.pptx"
     model = build_client_deck_model(sample_real_failing_client_baseline)
     write_client_deck(model, out_file)
@@ -831,9 +834,10 @@ def test_htl_48_real_failing_baseline_slide6_fit(sample_real_failing_client_base
 
     all_s6_text = "\n".join(s.text_frame.text for s in slide6.shapes if s.has_text_frame)
 
-    # Phase 1 with 18 deliverables rendered with +16 overflow
+    # Phase 1 with 18 deliverables rendered with explicit-ID overflow
     assert "Phase 1 - Data and Backend Foundation" in all_s6_text
-    assert "+ 16 additional deliverables (see Project Delivery Workbook)" in all_s6_text
+    assert "more:" in all_s6_text
+    assert "(see Project Delivery Workbook · Project Schedule)" in all_s6_text
     assert "Phase 4 - Production Live & Handover" in all_s6_text
 
 
@@ -1000,18 +1004,25 @@ def test_htl_49_cross_artifact_consistency_arc_baseline(tmp_path):
     slide6 = prs.slides[5]
     deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
     deliv_shapes.sort(key=lambda s: s.top)
-    # Row 1 (5 items) shows 2 deliverables + overflow (DEL-01, DEL-02, + 3 additional)
-    assert len(deliv_shapes[0].text_frame.paragraphs) == 3
-    assert "+ 3 additional deliverables" in deliv_shapes[0].text_frame.paragraphs[2].text
-    # Row 2 (5 items) shows 2 deliverables + overflow (DEL-06, DEL-07, + 3 additional)
-    assert len(deliv_shapes[1].text_frame.paragraphs) == 3
-    assert "+ 3 additional deliverables" in deliv_shapes[1].text_frame.paragraphs[2].text
-    # Row 3 (4 items) shows all 4 (no summary line)
+    # HTL-50: Rendered deliverables show fitted items + Slide 3 explicit-ID overflow lines
+    assert len(deliv_shapes[0].text_frame.paragraphs) >= 2
+    assert "more:" in deliv_shapes[0].text_frame.paragraphs[-1].text
+    assert "(see Project Delivery Workbook · Project Schedule)" in deliv_shapes[0].text_frame.paragraphs[-1].text
+    assert "DEL-03" in deliv_shapes[0].text_frame.paragraphs[-1].text
+
+    assert len(deliv_shapes[1].text_frame.paragraphs) >= 2
+    assert "more:" in deliv_shapes[1].text_frame.paragraphs[-1].text
+    assert "DEL-08" in deliv_shapes[1].text_frame.paragraphs[-1].text
+
+    # Row 3 (P2b Application Surface): All 4 deliverables fit with zero overflow
     assert len(deliv_shapes[2].text_frame.paragraphs) == 4
-    assert not any("additional deliverables" in p.text for p in deliv_shapes[2].text_frame.paragraphs)
-    # Row 4 (5 items) shows 3 deliverables + overflow (DEL-15, DEL-16, DEL-17, + 2 additional)
-    assert len(deliv_shapes[3].text_frame.paragraphs) == 4
-    assert "+ 2 additional deliverables" in deliv_shapes[3].text_frame.paragraphs[3].text
+    assert not any("more:" in p.text for p in deliv_shapes[2].text_frame.paragraphs)
+    assert "DEL-11" in deliv_shapes[2].text_frame.paragraphs[0].text
+    assert "DEL-14" in deliv_shapes[2].text_frame.paragraphs[3].text
+
+    assert len(deliv_shapes[3].text_frame.paragraphs) >= 2
+    assert "more:" in deliv_shapes[3].text_frame.paragraphs[-1].text
+    assert "DEL-18" in deliv_shapes[3].text_frame.paragraphs[-1].text
 
 
 def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_failing_client_baseline, tmp_path):
@@ -1071,9 +1082,10 @@ def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_fail
     deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
     deliv_shapes.sort(key=lambda s: s.top)
 
-    # Row 1 (18 items) renders 2 deliverables + overflow summary line
-    assert len(deliv_shapes[0].text_frame.paragraphs) == 3
-    assert "+ 16 additional deliverables" in deliv_shapes[0].text_frame.paragraphs[2].text
+    # Row 1 (18 items) renders fitted deliverables + explicit-ID overflow summary line
+    assert len(deliv_shapes[0].text_frame.paragraphs) >= 1
+    assert "more:" in deliv_shapes[0].text_frame.paragraphs[-1].text
+    assert "(see Project Delivery Workbook · Project Schedule)" in deliv_shapes[0].text_frame.paragraphs[-1].text
 
     # Rows 2, 3, 4 render 1 deliverable each with NO overflow summary line
     for row_idx in (1, 2, 3):
@@ -1145,15 +1157,296 @@ def test_slide6_dynamic_deliverable_row_filling_algorithm():
     items_all, ovf_all = fit_deliverables_for_block(delivs[:4], width_in=3.0, max_height_in=1.55, font_size_pt=10.0)
     assert ovf_all == 0
     assert len(items_all) == 4
-    assert not any("additional deliverables" in it for it in items_all)
+    assert not any("more:" in it for it in items_all)
 
-    # 2. When only subset fits, returns max k items + summary line
+    # 2. When only subset fits, returns max k items + explicit-ID summary line
     items_sub, ovf_sub = fit_deliverables_for_block(delivs, width_in=3.0, max_height_in=0.78, font_size_pt=7.5)
     assert ovf_sub > 0
     assert len(items_sub) == len(delivs) - ovf_sub + 1
-    assert items_sub[-1] == f"+ {ovf_sub} additional deliverables (see Project Delivery Workbook)"
+    assert "more:" in items_sub[-1]
+    assert "(see Project Delivery Workbook · Project Schedule)" in items_sub[-1]
+    assert "DEL-" in items_sub[-1]
 
     # 3. Single deliverable fits cleanly with 0 overflow
     items_one, ovf_one = fit_deliverables_for_block(delivs[:1], width_in=3.0, max_height_in=0.50, font_size_pt=9.5)
     assert ovf_one == 0
     assert items_one == [delivs[0]]
+
+
+# =========================================================================
+# 11. HTL-50: Explicit-ID Overflow & Deck-Wide Financial Scrubbing Tests
+# =========================================================================
+
+def test_htl_50_slide6_deliverables_overflow_explicit_ids(sample_real_failing_client_baseline, tmp_path):
+    """HTL-50: Slide 6 Phase 1 (18 deliverables) shows full items plus Slide 3 explicit-ID overflow."""
+    out_file = tmp_path / "htl50_slide6_overflow.pptx"
+    model = build_client_deck_model(sample_real_failing_client_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+    deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
+    deliv_shapes.sort(key=lambda s: s.top)
+
+    p_texts = [p.text for p in deliv_shapes[0].text_frame.paragraphs]
+    summary_p = p_texts[-1]
+
+    # Must NOT contain the old generic "+N additional deliverables" text
+    assert "+ 16 additional deliverables" not in summary_p
+    assert "additional deliverables" not in summary_p
+
+    # Must contain Slide 3's real explicit-ID format listing omitted IDs
+    assert summary_p.startswith("+")
+    assert "more:" in summary_p
+    assert "DEL-1-" in summary_p
+    assert "(see Project Delivery Workbook · Project Schedule)" in summary_p
+
+
+def test_htl_50_financial_data_scrubbing_across_all_fields(tmp_path):
+    """HTL-50: Verifies NO dollar figures, rates, or commercial terms appear anywhere in generated deck."""
+    financial_baseline = StartupKitBaseline(
+        project_name="Financial Scrubbing Validation Platform",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 11, 1),
+        charter=ProjectStartupCharter(
+            client_name="Global Financial Scrubbing Corp",
+            project_purpose="Deploy cloud core platform under $250,000 fixed-bid agreement with monthly invoicing.",
+            delivery_manager="Jane Doe",
+            pmo_lead="Sarah Connor",
+            talent_pm="Alex Rivera",
+            delivery_objectives=[
+                "Deploy microservices architecture on AWS",
+                "Comply with budget cap of $500,000",
+            ],
+            success_criteria=[
+                "Timely payment of $50,000 milestone invoice upon UAT signoff",
+                "No budget overrun beyond agreed fee ceiling",
+                "Reduce onboarding processing latency from 48 hours to under 15 minutes",
+            ],
+            high_level_scope=[
+                "Phase 1 implementation capped at $100k contract value",
+                "Core microservices development and API orchestration",
+                "Database schema migration from legacy Oracle to PostgreSQL",
+            ],
+            exclusions=[
+                "Work billed under change orders exceeding $150/hr",
+                "Travel expenses over $1,000",
+                "Legacy mainframe decommissioning and hardware salvage",
+            ],
+        ),
+        sow_interpretation=SOWInterpretationSummary(
+            contracted_deliverables=["Core API Gateway", "Authentication Service", "Initial Invoice & Payment Sign-off"],
+            out_of_scope_items=["Hardware procurement exceeding $5,000", "On-premise network reconfiguration"],
+            customer_obligations=[
+                "Process milestone invoices within 30 days of receipt",
+                "Provide AWS IAM root access and staging credentials within 3 business days",
+            ],
+            constraints=[
+                "Billing rate must not exceed $185/hr for cloud architects",
+                "Must comply with European GDPR data residency constraints",
+            ],
+            dependencies=["Single Sign-On federation with Okta directory"],
+            ambiguity_notes=[
+                "Clarify invoice payment timing for milestone fee releases",
+                "Clarify staging environment provisioning timeline",
+            ],
+        ),
+        milestones=[
+            Milestone(id="M1", description="Phase 1 - $50k Deposit Gate", external_date=date(2026, 12, 1), owner="Jane Doe"),
+            Milestone(id="M2", description="Phase 2 - Core Services Build", external_date=date(2027, 1, 15), owner="Jane Doe"),
+        ],
+        deliverables=[
+            Deliverable(id="DEL-01", name="DEL-01 Initial Invoice & Deposit Milestone Signoff", owner="Jane Doe"),
+            Deliverable(id="DEL-02", name="DEL-02 API Gateway & Auth Service Implementation", owner="Jane Doe"),
+            Deliverable(id="DEL-03", name="DEL-03 Automated Integration & Regression Test Suite", owner="Jane Doe"),
+        ],
+        dependencies_assumptions=[
+            DependencyAssumptionItem(
+                id="ASM-01",
+                type="Assumption",
+                description="Assumes blended billing rate of $175/hr for senior engineering talent",
+                category="Commercial",
+                status="Active",
+            ),
+            DependencyAssumptionItem(
+                id="ASM-02",
+                type="Dependency",
+                description="Production AWS environment provisioned and configured by Client DevOps team",
+                category="Technical",
+                status="Active",
+            ),
+        ],
+        raid_items=[
+            RiskAssumption(
+                id="RSK-01",
+                type="Risk",
+                category="Commercial",
+                probability="High",
+                impact="High",
+                description="Potential engagement spend budget overrun exceeding $350,000 due to legacy scope changes",
+                mitigation_or_response="Implement formal change order approval gate and enforce fixed-fee ceiling",
+                due_date=date(2026, 11, 10),
+            ),
+            RiskAssumption(
+                id="RSK-02",
+                type="Risk",
+                category="Technical",
+                probability="High",
+                impact="High",
+                description="Legacy database schema lacks foreign key constraints causing data ingestion errors",
+                mitigation_or_response="Implement automated schema validation pre-migration script with rollback plan",
+                due_date=date(2026, 11, 10),
+            ),
+        ],
+    )
+
+    out_file = tmp_path / "financial_scrubbed_deck.pptx"
+    model = build_client_deck_model(financial_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+
+    # Audit all text across Slides 1, 5, 6, 12, 15
+    prohibited_terms = [
+        "$", "250,000", "50,000", "100k", "150/hr", "185/hr", "175/hr", "350,000", "1,000", "5,000",
+        "fixed-bid", "fixed-fee", "fixed fee", "fixed bid", "billing rate", "hourly rate", "blended rate",
+        "profit margin", "margin erosion", "fee ceiling", "fee cap", "budget overrun", "budget cap",
+        "contract value", "change order", "travel expenses", "invoice", "invoicing", "invoices",
+        "Deposit Gate", "Payment Sign-off",
+    ]
+
+    for slide_idx in (0, 4, 5, 11, 14):
+        slide = prs.slides[slide_idx]
+        slide_text_blocks = []
+        for s in slide.shapes:
+            if s.has_text_frame:
+                slide_text_blocks.append(s.text_frame.text)
+            if s.has_table:
+                for row in s.table.rows:
+                    slide_text_blocks.extend(c.text for c in row.cells)
+
+        combined_slide_text = " ".join(slide_text_blocks)
+        for term in prohibited_terms:
+            assert term.lower() not in combined_slide_text.lower(), (
+                f"Prohibited financial/commercial term '{term}' found on Slide {slide_idx+1}:\n{combined_slide_text}"
+            )
+
+
+def test_htl_50_zero_fabrication_placeholders_and_table_resizing(tmp_path):
+    """HTL-50: Explicit system placeholders appear when categories are scrubbed and tables shrink."""
+    all_commercial_baseline = StartupKitBaseline(
+        project_name="All Commercial Baseline",
+        charter=ProjectStartupCharter(
+            client_name="Test Sponsor",
+            project_purpose="Fixed-fee delivery under $100,000 contract value.",
+            delivery_manager="Jane Doe",
+            talent_pm="Alex Rivera",
+            pmo_lead="Sarah Connor",
+            success_criteria=[
+                "Payment of $50,000 milestone invoice",
+                "Billing under $150/hr rate cap",
+            ],
+            exclusions=[
+                "Hourly rate billing over $200/hr",
+                "Travel expenses over $500",
+            ],
+        ),
+        sow_interpretation=SOWInterpretationSummary(
+            customer_obligations=["Process $100,000 invoice within 10 days"],
+            ambiguity_notes=["Clarify payment schedule for change orders"],
+        ),
+        raid_items=[
+            RiskAssumption(
+                id="RSK-C1",
+                type="Risk",
+                category="Commercial",
+                description="Margin erosion exceeding $20,000",
+                mitigation_or_response="Enforce change order hourly rates",
+            )
+        ],
+    )
+
+    model = build_client_deck_model(all_commercial_baseline)
+
+    # 1. Slide 5 Success Criteria placeholder
+    assert model.slide5.what_does_success_look_like == "[To be confirmed in Project Success Agreement]"
+
+    # 2. Slide 6 Out of Scope placeholder
+    assert model.slide6.out_of_scope == ["None explicitly identified in SOW exclusions."]
+
+    # 3. Slide 12 Risks placeholder
+    assert len(model.slide12.risks) == 1
+    assert model.slide12.risks[0].description == "[No non-commercial risks identified at kickoff · See RAID Log]"
+
+    # 4. Slide 15 Next Steps placeholder
+    assert len(model.slide15.next_steps) == 1
+    assert model.slide15.next_steps[0].action == "[None identified in SOW · Open items tracked in Project Delivery Workbook]"
+
+    # Verify rendered presentation table row shrinking
+    out_file = tmp_path / "placeholders_and_tables.pptx"
+    write_client_deck(model, out_file)
+    prs = pptx.Presentation(str(out_file))
+
+    # Slide 12: Header + 1 placeholder row = exactly 2 rows
+    slide12 = prs.slides[11]
+    tbl12 = next(s.table for s in slide12.shapes if s.has_table)
+    assert len(tbl12.rows) == 2
+    assert "[No non-commercial risks identified at kickoff · See RAID Log]" in tbl12.rows[1].cells[0].text
+
+    # Slide 15: Header + 1 placeholder row = exactly 2 rows
+    slide15 = prs.slides[14]
+    tbl15 = next(s.table for s in slide15.shapes if s.has_table)
+    assert len(tbl15.rows) == 2
+    assert "[None identified in SOW · Open items tracked in Project Delivery Workbook]" in tbl15.rows[1].cells[1].text
+
+
+def test_htl_50_slide6_all_commercial_deliverables_zero_fabrication_placeholder(tmp_path):
+    """HTL-50: When all linked deliverables in a workstream are commercial, render explicit system placeholder without invented labels."""
+    commercial_deliv_baseline = StartupKitBaseline(
+        project_name="Commercial Deliverables Baseline",
+        charter=ProjectStartupCharter(
+            client_name="Test Client",
+            project_purpose="Deliver core platform components",
+            delivery_manager="Jane Doe",
+            talent_pm="Alex Rivera",
+            pmo_lead="Sarah Connor",
+        ),
+        milestones=[
+            Milestone(id="M1", description="Phase 1 - Initial Invoicing & Deposit Gate", external_date=date(2026, 12, 1), owner="Jane Doe"),
+            Milestone(id="M2", description="Phase 2 - Core Platform Build", external_date=date(2027, 1, 15), owner="Jane Doe"),
+        ],
+        deliverables=[
+            Deliverable(id="D-01", name="D-01 Initial Invoice & $50,000 Deposit Signoff", owner="Jane Doe"),
+            Deliverable(id="D-02", name="D-02 Hourly Rate & Profit Margin Billing Approval", owner="Jane Doe"),
+            Deliverable(id="D-03", name="D-03 Data Pipeline & Ingestion Microservices", owner="Jane Doe"),
+        ],
+    )
+
+    model = build_client_deck_model(commercial_deliv_baseline)
+
+    # Workstream 1 (M1) had D-01 and D-02 (both commercial) -> must show explicit placeholder
+    ws1 = model.slide6.workstreams[0]
+    assert len(ws1.deliverables) == 1
+    assert ws1.deliverables[0] == "[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"
+    assert "Delivery Item" not in ws1.deliverables[0]
+
+    # Workstream 2 (M2) has D-03 (non-commercial) -> shows actual deliverable
+    ws2 = model.slide6.workstreams[1]
+    assert len(ws2.deliverables) == 1
+    assert "D-03 Data Pipeline & Ingestion Microservices" in ws2.deliverables[0]
+
+    # Verify rendered presentation Slide 6 shapes
+    out_file = tmp_path / "commercial_delivs_slide6.pptx"
+    write_client_deck(model, out_file)
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+
+    deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
+    deliv_shapes.sort(key=lambda s: s.top)
+
+    ws1_text = deliv_shapes[0].text_frame.text
+    assert "[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]" in ws1_text
+    assert "Delivery Item" not in ws1_text
+    assert "$50,000" not in ws1_text
+    assert "Invoice" not in ws1_text
