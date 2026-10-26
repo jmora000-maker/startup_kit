@@ -8,6 +8,8 @@ from src.core.models import (
     RiskAssumption,
     StartupKitBaseline,
 )
+from src.generators.kit_values import kit_header_values
+from src.generators.pmo_workbook.builder import build_workbook_model
 from src.generators.pmo_workbook.workstreams import parse_milestone_phase
 from src.generators.client_deck.spec import (
     ClientDeckModel,
@@ -23,13 +25,13 @@ from src.generators.client_deck.spec import (
 from src.generators.client_deck.trace import ClientDeckTraceManifest, TraceRef
 
 COMMERCIAL_EXCLUSION_REGEX = re.compile(
-    r"\b(hourly\s*rate|billing\s*rate|profit\s*margin|margin\s*erosion|fee\s*cap|fee\s*ceiling|budget\s*overrun|financial\s*burn|burn\s*rate|engagement\s*spend|contract\s*value|commercial\s*risk|commercial\s*terms)\b|\$\s*\d+",
+    r"\b(hourly\s*rate|billing\s*rate|profit\s*margin|margin\s*erosion|fee\s*cap|fee\s*ceiling|budget\s*overrun|financial\s*burn|burn\s*rate|engagement\s*spend|contract\s*value|commercial\s*risk|commercial\s*terms|fixed[\s-]*fee|prepayment|billed\s*by\s*milestone|invoice\(s\)|change\s*order|payment\s*schedule)\b|\$\s*\d+",
     re.IGNORECASE,
 )
 
 
 def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
-    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls."""
+    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48)."""
     purpose = (
         baseline.charter.project_purpose
         if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]"
@@ -38,22 +40,34 @@ def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
     if purpose.endswith("."):
         purpose = purpose[:-1]
 
-    constraints: List[str] = []
+    raw_constraints: List[str] = []
     if baseline.sow_interpretation and baseline.sow_interpretation.constraints:
-        constraints.extend(
+        raw_constraints.extend(
             [c.strip().rstrip(".") for c in baseline.sow_interpretation.constraints if c.strip() and c.strip() != "[CONFIRMATION REQUIRED]"]
         )
     elif baseline.charter and baseline.charter.major_startup_risks:
-        constraints.extend(
+        raw_constraints.extend(
             [r.strip().rstrip(".") for r in baseline.charter.major_startup_risks if r.strip() and r.strip() != "[CONFIRMATION REQUIRED]"]
         )
 
-    if constraints:
-        key_constraints = "; ".join(constraints[:2])
+    # Layer 1 content scoping: filter out commercial/financial clauses
+    non_commercial_constraints = [
+        c for c in raw_constraints if not COMMERCIAL_EXCLUSION_REGEX.search(c)
+    ]
+
+    purpose_clause = (purpose[0].lower() + purpose[1:]) if purpose else "deliver engagement objectives"
+
+    if non_commercial_constraints:
+        selected = [non_commercial_constraints[0]]
+        if len(non_commercial_constraints) > 1 and (len(non_commercial_constraints[0]) + len(non_commercial_constraints[1])) < 100:
+            selected.append(non_commercial_constraints[1])
+        key_constraints = "; ".join(selected)
         return (
             f"Addressing operational bottlenecks and technical limitations to "
-            f"{purpose.lower() if purpose else 'deliver engagement objectives'}, specifically resolving: {key_constraints}."
+            f"{purpose_clause}, specifically resolving: {key_constraints}."
         )
+    elif purpose and raw_constraints:
+        return f"Addressing operational bottlenecks and technical limitations to {purpose_clause}."
     elif purpose:
         return f"Addressing existing legacy operational and technology challenges by executing: {purpose}."
     return "Addressing existing operational and technology challenges to establish core platform capabilities."
@@ -84,17 +98,13 @@ def format_success_criteria_prose(criteria: Sequence[str]) -> str:
 
 
 def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
-    """Build Slide 1 model with client and project name."""
-    client_name = (
-        (baseline.charter.client_name if baseline.charter and baseline.charter.client_name else None)
-        or (baseline.governance_context.client_name if baseline.governance_context and baseline.governance_context.client_name else None)
-        or "Client"
-    )
-    project_name = (
-        baseline.project_name
-        or (baseline.charter.project_name if baseline.charter and baseline.charter.project_name else "Project Baseline")
-    )
-    return Slide1Model(client_name=client_name, project_name=project_name)
+    """Build Slide 1 model with client sponsor and project name sourced from kit_header_values (HTL-49)."""
+    headers = kit_header_values(baseline)
+    client_sponsor = headers.get("client_sponsor") or "Client"
+    if client_sponsor in ("N/A", "[CONFIRMATION REQUIRED]"):
+        client_sponsor = "Client"
+    project_name = headers.get("project_name") or baseline.project_name or "Project Baseline"
+    return Slide1Model(client_name=client_sponsor, project_name=project_name)
 
 
 def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
@@ -113,103 +123,71 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
     )
 
 
-def _map_deliverables_to_workstreams(
-    milestones: Sequence[Milestone],
-    deliverables: Sequence[Deliverable],
-) -> List[WorkstreamBlock]:
-    """Map deliverables to workstream blocks dynamically."""
-    blocks: List[WorkstreamBlock] = []
+def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
+    """Build Slide 6 model (What We Will Deliver) using canonical PMO Workbook schedule rows (HTL-49)."""
+    wb = build_workbook_model(baseline)
+    names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
+    m_dict = {m.id: m for m in (baseline.milestones or [])}
 
-    if milestones:
-        # Group deliverables by milestone index
-        ms_delivs: dict[int, List[str]] = {i: [] for i in range(len(milestones))}
+    level2 = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
+    if not level2:
+        level2 = [r for r in wb.schedule_rows if r.row_type in ("Milestone", "Checkpoint")]
 
-        # First pass: map deliverables with strong indicators
-        unmapped_dels: List[Deliverable] = []
-        for d in deliverables:
-            d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
-            d_text = f"{d.id or ''} {d_name} {d.acceptance_criteria or ''}".lower()
+    workstreams: List[WorkstreamBlock] = []
 
-            best_ms_idx = None
-            # Check ID numbers (e.g. DEL-01 / D1 -> 1)
-            d_num = re.search(r"\b(?:DEL-|D|WO-)?(\d+)\b", d.id or "", re.IGNORECASE)
-            d_n = int(d_num.group(1)) if d_num else None
-
-            for idx, m in enumerate(milestones):
-                m_text = f"{m.id or ''} {m.description or ''}".lower()
-                m_num = re.search(r"\b(?:M|MS-|Phase\s*|P)?(\d+)\b", m.id or "", re.IGNORECASE)
-                m_n = int(m_num.group(1)) if m_num else (idx + 1)
-
-                if d_n is not None and m_n == d_n:
-                    best_ms_idx = idx
-                    break
-
-                m_keywords = {w for w in re.findall(r"\w+", m_text) if len(w) > 3}
-                d_keywords = {w for w in re.findall(r"\w+", d_text) if len(w) > 3}
-                if m_keywords and len(m_keywords.intersection(d_keywords)) >= 1:
-                    best_ms_idx = idx
-                    break
-
-            if best_ms_idx is not None:
-                ms_delivs[best_ms_idx].append(d_name)
+    if level2:
+        for r in level2:
+            m = m_dict.get(r.milestone_id)
+            if m and m.description and (not r.name or r.name in [f"Phase {i}" for i in range(1, 10)] + [f"Milestone {i}" for i in range(1, 10)]):
+                title = m.description
             else:
-                unmapped_dels.append(d)
+                title = r.name or (m.description if m else "") or r.workstream or "Phase Delivery"
 
-        # Distribute any unmapped deliverables across milestones
-        for i, d in enumerate(unmapped_dels):
-            d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
-            target_idx = i % len(milestones)
-            ms_delivs[target_idx].append(d_name)
+            linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
 
-        # Build WorkstreamBlock for each milestone
-        for idx, m in enumerate(milestones):
-            parsed = parse_milestone_phase(m)
-            title = (
-                m.description
-                if m.description and len(m.description.strip()) > 3
-                else (parsed.workstream_name if parsed.workstream_name else f"Milestone {m.id or idx+1}")
-            )
-            matched_delivs = ms_delivs[idx]
+            deliv_items: List[str] = []
+            for did in linked_ids:
+                d_name = names.get(did)
+                if d_name:
+                    if d_name.startswith(did):
+                        deliv_items.append(d_name)
+                    else:
+                        deliv_items.append(f"{did} {d_name}")
+                else:
+                    deliv_items.append(did)
 
-            if len(matched_delivs) > 3:
-                displayed = matched_delivs[:2] + [
-                    f"+ {len(matched_delivs) - 2} additional deliverables (see Project Delivery Workbook)"
+            if len(deliv_items) > 3:
+                displayed = deliv_items[:2] + [
+                    f"+ {len(deliv_items) - 2} additional deliverables (see Project Delivery Workbook)"
                 ]
-                overflow = len(matched_delivs) - 2
-            elif matched_delivs:
-                displayed = matched_delivs
-                overflow = 0
+                overflow = len(deliv_items) - 2
             else:
-                displayed = [f"Milestone completion: {m.description or title}"]
+                displayed = deliv_items
                 overflow = 0
 
-            blocks.append(WorkstreamBlock(title=title, deliverables=displayed, overflow_count=overflow))
-
-    elif deliverables:
+            workstreams.append(WorkstreamBlock(title=title, deliverables=displayed, overflow_count=overflow))
+    elif baseline.deliverables:
         chunk_size = 3
-        for i in range(0, len(deliverables), chunk_size):
-            chunk = deliverables[i : i + chunk_size]
+        for i in range(0, len(baseline.deliverables), chunk_size):
+            chunk = baseline.deliverables[i : i + chunk_size]
             title = f"Phase {i // chunk_size + 1} Delivery"
-            deliv_names = [d.name or d.acceptance_criteria or f"Deliverable {d.id}" for d in chunk]
-            blocks.append(WorkstreamBlock(title=title, deliverables=deliv_names, overflow_count=0))
+            deliv_items = []
+            for d in chunk:
+                d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
+                did = d.id or ""
+                if did and not d_name.startswith(did):
+                    deliv_items.append(f"{did} {d_name}")
+                else:
+                    deliv_items.append(d_name)
+            workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
     else:
-        blocks.append(
+        workstreams.append(
             WorkstreamBlock(
                 title="Phase 1: Project Kickoff & Foundation",
                 deliverables=["Architecture & Delivery Setup", "Core Workstream Alignment"],
                 overflow_count=0,
             )
         )
-
-    return blocks
-
-
-def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
-    """Build Slide 6 model (What We Will Deliver)."""
-    workstreams = _map_deliverables_to_workstreams(
-        milestones=baseline.milestones,
-        deliverables=baseline.deliverables,
-    )
 
     # Solution Overview
     overview = ""
@@ -355,8 +333,8 @@ def build_client_deck_model(baseline: StartupKitBaseline) -> ClientDeckModel:
         element="Title Header",
         displayed_value=f"{slide1.client_name}\n{slide1.project_name} Kickoff",
         traces=[
-            TraceRef(artifact="Charter", locator="Project Info", key="Client Name", field="client_name"),
-            TraceRef(artifact="Charter", locator="Project Info", key="Project Name", field="project_name"),
+            TraceRef(artifact="Kit", locator="Header table", key="Client Sponsor", field="client_sponsor"),
+            TraceRef(artifact="Kit", locator="Header table", key="Project Name", field="project_name"),
         ],
     )
 

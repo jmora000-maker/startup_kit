@@ -9,6 +9,11 @@ from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
 
 from src.config import CLIENT_DECK_TEMPLATE_PATH
+from src.generators.client_deck.fit import (
+    estimate_text_height,
+    select_fitting_font_size,
+    truncate_at_clause,
+)
 from src.generators.client_deck.spec import ClientDeckModel, WorkstreamBlock
 
 
@@ -45,6 +50,14 @@ def _replace_shape_text(
     if not shape.has_text_frame:
         return
     tf = shape.text_frame
+    tf.word_wrap = True
+    tf.margin_top = 0
+    tf.margin_bottom = 0
+    tf.margin_left = 0
+    tf.margin_right = 0
+    for bpr in shape._element.xpath(".//a:bodyPr"):
+        bpr.set("anchor", "t")
+
     if not tf.paragraphs:
         p = tf.add_paragraph()
         p.text = new_text
@@ -53,9 +66,9 @@ def _replace_shape_text(
     first_p = tf.paragraphs[0]
     font_name = first_p.runs[0].font.name if first_p.runs and first_p.runs[0].font.name else "Proxima Nova"
     font_size = (
-        first_p.runs[0].font.size
-        if first_p.runs and first_p.runs[0].font.size
-        else (default_font_size or Pt(11))
+        default_font_size
+        if default_font_size is not None
+        else (first_p.runs[0].font.size if first_p.runs and first_p.runs[0].font.size else Pt(11))
     )
     bold = first_p.runs[0].font.bold if first_p.runs else None
 
@@ -74,34 +87,127 @@ def _replace_shape_text(
             first_p.runs[0].font.color.rgb = font_color_rgb
 
 
+def _format_table_cell(
+    cell,
+    text: str,
+    font_size_pt: float,
+    bold: bool = False,
+    color_rgb: Optional[RGBColor] = None,
+) -> None:
+    """Format table cell with Proxima Nova font styling, top alignment, and zero cell margins."""
+    cell.text = text
+    tf = cell.text_frame
+    tf.word_wrap = True
+    tf.margin_top = 0
+    tf.margin_bottom = 0
+    tf.margin_left = 0
+    tf.margin_right = 0
+    for bpr in cell._tc.xpath(".//a:tcPr"):
+        bpr.set("anchor", "t")
+    for p in tf.paragraphs:
+        for run in p.runs:
+            run.font.name = "Proxima Nova"
+            run.font.size = Pt(font_size_pt)
+            if bold:
+                run.font.bold = True
+            if color_rgb:
+                run.font.color.rgb = color_rgb
+
+
 def write_slide1(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 1 [Client Name] and [Project Name] placeholders."""
+    """Populate Slide 1 [Client Name] and [Project Name] placeholders with deterministic text-fitting (HTL-49)."""
+    candidate_sizes = [28.0, 24.0, 22.0, 20.0, 18.0, 16.0, 14.0]
+    client_name = model.slide1.client_name or "Client"
+    project_name = model.slide1.project_name or "Project Baseline"
+
+    # Composite text for title line-wrapping and height estimation
+    composite_title = f"{client_name}\n{project_name} Kickoff"
+
+    # Available geometry on Slide 1:
+    # Title box top = 2.97 in (2,712,227 EMUs), Subtitle box top = 4.54 in (4,153,150 EMUs).
+    # Total distance between title top and subtitle top is 1.576 in.
+    # Leaving an explicit 0.15 in visual separation buffer above the subtitle yields max_height_in = 1.42 in.
+    title_sz, _ = select_fitting_font_size(
+        composite_title,
+        width_in=3.30,
+        max_height_in=1.42,
+        candidate_sizes=candidate_sizes,
+        is_bold=True,
+    )
+
     for shape in slide.shapes:
         if not shape.has_text_frame:
             continue
         text = shape.text_frame.text
-        if "[Client Name]" in text or "[Project Name]" in text:
-            # Handle runs
-            for p in shape.text_frame.paragraphs:
+        if "[Client Name]" in text or "[Project Name]" in text or shape.shape_id == 92:
+            tf = shape.text_frame
+            tf.word_wrap = True
+            tf.margin_top = 0
+            tf.margin_bottom = 0
+            tf.margin_left = 0
+            tf.margin_right = 0
+
+            # Strip normAutofit if present and enforce top anchor
+            for bpr in shape._element.xpath(".//a:bodyPr"):
+                bpr.set("anchor", "t")
+                for autofit in list(bpr.xpath("./a:normAutofit")):
+                    bpr.remove(autofit)
+                if not bpr.xpath("./a:noAutofit"):
+                    from lxml import etree
+                    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+                    bpr.append(etree.Element(f"{{{ns_a}}}noAutofit"))
+
+            # Populate text and apply explicit font size to runs
+            for p in tf.paragraphs:
                 for r in p.runs:
                     if "[Client Name]" in r.text:
-                        _set_run_text_preserve_font(r, r.text.replace("[Client Name]", model.slide1.client_name))
+                        r.text = r.text.replace("[Client Name]", client_name)
                     if "[Project Name]" in r.text:
-                        _set_run_text_preserve_font(r, r.text.replace("[Project Name]", model.slide1.project_name))
+                        r.text = r.text.replace("[Project Name]", project_name)
+                    r.font.name = "Proxima Nova"
+                    r.font.size = Pt(title_sz)
+                    r.font.bold = True
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here)."""
+    """Populate Slide 5 (Why We're Here) with dynamic font scaling and top anchoring (HTL-48)."""
+    candidate_sizes = [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
+
     for shape in slide.shapes:
         if not shape.has_text_frame:
             continue
         text = shape.text_frame.text
+
+        # Enforce top-anchored alignment and zero top margin for all cards
+        for bpr in shape._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+        shape.text_frame.margin_top = 0
+        shape.text_frame.word_wrap = True
+
         if "[Pre-filled: the business initiative" in text or shape.shape_id == 176:
-            _replace_shape_text(shape, model.slide5.why_are_we_doing_this, Pt(11))
+            sz, fitted_text = select_fitting_font_size(
+                model.slide5.why_are_we_doing_this,
+                width_in=7.75,
+                max_height_in=0.50,
+                candidate_sizes=candidate_sizes,
+            )
+            _replace_shape_text(shape, fitted_text, Pt(sz))
         elif "[Pre-filled: the current pain point" in text or shape.shape_id == 180:
-            _replace_shape_text(shape, model.slide5.what_problem_are_we_solving, Pt(11))
+            sz, fitted_text = select_fitting_font_size(
+                model.slide5.what_problem_are_we_solving,
+                width_in=7.75,
+                max_height_in=0.50,
+                candidate_sizes=candidate_sizes,
+            )
+            _replace_shape_text(shape, fitted_text, Pt(sz))
         elif "[Pre-filled: the desired business outcomes" in text or shape.shape_id == 184:
-            _replace_shape_text(shape, model.slide5.what_does_success_look_like, Pt(11))
+            sz, fitted_text = select_fitting_font_size(
+                model.slide5.what_does_success_look_like,
+                width_in=7.75,
+                max_height_in=0.50,
+                candidate_sizes=candidate_sizes,
+            )
+            _replace_shape_text(shape, fitted_text, Pt(sz))
 
 
 def _set_header_paragraph_format(p, font_size_pt: float, text: str) -> None:
@@ -229,19 +335,28 @@ def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, ov
     tf.margin_left = 0
     tf.margin_right = 0
 
+    # Clear extra paragraphs
+    for p in list(tf.paragraphs[1:]):
+        tf._txBody.remove(p._p)
+
     # Collect items to display
     items_to_display: List[Tuple[str, bool]] = []
-    for d_text in deliverables:
-        items_to_display.append((d_text, False))
+    has_overflow_item = any(d_text.strip().startswith("+") and "additional deliverables" in d_text for d_text in deliverables)
 
-    if overflow_count > 0:
+    for d_text in deliverables:
+        is_ovf = d_text.strip().startswith("+") and "additional deliverables" in d_text
+        items_to_display.append((d_text, is_ovf))
+
+    if overflow_count > 0 and not has_overflow_item:
         items_to_display.append(
             (f"+ {overflow_count} additional deliverables (see Project Delivery Workbook)", True)
         )
 
-    # Clear extra paragraphs
-    for p in list(tf.paragraphs[1:]):
-        tf._txBody.remove(p._p)
+    if not items_to_display:
+        p_elem = tf.paragraphs[0]._p
+        for child in list(p_elem):
+            p_elem.remove(child)
+        return
 
     font_pt = float(font_size.pt)
 
@@ -292,7 +407,13 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             tf.margin_bottom = 0
             tf.margin_left = 0
             tf.margin_right = 0
-            _replace_shape_text(shape, model.slide6.solution_overview, Pt(10.0), font_color_rgb=white_color)
+            sz_so, so_text = select_fitting_font_size(
+                model.slide6.solution_overview,
+                width_in=2.42,
+                max_height_in=2.20,
+                candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
+            )
+            _replace_shape_text(shape, so_text, Pt(sz_so), font_color_rgb=white_color)
             if tf.paragraphs and tf.paragraphs[0].runs:
                 tf.paragraphs[0].runs[0].font.color.rgb = white_color
         elif shape.shape_id == 202 or "Out of Scope:" in text:
@@ -313,12 +434,20 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
                 tf.paragraphs[0].runs[0].font.size = Pt(11)
                 tf.paragraphs[0].runs[0].font.bold = True
                 tf.paragraphs[0].runs[0].font.color.rgb = white_color
+
+            total_oos_text = "\n".join([f"• {item}" for item in model.slide6.out_of_scope])
+            sz_oos, _ = select_fitting_font_size(
+                total_oos_text,
+                width_in=2.68,
+                max_height_in=0.90,
+                candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
+            )
             for item in model.slide6.out_of_scope:
                 p = tf.add_paragraph()
                 p.text = f"• {item}"
                 if p.runs:
                     p.runs[0].font.name = "Proxima Nova"
-                    p.runs[0].font.size = Pt(10)
+                    p.runs[0].font.size = Pt(sz_oos)
                     p.runs[0].font.color.rgb = white_color
 
     # 2. Dynamic Workstreams
@@ -374,6 +503,42 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
     # Get max current shape ID in tree
     max_sp_id = max([int(el.get("id", "0")) for el in slide.shapes._spTree.xpath(".//p:cNvPr")] + [500])
 
+    slot_h_in = slot_h / 914400.0
+    header_max_h = max(0.20, slot_h_in * 0.45)
+    h_candidate_sizes = [s for s in [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0] if s <= float(h_font_size.pt)]
+    if not h_candidate_sizes:
+        h_candidate_sizes = [float(h_font_size.pt)]
+
+    deliv_max_h = max(0.35, slot_h_in * 0.85)
+    d_candidate_sizes = [s for s in [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5] if s <= float(d_font_size.pt)]
+    if not d_candidate_sizes:
+        d_candidate_sizes = [float(d_font_size.pt)]
+
+    # Pass 1: Compute uniform column font sizes across all blocks (HTL-49)
+    header_sizes = []
+    deliv_sizes = []
+    processed_titles = []
+
+    for ws in workstreams:
+        ws_title_raw = ws.title
+        if estimate_text_height(ws_title_raw, width_in=2.15, size_pt=8.0) > header_max_h * 72.0:
+            ws_title_raw = truncate_at_clause(ws_title_raw, max_chars=80, suffix="...")
+        processed_titles.append(ws_title_raw)
+        h_pt, _ = select_fitting_font_size(ws_title_raw, width_in=2.15, max_height_in=header_max_h, candidate_sizes=h_candidate_sizes)
+        header_sizes.append(h_pt)
+
+        deliv_lines = list(ws.deliverables)
+        if ws.overflow_count > 0:
+            deliv_lines.append(f"+ {ws.overflow_count} additional deliverables (see Project Delivery Workbook)")
+        all_deliv_str = "\n".join(deliv_lines)
+        if all_deliv_str.strip():
+            d_pt, _ = select_fitting_font_size(all_deliv_str, width_in=3.00, max_height_in=deliv_max_h, candidate_sizes=d_candidate_sizes)
+            deliv_sizes.append(d_pt)
+
+    col_header_font_pt = min(header_sizes) if header_sizes else float(h_font_size.pt)
+    col_deliv_font_pt = min(deliv_sizes) if deliv_sizes else float(d_font_size.pt)
+
+    # Pass 2: Render workstream blocks using uniform column font sizes
     for i in range(n_ws):
         if i < len(template_headers):
             h_shape = template_headers[i]
@@ -418,8 +583,8 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             tf_h._txBody.remove(p._p)
 
         ws = workstreams[i]
-        h_font_pt = float(h_font_size.pt)
-        _set_header_paragraph_format(tf_h.paragraphs[0], h_font_pt, ws.title)
+        ws_title_final = processed_titles[i] if i < len(processed_titles) else ws.title
+        _set_header_paragraph_format(tf_h.paragraphs[0], col_header_font_pt, ws_title_final)
 
         # Position Deliverables (Column 2 - Right)
         d_shape.left = 2726700
@@ -433,7 +598,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         _populate_deliverables_box(
             d_shape,
             ws.deliverables,
-            d_font_size,
+            Pt(col_deliv_font_pt),
             overflow_count=ws.overflow_count,
         )
 
@@ -474,7 +639,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide12(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 12 Initial Risk Register table."""
+    """Populate Slide 12 Initial Risk Register table with font-stepping and row-bounding (HTL-48)."""
     table_shape = None
     for shape in slide.shapes:
         if shape.has_table:
@@ -488,14 +653,44 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
     risks = model.slide12.risks
     num_risks = len(risks)
 
-    # Template has header + 3 data rows = 4 rows
+    cell_candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
+
     for i in range(min(num_risks, 3)):
         risk = risks[i]
         row = table.rows[i + 1]
-        row.cells[0].text = risk.description
-        row.cells[1].text = risk.prob_impact
-        row.cells[2].text = risk.mitigation
-        row.cells[3].text = risk.target_date
+
+        # Col 0: Risk Description (width ~2.2 in, max height 0.85 in)
+        desc_raw = risk.description
+        if estimate_text_height(desc_raw, width_in=2.2, size_pt=8.0) > 0.85 * 72.0:
+            desc_raw = truncate_at_clause(desc_raw, max_chars=140, suffix="...")
+        sz0, desc_text = select_fitting_font_size(
+            desc_raw,
+            width_in=2.2,
+            max_height_in=0.85,
+            candidate_sizes=cell_candidate_sizes,
+        )
+
+        # Col 1: Prob/Impact (width ~1.0 in)
+        sz1 = 9.5
+
+        # Col 2: Mitigation (width ~3.7 in, max height 0.85 in)
+        mitigation_raw = risk.mitigation
+        if estimate_text_height(mitigation_raw, width_in=3.7, size_pt=8.0) > 0.85 * 72.0:
+            mitigation_raw = truncate_at_clause(mitigation_raw, max_chars=180, suffix="... (see RAID Log)")
+        sz2, mitigation_text = select_fitting_font_size(
+            mitigation_raw,
+            width_in=3.7,
+            max_height_in=0.85,
+            candidate_sizes=cell_candidate_sizes,
+        )
+
+        # Col 3: Target Date (width ~1.1 in)
+        sz3 = 9.5
+
+        _format_table_cell(row.cells[0], desc_text, sz0)
+        _format_table_cell(row.cells[1], risk.prob_impact, sz1)
+        _format_table_cell(row.cells[2], mitigation_text, sz2)
+        _format_table_cell(row.cells[3], risk.target_date, sz3)
 
     # If fewer than 3 risks, remove surplus data rows from table XML
     if num_risks < 3:
@@ -507,7 +702,7 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide15(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 15 Next Steps table."""
+    """Populate Slide 15 Next Steps table with font-stepping and row-bounding (HTL-48)."""
     table_shape = None
     for shape in slide.shapes:
         if shape.has_table:
@@ -521,6 +716,8 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
     steps = model.slide15.next_steps
     num_steps = len(steps)
 
+    cell_candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
+
     for i in range(num_steps):
         step = steps[i]
         if i + 1 < len(table.rows):
@@ -532,9 +729,26 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
             table._tbl.append(tr_elem)
             row = table.rows[len(table.rows) - 1]
 
-        row.cells[0].text = step.owner
-        row.cells[1].text = step.action
-        row.cells[2].text = "TBD"
+        # Col 0: Owner (width ~1.8 in)
+        sz0 = 9.5
+
+        # Col 1: Action (width ~5.2 in, max height 0.75 in)
+        action_raw = step.action
+        if estimate_text_height(action_raw, width_in=5.2, size_pt=8.0) > 0.75 * 72.0:
+            action_raw = truncate_at_clause(action_raw, max_chars=200, suffix="... (see Startup Kit)")
+        sz1, action_text = select_fitting_font_size(
+            action_raw,
+            width_in=5.2,
+            max_height_in=0.75,
+            candidate_sizes=cell_candidate_sizes,
+        )
+
+        # Col 2: Due (width ~1.0 in)
+        sz2 = 9.5
+
+        _format_table_cell(row.cells[0], step.owner, sz0)
+        _format_table_cell(row.cells[1], action_text, sz1)
+        _format_table_cell(row.cells[2], "TBD", sz2)
 
     # If fewer than 3 steps, remove surplus data rows
     if num_steps < 3:

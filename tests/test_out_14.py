@@ -176,6 +176,176 @@ def rich_client_deck_baseline():
     )
 
 
+@pytest.fixture
+def sample_real_failing_client_baseline():
+    """Real known-failing baseline fixture (HTL-48) using authentic realistic-length SOW text."""
+    return StartupKitBaseline(
+        project_name="AI Infrastructure Intelligence Dashboard",
+        contract_type="Fixed Bid",
+        governance_tier="Elevated",
+        sow_awarded_date=date(2026, 10, 19),
+        charter=ProjectStartupCharter(
+            client_name="HealthTech AI Solutions",
+            project_purpose="Move the client's AI Infrastructure Intelligence Dashboard from a static, hand-curated MVP covering 25 facilities to a pilot-ready product that can be onboarded to a pilot partner.",
+            delivery_manager="David Miller",
+            pmo_lead="Sarah Connor",
+            talent_pm="Alex Rivera",
+            delivery_objectives=[
+                "Deploy scalable multi-facility data pipeline and ingestion microservices",
+                "Integrate real-time anomaly detection and predictive infrastructure analytics",
+            ],
+            success_criteria=[
+                "All four milestones accepted within five business days",
+                "All 25 facility records in Postgres with no field-level discrepancies",
+                "Persona-based access per the role-permission matrix",
+                "WCAG 2.1 AA compliance",
+                "Production live and handover complete",
+            ],
+            high_level_scope=[
+                "Multi-facility telemetry ingestion, PostgreSQL data pipeline, and role-permission security matrix",
+            ],
+            exclusions=[
+                "Hardware procurement and on-premise sensor installation",
+                "Third-party proprietary clinical telemetry licensing fees",
+            ],
+        ),
+        sow_interpretation=SOWInterpretationSummary(
+            contracted_deliverables=[
+                "Phase 1 - Data and Backend Foundation (18 core deliverables)",
+                "Phase 2 - Analytics Engine and Anomaly Detection",
+                "Phase 3 - Frontend Pilot Portal and WCAG Accessibility",
+                "Phase 4 - Production Cutover and Partner Handover",
+            ],
+            out_of_scope_items=[
+                "Hardware procurement and on-premise sensor deployment",
+                "Third-party clinical telemetry licensing agreements",
+            ],
+            customer_obligations=[
+                "Provide secure VPN credentials and PostgreSQL staging schema access within 3 business days of kickoff",
+                "Designate authorized facility clinical telemetry reviewers for deliverable sign-offs",
+            ],
+            constraints=[
+                "Fixed-fee engagement of $139,600 billed by milestone, with a $26,800 prepayment (about 50% of Milestone 1) due before the start date and applied to the final invoice(s); Estimated schedule runs from October 19, 2026 to January 22, 2027; if the start date shifts by mutual agreement, the completion date shifts equally without a Change Order.",
+            ],
+            dependencies=[
+                "Pilot partner facility VPN endpoints configured with mutual TLS encryption",
+            ],
+        ),
+        milestones=[
+            Milestone(
+                id="M1",
+                description="Phase 1 - Data and Backend Foundation",
+                phase_display="Phase 1",
+                external_date=date(2026, 11, 20),
+                owner="David Miller",
+            ),
+            Milestone(
+                id="M2",
+                description="Phase 2 - Analytics Engine and Dashboard",
+                phase_display="Phase 2",
+                external_date=date(2026, 12, 18),
+                owner="David Miller",
+            ),
+            Milestone(
+                id="M3",
+                description="Phase 3 - User Access Matrix & Hardening",
+                phase_display="Phase 3",
+                external_date=date(2027, 1, 15),
+                owner="David Miller",
+            ),
+            Milestone(
+                id="M4",
+                description="Phase 4 - Production Live & Handover",
+                phase_display="Phase 4",
+                external_date=date(2027, 1, 22),
+                owner="David Miller",
+            ),
+        ],
+        deliverables=[
+            # 18 deliverables for Phase 1 to test overflow handling
+            *[
+                Deliverable(
+                    id=f"DEL-1-{i:02d}",
+                    name=f"Phase 1 Data Foundation Module {i:02d}: Schema & Pipeline Component",
+                    owner="David Miller",
+                )
+                for i in range(1, 19)
+            ],
+            Deliverable(
+                id="DEL-2-01",
+                name="Phase 2: Analytics & Anomaly Detection Pipeline Service",
+                owner="David Miller",
+            ),
+            Deliverable(
+                id="DEL-3-01",
+                name="Phase 3: WCAG 2.1 AA Compliant Dashboard UI & Security Matrix",
+                owner="David Miller",
+            ),
+            Deliverable(
+                id="DEL-4-01",
+                name="Phase 4: Final Handover Documentation and Production Deployment",
+                owner="David Miller",
+            ),
+        ],
+        dependencies_assumptions=[
+            DependencyAssumptionItem(
+                id="DEP-01",
+                type="Dependency",
+                description="Pilot partner facility security authorization and network routing sign-off",
+                category="Dependencies",
+                status="Open",
+                owner="Client",
+            ),
+        ],
+        raid_items=[
+            # Commercial risk: Must be scrubbed
+            RiskAssumption(
+                id="RSK-01",
+                type="Risk",
+                description="Fixed-fee milestone payment cap of $139,600 exceeded due to talent overtime",
+                category="Commercial",
+                probability="High",
+                impact="High",
+                mitigation_or_response="Weekly financial burn review to manage billable hours",
+                due_date=date(2026, 12, 15),
+            ),
+            # Delivery risk 1 (Multi-sentence mitigation)
+            RiskAssumption(
+                id="RSK-02",
+                type="Risk",
+                description="Telemetry ingestion latency exceeding 2-second SLA under peak 25-facility load",
+                category="Technical",
+                probability="High",
+                impact="High",
+                mitigation_or_response="Implement asynchronous ingestion queue with Kafka partitioning and pre-aggregated Redis cache layers to ensure sub-second response times across all pilot facilities.",
+                due_date=date(2026, 11, 30),
+            ),
+            # Delivery risk 2 (Multi-sentence mitigation)
+            RiskAssumption(
+                id="RSK-03",
+                type="Risk",
+                description="PostgreSQL schema field-level discrepancy across legacy disparate EHR database formats",
+                category="Delivery Schedule",
+                probability="High",
+                impact="Medium",
+                mitigation_or_response="Execute automated database migration dry runs and field-level validation checksum scripts prior to final cutover.",
+                due_date=date(2026, 12, 10),
+            ),
+            # Delivery risk 3 (Multi-sentence mitigation)
+            RiskAssumption(
+                id="RSK-04",
+                type="Risk",
+                description="Delay in partner security sign-off for mutual TLS VPN endpoints",
+                category="Dependencies",
+                probability="Medium",
+                impact="High",
+                mitigation_or_response="Conduct weekly security sync meetings with pilot partner network engineering leads.",
+                due_date=date(2026, 11, 15),
+            ),
+        ],
+    )
+
+
 # =========================================================================
 # 1. Slide 1 Replacement Tests
 # =========================================================================
@@ -296,10 +466,10 @@ def test_slide6_dynamic_layout_n4(rich_client_deck_baseline, tmp_path):
     assert s193.text_frame.paragraphs[0].runs[0].font.color.rgb == pptx.dml.color.RGBColor(255, 255, 255)
     assert s194.text_frame.paragraphs[0].runs[0].font.color.rgb == pptx.dml.color.RGBColor(255, 255, 255)
 
-    # Verify deliverable boxes have native bullet formatting on every paragraph
+    # Verify deliverable boxes have native bullet formatting on every paragraph with text
     deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
     for ds in deliv_shapes:
-        if ds.has_text_frame:
+        if ds.has_text_frame and ds.text_frame.text.strip():
             for p in ds.text_frame.paragraphs:
                 pPr_elements = p._p.xpath("./a:pPr")
                 assert len(pPr_elements) > 0, "Paragraph missing pPr bullet formatting"
@@ -602,3 +772,316 @@ def test_end_to_end_freshly_generated_client_kickoff_deck(rich_client_deck_basel
     assert len(s15_tbl.rows) >= 3
     for row_idx in range(1, len(s15_tbl.rows)):
         assert s15_tbl.rows[row_idx].cells[2].text.strip() == "TBD"
+
+
+# =========================================================================
+# 9. HTL-48: Real Realistic Benchmark & Dynamic Text-Fitting Tests
+# =========================================================================
+
+def test_htl_48_real_failing_baseline_problem_statement_scoped(sample_real_failing_client_baseline):
+    """HTL-48: Layer 1 content scoping scrubs commercial payment clauses and caps problem statement."""
+    problem_stmt = synthesize_problem_statement(sample_real_failing_client_baseline)
+
+    # Must exclude raw commercial figures and payment terms
+    assert "$139,600" not in problem_stmt
+    assert "$26,800" not in problem_stmt
+    assert "prepayment" not in problem_stmt.lower()
+    assert "change order" not in problem_stmt.lower()
+    assert "fixed-fee" not in problem_stmt.lower()
+
+    # Must be concise, client-facing 1-2 sentence statement
+    assert 120 <= len(problem_stmt) <= 250
+    assert "operational bottlenecks and technical limitations" in problem_stmt
+    assert "AI Infrastructure Intelligence Dashboard" in problem_stmt
+
+
+def test_htl_48_real_failing_baseline_slide5_fit(sample_real_failing_client_baseline, tmp_path):
+    """HTL-48: Slide 5 cards dynamically scale font sizes and top-anchor to fit long real SOW text."""
+    out_file = tmp_path / "htl48_slide5.pptx"
+    model = build_client_deck_model(sample_real_failing_client_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide5 = prs.slides[4]
+
+    # Find the 3 cards
+    shapes = [s for s in slide5.shapes if s.has_text_frame]
+
+    # Card 2 (Problem Statement)
+    card2 = next(s for s in shapes if "operational bottlenecks" in s.text_frame.text)
+    assert card2.text_frame.margin_top == 0
+    p2 = card2.text_frame.paragraphs[0]
+    # Font scaled down from 11pt to 10.0pt or 9.5pt
+    assert p2.runs[0].font.size.pt <= 10.5
+
+    # Card 3 (Success Criteria - 5 item prose)
+    card3 = next(s for s in shapes if "Success is defined across key project milestones" in s.text_frame.text)
+    p3 = card3.text_frame.paragraphs[0]
+    assert p3.runs[0].font.size.pt <= 10.0
+    assert "all four milestones accepted within five business days" in card3.text_frame.text
+    assert "production live and handover complete" in card3.text_frame.text
+
+
+def test_htl_48_real_failing_baseline_slide6_fit(sample_real_failing_client_baseline, tmp_path):
+    """HTL-48: Slide 6 dynamically scales deliverable font size and handles 18 deliverables overflow."""
+    out_file = tmp_path / "htl48_slide6.pptx"
+    model = build_client_deck_model(sample_real_failing_client_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+
+    all_s6_text = "\n".join(s.text_frame.text for s in slide6.shapes if s.has_text_frame)
+
+    # Phase 1 with 18 deliverables rendered with +16 overflow
+    assert "Phase 1 - Data and Backend Foundation" in all_s6_text
+    assert "+ 16 additional deliverables (see Project Delivery Workbook)" in all_s6_text
+    assert "Phase 4 - Production Live & Handover" in all_s6_text
+
+
+def test_htl_48_real_failing_baseline_slide12_fit(sample_real_failing_client_baseline, tmp_path):
+    """HTL-48: Slide 12 scales table cell font sizes and bounds multi-sentence risk mitigations."""
+    out_file = tmp_path / "htl48_slide12.pptx"
+    model = build_client_deck_model(sample_real_failing_client_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide12 = prs.slides[11]
+    tbl = next(s.table for s in slide12.shapes if s.has_table)
+
+    # 4 rows: 1 header + 3 data rows
+    assert len(tbl.rows) == 4
+
+    # Commercial risk RSK-01 must be excluded
+    all_text = " ".join(c.text for r in tbl.rows for c in r.cells)
+    assert "$139,600" not in all_text
+    assert "RSK-01" not in all_text
+
+    # Delivery risks RSK-02, RSK-03, RSK-04 present
+    assert "RSK-02" in all_text
+    assert "RSK-03" in all_text
+    assert "RSK-04" in all_text
+
+    # Mitigation cell font size <= 10pt
+    for r_idx in range(1, 4):
+        cell_p = tbl.rows[r_idx].cells[2].text_frame.paragraphs[0]
+        assert cell_p.runs[0].font.size.pt <= 10.0
+
+
+def test_htl_48_real_failing_baseline_slide15_fit(sample_real_failing_client_baseline, tmp_path):
+    """HTL-48: Slide 15 scales table cells for realistic-length customer obligations and next steps."""
+    out_file = tmp_path / "htl48_slide15.pptx"
+    model = build_client_deck_model(sample_real_failing_client_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide15 = prs.slides[14]
+    tbl = next(s.table for s in slide15.shapes if s.has_table)
+
+    assert len(tbl.rows) >= 3
+    # Check Due column is strictly TBD
+    for r_idx in range(1, len(tbl.rows)):
+        assert tbl.rows[r_idx].cells[2].text.strip() == "TBD"
+        cell_p = tbl.rows[r_idx].cells[1].text_frame.paragraphs[0]
+        assert cell_p.runs[0].font.size.pt <= 10.0
+
+
+def test_htl_48_end_to_end_real_failing_deck_generation(sample_real_failing_client_baseline, tmp_path):
+    """HTL-48: Full end-to-end export of real failing baseline passes all validation audits."""
+    out_dir = tmp_path / "htl48_export"
+    res = export_client_deck(sample_real_failing_client_baseline, out_dir)
+
+    assert res.file_path.exists()
+    assert res.manifest_path.exists()
+    assert res.slides_count == 16
+    assert res.trace_entries_count > 0
+
+    # Traceability and boilerplate preservation checks
+    findings = check_client_deck_traceability(sample_real_failing_client_baseline, res.file_path, res.manifest_path)
+    assert len(findings) == 0
+
+
+# =========================================================================
+# 9. HTL-49: Slide 1 Deterministic Text-Fitting & normAutofit Removal Tests
+# =========================================================================
+
+def test_htl_49_slide1_long_names_deterministic_fit(tmp_path):
+    """HTL-49: Slide 1 strips native normAutofit, applies deterministic font scaling, and prevents subtitle overlap."""
+    baseline = StartupKitBaseline(
+        project_name="Pilot-Ready Product Implementation",
+        charter=ProjectStartupCharter(
+            client_name="AI Infrastructure Dashboard Client",
+            project_purpose="Move the client's dashboard from MVP to pilot-ready product.",
+        ),
+    )
+    out_file = tmp_path / "htl49_slide1_long.pptx"
+    model = build_client_deck_model(baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide1 = prs.slides[0]
+
+    title_shape = next(s for s in slide1.shapes if s.shape_id == 92 or (s.has_text_frame and "Kickoff" in s.text_frame.text))
+    body_pr = title_shape._element.xpath(".//a:bodyPr")[0]
+
+    # Native normAutofit must be stripped and replaced with noAutofit
+    assert len(body_pr.xpath("./a:normAutofit")) == 0
+    assert len(body_pr.xpath("./a:noAutofit")) == 1
+    assert body_pr.get("anchor") == "t"
+
+    # Runs must have explicit font sizing and styling
+    for p in title_shape.text_frame.paragraphs:
+        for r in p.runs:
+            assert r.font.name == "Proxima Nova"
+            assert r.font.size is not None
+            # Font stepped down to fit available 1.42 in vertical clearance
+            assert r.font.size.pt <= 22.0
+            assert r.font.size.pt >= 14.0
+
+    # Subtitle shape (Shape 1, ID 93) must remain intact and positioned below title area
+    sub_shape = next(s for s in slide1.shapes if s.shape_id == 93 or (s.has_text_frame and "Aligning on outcomes" in s.text_frame.text))
+    assert sub_shape.top >= title_shape.top + title_shape.height
+
+
+def test_htl_49_slide1_short_names_fit(rich_client_deck_baseline, tmp_path):
+    """HTL-49: Short client and project names scale appropriately without native normAutofit."""
+    out_file = tmp_path / "htl49_slide1_short.pptx"
+    model = build_client_deck_model(rich_client_deck_baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide1 = prs.slides[0]
+
+    title_shape = next(s for s in slide1.shapes if s.shape_id == 92 or (s.has_text_frame and "Kickoff" in s.text_frame.text))
+    body_pr = title_shape._element.xpath(".//a:bodyPr")[0]
+
+    assert len(body_pr.xpath("./a:normAutofit")) == 0
+    assert len(body_pr.xpath("./a:noAutofit")) == 1
+    for p in title_shape.text_frame.paragraphs:
+        for r in p.runs:
+            assert r.font.size is not None
+            assert r.font.size.pt >= 18.0
+
+
+# =========================================================================
+# 10. HTL-49: Architectural Unification & Cross-Artifact Consistency Tests
+# =========================================================================
+
+def test_htl_49_cross_artifact_consistency_arc_baseline(tmp_path):
+    """HTL-49: Verifies exact deliverable and metadata consistency between Onboarding Deck and Client Kickoff Deck on ARC baseline."""
+    from tests.deck_bundle import load_baseline
+    from src.generators.kit_values import kit_header_values
+    from src.generators.pmo_workbook.builder import build_workbook_model
+
+    baseline = load_baseline()
+    headers = kit_header_values(baseline)
+
+    # 1. Slide 1 identity matches kit_header_values exactly
+    client_deck = build_client_deck_model(baseline)
+    assert client_deck.slide1.client_name == headers["client_sponsor"]
+    assert client_deck.slide1.client_name == "Syngenta"
+    assert client_deck.slide1.project_name == headers["project_name"]
+    assert client_deck.slide1.project_name == "ARC Genomics Platform"
+
+    # 2. Slide 6 deliverables match Onboarding Deck Slide 3 and Workbook schedule rows exactly
+    wb = build_workbook_model(baseline)
+    level2_milestones = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
+    assert len(client_deck.slide6.workstreams) == len(level2_milestones)
+
+    for idx, r in enumerate(level2_milestones):
+        ws = client_deck.slide6.workstreams[idx]
+        assert ws.title == r.name
+        linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
+
+        if len(linked_ids) > 3:
+            assert len(ws.deliverables) == 3
+            assert ws.deliverables[0].startswith(linked_ids[0])
+            assert ws.deliverables[1].startswith(linked_ids[1])
+            assert ws.deliverables[2] == f"+ {len(linked_ids) - 2} additional deliverables (see Project Delivery Workbook)"
+            assert ws.overflow_count == len(linked_ids) - 2
+        else:
+            assert len(ws.deliverables) == len(linked_ids)
+            for d_idx, did in enumerate(linked_ids):
+                assert ws.deliverables[d_idx].startswith(did)
+
+
+def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_failing_client_baseline, tmp_path):
+    """HTL-49: Verifies Slide 1 and Slide 6 consistency on realistic failing SOW baseline (no fabrication or cross-contamination)."""
+    from src.generators.kit_values import kit_header_values
+    from src.generators.pmo_workbook.builder import build_workbook_model
+
+    baseline = sample_real_failing_client_baseline
+    headers = kit_header_values(baseline)
+
+    # 1. Slide 1 identity
+    client_deck = build_client_deck_model(baseline)
+    assert client_deck.slide1.client_name == headers["client_sponsor"]
+    assert client_deck.slide1.client_name == "HealthTech AI Solutions"
+    assert client_deck.slide1.project_name == headers["project_name"]
+    assert client_deck.slide1.project_name == "AI Infrastructure Intelligence Dashboard"
+
+    # 2. Slide 6 deliverables
+    wb = build_workbook_model(baseline)
+    level2_milestones = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
+    assert len(client_deck.slide6.workstreams) == len(level2_milestones)
+
+    # Check Phase 1 (18 deliverables capped with overflow, no cross contamination)
+    ws1 = client_deck.slide6.workstreams[0]
+    assert ws1.title == "Phase 1 - Data and Backend Foundation"
+    assert len(ws1.deliverables) == 3
+    assert ws1.deliverables[0].startswith("DEL-1-01")
+    assert ws1.deliverables[1].startswith("DEL-1-02")
+    assert ws1.deliverables[2] == "+ 16 additional deliverables (see Project Delivery Workbook)"
+
+    # Check Phase 2 (contains only linked deliverables, no fabricated text)
+    ws2 = client_deck.slide6.workstreams[1]
+    assert ws2.title == "Phase 2 - Analytics Engine and Dashboard"
+    assert len(ws2.deliverables) == 1
+    assert ws2.deliverables[0].startswith("DEL-2-01")
+    for d_text in ws2.deliverables:
+        assert not d_text.startswith("Milestone completion:")
+
+    # Check Phase 3 (contains only linked deliverables, no fabricated text)
+    ws3 = client_deck.slide6.workstreams[2]
+    assert ws3.title == "Phase 3 - User Access Matrix & Hardening"
+    assert len(ws3.deliverables) == 1
+    assert ws3.deliverables[0].startswith("DEL-3-01")
+    for d_text in ws3.deliverables:
+        assert not d_text.startswith("Milestone completion:")
+
+    # Check Phase 4 (contains only linked deliverables, no fabricated text)
+    ws4 = client_deck.slide6.workstreams[3]
+    assert ws4.title == "Phase 4 - Production Live & Handover"
+    assert len(ws4.deliverables) == 1
+    assert ws4.deliverables[0].startswith("DEL-4-01")
+
+
+def test_htl_49_slide6_column_font_uniformity(sample_real_failing_client_baseline, tmp_path):
+    """HTL-49: Verifies that all deliverable boxes in the Outcomes/Deliverables column share the exact same font size."""
+    from tests.deck_bundle import load_baseline
+
+    for name, bl in [("ARC", load_baseline()), ("Failing", sample_real_failing_client_baseline)]:
+        out_file = tmp_path / f"uniform_font_{name}.pptx"
+        model = build_client_deck_model(bl)
+        write_client_deck(model, out_file)
+
+        prs = pptx.Presentation(str(out_file))
+        slide6 = prs.slides[5]
+
+        # Collect font sizes of all deliverable runs in column 2 (Outcomes / Deliverables)
+        deliv_runs_font_sizes = []
+        for shape in slide6.shapes:
+            # Deliverable shapes have left coordinate around 2,726,700 EMUs (~2.98 in)
+            if shape.has_text_frame and shape.left > 2500000 and shape.left < 5800000:
+                tf = shape.text_frame
+                # Exclude column header shape "Outcomes / Deliverables"
+                if tf.text.strip() and "Outcomes / Deliverables" not in tf.text:
+                    for p in tf.paragraphs:
+                        for r in p.runs:
+                            if r.font and r.font.size:
+                                deliv_runs_font_sizes.append(r.font.size.pt)
+
+        assert len(deliv_runs_font_sizes) > 0
+        # All deliverable runs across all rows must have identical font size
+        unique_sizes = set(deliv_runs_font_sizes)
+        assert len(unique_sizes) == 1, f"Found inconsistent font sizes in Deliverables column: {unique_sizes}"
