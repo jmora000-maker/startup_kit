@@ -11,6 +11,7 @@ from pptx.dml.color import RGBColor
 from src.config import CLIENT_DECK_TEMPLATE_PATH
 from src.generators.client_deck.fit import (
     estimate_text_height,
+    fit_deliverables_for_block,
     select_fitting_font_size,
     truncate_at_clause,
 )
@@ -382,8 +383,8 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             for ph in shape._element.xpath(".//p:ph"):
                 ph.getparent().remove(ph)
             shape.top = 580000
-            shape.left = 6484400
-            shape.width = 2417400
+            shape.left = 6347125
+            shape.width = 2600000
             shape.height = 420000
             tf = shape.text_frame
             tf.margin_top = 0
@@ -399,8 +400,8 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             for ph in shape._element.xpath(".//p:ph"):
                 ph.getparent().remove(ph)
             shape.top = 1150000
-            shape.left = 6484400
-            shape.width = 2417400
+            shape.left = 6347125
+            shape.width = 2600000
             shape.height = 2500000
             tf = shape.text_frame
             tf.margin_top = 0
@@ -409,7 +410,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             tf.margin_right = 0
             sz_so, so_text = select_fitting_font_size(
                 model.slide6.solution_overview,
-                width_in=2.42,
+                width_in=2.84,
                 max_height_in=2.20,
                 candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
             )
@@ -419,7 +420,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         elif shape.shape_id == 202 or "Out of Scope:" in text:
             shape.top = 3896250
             shape.left = 6347125
-            shape.width = 2683500
+            shape.width = 2600000
             shape.height = 1000000
             tf = shape.text_frame
             tf.margin_top = 0
@@ -438,7 +439,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             total_oos_text = "\n".join([f"• {item}" for item in model.slide6.out_of_scope])
             sz_oos, _ = select_fitting_font_size(
                 total_oos_text,
-                width_in=2.68,
+                width_in=2.84,
                 max_height_in=0.90,
                 candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
             )
@@ -483,33 +484,39 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         h_font_size = Pt(11.0)
         d_font_size = Pt(10.5)
         top_offset = int(slot_h * 0.08)
+        bottom_margin = int(slot_h * 0.10)
     elif n_ws == 3:
         h_font_size = Pt(10.5)
         d_font_size = Pt(10.0)
         top_offset = int(slot_h * 0.06)
+        bottom_margin = int(slot_h * 0.09)
     elif n_ws == 4:
         h_font_size = Pt(10.0)
         d_font_size = Pt(9.5)
         top_offset = int(slot_h * 0.05)
+        bottom_margin = int(slot_h * 0.08)
     elif n_ws == 5:
         h_font_size = Pt(9.0)
         d_font_size = Pt(8.5)
         top_offset = int(slot_h * 0.04)
+        bottom_margin = int(slot_h * 0.07)
     else:  # n_ws >= 6
         h_font_size = Pt(8.0)
         d_font_size = Pt(7.5)
         top_offset = int(slot_h * 0.03)
+        bottom_margin = int(slot_h * 0.06)
 
     # Get max current shape ID in tree
     max_sp_id = max([int(el.get("id", "0")) for el in slide.shapes._spTree.xpath(".//p:cNvPr")] + [500])
 
-    slot_h_in = slot_h / 914400.0
-    header_max_h = max(0.20, slot_h_in * 0.45)
+    item_height = max(100000, slot_h - top_offset - bottom_margin)
+    deliv_max_h = item_height / 914400.0
+    header_max_h = min(0.45 * slot_h / 914400.0, deliv_max_h)
+
     h_candidate_sizes = [s for s in [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0] if s <= float(h_font_size.pt)]
     if not h_candidate_sizes:
         h_candidate_sizes = [float(h_font_size.pt)]
 
-    deliv_max_h = max(0.35, slot_h_in * 0.85)
     d_candidate_sizes = [s for s in [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5] if s <= float(d_font_size.pt)]
     if not d_candidate_sizes:
         d_candidate_sizes = [float(d_font_size.pt)]
@@ -527,13 +534,15 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         h_pt, _ = select_fitting_font_size(ws_title_raw, width_in=2.15, max_height_in=header_max_h, candidate_sizes=h_candidate_sizes)
         header_sizes.append(h_pt)
 
-        deliv_lines = list(ws.deliverables)
-        if ws.overflow_count > 0:
-            deliv_lines.append(f"+ {ws.overflow_count} additional deliverables (see Project Delivery Workbook)")
-        all_deliv_str = "\n".join(deliv_lines)
-        if all_deliv_str.strip():
-            d_pt, _ = select_fitting_font_size(all_deliv_str, width_in=3.00, max_height_in=deliv_max_h, candidate_sizes=d_candidate_sizes)
-            deliv_sizes.append(d_pt)
+        if ws.deliverables:
+            best_d_pt = d_candidate_sizes[-1]
+            for sz in d_candidate_sizes:
+                cand_items, _ = fit_deliverables_for_block(ws.deliverables, width_in=3.00, max_height_in=deliv_max_h, font_size_pt=sz)
+                if cand_items:
+                    if len(cand_items) == len(ws.deliverables) and not any("additional deliverables" in it for it in cand_items):
+                        best_d_pt = sz
+                        break
+            deliv_sizes.append(best_d_pt)
 
     col_header_font_pt = min(header_sizes) if header_sizes else float(h_font_size.pt)
     col_deliv_font_pt = min(deliv_sizes) if deliv_sizes else float(d_font_size.pt)
@@ -561,7 +570,6 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
 
         slot_top = y_start + i * slot_h
         item_top = slot_top + top_offset
-        item_height = int(slot_h * 0.88)
 
         # Position Header (Column 1 - Left)
         h_shape.left = 502750
@@ -595,11 +603,18 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
         for bpr in d_shape._element.xpath(".//a:bodyPr"):
             bpr.set("anchor", "t")
 
+        fitted_delivs, ovf_count = fit_deliverables_for_block(
+            ws.deliverables,
+            width_in=3.00,
+            max_height_in=deliv_max_h,
+            font_size_pt=col_deliv_font_pt,
+        )
+
         _populate_deliverables_box(
             d_shape,
-            ws.deliverables,
+            fitted_delivs,
             Pt(col_deliv_font_pt),
-            overflow_count=ws.overflow_count,
+            overflow_count=ovf_count,
         )
 
     # Remove surplus template shapes if N < 4

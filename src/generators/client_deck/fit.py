@@ -105,3 +105,57 @@ def select_fitting_font_size(
 
     floor_size = sorted_sizes[-1] if sorted_sizes else min_font_floor
     return floor_size, text
+
+
+def estimate_deliverables_height(
+    items: Sequence[str],
+    width_in: float,
+    font_size_pt: float,
+    bullet_indent_in: float = 0.27,
+) -> float:
+    """Accurately estimate total rendered height in points for bulleted deliverables."""
+    if not items:
+        return 0.0
+    inner_w = max(0.5, width_in - bullet_indent_in)
+    total_lines = sum(wrap_lines(it, inner_w, font_size_pt) for it in items if it and it.strip())
+    spacing_pt = max(0, len(items) - 1) * (1.0 if font_size_pt < 9.0 else 1.5)
+    return total_lines * LINE_HEIGHT_FACTOR * font_size_pt + spacing_pt
+
+
+def fit_deliverables_for_block(
+    deliverables: Sequence[str],
+    width_in: float,
+    max_height_in: float,
+    font_size_pt: float,
+    bullet_indent_in: float = 0.27,
+) -> Tuple[List[str], int]:
+    """Determine how many deliverables fit in (width_in, max_height_in) at font_size_pt (HTL-49).
+
+    Returns (displayed_items, overflow_count).
+    If all deliverables fit, returns (list(deliverables), 0).
+    If not all fit, returns (deliverables[:k] + [summary_line], len(deliverables) - k).
+    """
+    clean_delivs = [d for d in deliverables if d and d.strip()]
+    if not clean_delivs:
+        return [], 0
+
+    max_h_pt = max_height_in * 72.0
+    # 1. Try displaying ALL deliverables
+    if estimate_deliverables_height(clean_delivs, width_in, font_size_pt, bullet_indent_in) <= max_h_pt + 1e-4:
+        return list(clean_delivs), 0
+
+    # 2. Iteratively test k deliverables + summary line, from len(clean_delivs) - 1 down to 1
+    total = len(clean_delivs)
+    for k in range(total - 1, 0, -1):
+        ovf = total - k
+        summary = f"+ {ovf} additional deliverables (see Project Delivery Workbook)"
+        cand = list(clean_delivs[:k]) + [summary]
+        if estimate_deliverables_height(cand, width_in, font_size_pt, bullet_indent_in) <= max_h_pt + 1e-4:
+            return cand, ovf
+
+    # 3. Fallback: 1 deliverable + summary line if total > 1, else 1 deliverable
+    if total > 1:
+        ovf = total - 1
+        summary = f"+ {ovf} additional deliverables (see Project Delivery Workbook)"
+        return [clean_delivs[0], summary], ovf
+    return [clean_delivs[0]], 0

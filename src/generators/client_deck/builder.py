@@ -156,16 +156,7 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
                 else:
                     deliv_items.append(did)
 
-            if len(deliv_items) > 3:
-                displayed = deliv_items[:2] + [
-                    f"+ {len(deliv_items) - 2} additional deliverables (see Project Delivery Workbook)"
-                ]
-                overflow = len(deliv_items) - 2
-            else:
-                displayed = deliv_items
-                overflow = 0
-
-            workstreams.append(WorkstreamBlock(title=title, deliverables=displayed, overflow_count=overflow))
+            workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
     elif baseline.deliverables:
         chunk_size = 3
         for i in range(0, len(baseline.deliverables), chunk_size):

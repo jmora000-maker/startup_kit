@@ -530,11 +530,9 @@ def test_slide6_dynamic_layout_n6_and_overflow(tmp_path):
     model = build_client_deck_model(baseline)
     assert len(model.slide6.workstreams) == 6
 
-    # Verify first workstream has overflow pattern (>3 deliverables mapped)
+    # Verify first workstream has all deliverables in model
     ws1 = model.slide6.workstreams[0]
-    assert len(ws1.deliverables) == 3
-    assert ws1.deliverables[2].startswith("+")
-    assert "additional deliverables (see Project Delivery Workbook)" in ws1.deliverables[2]
+    assert len(ws1.deliverables) == 5
 
     saved_path = write_client_deck(model, out_file)
     prs = pptx.Presentation(str(saved_path))
@@ -992,17 +990,28 @@ def test_htl_49_cross_artifact_consistency_arc_baseline(tmp_path):
         ws = client_deck.slide6.workstreams[idx]
         assert ws.title == r.name
         linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
+        assert len(ws.deliverables) == len(linked_ids)
+        for d_idx, did in enumerate(linked_ids):
+            assert ws.deliverables[d_idx].startswith(did)
 
-        if len(linked_ids) > 3:
-            assert len(ws.deliverables) == 3
-            assert ws.deliverables[0].startswith(linked_ids[0])
-            assert ws.deliverables[1].startswith(linked_ids[1])
-            assert ws.deliverables[2] == f"+ {len(linked_ids) - 2} additional deliverables (see Project Delivery Workbook)"
-            assert ws.overflow_count == len(linked_ids) - 2
-        else:
-            assert len(ws.deliverables) == len(linked_ids)
-            for d_idx, did in enumerate(linked_ids):
-                assert ws.deliverables[d_idx].startswith(did)
+    out_file = tmp_path / "arc_kickoff_deck.pptx"
+    write_client_deck(client_deck, out_file)
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+    deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
+    deliv_shapes.sort(key=lambda s: s.top)
+    # Row 1 (5 items) shows 2 deliverables + overflow (DEL-01, DEL-02, + 3 additional)
+    assert len(deliv_shapes[0].text_frame.paragraphs) == 3
+    assert "+ 3 additional deliverables" in deliv_shapes[0].text_frame.paragraphs[2].text
+    # Row 2 (5 items) shows 2 deliverables + overflow (DEL-06, DEL-07, + 3 additional)
+    assert len(deliv_shapes[1].text_frame.paragraphs) == 3
+    assert "+ 3 additional deliverables" in deliv_shapes[1].text_frame.paragraphs[2].text
+    # Row 3 (4 items) shows all 4 (no summary line)
+    assert len(deliv_shapes[2].text_frame.paragraphs) == 4
+    assert not any("additional deliverables" in p.text for p in deliv_shapes[2].text_frame.paragraphs)
+    # Row 4 (5 items) shows 3 deliverables + overflow (DEL-15, DEL-16, DEL-17, + 2 additional)
+    assert len(deliv_shapes[3].text_frame.paragraphs) == 4
+    assert "+ 2 additional deliverables" in deliv_shapes[3].text_frame.paragraphs[3].text
 
 
 def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_failing_client_baseline, tmp_path):
@@ -1025,13 +1034,12 @@ def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_fail
     level2_milestones = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
     assert len(client_deck.slide6.workstreams) == len(level2_milestones)
 
-    # Check Phase 1 (18 deliverables capped with overflow, no cross contamination)
+    # Check Phase 1 (18 deliverables in model, rendered with overflow)
     ws1 = client_deck.slide6.workstreams[0]
     assert ws1.title == "Phase 1 - Data and Backend Foundation"
-    assert len(ws1.deliverables) == 3
+    assert len(ws1.deliverables) == 18
     assert ws1.deliverables[0].startswith("DEL-1-01")
     assert ws1.deliverables[1].startswith("DEL-1-02")
-    assert ws1.deliverables[2] == "+ 16 additional deliverables (see Project Delivery Workbook)"
 
     # Check Phase 2 (contains only linked deliverables, no fabricated text)
     ws2 = client_deck.slide6.workstreams[1]
@@ -1054,6 +1062,23 @@ def test_htl_49_cross_artifact_consistency_failing_sow_baseline(sample_real_fail
     assert ws4.title == "Phase 4 - Production Live & Handover"
     assert len(ws4.deliverables) == 1
     assert ws4.deliverables[0].startswith("DEL-4-01")
+
+    # Verify rendered presentation
+    out_file = tmp_path / "failing_kickoff_deck.pptx"
+    write_client_deck(client_deck, out_file)
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+    deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
+    deliv_shapes.sort(key=lambda s: s.top)
+
+    # Row 1 (18 items) renders 2 deliverables + overflow summary line
+    assert len(deliv_shapes[0].text_frame.paragraphs) == 3
+    assert "+ 16 additional deliverables" in deliv_shapes[0].text_frame.paragraphs[2].text
+
+    # Rows 2, 3, 4 render 1 deliverable each with NO overflow summary line
+    for row_idx in (1, 2, 3):
+        assert len(deliv_shapes[row_idx].text_frame.paragraphs) == 1
+        assert not any("additional deliverables" in p.text for p in deliv_shapes[row_idx].text_frame.paragraphs)
 
 
 def test_htl_49_slide6_column_font_uniformity(sample_real_failing_client_baseline, tmp_path):
@@ -1085,3 +1110,50 @@ def test_htl_49_slide6_column_font_uniformity(sample_real_failing_client_baselin
         # All deliverable runs across all rows must have identical font size
         unique_sizes = set(deliv_runs_font_sizes)
         assert len(unique_sizes) == 1, f"Found inconsistent font sizes in Deliverables column: {unique_sizes}"
+
+
+def test_slide6_right_column_left_alignment(tmp_path):
+    """Slide 6: Shape 193 ('Solution Overview'), Shape 194 (body), and Shape 202 ('Out of Scope:') share exact same left coordinate."""
+    from tests.deck_bundle import load_baseline
+    baseline = load_baseline()
+    out_file = tmp_path / "align_test.pptx"
+    model = build_client_deck_model(baseline)
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+
+    s193 = next(s for s in slide6.shapes if s.shape_id == 193 or (s.has_text_frame and "Solution Overview" in s.text_frame.text))
+    s194 = next(s for s in slide6.shapes if s.shape_id == 194 or (s.has_text_frame and "P1 Foundation" in s.text_frame.text or "Comprehensive" in s.text_frame.text))
+    s202 = next(s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text))
+
+    assert s193.left == 6347125
+    assert s194.left == 6347125
+    assert s202.left == 6347125
+    assert s193.width == 2600000
+    assert s194.width == 2600000
+    assert s202.width == 2600000
+
+
+def test_slide6_dynamic_deliverable_row_filling_algorithm():
+    """Slide 6: fit_deliverables_for_block dynamically tests and displays maximum fitting deliverables."""
+    from src.generators.client_deck.fit import fit_deliverables_for_block
+
+    delivs = [f"DEL-{i:02d} System Component Architecture Deliverable Specification {i}" for i in range(1, 10)]
+
+    # 1. When all deliverables fit within height, returns all items with 0 overflow
+    items_all, ovf_all = fit_deliverables_for_block(delivs[:4], width_in=3.0, max_height_in=1.55, font_size_pt=10.0)
+    assert ovf_all == 0
+    assert len(items_all) == 4
+    assert not any("additional deliverables" in it for it in items_all)
+
+    # 2. When only subset fits, returns max k items + summary line
+    items_sub, ovf_sub = fit_deliverables_for_block(delivs, width_in=3.0, max_height_in=0.78, font_size_pt=7.5)
+    assert ovf_sub > 0
+    assert len(items_sub) == len(delivs) - ovf_sub + 1
+    assert items_sub[-1] == f"+ {ovf_sub} additional deliverables (see Project Delivery Workbook)"
+
+    # 3. Single deliverable fits cleanly with 0 overflow
+    items_one, ovf_one = fit_deliverables_for_block(delivs[:1], width_in=3.0, max_height_in=0.50, font_size_pt=9.5)
+    assert ovf_one == 0
+    assert items_one == [delivs[0]]
