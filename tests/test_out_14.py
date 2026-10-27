@@ -384,16 +384,15 @@ def test_slide1_client_name_fallback_to_client(tmp_path):
 # =========================================================================
 
 def test_slide5_why_problem_success_synthesis(rich_client_deck_baseline):
-    """OUT-14.2 / HTL-52: Slide 5 maps project purpose, synthesizes problem statement from delivery objectives, and formats prose success criteria."""
+    """OUT-14.2 / HTL-54: Slide 5 maps project purpose, synthesizes problem statement from project purpose, and formats prose success criteria."""
     model = build_slide5_model(rich_client_deck_baseline)
 
     # Why are we doing this?
     assert model.why_are_we_doing_this == "Modernize customer onboarding pipeline with event-driven cloud microservices."
 
-    # What problem are we solving? (deterministic synthesis from delivery objectives, without constraint splicing)
-    assert "Addressing operational bottlenecks and technical limitations" in model.what_problem_are_we_solving
-    assert "deploying microservices architecture on AWS" in model.what_problem_are_we_solving
-    assert "integrating real-time identity verification" in model.what_problem_are_we_solving
+    # What problem are we solving? (deterministic synthesis from project purpose, without build task dumps or constraint splicing)
+    assert "bottlenecks" in model.what_problem_are_we_solving.lower()
+    assert "modernize customer onboarding pipeline" in model.what_problem_are_we_solving
     assert "specifically resolving" not in model.what_problem_are_we_solving
 
     # What does success look like? (narrative prose, not bullet list)
@@ -423,41 +422,35 @@ def test_format_success_criteria_prose_variations():
 
 
 def test_synthesize_problem_statement_fallbacks():
-    """OUT-14.2 / HTL-52: synthesize_problem_statement hierarchically falls back through objectives, scope, purpose, and placeholder."""
-    # 1. Primary: delivery_objectives
-    b_objs = StartupKitBaseline(
-        project_name="Objectives Project",
-        charter=ProjectStartupCharter(
-            delivery_objectives=["Deploy scalable microservices", "Integrate data pipelines"],
-            project_purpose="Build platform",
-        ),
+    """OUT-14.2 / HTL-54: synthesize_problem_statement reframes charter.project_purpose around operational/transition gaps, falling back to explicit placeholder."""
+    # 1. Action verb purpose (e.g. Move / Transition)
+    b_move = StartupKitBaseline(
+        project_name="Move Project",
+        charter=ProjectStartupCharter(project_purpose="Move the dashboard from MVP to pilot-ready product."),
     )
-    s_objs = synthesize_problem_statement(b_objs)
-    assert s_objs == "Addressing operational bottlenecks and technical limitations by deploying scalable microservices, and integrating data pipelines."
+    s_move = synthesize_problem_statement(b_move)
+    assert s_move == "Resolving operational bottlenecks and manual limitations to move the dashboard from MVP to pilot-ready product."
 
-    # 2. Secondary: high_level_scope
-    b_scope = StartupKitBaseline(
-        project_name="Scope Project",
-        charter=ProjectStartupCharter(
-            high_level_scope=["Cloud migration and security matrix"],
-            project_purpose="Build platform",
-        ),
+    # 2. General build/establish verb purpose
+    b_est = StartupKitBaseline(
+        project_name="Establish Project",
+        charter=ProjectStartupCharter(project_purpose="Establish cloud analytics foundation and APIs."),
     )
-    s_scope = synthesize_problem_statement(b_scope)
-    assert s_scope == "Addressing operational bottlenecks and architectural limitations across key solution domains: Cloud migration and security matrix."
+    s_est = synthesize_problem_statement(b_est)
+    assert s_est == "Addressing operational bottlenecks and technology transition gaps to establish cloud analytics foundation and APIs."
 
-    # 3. Tertiary: project_purpose
-    b_purp = StartupKitBaseline(
-        project_name="Purpose Project",
-        charter=ProjectStartupCharter(project_purpose="Migrate existing databases to cloud."),
+    # 3. Descriptive sentence purpose
+    b_desc = StartupKitBaseline(
+        project_name="Desc Project",
+        charter=ProjectStartupCharter(project_purpose="Data pipelines process telemetry streams across facilities."),
     )
-    s_purp = synthesize_problem_statement(b_purp)
-    assert s_purp == "Resolving existing manual bottlenecks and operational constraints to enable: migrate existing databases to cloud."
+    s_desc = synthesize_problem_statement(b_desc)
+    assert s_desc == "Resolving existing operational bottlenecks and transition challenges to enable: data pipelines process telemetry streams across facilities."
 
-    # 4. Fallback: Minimal / scrubbed project
+    # 4. Fallback: Minimal / unconfirmed project
     b_min = StartupKitBaseline(project_name="Minimal Project")
     s_min = synthesize_problem_statement(b_min)
-    assert s_min == "[To be confirmed in Project Success Agreement]"
+    assert s_min == "[To be confirmed in Project Success Agreement · Define current pain points with client]"
 
 
 # =========================================================================
@@ -804,7 +797,7 @@ def test_end_to_end_freshly_generated_client_kickoff_deck(rich_client_deck_basel
 # =========================================================================
 
 def test_htl_48_real_failing_baseline_problem_statement_scoped(sample_real_failing_client_baseline):
-    """HTL-48 / HTL-52: Problem statement derives from delivery objectives without constraint splicing."""
+    """HTL-48 / HTL-52 / HTL-54: Problem statement reframes project purpose around bottlenecks without build tasks or constraint splicing."""
     problem_stmt = synthesize_problem_statement(sample_real_failing_client_baseline)
 
     # Must exclude raw commercial figures and payment terms
@@ -819,10 +812,12 @@ def test_htl_48_real_failing_baseline_problem_statement_scoped(sample_real_faili
     assert "Estimated schedule runs" not in problem_stmt
     assert "Oct 19, 2026" not in problem_stmt
 
-    # Must be grounded in delivery objectives
-    assert "operational bottlenecks and technical limitations" in problem_stmt
-    assert "deploying scalable multi-facility data pipeline and ingestion microservices" in problem_stmt
-    assert "integrating real-time anomaly detection and predictive infrastructure analytics" in problem_stmt
+    # HTL-54: Must NOT inject granular build tasks from delivery_objectives
+    assert "deploying scalable multi-facility data pipeline and ingestion microservices" not in problem_stmt
+
+    # Must reframe project purpose around operational/manual bottlenecks
+    assert "Resolving operational bottlenecks and manual limitations" in problem_stmt
+    assert "move the client's AI Infrastructure Intelligence Dashboard" in problem_stmt
 
 
 def test_htl_48_real_failing_baseline_slide5_fit(sample_real_failing_client_baseline, tmp_path):
@@ -885,7 +880,7 @@ def test_htl_48_real_failing_baseline_slide6_fit(sample_real_failing_client_base
 
 
 def test_htl_48_real_failing_baseline_slide12_fit(sample_real_failing_client_baseline, tmp_path):
-    """HTL-48 / HTL-52: Slide 12 scales table cell font sizes uniformly per column and bounds multi-sentence risk mitigations."""
+    """HTL-48 / HTL-52 / HTL-54: Slide 12 scales table cell font sizes uniformly across entire table and bounds multi-sentence risk mitigations."""
     out_file = tmp_path / "htl48_slide12.pptx"
     model = build_client_deck_model(sample_real_failing_client_baseline)
     write_client_deck(model, out_file)
@@ -907,17 +902,18 @@ def test_htl_48_real_failing_baseline_slide12_fit(sample_real_failing_client_bas
     assert "RSK-03" in all_text
     assert "RSK-04" in all_text
 
-    # HTL-52: Col 0 (Description) and Col 2 (Mitigation) must share uniform font size across all rows
-    desc_sizes = [tbl.rows[r_idx].cells[0].text_frame.paragraphs[0].runs[0].font.size.pt for r_idx in range(1, 4)]
-    mitigation_sizes = [tbl.rows[r_idx].cells[2].text_frame.paragraphs[0].runs[0].font.size.pt for r_idx in range(1, 4)]
-
-    assert desc_sizes[0] == desc_sizes[1] == desc_sizes[2]
-    assert mitigation_sizes[0] == mitigation_sizes[1] == mitigation_sizes[2]
-    assert mitigation_sizes[0] <= 10.0
+    # HTL-54: All cells across all data rows in Slide 12 must share identical table-wide font size
+    cell_sizes = [
+        tbl.rows[r_idx].cells[c_idx].text_frame.paragraphs[0].runs[0].font.size.pt
+        for r_idx in range(1, len(tbl.rows))
+        for c_idx in range(len(tbl.rows[r_idx].cells))
+    ]
+    assert len(set(cell_sizes)) == 1, f"Expected uniform font size across all Slide 12 cells, got: {set(cell_sizes)}"
+    assert cell_sizes[0] <= 10.0
 
 
 def test_htl_48_real_failing_baseline_slide15_fit(sample_real_failing_client_baseline, tmp_path):
-    """HTL-48: Slide 15 scales table cells for realistic-length customer obligations and next steps."""
+    """HTL-48 / HTL-54: Slide 15 scales table cells uniformly across entire table for realistic-length customer obligations and next steps."""
     out_file = tmp_path / "htl48_slide15.pptx"
     model = build_client_deck_model(sample_real_failing_client_baseline)
     write_client_deck(model, out_file)
@@ -930,8 +926,15 @@ def test_htl_48_real_failing_baseline_slide15_fit(sample_real_failing_client_bas
     # Check Due column is strictly TBD
     for r_idx in range(1, len(tbl.rows)):
         assert tbl.rows[r_idx].cells[2].text.strip() == "TBD"
-        cell_p = tbl.rows[r_idx].cells[1].text_frame.paragraphs[0]
-        assert cell_p.runs[0].font.size.pt <= 10.0
+
+    # HTL-54: All cells across all data rows in Slide 15 must share identical table-wide font size
+    cell_sizes = [
+        tbl.rows[r_idx].cells[c_idx].text_frame.paragraphs[0].runs[0].font.size.pt
+        for r_idx in range(1, len(tbl.rows))
+        for c_idx in range(len(tbl.rows[r_idx].cells))
+    ]
+    assert len(set(cell_sizes)) == 1, f"Expected uniform font size across all Slide 15 cells, got: {set(cell_sizes)}"
+    assert cell_sizes[0] <= 10.0
 
 
 def test_htl_48_end_to_end_real_failing_deck_generation(sample_real_failing_client_baseline, tmp_path):
@@ -1519,8 +1522,7 @@ def test_htl_52_four_findings_verification(sample_real_failing_client_baseline, 
     card2_prob = model.slide5.what_problem_are_we_solving
     assert card1_why != card2_prob
     assert "AI Infrastructure Intelligence Dashboard" in card1_why
-    assert "deploying scalable multi-facility data pipeline and ingestion microservices" in card2_prob
-    assert "integrating real-time anomaly detection and predictive infrastructure analytics" in card2_prob
+    assert "Resolving operational bottlenecks and manual limitations" in card2_prob
     assert "specifically resolving" not in card2_prob
     assert "Estimated schedule runs" not in card2_prob
     assert "Oct 19, 2026" not in card2_prob
@@ -1543,11 +1545,74 @@ def test_htl_52_four_findings_verification(sample_real_failing_client_baseline, 
     oos_shape = next(s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text))
     assert oos_shape.top + oos_shape.height <= 4700000
 
-    # 4. Slide 12 Risk Table Column Uniformity
+    # 4. Slide 12 Risk Table Table-Wide Uniformity (HTL-54)
     slide12 = prs.slides[11]
     tbl12 = next(s.table for s in slide12.shapes if s.has_table)
-    desc_sizes = [tbl12.rows[r_idx].cells[0].text_frame.paragraphs[0].runs[0].font.size.pt for r_idx in range(1, len(tbl12.rows))]
-    mit_sizes = [tbl12.rows[r_idx].cells[2].text_frame.paragraphs[0].runs[0].font.size.pt for r_idx in range(1, len(tbl12.rows))]
+    all_s12_sizes = [
+        tbl12.rows[r_idx].cells[c_idx].text_frame.paragraphs[0].runs[0].font.size.pt
+        for r_idx in range(1, len(tbl12.rows))
+        for c_idx in range(len(tbl12.rows[r_idx].cells))
+    ]
+    assert len(set(all_s12_sizes)) == 1, f"Expected uniform table-wide font size in Slide 12, got: {set(all_s12_sizes)}"
 
-    assert len(set(desc_sizes)) == 1, f"Expected uniform description font sizes, got {desc_sizes}"
-    assert len(set(mit_sizes)) == 1, f"Expected uniform mitigation font sizes, got {mit_sizes}"
+
+# =========================================================================
+# HTL-54: Real-World Run Alignment & Refinements Tests
+# =========================================================================
+
+def test_htl_54_risk_filtering_precision_arc_r02_retained(tmp_path):
+    """HTL-54: ARC fixture high-severity technical risk R-02 is retained on Slide 12 with sanitized mitigation."""
+    from tests.deck_bundle import load_baseline
+    arc_baseline = load_baseline()
+
+    model = build_client_deck_model(arc_baseline)
+    s12_risks = model.slide12.risks
+
+    # R-02 (high severity score 6) must be present in top 3
+    r02_matches = [r for r in s12_risks if "R-02" in r.id or "PubMed precision" in r.description]
+    assert len(r02_matches) == 1, f"R-02 was not retained in Slide 12 risks: {[r.id for r in s12_risks]}"
+    r02 = r02_matches[0]
+
+    # Mitigation must be sanitized: no 'Change Order', but keeps technical mitigation actions
+    assert "Change Order" not in r02.mitigation
+    assert "change order" not in r02.mitigation.lower()
+    assert "Report defects early" in r02.mitigation
+
+    # Verify rendered slide
+    out_file = tmp_path / "arc_s12_r02.pptx"
+    write_client_deck(model, out_file)
+    prs = pptx.Presentation(str(out_file))
+    slide12 = prs.slides[11]
+    tbl = next(s.table for s in slide12.shapes if s.has_table)
+
+    s12_all_text = " ".join(c.text for r in tbl.rows for c in r.cells)
+    assert "R-02" in s12_all_text
+    assert "Change Order" not in s12_all_text
+
+
+def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
+    """HTL-54: Slide 5 Card 2 clamps to 3 lines (~28.8 pt / 0.40 in) even with very long problem statements."""
+    long_baseline = StartupKitBaseline(
+        project_name="Long Text Card Bounding Validation Platform",
+        charter=ProjectStartupCharter(
+            client_name="HealthTech AI Solutions",
+            project_purpose="Move the client's multi-region clinical telemetry and automated analytics pipeline platform across 50 healthcare facilities to transition legacy Oracle databases into high-throughput cloud streaming microservices with real-time alerting, continuous regression testing, automated failover capabilities, and full persona-based access controls across clinical user groups.",
+            success_criteria=["Milestone completion within agreed timelines"],
+        ),
+    )
+
+    model = build_client_deck_model(long_baseline)
+    out_file = tmp_path / "long_card2_deck.pptx"
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide5 = prs.slides[4]
+    c2_shape = next(s for s in slide5.shapes if s.shape_id == 180 or (s.has_text_frame and "operational bottlenecks" in s.text_frame.text))
+
+    c2_text = c2_shape.text_frame.text
+    assert c2_text.endswith("...")
+    from src.generators.client_deck.fit import estimate_text_height
+    c2_p = c2_shape.text_frame.paragraphs[0]
+    font_sz = c2_p.runs[0].font.size.pt
+    est_h = estimate_text_height(c2_text, width_in=7.75, size_pt=font_sz)
+    assert est_h <= 0.40 * 72.0 + 1e-4

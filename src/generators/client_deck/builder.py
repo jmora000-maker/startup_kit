@@ -39,7 +39,7 @@ COMMERCIAL_EXCLUSION_REGEX = re.compile(
 
 
 def scrub_commercial_clauses(text: str) -> str:
-    """Scrub financial and commercial clauses/sentences from continuous prose text (HTL-50)."""
+    """Scrub financial and commercial clauses/sentences from continuous prose text (HTL-50 / HTL-54)."""
     if not text or not text.strip():
         return ""
     # Split into sentences
@@ -51,6 +51,15 @@ def scrub_commercial_clauses(text: str) -> str:
             continue
         if not COMMERCIAL_EXCLUSION_REGEX.search(s_clean):
             clean_sentences.append(s_clean)
+        else:
+            # Try sub-clause splitting on commas / semicolons / ' and '
+            clauses = re.split(r"(?:,\s*(?:and\s+)?|;\s*|\s+and\s+)", s_clean)
+            clean_clauses = [c.strip() for c in clauses if c.strip() and not COMMERCIAL_EXCLUSION_REGEX.search(c)]
+            if clean_clauses:
+                if len(clean_clauses) == 1:
+                    clean_sentences.append(clean_clauses[0])
+                else:
+                    clean_sentences.append(", ".join(clean_clauses))
     if clean_sentences:
         return " ".join(clean_sentences)
     return ""
@@ -130,43 +139,12 @@ def _to_gerund(phrase: str) -> str:
 
 
 def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
-    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50 / HTL-52).
+    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50 / HTL-54).
 
-    Hierarchical sourcing:
-    1. Primary: charter.delivery_objectives (active gerund problem-solving framing).
-    2. Secondary: charter.high_level_scope (architectural bottleneck framing).
-    3. Tertiary: charter.project_purpose (current-state transformation framing).
-    4. Fallback: explicit zero-fabrication placeholder.
+    Frames charter.project_purpose around current-state operational bottlenecks and transformation gaps
+    without injecting granular build tasks from delivery_objectives or high_level_scope.
+    Falls back to explicit placeholder if no project purpose is available.
     """
-    # 1. Primary Source: charter.delivery_objectives
-    if baseline.charter and baseline.charter.delivery_objectives:
-        clean_objs = [
-            _to_gerund(obj.strip().rstrip("."))
-            for obj in baseline.charter.delivery_objectives
-            if obj.strip() and obj.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(obj)
-        ]
-        clean_objs = [obj for obj in clean_objs if obj]
-        if clean_objs:
-            if len(clean_objs) == 1:
-                formatted = clean_objs[0]
-            elif len(clean_objs) == 2:
-                formatted = f"{clean_objs[0]}, and {clean_objs[1]}"
-            else:
-                formatted = f"{', '.join(clean_objs[:-1])}, and {clean_objs[-1]}"
-            return f"Addressing operational bottlenecks and technical limitations by {formatted}."
-
-    # 2. Secondary Source: charter.high_level_scope
-    if baseline.charter and baseline.charter.high_level_scope:
-        clean_scope = [
-            s.strip().rstrip(".")
-            for s in baseline.charter.high_level_scope
-            if s.strip() and s.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(s)
-        ]
-        if clean_scope:
-            scope_clause = "; ".join(clean_scope)
-            return f"Addressing operational bottlenecks and architectural limitations across key solution domains: {scope_clause}."
-
-    # 3. Tertiary Source: reframed charter.project_purpose
     purpose_raw = (
         baseline.charter.project_purpose
         if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]"
@@ -175,12 +153,17 @@ def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
     purpose = scrub_commercial_clauses(purpose_raw)
     if purpose.endswith("."):
         purpose = purpose[:-1]
+
     if purpose:
         purpose_clause = (purpose[0].lower() + purpose[1:]) if len(purpose) > 1 else purpose.lower()
-        return f"Resolving existing manual bottlenecks and operational constraints to enable: {purpose_clause}."
+        if purpose_clause.startswith(("move ", "transition ", "transform ", "upgrade ", "migrate ", "shift ", "evolve ")):
+            return f"Resolving operational bottlenecks and manual limitations to {purpose_clause}."
+        elif purpose_clause.startswith(("establish ", "deploy ", "build ", "develop ", "implement ", "create ", "deliver ")):
+            return f"Addressing operational bottlenecks and technology transition gaps to {purpose_clause}."
+        else:
+            return f"Resolving existing operational bottlenecks and transition challenges to enable: {purpose_clause}."
 
-    # 4. Fallback
-    return "[To be confirmed in Project Success Agreement]"
+    return "[To be confirmed in Project Success Agreement · Define current pain points with client]"
 
 
 def format_success_criteria_prose(criteria: Sequence[str]) -> str:
@@ -345,16 +328,16 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
 
 
 def is_commercial_risk(risk: RiskAssumption) -> bool:
-    """Return True if risk relates to commercial, pricing, margin, or financial terms."""
+    """Return True if risk relates to commercial, pricing, margin, or financial terms (HTL-50 / HTL-54)."""
     category = (risk.category or "").lower().strip()
     if category in ("commercial", "financial", "pricing", "margin", "billing", "financial risk"):
         return True
-    text_corpus = f"{risk.category or ''} {risk.description or ''} {risk.mitigation_or_response or ''}"
+    text_corpus = f"{risk.category or ''} {risk.description or ''}"
     return bool(COMMERCIAL_EXCLUSION_REGEX.search(text_corpus))
 
 
 def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
-    """Build Slide 12 model (Initial Risk Register) excluding commercial risks with zero-fabrication fallback."""
+    """Build Slide 12 model (Initial Risk Register) excluding commercial risks with zero-fabrication fallback (HTL-50 / HTL-54)."""
     prob_map = {"high": 3, "medium": 2, "med": 2, "low": 1}
     impact_map = {"high": 3, "medium": 2, "med": 2, "low": 1}
 
@@ -385,12 +368,31 @@ def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
         target_date = str(r.due_date) if r.due_date else "TBD"
         desc = f"{r.id}: {r.description}" if r.id and not r.description.startswith(r.id) else r.description
 
+        mitigation_raw = r.mitigation_or_response or "Active monitoring by Delivery Manager and PMO"
+        if COMMERCIAL_EXCLUSION_REGEX.search(mitigation_raw):
+            mitigation_clean = scrub_commercial_clauses(mitigation_raw)
+            if not mitigation_clean:
+                mitigation_clean = re.sub(
+                    r"(?:,\s*)?(?:and\s+)?(?:manage|raise|process|issue)\s+(?:a\s+)?(?:Change Order|change order)[^.]*",
+                    "",
+                    mitigation_raw,
+                    flags=re.IGNORECASE,
+                ).strip().rstrip(",")
+                if not mitigation_clean:
+                    mitigation_clean = (
+                        "Report defects early and agree remediation timelines with Client"
+                        if "defect" in mitigation_raw.lower()
+                        else "Active monitoring by Delivery Manager and PMO"
+                    )
+        else:
+            mitigation_clean = mitigation_raw
+
         risk_items.append(
             RiskItem(
                 id=r.id or f"RSK-{len(risk_items)+1:02d}",
                 description=desc,
                 prob_impact=prob_impact,
-                mitigation=r.mitigation_or_response or "Active monitoring by Delivery Manager and PMO",
+                mitigation=mitigation_clean,
                 target_date=target_date,
                 severity_score=score,
             )

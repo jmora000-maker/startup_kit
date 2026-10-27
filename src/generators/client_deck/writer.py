@@ -171,29 +171,42 @@ def write_slide1(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here) with uniform font scaling across all three cards and top anchoring (HTL-48 / HTL-52)."""
+    """Populate Slide 5 (Why We're Here) with uniform font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54)."""
     candidate_sizes = [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
 
-    # Pass 1: Compute fitting font sizes across all three cards (HTL-52)
+    # Card 2 (Problem Statement): max height is 0.40 in (~28.8 pt / max 3 lines at 8.0pt)
+    prob_raw = model.slide5.what_problem_are_we_solving
+    if estimate_text_height(prob_raw, width_in=7.75, size_pt=8.0) > 0.40 * 72.0:
+        prob_raw = truncate_at_clause(prob_raw, max_chars=220, suffix="...")
+        while estimate_text_height(prob_raw, width_in=7.75, size_pt=8.0) > 0.40 * 72.0 and len(prob_raw) > 30:
+            prob_raw = truncate_at_clause(prob_raw[:-4], max_chars=len(prob_raw) - 20, suffix="...")
+
+    # Pass 1: Compute fitting font sizes across all three cards (HTL-52 / HTL-54)
     sz_why, fitted_why = select_fitting_font_size(
         model.slide5.why_are_we_doing_this,
         width_in=7.75,
-        max_height_in=0.50,
+        max_height_in=0.40,
         candidate_sizes=candidate_sizes,
     )
     sz_prob, fitted_prob = select_fitting_font_size(
-        model.slide5.what_problem_are_we_solving,
+        prob_raw,
         width_in=7.75,
-        max_height_in=0.50,
+        max_height_in=0.40,
         candidate_sizes=candidate_sizes,
     )
     sz_succ, fitted_succ = select_fitting_font_size(
         model.slide5.what_does_success_look_like,
         width_in=7.75,
-        max_height_in=0.50,
+        max_height_in=0.40,
         candidate_sizes=candidate_sizes,
     )
     uniform_sz = min(sz_why, sz_prob, sz_succ)
+
+    # Re-fit texts at uniform_sz if needed to ensure no overflow
+    if estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.40 * 72.0:
+        fitted_prob = truncate_at_clause(fitted_prob, max_chars=200, suffix="...")
+        while estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.40 * 72.0 and len(fitted_prob) > 30:
+            fitted_prob = truncate_at_clause(fitted_prob[:-4], max_chars=len(fitted_prob) - 20, suffix="...")
 
     # Pass 2: Render cards with uniform font size
     for shape in slide.shapes:
@@ -653,7 +666,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide12(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 12 Initial Risk Register table with uniform column font sizing and row-bounding (HTL-48 / HTL-52)."""
+    """Populate Slide 12 Initial Risk Register table with true table-wide uniform font sizing and row-bounding (HTL-48 / HTL-52 / HTL-54)."""
     table_shape = None
     for shape in slide.shapes:
         if shape.has_table:
@@ -670,7 +683,7 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
 
     cell_candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
-    # Pass 1: Compute fitting font sizes across all rendered rows per column (HTL-52)
+    # Pass 1: Compute fitting font sizes across all rendered rows and cells (HTL-54)
     desc_sizes = []
     desc_texts = []
     mitigation_sizes = []
@@ -703,16 +716,16 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
         mitigation_sizes.append(sz2)
         mitigation_texts.append(mitigation_text)
 
-    col0_sz = min(desc_sizes) if desc_sizes else 9.5
-    col2_sz = min(mitigation_sizes) if mitigation_sizes else 9.5
+    all_sizes = desc_sizes + mitigation_sizes + [9.5]
+    table_font_sz = min(all_sizes) if all_sizes else 9.5
 
-    # Pass 2: Populate table rows with uniform column font sizes
+    # Pass 2: Populate table rows with true table-wide uniform font size across all cells
     for i, risk in enumerate(rendered_risks):
         row = table.rows[i + 1]
-        _format_table_cell(row.cells[0], desc_texts[i], col0_sz)
-        _format_table_cell(row.cells[1], risk.prob_impact, 9.5)
-        _format_table_cell(row.cells[2], mitigation_texts[i], col2_sz)
-        _format_table_cell(row.cells[3], risk.target_date, 9.5)
+        _format_table_cell(row.cells[0], desc_texts[i], table_font_sz)
+        _format_table_cell(row.cells[1], risk.prob_impact, table_font_sz)
+        _format_table_cell(row.cells[2], mitigation_texts[i], table_font_sz)
+        _format_table_cell(row.cells[3], risk.target_date, table_font_sz)
 
     # If fewer than 3 risks, remove surplus data rows from table XML
     if num_risks < 3:
@@ -724,7 +737,7 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide15(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 15 Next Steps table with font-stepping and row-bounding (HTL-48)."""
+    """Populate Slide 15 Next Steps table with true table-wide uniform font sizing and row-bounding (HTL-48 / HTL-54)."""
     table_shape = None
     for shape in slide.shapes:
         if shape.has_table:
@@ -740,6 +753,26 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
 
     cell_candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
+    # Pass 1: Compute fitting font sizes across all action items (HTL-54)
+    action_sizes = []
+    action_texts = []
+    for step in steps:
+        action_raw = step.action
+        if estimate_text_height(action_raw, width_in=5.2, size_pt=8.0) > 0.75 * 72.0:
+            action_raw = truncate_at_clause(action_raw, max_chars=200, suffix="... (see Startup Kit)")
+        sz1, action_text = select_fitting_font_size(
+            action_raw,
+            width_in=5.2,
+            max_height_in=0.75,
+            candidate_sizes=cell_candidate_sizes,
+        )
+        action_sizes.append(sz1)
+        action_texts.append(action_text)
+
+    all_sizes = action_sizes + [9.5]
+    table_font_sz = min(all_sizes) if all_sizes else 9.5
+
+    # Pass 2: Populate table rows with true table-wide uniform font size across all cells
     for i in range(num_steps):
         step = steps[i]
         if i + 1 < len(table.rows):
@@ -751,26 +784,9 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
             table._tbl.append(tr_elem)
             row = table.rows[len(table.rows) - 1]
 
-        # Col 0: Owner (width ~1.8 in)
-        sz0 = 9.5
-
-        # Col 1: Action (width ~5.2 in, max height 0.75 in)
-        action_raw = step.action
-        if estimate_text_height(action_raw, width_in=5.2, size_pt=8.0) > 0.75 * 72.0:
-            action_raw = truncate_at_clause(action_raw, max_chars=200, suffix="... (see Startup Kit)")
-        sz1, action_text = select_fitting_font_size(
-            action_raw,
-            width_in=5.2,
-            max_height_in=0.75,
-            candidate_sizes=cell_candidate_sizes,
-        )
-
-        # Col 2: Due (width ~1.0 in)
-        sz2 = 9.5
-
-        _format_table_cell(row.cells[0], step.owner, sz0)
-        _format_table_cell(row.cells[1], action_text, sz1)
-        _format_table_cell(row.cells[2], "TBD", sz2)
+        _format_table_cell(row.cells[0], step.owner, table_font_sz)
+        _format_table_cell(row.cells[1], action_texts[i], table_font_sz)
+        _format_table_cell(row.cells[2], "TBD", table_font_sz)
 
     # If fewer than 3 steps, remove surplus data rows
     if num_steps < 3:
