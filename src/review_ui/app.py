@@ -190,7 +190,7 @@ def _render_fact_review_page() -> None:
     key_prefix = f"fact_review::{selected_run_id}"
 
     for cat in categories:
-        with st.expander(cat.title, expanded=cat.key in ("award_date", "named_roles")):
+        with st.expander(cat.title, expanded=False):
             if cat.note:
                 st.info(cat.note)
             for field in cat.fields:
