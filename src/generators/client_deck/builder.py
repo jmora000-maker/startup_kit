@@ -56,8 +56,117 @@ def scrub_commercial_clauses(text: str) -> str:
     return ""
 
 
+def _to_gerund(phrase: str) -> str:
+    """Convert leading action verb in a phrase to gerund form (e.g. 'Deploy ...' -> 'deploying ...')."""
+    clean = phrase.strip()
+    if not clean:
+        return ""
+    words = clean.split()
+    first = words[0].lower()
+    rest = " ".join(words[1:]) if len(words) > 1 else ""
+
+    if first.endswith("ing"):
+        gerund = first
+    else:
+        verb_map = {
+            "deploy": "deploying",
+            "integrate": "integrating",
+            "build": "building",
+            "develop": "developing",
+            "establish": "establishing",
+            "migrate": "migrating",
+            "implement": "implementing",
+            "create": "creating",
+            "deliver": "delivering",
+            "configure": "configuring",
+            "automate": "automating",
+            "design": "designing",
+            "scale": "scaling",
+            "optimize": "optimizing",
+            "refactor": "refactoring",
+            "enhance": "enhancing",
+            "modernize": "modernizing",
+            "provide": "providing",
+            "enable": "enabling",
+            "support": "supporting",
+            "transform": "transforming",
+            "transition": "transitioning",
+            "execute": "executing",
+            "verify": "verifying",
+            "validate": "validating",
+            "consolidate": "consolidating",
+            "incorporate": "incorporating",
+            "onboard": "onboarding",
+            "streamline": "streamlining",
+            "centralize": "centralizing",
+            "standardize": "standardizing",
+            "accelerate": "accelerating",
+            "upgrade": "upgrading",
+            "replace": "replacing",
+            "unify": "unifying",
+            "introduce": "introducing",
+            "move": "moving",
+            "reduce": "reducing",
+            "improve": "improving",
+            "expand": "expanding",
+            "launch": "launching",
+            "set": "setting",
+            "run": "running",
+            "cut": "cutting",
+            "align": "aligning",
+            "address": "addressing",
+            "resolve": "resolving",
+            "ingest": "ingesting",
+            "process": "processing",
+        }
+        if first in verb_map:
+            gerund = verb_map[first]
+        elif first.endswith("e") and not first.endswith(("ee", "oe", "ye")):
+            gerund = first[:-1] + "ing"
+        else:
+            gerund = first + "ing"
+
+    return f"{gerund} {rest}".strip() if rest else gerund
+
+
 def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
-    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50)."""
+    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50 / HTL-52).
+
+    Hierarchical sourcing:
+    1. Primary: charter.delivery_objectives (active gerund problem-solving framing).
+    2. Secondary: charter.high_level_scope (architectural bottleneck framing).
+    3. Tertiary: charter.project_purpose (current-state transformation framing).
+    4. Fallback: explicit zero-fabrication placeholder.
+    """
+    # 1. Primary Source: charter.delivery_objectives
+    if baseline.charter and baseline.charter.delivery_objectives:
+        clean_objs = [
+            _to_gerund(obj.strip().rstrip("."))
+            for obj in baseline.charter.delivery_objectives
+            if obj.strip() and obj.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(obj)
+        ]
+        clean_objs = [obj for obj in clean_objs if obj]
+        if clean_objs:
+            if len(clean_objs) == 1:
+                formatted = clean_objs[0]
+            elif len(clean_objs) == 2:
+                formatted = f"{clean_objs[0]}, and {clean_objs[1]}"
+            else:
+                formatted = f"{', '.join(clean_objs[:-1])}, and {clean_objs[-1]}"
+            return f"Addressing operational bottlenecks and technical limitations by {formatted}."
+
+    # 2. Secondary Source: charter.high_level_scope
+    if baseline.charter and baseline.charter.high_level_scope:
+        clean_scope = [
+            s.strip().rstrip(".")
+            for s in baseline.charter.high_level_scope
+            if s.strip() and s.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(s)
+        ]
+        if clean_scope:
+            scope_clause = "; ".join(clean_scope)
+            return f"Addressing operational bottlenecks and architectural limitations across key solution domains: {scope_clause}."
+
+    # 3. Tertiary Source: reframed charter.project_purpose
     purpose_raw = (
         baseline.charter.project_purpose
         if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]"
@@ -66,38 +175,12 @@ def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
     purpose = scrub_commercial_clauses(purpose_raw)
     if purpose.endswith("."):
         purpose = purpose[:-1]
+    if purpose:
+        purpose_clause = (purpose[0].lower() + purpose[1:]) if len(purpose) > 1 else purpose.lower()
+        return f"Resolving existing manual bottlenecks and operational constraints to enable: {purpose_clause}."
 
-    raw_constraints: List[str] = []
-    if baseline.sow_interpretation and baseline.sow_interpretation.constraints:
-        raw_constraints.extend(
-            [c.strip().rstrip(".") for c in baseline.sow_interpretation.constraints if c.strip() and c.strip() != "[CONFIRMATION REQUIRED]"]
-        )
-    elif baseline.charter and baseline.charter.major_startup_risks:
-        raw_constraints.extend(
-            [r.strip().rstrip(".") for r in baseline.charter.major_startup_risks if r.strip() and r.strip() != "[CONFIRMATION REQUIRED]"]
-        )
-
-    # Layer 1 content scoping: filter out commercial/financial clauses
-    non_commercial_constraints = [
-        c for c in raw_constraints if not COMMERCIAL_EXCLUSION_REGEX.search(c)
-    ]
-
-    purpose_clause = (purpose[0].lower() + purpose[1:]) if purpose else "deliver engagement objectives"
-
-    if non_commercial_constraints:
-        selected = [non_commercial_constraints[0]]
-        if len(non_commercial_constraints) > 1 and (len(non_commercial_constraints[0]) + len(non_commercial_constraints[1])) < 100:
-            selected.append(non_commercial_constraints[1])
-        key_constraints = "; ".join(selected)
-        return (
-            f"Addressing operational bottlenecks and technical limitations to "
-            f"{purpose_clause}, specifically resolving: {key_constraints}."
-        )
-    elif purpose and raw_constraints:
-        return f"Addressing operational bottlenecks and technical limitations to {purpose_clause}."
-    elif purpose:
-        return f"Addressing existing legacy operational and technology challenges by executing: {purpose}."
-    return "Addressing existing operational and technology challenges to establish core platform capabilities."
+    # 4. Fallback
+    return "[To be confirmed in Project Success Agreement]"
 
 
 def format_success_criteria_prose(criteria: Sequence[str]) -> str:

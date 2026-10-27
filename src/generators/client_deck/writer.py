@@ -171,9 +171,31 @@ def write_slide1(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here) with dynamic font scaling and top anchoring (HTL-48)."""
+    """Populate Slide 5 (Why We're Here) with uniform font scaling across all three cards and top anchoring (HTL-48 / HTL-52)."""
     candidate_sizes = [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
 
+    # Pass 1: Compute fitting font sizes across all three cards (HTL-52)
+    sz_why, fitted_why = select_fitting_font_size(
+        model.slide5.why_are_we_doing_this,
+        width_in=7.75,
+        max_height_in=0.50,
+        candidate_sizes=candidate_sizes,
+    )
+    sz_prob, fitted_prob = select_fitting_font_size(
+        model.slide5.what_problem_are_we_solving,
+        width_in=7.75,
+        max_height_in=0.50,
+        candidate_sizes=candidate_sizes,
+    )
+    sz_succ, fitted_succ = select_fitting_font_size(
+        model.slide5.what_does_success_look_like,
+        width_in=7.75,
+        max_height_in=0.50,
+        candidate_sizes=candidate_sizes,
+    )
+    uniform_sz = min(sz_why, sz_prob, sz_succ)
+
+    # Pass 2: Render cards with uniform font size
     for shape in slide.shapes:
         if not shape.has_text_frame:
             continue
@@ -186,29 +208,11 @@ def write_slide5(slide, model: ClientDeckModel) -> None:
         shape.text_frame.word_wrap = True
 
         if "[Pre-filled: the business initiative" in text or shape.shape_id == 176:
-            sz, fitted_text = select_fitting_font_size(
-                model.slide5.why_are_we_doing_this,
-                width_in=7.75,
-                max_height_in=0.50,
-                candidate_sizes=candidate_sizes,
-            )
-            _replace_shape_text(shape, fitted_text, Pt(sz))
+            _replace_shape_text(shape, fitted_why, Pt(uniform_sz))
         elif "[Pre-filled: the current pain point" in text or shape.shape_id == 180:
-            sz, fitted_text = select_fitting_font_size(
-                model.slide5.what_problem_are_we_solving,
-                width_in=7.75,
-                max_height_in=0.50,
-                candidate_sizes=candidate_sizes,
-            )
-            _replace_shape_text(shape, fitted_text, Pt(sz))
+            _replace_shape_text(shape, fitted_prob, Pt(uniform_sz))
         elif "[Pre-filled: the desired business outcomes" in text or shape.shape_id == 184:
-            sz, fitted_text = select_fitting_font_size(
-                model.slide5.what_does_success_look_like,
-                width_in=7.75,
-                max_height_in=0.50,
-                candidate_sizes=candidate_sizes,
-            )
-            _replace_shape_text(shape, fitted_text, Pt(sz))
+            _replace_shape_text(shape, fitted_succ, Pt(uniform_sz))
 
 
 def _set_header_paragraph_format(p, font_size_pt: float, text: str) -> None:
@@ -411,10 +415,10 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             if tf.paragraphs and tf.paragraphs[0].runs:
                 tf.paragraphs[0].runs[0].font.color.rgb = white_color
         elif shape.shape_id == 202 or "Out of Scope:" in text:
-            shape.top = 3896250
+            shape.top = 3800000
             shape.left = 6347125
             shape.width = 2600000
-            shape.height = 1000000
+            shape.height = 850000
             tf = shape.text_frame
             tf.margin_top = 0
             tf.margin_bottom = 0
@@ -433,7 +437,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             sz_oos, _ = select_fitting_font_size(
                 total_oos_text,
                 width_in=2.84,
-                max_height_in=0.90,
+                max_height_in=0.75,
                 candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
             )
             for item in model.slide6.out_of_scope:
@@ -649,7 +653,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide12(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 12 Initial Risk Register table with font-stepping and row-bounding (HTL-48)."""
+    """Populate Slide 12 Initial Risk Register table with uniform column font sizing and row-bounding (HTL-48 / HTL-52)."""
     table_shape = None
     for shape in slide.shapes:
         if shape.has_table:
@@ -662,13 +666,17 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
     table = table_shape.table
     risks = model.slide12.risks
     num_risks = len(risks)
+    rendered_risks = risks[: min(num_risks, 3)]
 
     cell_candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
-    for i in range(min(num_risks, 3)):
-        risk = risks[i]
-        row = table.rows[i + 1]
+    # Pass 1: Compute fitting font sizes across all rendered rows per column (HTL-52)
+    desc_sizes = []
+    desc_texts = []
+    mitigation_sizes = []
+    mitigation_texts = []
 
+    for risk in rendered_risks:
         # Col 0: Risk Description (width ~2.2 in, max height 0.85 in)
         desc_raw = risk.description
         if estimate_text_height(desc_raw, width_in=2.2, size_pt=8.0) > 0.85 * 72.0:
@@ -679,9 +687,8 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
             max_height_in=0.85,
             candidate_sizes=cell_candidate_sizes,
         )
-
-        # Col 1: Prob/Impact (width ~1.0 in)
-        sz1 = 9.5
+        desc_sizes.append(sz0)
+        desc_texts.append(desc_text)
 
         # Col 2: Mitigation (width ~3.7 in, max height 0.85 in)
         mitigation_raw = risk.mitigation
@@ -693,14 +700,19 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
             max_height_in=0.85,
             candidate_sizes=cell_candidate_sizes,
         )
+        mitigation_sizes.append(sz2)
+        mitigation_texts.append(mitigation_text)
 
-        # Col 3: Target Date (width ~1.1 in)
-        sz3 = 9.5
+    col0_sz = min(desc_sizes) if desc_sizes else 9.5
+    col2_sz = min(mitigation_sizes) if mitigation_sizes else 9.5
 
-        _format_table_cell(row.cells[0], desc_text, sz0)
-        _format_table_cell(row.cells[1], risk.prob_impact, sz1)
-        _format_table_cell(row.cells[2], mitigation_text, sz2)
-        _format_table_cell(row.cells[3], risk.target_date, sz3)
+    # Pass 2: Populate table rows with uniform column font sizes
+    for i, risk in enumerate(rendered_risks):
+        row = table.rows[i + 1]
+        _format_table_cell(row.cells[0], desc_texts[i], col0_sz)
+        _format_table_cell(row.cells[1], risk.prob_impact, 9.5)
+        _format_table_cell(row.cells[2], mitigation_texts[i], col2_sz)
+        _format_table_cell(row.cells[3], risk.target_date, 9.5)
 
     # If fewer than 3 risks, remove surplus data rows from table XML
     if num_risks < 3:
