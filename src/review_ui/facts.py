@@ -198,6 +198,9 @@ def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
                   source_location=charter_loc),
         FactField("project_identity.client_name", "Client", (charter.client_name if charter else None) or "",
                   source_location=charter_loc),
+        FactField("project_identity.problem_statement", "Problem statement",
+                  (charter.problem_statement if charter and charter.problem_statement != "[CONFIRMATION REQUIRED]" else "") or "",
+                  source_location=charter_loc),
         FactField("project_identity.client_sponsor", "Client sponsor", sponsor.name if sponsor else "",
                   context=(f"Stakeholder role: {sponsor.role}" if sponsor else "No stakeholder with a Sponsor role")),
         FactField("project_identity.contract_type", "Contract type", baseline.contract_type or "",
@@ -346,6 +349,9 @@ def apply_corrections(baseline: StartupKitBaseline, corrections: List[Dict[str, 
             for obj in (charter, gc):
                 if obj is not None:
                     obj.client_name = new
+        elif key == "project_identity.problem_statement":
+            if charter is not None:
+                charter.problem_statement = new if new.strip() else "[CONFIRMATION REQUIRED]"
         elif key == "project_identity.client_sponsor":
             s = _find_stakeholder(out, "sponsor", exclude_org="toptal")
             if s is not None:

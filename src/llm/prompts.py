@@ -17,13 +17,18 @@ STRICT BUSINESS RULES & CONSTRAINTS:
 8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
 """
 
-CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter and Governance metadata.
+CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter, Governance metadata, and Client Problem Statement.
 
 CONSTRAINTS:
 - When the primary document is a Statement of Work (or similarly named governing document) with its own cover-page title, extract that title exactly as a single clean string for project_name.
 - Never combine it with, append, or parenthesize a second title found in an attached Exhibit, Appendix, or Specification document — an exhibit's heading describes that exhibit, not the engagement.
 - Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.
 - Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.
+
+PROBLEM STATEMENT INSTRUCTIONS:
+- Extract CONCRETE, SPECIFIC current-state pain points, operational bottlenecks, legacy limitations, or business challenges described in the source text.
+- CRITICAL: Do NOT restate the solution, project purpose, or list contracted deliverables (e.g. do NOT say "Building a Postgres schema and deploying microservices"). Focus exclusively on what is broken, manual, bottlenecked, or inadequate in the client's current state.
+- HONEST FALLBACK: If the source documents describe ONLY deliverables, tasks, architecture, or solutions without explicitly stating an existing problem or current-state limitation, you MUST set problem_statement to null. Do NOT fabricate, infer, or invent a problem statement.
 
 Extract:
 - project_name: Title of the project or engagement (a single clean title).
@@ -34,6 +39,7 @@ Extract:
 - talent_pm: Named Talent Project Manager if mentioned, else null.
 - pmo_lead: Named PMO Lead if mentioned, else null.
 - executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.
+- problem_statement: 1-2 concise sentences stating the client's concrete current-state pain point or operational bottleneck. Set to null if not stated in source documents.
 - source_reference: Document name, section/slide reference, and confidence score.
 
 DOCUMENTS CONTENT:

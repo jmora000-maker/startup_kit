@@ -389,6 +389,7 @@ class BaselineAggregator:
             project_name=charter.project_name or "Project Baseline",
             client_name=charter.client_name,
             project_purpose=sanitize_report_text(charter.project_purpose or charter.executive_summary or "[CONFIRMATION REQUIRED]"),
+            problem_statement=sanitize_report_text(charter.problem_statement or "[CONFIRMATION REQUIRED]"),
             delivery_objectives=[sanitize_report_text(o) for o in charter.delivery_objectives] if charter.delivery_objectives else [
                 f"Successfully deliver and validate {d.name or d.description}" for d in deliverables[:4]
             ],

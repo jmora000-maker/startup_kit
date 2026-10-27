@@ -65,107 +65,6 @@ def scrub_commercial_clauses(text: str) -> str:
     return ""
 
 
-def _to_gerund(phrase: str) -> str:
-    """Convert leading action verb in a phrase to gerund form (e.g. 'Deploy ...' -> 'deploying ...')."""
-    clean = phrase.strip()
-    if not clean:
-        return ""
-    words = clean.split()
-    first = words[0].lower()
-    rest = " ".join(words[1:]) if len(words) > 1 else ""
-
-    if first.endswith("ing"):
-        gerund = first
-    else:
-        verb_map = {
-            "deploy": "deploying",
-            "integrate": "integrating",
-            "build": "building",
-            "develop": "developing",
-            "establish": "establishing",
-            "migrate": "migrating",
-            "implement": "implementing",
-            "create": "creating",
-            "deliver": "delivering",
-            "configure": "configuring",
-            "automate": "automating",
-            "design": "designing",
-            "scale": "scaling",
-            "optimize": "optimizing",
-            "refactor": "refactoring",
-            "enhance": "enhancing",
-            "modernize": "modernizing",
-            "provide": "providing",
-            "enable": "enabling",
-            "support": "supporting",
-            "transform": "transforming",
-            "transition": "transitioning",
-            "execute": "executing",
-            "verify": "verifying",
-            "validate": "validating",
-            "consolidate": "consolidating",
-            "incorporate": "incorporating",
-            "onboard": "onboarding",
-            "streamline": "streamlining",
-            "centralize": "centralizing",
-            "standardize": "standardizing",
-            "accelerate": "accelerating",
-            "upgrade": "upgrading",
-            "replace": "replacing",
-            "unify": "unifying",
-            "introduce": "introducing",
-            "move": "moving",
-            "reduce": "reducing",
-            "improve": "improving",
-            "expand": "expanding",
-            "launch": "launching",
-            "set": "setting",
-            "run": "running",
-            "cut": "cutting",
-            "align": "aligning",
-            "address": "addressing",
-            "resolve": "resolving",
-            "ingest": "ingesting",
-            "process": "processing",
-        }
-        if first in verb_map:
-            gerund = verb_map[first]
-        elif first.endswith("e") and not first.endswith(("ee", "oe", "ye")):
-            gerund = first[:-1] + "ing"
-        else:
-            gerund = first + "ing"
-
-    return f"{gerund} {rest}".strip() if rest else gerund
-
-
-def synthesize_problem_statement(baseline: StartupKitBaseline) -> str:
-    """Deterministically synthesize 'What problem are we solving?' from baseline without LLM calls (HTL-48 / HTL-50 / HTL-54).
-
-    Frames charter.project_purpose around current-state operational bottlenecks and transformation gaps
-    without injecting granular build tasks from delivery_objectives or high_level_scope.
-    Falls back to explicit placeholder if no project purpose is available.
-    """
-    purpose_raw = (
-        baseline.charter.project_purpose
-        if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]"
-        else ""
-    ).strip()
-    purpose = scrub_commercial_clauses(purpose_raw)
-    if purpose.endswith("."):
-        purpose = purpose[:-1]
-
-    if purpose:
-        purpose_clause = (purpose[0].lower() + purpose[1:]) if len(purpose) > 1 else purpose.lower()
-        if purpose_clause.startswith(("move ", "transition ", "transform ", "upgrade ", "migrate ", "shift ", "evolve ")):
-            return f"Resolving operational bottlenecks and manual limitations to {purpose_clause}."
-        elif purpose_clause.startswith(("establish ", "deploy ", "build ", "develop ", "implement ", "create ", "deliver ")):
-            return f"Addressing operational bottlenecks and technology transition gaps to {purpose_clause}."
-        else:
-            return f"Resolving existing operational bottlenecks and transition challenges to enable: {purpose_clause}."
-
-    return "[To be confirmed in Project Success Agreement · Define current pain points with client]"
-
-
 def format_success_criteria_prose(criteria: Sequence[str]) -> str:
     """Distill success criteria list into narrative prose sentences (OUT-14.2 / HTL-50)."""
     clean_items = [
@@ -201,7 +100,7 @@ def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
 
 
 def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
-    """Build Slide 5 model (Project Success Agreement - Why We're Here) with financial scrubbing (HTL-50)."""
+    """Build Slide 5 model (Project Success Agreement - Why We're Here) with financial scrubbing (HTL-50 / HTL-54)."""
     why_raw = (
         (baseline.charter.project_purpose if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]" else None)
         or (baseline.governance_context.executive_summary if baseline.governance_context and baseline.governance_context.executive_summary else None)
@@ -210,7 +109,19 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
     if not why:
         why = "Establish core platform capabilities and deliver contracted business outcomes." if not why_raw or not COMMERCIAL_EXCLUSION_REGEX.search(why_raw) else "[To be confirmed in Project Success Agreement]"
 
-    problem = synthesize_problem_statement(baseline)
+    # Read extracted problem statement directly (HTL-54)
+    raw_problem = (
+        baseline.charter.problem_statement
+        if baseline.charter and baseline.charter.problem_statement and baseline.charter.problem_statement != "[CONFIRMATION REQUIRED]"
+        else None
+    )
+    if raw_problem:
+        problem = scrub_commercial_clauses(raw_problem)
+        if not problem:
+            problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
+    else:
+        problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
+
     success = format_success_criteria_prose(baseline.charter.success_criteria if baseline.charter else [])
     return Slide5Model(
         why_are_we_doing_this=why,

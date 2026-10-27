@@ -35,7 +35,6 @@ from src.generators.client_deck.builder import (
     build_slide15_model,
     format_success_criteria_prose,
     is_commercial_risk,
-    synthesize_problem_statement,
 )
 from src.generators.client_deck.validator import check_boilerplate_slides_unchanged
 from src.generators.client_deck.writer import write_client_deck
@@ -60,6 +59,7 @@ def rich_client_deck_baseline():
         charter=ProjectStartupCharter(
             client_name="Apex Global Technologies",
             project_purpose="Modernize customer onboarding pipeline with event-driven cloud microservices.",
+            problem_statement="Fragmented customer onboarding data across disparate legacy databases causing manual processing bottlenecks.",
             delivery_manager="Jane Doe",
             pmo_lead="Sarah Connor",
             talent_pm="Alex Rivera",
@@ -187,6 +187,7 @@ def sample_real_failing_client_baseline():
         charter=ProjectStartupCharter(
             client_name="HealthTech AI Solutions",
             project_purpose="Move the client's AI Infrastructure Intelligence Dashboard from a static, hand-curated MVP covering 25 facilities to a pilot-ready product that can be onboarded to a pilot partner.",
+            problem_statement="Fragmented clinical telemetry data across 25 disparate hospital facilities and manual curation bottlenecks in the static MVP.",
             delivery_manager="David Miller",
             pmo_lead="Sarah Connor",
             talent_pm="Alex Rivera",
@@ -384,16 +385,14 @@ def test_slide1_client_name_fallback_to_client(tmp_path):
 # =========================================================================
 
 def test_slide5_why_problem_success_synthesis(rich_client_deck_baseline):
-    """OUT-14.2 / HTL-54: Slide 5 maps project purpose, synthesizes problem statement from project purpose, and formats prose success criteria."""
+    """OUT-14.2 / HTL-54: Slide 5 maps project purpose, reads problem statement directly, and formats prose success criteria."""
     model = build_slide5_model(rich_client_deck_baseline)
 
     # Why are we doing this?
     assert model.why_are_we_doing_this == "Modernize customer onboarding pipeline with event-driven cloud microservices."
 
-    # What problem are we solving? (deterministic synthesis from project purpose, without build task dumps or constraint splicing)
-    assert "bottlenecks" in model.what_problem_are_we_solving.lower()
-    assert "modernize customer onboarding pipeline" in model.what_problem_are_we_solving
-    assert "specifically resolving" not in model.what_problem_are_we_solving
+    # What problem are we solving? (direct reading from charter.problem_statement)
+    assert model.what_problem_are_we_solving == "Fragmented customer onboarding data across disparate legacy databases causing manual processing bottlenecks."
 
     # What does success look like? (narrative prose, not bullet list)
     assert model.what_does_success_look_like.startswith("Success is defined across key project milestones:")
@@ -421,36 +420,28 @@ def test_format_success_criteria_prose_variations():
     assert c3 == "Success is defined across key project milestones: deliver API; deploy database; and pass security audit."
 
 
-def test_synthesize_problem_statement_fallbacks():
-    """OUT-14.2 / HTL-54: synthesize_problem_statement reframes charter.project_purpose around operational/transition gaps, falling back to explicit placeholder."""
-    # 1. Action verb purpose (e.g. Move / Transition)
-    b_move = StartupKitBaseline(
-        project_name="Move Project",
-        charter=ProjectStartupCharter(project_purpose="Move the dashboard from MVP to pilot-ready product."),
+def test_slide5_problem_statement_direct_reading_and_fallbacks():
+    """OUT-14.2 / HTL-54: Slide 5 reads charter.problem_statement directly, scrubs commercial terms, and falls back to honest placeholder."""
+    # 1. Direct extracted problem statement
+    b_direct = StartupKitBaseline(
+        project_name="Direct Project",
+        charter=ProjectStartupCharter(problem_statement="Fragmented data sources across clinics causing manual sync errors."),
     )
-    s_move = synthesize_problem_statement(b_move)
-    assert s_move == "Resolving operational bottlenecks and manual limitations to move the dashboard from MVP to pilot-ready product."
+    m_direct = build_slide5_model(b_direct)
+    assert m_direct.what_problem_are_we_solving == "Fragmented data sources across clinics causing manual sync errors."
 
-    # 2. General build/establish verb purpose
-    b_est = StartupKitBaseline(
-        project_name="Establish Project",
-        charter=ProjectStartupCharter(project_purpose="Establish cloud analytics foundation and APIs."),
+    # 2. Problem statement with commercial clause scrubbed
+    b_comm = StartupKitBaseline(
+        project_name="Commercial Scrub Project",
+        charter=ProjectStartupCharter(problem_statement="Manual reconciliation errors due to legacy tools. Contracted under $250,000 fixed-fee."),
     )
-    s_est = synthesize_problem_statement(b_est)
-    assert s_est == "Addressing operational bottlenecks and technology transition gaps to establish cloud analytics foundation and APIs."
+    m_comm = build_slide5_model(b_comm)
+    assert m_comm.what_problem_are_we_solving == "Manual reconciliation errors due to legacy tools."
 
-    # 3. Descriptive sentence purpose
-    b_desc = StartupKitBaseline(
-        project_name="Desc Project",
-        charter=ProjectStartupCharter(project_purpose="Data pipelines process telemetry streams across facilities."),
-    )
-    s_desc = synthesize_problem_statement(b_desc)
-    assert s_desc == "Resolving existing operational bottlenecks and transition challenges to enable: data pipelines process telemetry streams across facilities."
-
-    # 4. Fallback: Minimal / unconfirmed project
-    b_min = StartupKitBaseline(project_name="Minimal Project")
-    s_min = synthesize_problem_statement(b_min)
-    assert s_min == "[To be confirmed in Project Success Agreement · Define current pain points with client]"
+    # 3. Fallback: Empty / unextracted / confirmation required
+    b_none = StartupKitBaseline(project_name="No Problem Stated Project")
+    m_none = build_slide5_model(b_none)
+    assert m_none.what_problem_are_we_solving == "[To be confirmed in Project Success Agreement · Define current pain points with client]"
 
 
 # =========================================================================
@@ -797,8 +788,9 @@ def test_end_to_end_freshly_generated_client_kickoff_deck(rich_client_deck_basel
 # =========================================================================
 
 def test_htl_48_real_failing_baseline_problem_statement_scoped(sample_real_failing_client_baseline):
-    """HTL-48 / HTL-52 / HTL-54: Problem statement reframes project purpose around bottlenecks without build tasks or constraint splicing."""
-    problem_stmt = synthesize_problem_statement(sample_real_failing_client_baseline)
+    """HTL-48 / HTL-52 / HTL-54: Slide 5 reads extracted problem statement directly, excluding commercial/schedule text."""
+    model = build_slide5_model(sample_real_failing_client_baseline)
+    problem_stmt = model.what_problem_are_we_solving
 
     # Must exclude raw commercial figures and payment terms
     assert "$139,600" not in problem_stmt
@@ -812,12 +804,8 @@ def test_htl_48_real_failing_baseline_problem_statement_scoped(sample_real_faili
     assert "Estimated schedule runs" not in problem_stmt
     assert "Oct 19, 2026" not in problem_stmt
 
-    # HTL-54: Must NOT inject granular build tasks from delivery_objectives
-    assert "deploying scalable multi-facility data pipeline and ingestion microservices" not in problem_stmt
-
-    # Must reframe project purpose around operational/manual bottlenecks
-    assert "Resolving operational bottlenecks and manual limitations" in problem_stmt
-    assert "move the client's AI Infrastructure Intelligence Dashboard" in problem_stmt
+    # Must read the extracted problem statement
+    assert "Fragmented clinical telemetry data" in problem_stmt
 
 
 def test_htl_48_real_failing_baseline_slide5_fit(sample_real_failing_client_baseline, tmp_path):
@@ -1522,7 +1510,7 @@ def test_htl_52_four_findings_verification(sample_real_failing_client_baseline, 
     card2_prob = model.slide5.what_problem_are_we_solving
     assert card1_why != card2_prob
     assert "AI Infrastructure Intelligence Dashboard" in card1_why
-    assert "Resolving operational bottlenecks and manual limitations" in card2_prob
+    assert "Fragmented clinical telemetry data" in card2_prob
     assert "specifically resolving" not in card2_prob
     assert "Estimated schedule runs" not in card2_prob
     assert "Oct 19, 2026" not in card2_prob
@@ -1531,7 +1519,7 @@ def test_htl_52_four_findings_verification(sample_real_failing_client_baseline, 
     slide5 = prs.slides[4]
     s5_shapes = [s for s in slide5.shapes if s.has_text_frame]
     c1_shape = next(s for s in s5_shapes if s.shape_id == 176 or "Move the client" in s.text_frame.text)
-    c2_shape = next(s for s in s5_shapes if s.shape_id == 180 or "operational bottlenecks" in s.text_frame.text)
+    c2_shape = next(s for s in s5_shapes if s.shape_id == 180 or "Fragmented clinical telemetry" in s.text_frame.text)
     c3_shape = next(s for s in s5_shapes if s.shape_id == 184 or "Success is defined" in s.text_frame.text)
 
     sz1 = c1_shape.text_frame.paragraphs[0].runs[0].font.size.pt
@@ -1596,7 +1584,12 @@ def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
         project_name="Long Text Card Bounding Validation Platform",
         charter=ProjectStartupCharter(
             client_name="HealthTech AI Solutions",
-            project_purpose="Move the client's multi-region clinical telemetry and automated analytics pipeline platform across 50 healthcare facilities to transition legacy Oracle databases into high-throughput cloud streaming microservices with real-time alerting, continuous regression testing, automated failover capabilities, and full persona-based access controls across clinical user groups.",
+            project_purpose="Move the client's platform across 50 healthcare facilities to cloud microservices.",
+            problem_statement=(
+                "Fragmented clinical telemetry data across 50 disparate hospital facilities, manual curation bottlenecks in the legacy static MVP, "
+                "inconsistent taxonomy schema formats preventing automated data ingestion, complete absence of real-time anomaly detection pipelines across critical clinical endpoints, "
+                "unscalable batch processing running on end-of-life on-premise hardware, severe latency spikes during peak admission hours, and lack of automated failover capabilities."
+            ),
             success_criteria=["Milestone completion within agreed timelines"],
         ),
     )
@@ -1607,7 +1600,7 @@ def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
 
     prs = pptx.Presentation(str(out_file))
     slide5 = prs.slides[4]
-    c2_shape = next(s for s in slide5.shapes if s.shape_id == 180 or (s.has_text_frame and "operational bottlenecks" in s.text_frame.text))
+    c2_shape = next(s for s in slide5.shapes if s.shape_id == 180 or (s.has_text_frame and "Fragmented clinical telemetry" in s.text_frame.text))
 
     c2_text = c2_shape.text_frame.text
     assert c2_text.endswith("...")
@@ -1616,3 +1609,34 @@ def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
     font_sz = c2_p.runs[0].font.size.pt
     est_h = estimate_text_height(c2_text, width_in=7.75, size_pt=font_sz)
     assert est_h <= 0.40 * 72.0 + 1e-4
+
+
+def test_htl_54_fact_review_problem_statement_field_and_corrections():
+    """HTL-54: Fact Review surfaces project_identity.problem_statement and applies human corrections."""
+    from src.review_ui.facts import build_fact_categories, apply_corrections
+
+    baseline = StartupKitBaseline(
+        project_name="Fact Review Problem Statement Test",
+        charter=ProjectStartupCharter(
+            client_name="Test Client",
+            problem_statement="Legacy data pipeline causes 4-hour delay in nightly batch processing.",
+        ),
+    )
+
+    categories = build_fact_categories(baseline)
+    identity_cat = next(c for c in categories if c.key == "project_identity")
+    prob_field = next(f for f in identity_cat.fields if f.key == "project_identity.problem_statement")
+
+    assert prob_field.value == "Legacy data pipeline causes 4-hour delay in nightly batch processing."
+    assert prob_field.label == "Problem statement"
+
+    # Test correction
+    corrections = [
+        {
+            "field": "project_identity.problem_statement",
+            "extracted": "Legacy data pipeline causes 4-hour delay in nightly batch processing.",
+            "corrected_to": "Disparate legacy databases lack automated ingestion pipelines.",
+        }
+    ]
+    corrected_baseline = apply_corrections(baseline, corrections)
+    assert corrected_baseline.charter.problem_statement == "Disparate legacy databases lack automated ingestion pipelines."

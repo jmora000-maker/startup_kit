@@ -419,6 +419,7 @@ class ProjectStartupCharter(BaseModel):
     project_name: str = "Project Baseline"
     client_name: Optional[str] = None
     project_purpose: str = "[CONFIRMATION REQUIRED]"
+    problem_statement: str = "[CONFIRMATION REQUIRED]"
     delivery_objectives: List[str] = Field(default_factory=list)
     success_criteria: List[str] = Field(default_factory=list)
     high_level_scope: List[str] = Field(default_factory=list)
@@ -777,6 +778,7 @@ class CharterExtraction(BaseModel):
     pmo_lead: Optional[str] = None
     executive_summary: Optional[str] = None
     project_purpose: Optional[str] = None
+    problem_statement: Optional[str] = None
     delivery_objectives: List[str] = Field(default_factory=list)
     success_criteria: List[str] = Field(default_factory=list)
     high_level_scope: List[str] = Field(default_factory=list)
