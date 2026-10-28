@@ -536,7 +536,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
 
     at = _make_app_test().run()
     # 1. Upload file
-    at.file_uploader(key="gen_uploader").upload("project_sow.docx", b"binary-sow-content").run()
+    at.file_uploader(key="gen_sow_uploader").upload("project_sow.docx", b"binary-sow-content").run()
     assert not at.exception
 
     # 2. Switch away to Fact Review
@@ -548,7 +548,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
     assert not at.exception
     # The uploader widget itself is empty due to Streamlit unmounting
-    assert at.file_uploader(key="gen_uploader").value == []
+    assert at.file_uploader(key="gen_sow_uploader").value == []
 
     # 4. Trigger Generate and verify stored bytes are passed to _run_generate
     at.checkbox(key="gen_out_kit").check().run()
@@ -566,7 +566,7 @@ def test_generate_retains_uploaded_sow_across_page_switches():
         at.button(key="gen_submit_button").click().run()
         assert not at.exception
         assert mock_run.called
-        passed_files = mock_run.call_args.kwargs["uploaded_files"]
+        passed_files = mock_run.call_args.kwargs.get("uploaded_sow_files") or mock_run.call_args.kwargs.get("uploaded_files")
         assert len(passed_files) == 1
         assert passed_files[0].name == "project_sow.docx"
         assert passed_files[0].getvalue() == b"binary-sow-content"
@@ -576,16 +576,16 @@ def test_upload_replacement_replaces_stored_file_without_merging():
     """After an upload is stored, selecting a genuinely different file replaces the stored one, not merges."""
     at = _make_app_test().run()
     # Initial upload
-    at.file_uploader(key="gen_uploader").upload("initial_sow.docx", b"initial-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("initial_sow.docx", b"initial-bytes").run()
 
     # Switch away and return
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
 
     # Select a genuinely different file
-    at.file_uploader(key="gen_uploader").upload("replacement_sow.pdf", b"replacement-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("replacement_sow.pdf", b"replacement-bytes").run()
 
-    stored_files = at.session_state["generate_form_values"]["gen_uploaded_files"]
+    stored_files = at.session_state["generate_form_values"]["gen_sow_files"]
     assert len(stored_files) == 1
     assert stored_files[0].name == "replacement_sow.pdf"
     assert stored_files[0].getvalue() == b"replacement-bytes"
@@ -595,17 +595,17 @@ def test_using_previously_uploaded_message_rendering():
     """Verify 'Using previously uploaded: {filename}' renders when stored file exists and does not render when none uploaded."""
     at = _make_app_test().run()
     # 1. Initially nothing uploaded -> message does not render
-    gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
+    gen_info = [i.value for i in at.info if "Using previously uploaded" in i.value]
     assert len(gen_info) == 0
 
     # 2. Upload file and switch away and back -> message renders
-    at.file_uploader(key="gen_uploader").upload("statement_of_work.docx", b"sow-data").run()
+    at.file_uploader(key="gen_sow_uploader").upload("statement_of_work.docx", b"sow-data").run()
     at.radio(key="app_page_selector").set_value("Fact Review").run()
     at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()
 
-    gen_info = [i.value for i in at.info if "Using previously uploaded:" in i.value]
+    gen_info = [i.value for i in at.info if "Using previously uploaded SOW:" in i.value]
     assert len(gen_info) == 1
-    assert gen_info[0] == "Using previously uploaded: statement_of_work.docx -- choose a different file to replace it."
+    assert gen_info[0] == "Using previously uploaded SOW: statement_of_work.docx -- choose a different file to replace it."
 
 
 def test_reingest_retains_uploaded_kit_across_page_switches():
@@ -680,7 +680,7 @@ def test_generate_results_renders_fallback_confirmation_empty():
     from unittest.mock import patch, MagicMock
 
     at = _make_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     mock_result = RunResult(
@@ -704,7 +704,7 @@ def test_generate_results_renders_fallback_warning_non_empty():
     from unittest.mock import patch
 
     at = _make_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     mock_result = RunResult(
@@ -760,7 +760,7 @@ def test_generate_tab_review_toggle_checked_by_default_pauses_and_shows_awaiting
     assert len(checkboxes) == 1
     assert checkboxes[0].value is True
 
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     mock_paused_result = RunResult(
@@ -791,7 +791,7 @@ def test_generate_tab_review_toggle_unchecked_generates_straight_through(tmp_pat
     from unittest.mock import patch
 
     at = _make_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     # Uncheck the review toggle
@@ -1431,7 +1431,7 @@ def test_htl_35_generate_button_in_progress_state_during_long_running_call():
     from unittest.mock import patch
 
     at = _make_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     in_progress_flag_captured = []
@@ -1469,7 +1469,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
     from unittest.mock import patch
 
     at = _make_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sow-bytes").run()
     at.checkbox(key="gen_out_kit").check().run()
 
     # Initial state: button is enabled
@@ -1494,7 +1494,7 @@ def test_htl_35_generate_button_disabled_after_successful_run_completes():
         assert at.button(key="gen_submit_button").disabled is True
 
     # Uploading a new file resets the completed run result and re-enables the button
-    at.file_uploader(key="gen_uploader").upload("new_sow.docx", b"new-sow-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("new_sow.docx", b"new-sow-bytes").run()
     assert at.button(key="gen_submit_button").disabled is False
 
 

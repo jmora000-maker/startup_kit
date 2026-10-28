@@ -14,10 +14,12 @@ from src.extractors.txt_extractor import TxtExtractor
 
 logger = logging.getLogger(__name__)
 
-# HTL-16/HTL-18 (C-11): an "upload" source is a (file_name, content) pair, where content is
-# either raw bytes or a file-like object supporting .read(). This is how the future Streamlit
-# app's st.file_uploader output is represented without changing any path-based extractor.
-UploadSource = Tuple[str, Union[bytes, BinaryIO]]
+# HTL-16/HTL-18 (C-11) / HTL-57: an "upload" source is a (file_name, content) or (file_name, content, role) pair,
+# where content is either raw bytes or a file-like object supporting .read(), and role is "sow" or "supporting".
+UploadSource = Union[
+    Tuple[str, Union[bytes, BinaryIO]],
+    Tuple[str, Union[bytes, BinaryIO], str],
+]
 IngestSource = Union[str, Path, UploadSource]
 
 
@@ -60,7 +62,7 @@ class IngestionService:
             logger.error("Failed to extract file %s: %s", file_path, exc, exc_info=True)
             raise
 
-    def ingest_directory(self, dir_path: Path) -> List[ExtractedDocument]:
+    def ingest_directory(self, dir_path: Path, default_role: str = "sow") -> List[ExtractedDocument]:
         """Scan input directory and ingest all supported files."""
         if not dir_path.exists():
             raise FileNotFoundError(f"Input directory does not exist: {dir_path}")
@@ -77,7 +79,9 @@ class IngestionService:
                 if extractor:
                     try:
                         doc = extractor.extract(file_path)
-                        extracted_docs.append(doc)
+                        if doc:
+                            doc.metadata.setdefault("document_role", default_role)
+                            extracted_docs.append(doc)
                     except Exception as e:
                         logger.warning("Skipping corrupted or unreadable file %s: %s", file_path.name, e)
 
@@ -86,17 +90,16 @@ class IngestionService:
 
         return extracted_docs
 
-    def ingest_sources(self, sources: Sequence[IngestSource]) -> List[ExtractedDocument]:
-        """HTL-16/HTL-18 (C-11): ingest a mix of on-disk paths and in-memory uploads.
+    def ingest_sources(
+        self,
+        sources: Sequence[IngestSource],
+        default_role: str = "sow",
+    ) -> List[ExtractedDocument]:
+        """HTL-16/HTL-18 (C-11) / HTL-57: ingest a mix of on-disk paths and in-memory uploads.
 
-        Each item in ``sources`` is either a path (``str``/``Path``) or an upload pair
-        ``(file_name, content)`` where ``content`` is ``bytes`` or a file-like object. Uploads
-        have no disk path until something chooses to save them, so this is the "thin adapter"
-        the HTL-18 audit notes as an acceptable alternative to rewriting every extractor to
-        accept a stream directly: each upload is written to a per-call temporary file
-        (preserving its given name/extension so the right extractor is still selected via the
-        existing, unchanged path-based ``extract``/``supports`` API), ingested, then removed.
-        Plain paths are ingested exactly as ``ingest_file`` already does, with no adapter.
+        Each item in ``sources`` is either a path (``str``/``Path``) or an upload tuple
+        ``(file_name, content)`` or ``(file_name, content, role)`` where ``content`` is ``bytes``
+        or a file-like object, and ``role`` is "sow" or "supporting".
         """
         extracted_docs: List[ExtractedDocument] = []
         tmp_dir: Optional[str] = None
@@ -113,11 +116,17 @@ class IngestionService:
                         logger.warning("Skipping corrupted or unreadable file %s: %s", file_path.name, e)
                         continue
                     if doc:
+                        doc.metadata.setdefault("document_role", default_role)
                         extracted_docs.append(doc)
                     continue
 
-                # Upload-style source: (file_name, bytes-or-file-like)
-                file_name, content = source
+                # Upload-style source: (file_name, bytes-or-file-like) or (file_name, bytes, role)
+                if len(source) == 3:
+                    file_name, content, doc_role = source
+                else:
+                    file_name, content = source
+                    doc_role = default_role
+
                 if tmp_dir is None:
                     tmp_dir = tempfile.mkdtemp(prefix="startup_kit_upload_")
                 temp_path = Path(tmp_dir) / Path(file_name).name
@@ -131,6 +140,7 @@ class IngestionService:
                     logger.warning("Skipping corrupted or unreadable upload %s: %s", file_name, e)
                     continue
                 if doc:
+                    doc.metadata["document_role"] = doc_role
                     extracted_docs.append(doc)
 
             if not extracted_docs:

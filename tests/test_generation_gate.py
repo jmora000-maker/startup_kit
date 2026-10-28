@@ -156,7 +156,8 @@ def test_generate_page_correct_passphrase_unlocks_widgets():
 
     assert not at.exception
     assert at.session_state["generation_unlocked"] is True
-    assert at.file_uploader(key="gen_uploader") is not None
+    assert at.file_uploader(key="gen_sow_uploader") is not None
+    assert at.file_uploader(key="gen_supporting_uploader") is not None
     assert at.button(key="gen_submit_button") is not None
     assert any("Generation unlocked for this session." in c.value for c in at.caption)
 
@@ -204,7 +205,8 @@ def test_admin_and_generation_gates_are_independent():
     at.button(key="gen_gen_unlock_button").click().run()
 
     assert at.session_state["generation_unlocked"] is True
-    assert at.file_uploader(key="gen_uploader") is not None
+    assert at.file_uploader(key="gen_sow_uploader") is not None
+    assert at.file_uploader(key="gen_supporting_uploader") is not None
 
 
 def test_fact_review_pending_run_workflows_are_ungated(tmp_path, monkeypatch):
@@ -382,7 +384,8 @@ def test_cross_page_session_state_persistence_review_to_generate(tmp_path, monke
     assert not at.exception
 
     # Immediately unlocked without re-prompting
-    assert at.file_uploader(key="gen_uploader") is not None
+    assert at.file_uploader(key="gen_sow_uploader") is not None
+    assert at.file_uploader(key="gen_supporting_uploader") is not None
     assert at.button(key="gen_submit_button") is not None
     assert len([b for b in at.button if b.key == "gen_gen_unlock_button"]) == 0
 

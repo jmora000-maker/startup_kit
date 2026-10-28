@@ -321,6 +321,8 @@ class StartupKitController:
         self,
         inputs_dir: Optional[Path] = None,
         input_documents: Optional[List[IngestSource]] = None,
+        sow_documents: Optional[List[IngestSource]] = None,
+        supporting_documents: Optional[List[IngestSource]] = None,
         output_dir: Optional[Path] = None,
         tier_override: Optional[str] = None,
         contract_type_override: Optional[str] = None,
@@ -335,27 +337,31 @@ class StartupKitController:
     ) -> RunResult:
         """Execute the end-to-end startup kit generation pipeline.
 
-        HTL-16 Group 2 (C-11): ``input_documents`` is an alternative to ``inputs_dir`` that
-        accepts a mix of disk paths and in-memory uploads (``(file_name, bytes_or_file_like)``
-        pairs), for a caller (such as a future Streamlit upload) that has no inputs directory
-        at all. Passing ``inputs_dir`` keeps the CLI's existing directory-based behavior
-        completely unchanged.
-
-        HTL-28: ``on_progress(stage, detail="")`` is called at real stage boundaries
-        (``"ingesting"``, ``"extracting"``, ``"validating"``, ``"generating"`` once per document
-        type actually written) as they actually happen. Defaults to a no-op, so this is a pure
-        addition with no effect on any existing caller that doesn't pass one.
-
-        HTL-29 / HTL-02: ``pause_for_review`` splits the pipeline after extraction and validation,
-        storing the run in review storage (state ``pending_review``) and returning without
-        generating any document files. Defaults to False, so existing callers are completely
-        unaffected.
+        HTL-16 Group 2 (C-11) / HTL-57: ``input_documents`` (or ``sow_documents`` and
+        ``supporting_documents``) is an alternative to ``inputs_dir`` that accepts a mix of disk
+        paths and in-memory uploads (``(file_name, bytes_or_file_like)`` pairs), with role
+        tagging ("sow" vs "supporting") for document precedence. Passing ``inputs_dir`` keeps
+        the CLI's existing directory-based behavior completely unchanged.
         """
         if outputs is None:
             outputs = OutputSelection()
         progress = on_progress or _noop_progress
 
-        if input_documents is not None:
+        if sow_documents is not None or supporting_documents is not None:
+            sow_sources = sow_documents or []
+            supp_sources = supporting_documents or []
+            progress("ingesting", f"{len(sow_sources)} SOW and {len(supp_sources)} supporting source(s)")
+            logger.info("Starting PMO Startup Kit generation from %d SOW and %d supporting source(s)", len(sow_sources), len(supp_sources))
+            sow_docs = self.ingestion_service.ingest_sources(sow_sources, default_role="sow")
+            supp_docs = self.ingestion_service.ingest_sources(supp_sources, default_role="supporting")
+            documents = sow_docs + supp_docs
+            if not documents:
+                raise FileNotFoundError(
+                    "No supported documents found in the provided inputs. "
+                    "Please provide SOW PDF/DOCX or presentation PPTX files."
+                )
+            out_path = output_dir if output_dir is not None else config.output_dir
+        elif input_documents is not None:
             progress("ingesting", f"{len(input_documents)} provided source(s)")
             logger.info("Starting PMO Startup Kit generation from %d provided source(s)", len(input_documents))
             documents = self.ingestion_service.ingest_sources(input_documents)

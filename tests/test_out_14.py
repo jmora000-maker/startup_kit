@@ -719,7 +719,7 @@ def test_ui_checkboxes_default_to_false_and_pipeline_execution():
     assert client_deck_cb.value is False
 
     # Check client deck and submit
-    at.file_uploader(key="gen_uploader").upload("sow.docx", b"sample-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("sow.docx", b"sample-bytes").run()
     at.checkbox(key="gen_out_client_deck").check().run()
 
     mock_result = RunResult(

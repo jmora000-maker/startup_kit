@@ -58,7 +58,7 @@ def mock_extracted_doc():
 def test_format_documents_for_prompt(mock_extracted_doc):
     assert format_documents_for_prompt([]) == "No documents provided."
     res = format_documents_for_prompt([mock_extracted_doc])
-    assert "=== DOCUMENT: pfizer_sow.pdf" in res
+    assert "=== PRIMARY SOURCE OF TRUTH (SOW): pfizer_sow.pdf" in res
     assert "Pfizer Clinical Trial Analytics" in res
 
 

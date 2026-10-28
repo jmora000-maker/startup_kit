@@ -105,7 +105,7 @@ def test_htl_47_generate_tab_blocks_submission_with_zero_outputs_and_skips_llm()
     assert not at.exception
 
     # Upload valid document
-    at.file_uploader(key="gen_uploader").upload("statement_of_work.pdf", b"pdf-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("statement_of_work.pdf", b"pdf-bytes").run()
 
     # Confirm all three output checkboxes are in their default unchecked state
     kit_cb = next(cb for cb in at.checkbox if cb.key == "gen_out_kit")
@@ -140,7 +140,7 @@ def test_htl_47_generate_tab_blocks_submission_with_zero_outputs_and_skips_llm()
 def test_htl_47_generate_tab_proceeds_when_output_selected():
     """On Generate tab, checking at least one output deliverable allows submission to proceed."""
     at = _make_unlocked_app_test().run()
-    at.file_uploader(key="gen_uploader").upload("statement_of_work.pdf", b"pdf-bytes").run()
+    at.file_uploader(key="gen_sow_uploader").upload("statement_of_work.pdf", b"pdf-bytes").run()
 
     # Check Startup Kit
     at.checkbox(key="gen_out_kit").check().run()

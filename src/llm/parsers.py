@@ -39,14 +39,20 @@ from src.llm.prompts import (
 
 
 def format_documents_for_prompt(documents: List[ExtractedDocument]) -> str:
-    """Format a list of extracted documents into a structured string for LLM prompts."""
+    """Format a list of extracted documents into a structured string for LLM prompts with precedence labeling."""
     if not documents:
         return "No documents provided."
 
     formatted_parts = []
     for doc in documents:
+        role = doc.metadata.get("document_role", "sow")
+        if role == "supporting":
+            header = f"=== SUPPORTING DOCUMENT (FALLBACK CONTEXT ONLY): {doc.file_name} (Format: {doc.file_type.upper()}) ==="
+        else:
+            header = f"=== PRIMARY SOURCE OF TRUTH (SOW): {doc.file_name} (Format: {doc.file_type.upper()}) ==="
+
         formatted_parts.append(
-            f"=== DOCUMENT: {doc.file_name} (Format: {doc.file_type.upper()}) ===\n"
+            f"{header}\n"
             f"{doc.text_content}\n"
         )
     return "\n\n".join(formatted_parts)

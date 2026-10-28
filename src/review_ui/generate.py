@@ -88,17 +88,18 @@ def validate_output_selection(
 
 
 def validate_generate_inputs(
-    uploaded_file_names: Sequence[str],
-    start_date_text: str,
+    sow_file_names: Sequence[str],
+    start_date_text: str = "",
+    supporting_file_names: Optional[Sequence[str]] = None,
     outputs: Optional[OutputSelection] = None,
     kit: Optional[bool] = None,
     workbook: Optional[bool] = None,
     slides: Optional[bool] = None,
     client_deck: Optional[bool] = None,
 ) -> Optional[str]:
-    """Pure validation for the "Generate" form. Returns an error message, or None if valid."""
-    if not uploaded_file_names:
-        return "Please upload at least one SOW or supporting document (PDF, DOCX, PPTX, or TXT)."
+    """Pure validation for the "Generate" form. Requires at least one SOW file."""
+    if not sow_file_names:
+        return "Please upload at least one Statement of Work (SOW) document (PDF, DOCX, PPTX, TXT, or MD)."
     date_err = validate_start_date_text(start_date_text)
     if date_err:
         return date_err
@@ -414,24 +415,32 @@ def format_fallback_message(
 
 
 def _run_generate(
-    uploaded_files,
-    start_date_text: str,
-    governance_tier: str,
-    contract_type: str,
-    pmo_lead: str,
-    delivery_lead: str,
-    talent_pm: str,
-    provider: str,
-    model: str,
-    mock: bool,
-    cache_mode: str,
-    outputs: OutputSelection,
+    uploaded_sow_files=None,
+    uploaded_supporting_files=None,
+    start_date_text: str = "",
+    governance_tier: str = "",
+    contract_type: str = "",
+    pmo_lead: str = "",
+    delivery_lead: str = "",
+    talent_pm: str = "",
+    provider: str = "",
+    model: str = "",
+    mock: bool = False,
+    cache_mode: str = "off",
+    outputs: Optional[OutputSelection] = None,
     on_progress=None,
     pause_for_review: bool = False,
+    uploaded_files=None,
 ) -> RunResult:
+    if outputs is None:
+        outputs = OutputSelection()
     llm_client = build_app_llm_client(provider=provider, model=model, mock=mock, cache_mode=cache_mode)
     controller = StartupKitController(llm_client=llm_client)
-    input_documents = [(f.name, f.getvalue()) for f in uploaded_files]
+    sow_files = uploaded_sow_files if uploaded_sow_files is not None else (uploaded_files or [])
+    supp_files = uploaded_supporting_files or []
+    sow_docs = [(f.name, f.getvalue(), "sow") for f in sow_files]
+    supp_docs = [(f.name, f.getvalue(), "supporting") for f in supp_files]
+    input_documents = sow_docs + supp_docs
     output_dir = _new_run_output_dir()
     start_date = parse_start_date(start_date_text)
     return controller.run(
@@ -659,8 +668,8 @@ def render() -> None:
 
     # Defensive safeguard: ensure running flags are reset if no input files are present
     if st.session_state.get("gen_is_running"):
-        stored_gen = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
-        if not stored_gen and not st.session_state.get("gen_uploader"):
+        stored_sow = state_persistence.persisted_value(GENERATE_STORE, "gen_sow_files", [])
+        if not stored_sow and not st.session_state.get("gen_sow_uploader"):
             st.session_state["gen_is_running"] = False
 
     if st.session_state.get("reingest_is_running"):
@@ -680,39 +689,67 @@ def render() -> None:
         generation_unlocked_gen = _render_generation_gate("gen")
 
         if generation_unlocked_gen:
-            stored_gen_files = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
-            if stored_gen_files and not st.session_state.get("gen_uploader"):
-                filenames_label = ", ".join(f.name for f in stored_gen_files)
-                st.info(f"Using previously uploaded: {filenames_label} -- choose a different file to replace it.")
+            # 1. Statement of Work (SOW) Slot [Required]
+            stored_sow_files = state_persistence.persisted_value(GENERATE_STORE, "gen_sow_files", [])
+            if stored_sow_files and not st.session_state.get("gen_sow_uploader"):
+                sow_label = ", ".join(f.name for f in stored_sow_files)
+                st.info(f"Using previously uploaded SOW: {sow_label} -- choose a different file to replace it.")
 
-            def _sync_gen_upload():
+            def _sync_sow_upload():
                 st.session_state.pop("generate_run_result", None)
-                widget_files = st.session_state.get("gen_uploader")
+                widget_files = st.session_state.get("gen_sow_uploader")
                 if widget_files:
-                    if isinstance(widget_files, list):
-                        state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
-                            state_persistence.PersistedUpload(f.name, f.getvalue()) for f in widget_files
-                        ]
-                    else:
-                        state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
-                            state_persistence.PersistedUpload(widget_files.name, widget_files.getvalue())
-                        ]
+                    files = widget_files if isinstance(widget_files, list) else [widget_files]
+                    state_persistence.get_store(GENERATE_STORE)["gen_sow_files"] = [
+                        state_persistence.PersistedUpload(f.name, f.getvalue()) for f in files
+                    ]
 
-            uploaded_files = st.file_uploader(
-                "Upload SOW and/or supporting documents (PDF, DOCX, PPTX, TXT)",
-                type=["pdf", "docx", "pptx", "txt"],
+            uploaded_sow_files = st.file_uploader(
+                "Upload Statement of Work (SOW / Exhibit A / Attachments) * [Required]",
+                type=["pdf", "docx", "pptx", "txt", "md"],
                 accept_multiple_files=True,
-                key="gen_uploader",
-                on_change=_sync_gen_upload,
+                key="gen_sow_uploader",
+                on_change=_sync_sow_upload,
             )
 
-            if uploaded_files:
-                state_persistence.get_store(GENERATE_STORE)["gen_uploaded_files"] = [
-                    state_persistence.PersistedUpload(f.name, f.getvalue()) for f in uploaded_files
+            if uploaded_sow_files:
+                state_persistence.get_store(GENERATE_STORE)["gen_sow_files"] = [
+                    state_persistence.PersistedUpload(f.name, f.getvalue()) for f in uploaded_sow_files
                 ]
-                effective_files = uploaded_files
+                effective_sow_files = uploaded_sow_files
             else:
-                effective_files = state_persistence.persisted_value(GENERATE_STORE, "gen_uploaded_files", [])
+                effective_sow_files = state_persistence.persisted_value(GENERATE_STORE, "gen_sow_files", [])
+
+            # 2. Supporting Documents Slot [Optional]
+            stored_supporting_files = state_persistence.persisted_value(GENERATE_STORE, "gen_supporting_files", [])
+            if stored_supporting_files and not st.session_state.get("gen_supporting_uploader"):
+                supp_label = ", ".join(f.name for f in stored_supporting_files)
+                st.info(f"Using previously uploaded supporting documents: {supp_label} -- choose a different file to replace it.")
+
+            def _sync_supporting_upload():
+                st.session_state.pop("generate_run_result", None)
+                widget_files = st.session_state.get("gen_supporting_uploader")
+                if widget_files:
+                    files = widget_files if isinstance(widget_files, list) else [widget_files]
+                    state_persistence.get_store(GENERATE_STORE)["gen_supporting_files"] = [
+                        state_persistence.PersistedUpload(f.name, f.getvalue()) for f in files
+                    ]
+
+            uploaded_supporting_files = st.file_uploader(
+                "Upload Supporting Documents (meeting notes, technical assessments, etc.) [Optional]",
+                type=["pdf", "docx", "pptx", "txt", "md"],
+                accept_multiple_files=True,
+                key="gen_supporting_uploader",
+                on_change=_sync_supporting_upload,
+            )
+
+            if uploaded_supporting_files:
+                state_persistence.get_store(GENERATE_STORE)["gen_supporting_files"] = [
+                    state_persistence.PersistedUpload(f.name, f.getvalue()) for f in uploaded_supporting_files
+                ]
+                effective_supporting_files = uploaded_supporting_files
+            else:
+                effective_supporting_files = state_persistence.persisted_value(GENERATE_STORE, "gen_supporting_files", [])
 
             start_date_text = _persisted_text(
                 GENERATE_STORE, "gen_start_date", "Project start date (YYYY-MM-DD, optional)"
@@ -774,11 +811,17 @@ def render() -> None:
             submitted = st.button("Generate", key="gen_submit_button", disabled=gen_disabled)
 
             if submitted:
-                file_names = [f.name for f in (effective_files or [])]
+                sow_names = [f.name for f in (effective_sow_files or [])]
+                supp_names = [f.name for f in (effective_supporting_files or [])]
                 outputs = _output_selection_from_checkboxes(
                     kit=kit, workbook=workbook, slides=slides, client_deck=client_deck
                 )
-                error = validate_generate_inputs(file_names, start_date_text, outputs=outputs)
+                error = validate_generate_inputs(
+                    sow_file_names=sow_names,
+                    start_date_text=start_date_text,
+                    supporting_file_names=supp_names,
+                    outputs=outputs,
+                )
                 if error:
                     st.error(error)
                 else:
@@ -786,11 +829,17 @@ def render() -> None:
                     st.rerun()
 
             if is_gen_running:
-                file_names = [f.name for f in (effective_files or [])]
+                sow_names = [f.name for f in (effective_sow_files or [])]
+                supp_names = [f.name for f in (effective_supporting_files or [])]
                 outputs = _output_selection_from_checkboxes(
                     kit=kit, workbook=workbook, slides=slides, client_deck=client_deck
                 )
-                error = validate_generate_inputs(file_names, start_date_text, outputs=outputs)
+                error = validate_generate_inputs(
+                    sow_file_names=sow_names,
+                    start_date_text=start_date_text,
+                    supporting_file_names=supp_names,
+                    outputs=outputs,
+                )
                 if error:
                     st.session_state["gen_is_running"] = False
                     st.error(error)
@@ -807,7 +856,8 @@ def render() -> None:
                         with st.status("Starting...", expanded=True) as status_box:
                             status_updater = StageStatusUpdater(status_box, last_stage)
                             result = _run_generate(
-                                uploaded_files=effective_files,
+                                uploaded_sow_files=effective_sow_files,
+                                uploaded_supporting_files=effective_supporting_files,
                                 start_date_text=start_date_text,
                                 governance_tier=governance_tier,
                                 contract_type=contract_type,
