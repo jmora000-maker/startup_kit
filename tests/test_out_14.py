@@ -1640,3 +1640,52 @@ def test_htl_54_fact_review_problem_statement_field_and_corrections():
     ]
     corrected_baseline = apply_corrections(baseline, corrections)
     assert corrected_baseline.charter.problem_statement == "Disparate legacy databases lack automated ingestion pipelines."
+
+
+# =========================================================================
+# HTL-61: Slide 6 Solution Overview and Out of Scope Uniform Font Size
+# =========================================================================
+
+def test_htl_61_slide6_uniform_panel_font_size(tmp_path):
+    """HTL-61: Slide 6 Solution Overview body and Out of Scope body share an identical uniform font size."""
+    baseline = StartupKitBaseline(
+        project_name="HTL-61 Font Uniformity Platform",
+        charter=ProjectStartupCharter(
+            client_name="Test Enterprise",
+            project_purpose="Deliver a comprehensive cloud migration assessment across legacy systems.",
+            high_level_scope=[
+                "Portfolio workload discovery and inventory",
+                "Application dependency mapping",
+                "Cloud readiness assessment",
+                "Target architecture recommendations",
+            ],
+            exclusions=[
+                "Direct application refactoring or modernization",
+                "Production infrastructure provisioning and deployment",
+                "Third-party software licensing and procurement",
+                "Post-migration managed services or SLA operations",
+            ],
+        ),
+    )
+
+    model = build_client_deck_model(baseline)
+    out_file = tmp_path / "htl61_slide6_uniform.pptx"
+    write_client_deck(model, out_file)
+
+    prs = pptx.Presentation(str(out_file))
+    slide6 = prs.slides[5]
+
+    # Find Solution Overview body shape (194) and Out of Scope shape (202)
+    s194 = next(s for s in slide6.shapes if s.shape_id == 194 or (s.has_text_frame and "Deliver a comprehensive" in s.text_frame.text))
+    s202 = next(s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text))
+
+    # Font size of Solution Overview body
+    so_p = s194.text_frame.paragraphs[0]
+    so_font_pt = so_p.runs[0].font.size.pt
+
+    # Font size of Out of Scope bullet items (paragraphs index >= 1)
+    oos_p = s202.text_frame.paragraphs[1]
+    oos_font_pt = oos_p.runs[0].font.size.pt
+
+    assert so_font_pt == oos_font_pt, f"Expected identical font sizes, got SO: {so_font_pt}pt vs OOS: {oos_font_pt}pt"
+    assert so_font_pt <= 10.0

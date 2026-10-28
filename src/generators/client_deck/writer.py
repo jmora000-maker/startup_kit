@@ -380,10 +380,33 @@ def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, ov
 
 
 def write_slide6(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 6 and dynamically manipulate XML shape tree for N workstreams."""
+    """Populate Slide 6 and dynamically manipulate XML shape tree for N workstreams (HTL-61)."""
     white_color = RGBColor(255, 255, 255)
 
-    # 1. Solution Overview & Out of Scope
+    # 1. Solution Overview & Out of Scope: uniform font sizing across both text boxes (HTL-61)
+    candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
+    sz_so, so_text = select_fitting_font_size(
+        model.slide6.solution_overview,
+        width_in=2.84,
+        max_height_in=2.20,
+        candidate_sizes=candidate_sizes,
+    )
+    total_oos_text = "\n".join([f"• {item}" for item in model.slide6.out_of_scope])
+    sz_oos, _ = select_fitting_font_size(
+        total_oos_text,
+        width_in=2.84,
+        max_height_in=0.75,
+        candidate_sizes=candidate_sizes,
+    )
+    uniform_panel_sz = min(sz_so, sz_oos)
+    if uniform_panel_sz < sz_so:
+        _, so_text = select_fitting_font_size(
+            model.slide6.solution_overview,
+            width_in=2.84,
+            max_height_in=2.20,
+            candidate_sizes=[uniform_panel_sz],
+        )
+
     for shape in list(slide.shapes):
         if not shape.has_text_frame:
             continue
@@ -418,13 +441,7 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             tf.margin_bottom = 0
             tf.margin_left = 0
             tf.margin_right = 0
-            sz_so, so_text = select_fitting_font_size(
-                model.slide6.solution_overview,
-                width_in=2.84,
-                max_height_in=2.20,
-                candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
-            )
-            _replace_shape_text(shape, so_text, Pt(sz_so), font_color_rgb=white_color)
+            _replace_shape_text(shape, so_text, Pt(uniform_panel_sz), font_color_rgb=white_color)
             if tf.paragraphs and tf.paragraphs[0].runs:
                 tf.paragraphs[0].runs[0].font.color.rgb = white_color
         elif shape.shape_id == 202 or "Out of Scope:" in text:
@@ -446,19 +463,12 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
                 tf.paragraphs[0].runs[0].font.bold = True
                 tf.paragraphs[0].runs[0].font.color.rgb = white_color
 
-            total_oos_text = "\n".join([f"• {item}" for item in model.slide6.out_of_scope])
-            sz_oos, _ = select_fitting_font_size(
-                total_oos_text,
-                width_in=2.84,
-                max_height_in=0.75,
-                candidate_sizes=[10.0, 9.5, 9.0, 8.5, 8.0],
-            )
             for item in model.slide6.out_of_scope:
                 p = tf.add_paragraph()
                 p.text = f"• {item}"
                 if p.runs:
                     p.runs[0].font.name = "Proxima Nova"
-                    p.runs[0].font.size = Pt(sz_oos)
+                    p.runs[0].font.size = Pt(uniform_panel_sz)
                     p.runs[0].font.color.rgb = white_color
 
     # 2. Dynamic Workstreams
