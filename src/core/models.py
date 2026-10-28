@@ -4,7 +4,7 @@ import re
 from datetime import date, datetime
 from typing import List, Optional, Literal, Dict, Any, Union, Annotated
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, model_validator, BeforeValidator
+from pydantic import BaseModel, Field, ConfigDict, model_validator, BeforeValidator, field_validator
 from src.core.pdf_models import PDFDocumentMetadata, PDFPageMetadata
 from src.core.outputs import OutputSelection, RunResult
 
@@ -241,7 +241,7 @@ class Deliverable(BaseModel):
         default_factory=lambda: SourceReference(document_name="Project Baseline")
     )
     owner: str = "Unassigned"
-    acceptance_criteria: Optional[str] = None
+    acceptance_criteria: List[str] = Field(default_factory=list)
     sow_reference: Optional[str] = None
     evidence_required: str = "[CONFIRMATION REQUIRED]"
     client_approver: str = "[UNASSIGNED - TO BE CONFIRMED]"
@@ -253,6 +253,41 @@ class Deliverable(BaseModel):
         default=None,
         description="Associated Action ID if unassigned or unconfirmed (e.g. 'ACT-03')"
     )
+
+    @field_validator("acceptance_criteria", mode="before")
+    @classmethod
+    def _coerce_acceptance_criteria(cls, v: Any) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, list):
+            items: List[str] = []
+            for item in v:
+                if item is None:
+                    continue
+                if isinstance(item, str):
+                    c = item.strip()
+                    if c:
+                        items.append(c)
+                else:
+                    c = str(item).strip()
+                    if c:
+                        items.append(c)
+            return items
+        if isinstance(v, str):
+            cleaned = v.strip()
+            if not cleaned or cleaned.upper() in ("[CONFIRMATION REQUIRED]", "NONE", "NULL", "UNASSIGNED"):
+                if cleaned.upper() == "[CONFIRMATION REQUIRED]":
+                    return [cleaned]
+                return []
+            if "\n" in cleaned:
+                lines = [re.sub(r"^[\s•\-\*]+", "", line).strip() for line in cleaned.splitlines()]
+                return [l for l in lines if l]
+            if ";" in cleaned:
+                parts = [re.sub(r"^[\s•\-\*]+", "", part).strip() for part in cleaned.split(";")]
+                return [p for p in parts if p]
+            single = re.sub(r"^[\s•\-\*]+", "", cleaned).strip()
+            return [single] if single else []
+        return [str(v).strip()]
 
     def model_post_init(self, __context: Any) -> None:
         if not self.name and self.description:

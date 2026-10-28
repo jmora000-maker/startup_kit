@@ -123,7 +123,9 @@ class BaselineAggregator:
                 if target_delivs:
                     matched_acc_indices.add(a_idx)
                     for d in target_delivs:
-                        ev_text = getattr(acc_item, "evidence_required", "") or getattr(acc_item, "acceptance_criteria", "") or ""
+                        acc_crit_raw = getattr(acc_item, "acceptance_criteria", [])
+                        acc_crit_str = "; ".join(acc_crit_raw) if isinstance(acc_crit_raw, list) else (acc_crit_raw or "")
+                        ev_text = getattr(acc_item, "evidence_required", "") or acc_crit_str or ""
                         if ev_text and "[CONFIRMATION REQUIRED]" not in ev_text:
                             if len(target_delivs) > 1:
                                 shared_note = f"Shared evidence item covering {', '.join(sorted(acc_stories))}"
@@ -138,7 +140,7 @@ class BaselineAggregator:
                         if getattr(acc_item, "client_approver", None) and (not d.client_approver or d.client_approver in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]", "[CONFIRMATION REQUIRED]")):
                             d.client_approver = getattr(acc_item, "client_approver")
                         if getattr(acc_item, "acceptance_criteria", None) and not d.acceptance_criteria:
-                            d.acceptance_criteria = getattr(acc_item, "acceptance_criteria")
+                            d.acceptance_criteria = list(getattr(acc_item, "acceptance_criteria"))
                         if getattr(acc_item, "owner", None) and (not d.owner or d.owner in ("Unassigned", "[UNASSIGNED - TO BE CONFIRMED]")):
                             d.owner = getattr(acc_item, "owner")
                         if getattr(acc_item, "sow_reference", None) and not getattr(d, "sow_reference", None):
@@ -181,8 +183,8 @@ class BaselineAggregator:
                         d.client_approver = acc_item.client_approver
                     if acc_item.evidence_required and "[CONFIRMATION REQUIRED]" not in acc_item.evidence_required:
                         d.evidence_required = acc_item.evidence_required
-                    if not d.acceptance_criteria and acc_item.acceptance_criteria and "[CONFIRMATION REQUIRED]" not in acc_item.acceptance_criteria:
-                        d.acceptance_criteria = acc_item.acceptance_criteria
+                    if not d.acceptance_criteria and acc_item.acceptance_criteria:
+                        d.acceptance_criteria = list(acc_item.acceptance_criteria)
                     if acc_item.review_window and acc_item.review_window.strip() and acc_item.review_window.strip().lower() != "5 business days":
                         d.review_window = acc_item.review_window
                     if acc_item.rejection_rework_path:
@@ -226,9 +228,9 @@ class BaselineAggregator:
             deliv.description = sanitize_report_text(deliv.description)
             deliv.name = sanitize_report_text(deliv.name or deliv.description)
             if deliv.acceptance_criteria:
-                deliv.acceptance_criteria = sanitize_report_text(deliv.acceptance_criteria)
+                deliv.acceptance_criteria = [sanitize_report_text(c) for c in deliv.acceptance_criteria if c and sanitize_report_text(c)]
             if not deliv.acceptance_criteria:
-                deliv.acceptance_criteria = None
+                deliv.acceptance_criteria = []
                 add_question(
                     f"Deliverable '{deliv.id}: {deliv.description}' is missing explicit acceptance criteria. [CONFIRMATION REQUIRED]"
                 )
@@ -554,8 +556,8 @@ class BaselineAggregator:
                             owner="Toptal Delivery Team",
                             dependency_references=[da.id for da in dependencies_assumptions[:2]],
                             linked_milestones=[],
-                            linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
-                            uncertain_scope=deliv.acceptance_criteria is None,
+                            linked_acceptance_items=list(deliv.acceptance_criteria) if deliv.acceptance_criteria else ["[CONFIRMATION REQUIRED]"],
+                            uncertain_scope=len(deliv.acceptance_criteria) == 0,
                             sow_reference=s_id,
                             status="Draft"
                         )
@@ -571,8 +573,8 @@ class BaselineAggregator:
                         owner="Toptal Delivery Team",
                         dependency_references=[da.id for da in dependencies_assumptions[:2]],
                         linked_milestones=[],
-                        linked_acceptance_items=[deliv.acceptance_criteria or "[CONFIRMATION REQUIRED]"],
-                        uncertain_scope=deliv.acceptance_criteria is None,
+                        linked_acceptance_items=list(deliv.acceptance_criteria) if deliv.acceptance_criteria else ["[CONFIRMATION REQUIRED]"],
+                        uncertain_scope=len(deliv.acceptance_criteria) == 0,
                         status="Draft"
                     )
                     backlog_seed.append(wp)
@@ -884,7 +886,7 @@ class BaselineAggregator:
         )
 
         def _is_deliv_unconfirmed(d: Deliverable) -> bool:
-            if not d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria or "UNASSIGNED" in d.acceptance_criteria:
+            if not d.acceptance_criteria or any("[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper() for c in d.acceptance_criteria):
                 return True
             if not d.owner or "UNASSIGNED" in d.owner.upper() or d.owner == "Unassigned":
                 return True

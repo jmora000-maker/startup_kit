@@ -16,7 +16,7 @@ STRICT BUSINESS RULES & CONSTRAINTS:
 1. NO HALLUCINATION: Extract only factual information present in the input documents.
 2. NO SOW OR EXTERNAL DOCUMENT REFERENCES: The consumers of this report DO NOT have access to the Statement of Work (SOW), pre-sales decks, contracts, or source documents. Do NOT reference 'the SOW', 'Statement of Work', 'input documents', 'source documents', 'page numbers', or 'clause numbers' in any extracted text, descriptions, questions, deliverables, milestones, risks, or assumptions. All text must be completely self-contained and document-agnostic.
 3. CONCISE & SIMPLIFIED: Keep all field values, summaries, and descriptions short, clear, direct, and concise (1-2 sentences maximum). Simplify the report text so that stakeholders can understand the project baseline instantly without legalistic jargon or redundant phrasing.
-4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to null (None).
+4. MISSING ACCEPTANCE CRITERIA: If a deliverable's acceptance criteria are not explicitly specified in the text, set acceptance_criteria to an empty list [].
 5. MISSING DATES: If milestone dates are not explicitly stated, set external_date to null (None).
 6. SOURCE TRACEABILITY: Every extracted item must include a valid SourceReference with:
    - document_name: exact filename where the information was found
@@ -61,16 +61,16 @@ DELIVERABLES_PROMPT = """Analyze the provided project documents and extract key 
 INSTRUCTIONS:
 1. When the SOW presents Work Output as distinct bullet points, table rows, or numbered scope items (e.g. under Milestones or in a Work Output / Acceptance Criteria table), extract EVERY single distinct, separately-bulleted Work Output item as its own separate Deliverable object (strict 1:1 mapping, no consolidation or merging of distinct bullets into single deliverables).
 2. For SOWs that do NOT use bulleted or numbered Work Output lists (e.g. narrative prose paragraphs), extract each distinct contractual commitment or deliverable stated in the text without artificially inflating or inventing items, preserving the true granularity stated in the source.
-3. For each deliverable, attach its exact paired Acceptance Criteria from the SOW (e.g., from the corresponding row or bullet in the Acceptance Criteria table). Ensure every Acceptance Criteria bullet corresponding to a given Work Output bullet is preserved and attached to that bullet's own deliverable — never dropped or reassigned to a different deliverable.
+3. For each deliverable, attach its exact paired Acceptance Criteria from the SOW (e.g., from the corresponding row or bullet in the Acceptance Criteria table). Extract each distinct criteria item as its own separate string in a list (e.g. ['Criterion 1', 'Criterion 2']) — do not combine multiple distinct criteria into a single joined string. Ensure every Acceptance Criteria bullet corresponding to a given Work Output bullet is preserved and attached to that bullet's own deliverable — never dropped or reassigned to a different deliverable.
 4. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.
-5. If explicit acceptance criteria are provided in the text, extract them concisely and directly without referencing documents. If NOT explicitly stated, you MUST set acceptance_criteria to null.
+5. If explicit acceptance criteria are provided in the text, extract them concisely and directly as a list of distinct strings without referencing documents. If NOT explicitly stated, you MUST set acceptance_criteria to an empty list [].
 
 For each deliverable:
 - id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)
 - name: Concise title of the deliverable
 - description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.
 - owner: Named owner or role if stated, else 'Unassigned'.
-- acceptance_criteria: Exact explicit acceptance criteria if provided in the text (state concisely and directly without referencing the SOW or documents). If NOT explicitly stated, you MUST set this to null.
+- acceptance_criteria: List of distinct explicit acceptance criteria strings if provided in the text (e.g. ['Criterion 1', 'Criterion 2']), or empty list [] if not explicitly stated.
 - sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or synthetic work item codes such as WO-M1-01) if mentioned, else null. Do NOT include section or clause citations here; section/clause locations belong in source_reference.
 - source_reference: The source document name, section/clause, and confidence score.
 
@@ -198,7 +198,7 @@ For each deliverable:
 - name: Deliverable title
 - description: Concise deliverable description (1-2 sentences)
 - sow_reference: SOW work item reference (e.g. story ID, deliverable number, task code) if mentioned, else null. Do NOT include section or clause citations.
-- acceptance_criteria: Explicit criteria or null (do not cite documents)
+- acceptance_criteria: List of distinct explicit criteria strings or empty list [] (do not cite documents)
 - evidence_required: Documents, artifacts, or sign-offs required as proof (1-2 sentences)
 - client_approver: Named client approver or role, or '[UNASSIGNED - TO BE CONFIRMED]'
 - submission_target_date: Target submission date (YYYY-MM-DD) if stated

@@ -655,12 +655,16 @@ class DocxGenerator(IDocumentWriter):
 
         for d in baseline.deliverables:
             row = deliv_table.add_row()
-            ac_text = d.acceptance_criteria if d.acceptance_criteria else "[CONFIRMATION REQUIRED]"
+            if d.acceptance_criteria:
+                ac_lines = [c if c.startswith("•") else f"• {c}" for c in d.acceptance_criteria if c]
+                ac_text = "\n".join(ac_lines) if ac_lines else "[CONFIRMATION REQUIRED]"
+            else:
+                ac_text = "[CONFIRMATION REQUIRED]"
             owner_text = d.owner if (d.owner and d.owner != "Unassigned") else "[UNASSIGNED]"
             approver_text = d.client_approver if (d.client_approver and "UNASSIGNED" not in d.client_approver.upper()) else "[CONFIRMATION REQUIRED]"
             sow_stories_str = getattr(d, "sow_reference", None) or ""
 
-            is_criteria_unconfirmed = (not d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria or "UNASSIGNED" in d.acceptance_criteria)
+            is_criteria_unconfirmed = (not d.acceptance_criteria or any("[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper() for c in d.acceptance_criteria))
             is_owner_unassigned = (d.owner == "Unassigned" or "UNASSIGNED" in d.owner.upper() or not d.owner)
             is_approver_unassigned = (not d.client_approver or d.client_approver == "[UNASSIGNED - TO BE CONFIRMED]" or "UNASSIGNED" in d.client_approver.upper() or "[CONFIRMATION REQUIRED]" in d.client_approver)
 

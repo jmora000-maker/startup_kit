@@ -448,7 +448,10 @@ def check_acceptance_mode(baseline: StartupKitBaseline) -> str:
         text_blocks.extend(m.key_dependencies or [])
         text_blocks.extend(m.critical_path_assumptions or [])
     for d in (baseline.deliverables or []):
-        text_blocks.append(d.acceptance_criteria or "")
+        if isinstance(d.acceptance_criteria, list):
+            text_blocks.extend(d.acceptance_criteria)
+        elif d.acceptance_criteria:
+            text_blocks.append(d.acceptance_criteria)
         text_blocks.append(d.evidence_required or "")
         text_blocks.append(getattr(d, "rejection_rework_path", "") or "")
     for c in (baseline.communications_plan or []):
@@ -610,7 +613,8 @@ def build_workbook_model(
 
     filtered_deliverables: List[Deliverable] = []
     for d in (baseline.deliverables or []):
-        d_text = f"{d.id} {d.name or ''} {d.description or ''} {d.acceptance_criteria or ''}"
+        ac_str = " ".join(d.acceptance_criteria) if isinstance(d.acceptance_criteria, list) else (d.acceptance_criteria or "")
+        d_text = f"{d.id} {d.name or ''} {d.description or ''} {ac_str}"
         if is_defensive_excluded(d_text):
             logger.warning("Defensive filter dropped deliverable: %s (%s)", d.id, d.name)
             excluded_items += 1
@@ -894,7 +898,8 @@ def build_workbook_model(
     # Build Story Index (v4 A17, v6 Section 1.1)
     story_to_deliv_ids: Dict[str, Set[str]] = {}
     for d in filtered_deliverables:
-        text = f"{d.name or ''} {d.description or ''} {d.acceptance_criteria or ''} {d.sow_reference or ''}"
+        ac_str = " ".join(d.acceptance_criteria) if isinstance(d.acceptance_criteria, list) else (d.acceptance_criteria or "")
+        text = f"{d.name or ''} {d.description or ''} {ac_str} {d.sow_reference or ''}"
         for s in extract_usable_sow_references(text):
             story_to_deliv_ids.setdefault(s, set()).add(d.id)
 
@@ -1406,14 +1411,18 @@ def build_workbook_model(
                 work_type, task_templates = classify_deliverable_work_type(d_name)
 
                 # Acceptance criteria & evidence
-                ac_text = clean_text_v2(d.acceptance_criteria)
+                if isinstance(d.acceptance_criteria, list):
+                    ac_lines = [f"• {clean_text_v2(c)}" for c in d.acceptance_criteria if c and clean_text_v2(c)]
+                    ac_text = "\n".join(ac_lines)
+                else:
+                    ac_text = clean_text_v2(d.acceptance_criteria)
                 ev_text = clean_text_v2(d.evidence_required)
                 criteria_parts = []
                 if ac_text:
                     criteria_parts.append(ac_text)
                 if ev_text:
                     criteria_parts.append(f"Evidence: {ev_text}")
-                combined_criteria = "; ".join(criteria_parts)
+                combined_criteria = "\n".join(criteria_parts) if (isinstance(d.acceptance_criteria, list) and len(d.acceptance_criteria) > 1) else "; ".join(criteria_parts)
 
                 deliv_notes = [f"Work type: {work_type}"]
                 if d_owner_note:

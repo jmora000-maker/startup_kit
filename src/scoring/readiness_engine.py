@@ -227,7 +227,13 @@ class ReadinessScoringEngine:
         deliv_scores: List[float] = []
         for d in deliverables:
             s = 0.0
-            if d.acceptance_criteria and "[CONFIRMATION REQUIRED]" not in d.acceptance_criteria and "UNASSIGNED" not in d.acceptance_criteria:
+            if (
+                d.acceptance_criteria
+                and all(
+                    "[CONFIRMATION REQUIRED]" not in c and "UNASSIGNED" not in c.upper()
+                    for c in d.acceptance_criteria
+                )
+            ):
                 s += 0.40
             if d.owner and "UNASSIGNED" not in d.owner.upper() and d.owner != "Unassigned":
                 s += 0.30
@@ -474,10 +480,14 @@ class ReadinessScoringEngine:
         if not baseline.open_questions:
             return
 
-        def _is_clean(val: Optional[str]) -> bool:
+        def _is_clean(val: Any) -> bool:
             if not val:
                 return False
-            v = val.strip().upper()
+            if isinstance(val, list):
+                if not val:
+                    return False
+                return all(_is_clean(v) for v in val)
+            v = str(val).strip().upper()
             return not ("UNASSIGNED" in v or "CONFIRMATION" in v or v in ("", "NONE", "N/A", "TBD", "[TBD]"))
 
         # Deduplicate while preserving order and stripping resolved markers
@@ -717,10 +727,15 @@ class ReadinessScoringEngine:
                         or d.client_approver.strip().lower() in ("unassigned", "tbd", "[tbd]", "none")
                         or (is_generic_approver and has_approver_questions)
                     )
-                    if (
+                    is_deliv_criteria_unconfirmed = (
                         not d.acceptance_criteria
-                        or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria
-                        or "UNASSIGNED" in d.acceptance_criteria
+                        or any(
+                            "[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper()
+                            for c in d.acceptance_criteria
+                        )
+                    )
+                    if (
+                        is_deliv_criteria_unconfirmed
                         or not d.owner
                         or "UNASSIGNED" in d.owner.upper()
                         or d.owner == "Unassigned"
@@ -1008,13 +1023,20 @@ class ReadinessScoringEngine:
                 if gate_id == "G01-03" and baseline.deliverables:
                     # Find first unconfirmed or unassigned deliverable
                     unconfirmed_d = next(
-                        (d for d in baseline.deliverables if not d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in d.acceptance_criteria or "UNASSIGNED" in d.acceptance_criteria or not d.owner or "UNASSIGNED" in d.owner.upper() or d.owner == "Unassigned"),
+                        (
+                            d for d in baseline.deliverables
+                            if not d.acceptance_criteria
+                            or any("[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper() for c in d.acceptance_criteria)
+                            or not d.owner
+                            or "UNASSIGNED" in d.owner.upper()
+                            or d.owner == "Unassigned"
+                        ),
                         baseline.deliverables[0] if baseline.deliverables else None
                     )
                     if unconfirmed_d:
                         target_table = "Deliverables and Acceptance Matrix"
                         target_entity_id = unconfirmed_d.id
-                        if not unconfirmed_d.acceptance_criteria or "[CONFIRMATION REQUIRED]" in unconfirmed_d.acceptance_criteria or "UNASSIGNED" in unconfirmed_d.acceptance_criteria:
+                        if not unconfirmed_d.acceptance_criteria or any("[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper() for c in unconfirmed_d.acceptance_criteria):
                             target_col = "Acceptance Criteria"
                             desc = f"Deliverable {unconfirmed_d.id} ({unconfirmed_d.name}) lacks objective acceptance criteria."
                             req_action = f"Define objective UAT pass criteria and sign-off metrics for {unconfirmed_d.id}."

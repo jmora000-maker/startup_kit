@@ -41,7 +41,10 @@ class G01ChecklistRenderer:
 
         items: List[ReadinessChecklistItem] = baseline.readiness_checklist
         if not items:
-            has_unconfirmed_delivs = any(d.acceptance_criteria is None for d in baseline.deliverables)
+            has_unconfirmed_delivs = any(
+                not d.acceptance_criteria or any("[CONFIRMATION REQUIRED]" in c or "UNASSIGNED" in c.upper() for c in d.acceptance_criteria)
+                for d in baseline.deliverables
+            )
             has_unconfirmed_dates = any(m.external_date is None for m in baseline.milestones)
             tier = baseline.governance_tier
             pmo_owner = baseline.governance_context.pmo_lead if baseline.governance_context else "PMO Lead"

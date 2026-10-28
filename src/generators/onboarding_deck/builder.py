@@ -702,9 +702,23 @@ def _build_acceptance(ctx: _Ctx, kicker: str) -> SlideSpec:
     for d in b.deliverables:
         if DEFENSIVE_FILTER_REGEX.search(d.name or "") or DEFENSIVE_FILTER_REGEX.search(d.description or ""):
             continue
-        crit_raw = d.acceptance_criteria if d.acceptance_criteria else "[CONFIRMATION REQUIRED]"
-        crit_ph = is_placeholder_text(crit_raw) or "UNASSIGNED" in crit_raw.upper()
-        crit_run = value_run("" if crit_ph else crit_raw, [T(KIT, SEC_DELIV, d.id, "Acceptance Criteria")], "Acceptance criteria", shown=None if crit_ph else clause_prefix(crit_raw, MAX_BULLET_WORDS))
+        crit_list = d.acceptance_criteria if isinstance(d.acceptance_criteria, list) else ([d.acceptance_criteria] if d.acceptance_criteria else [])
+        if not crit_list:
+            crit_run = value_run("", [T(KIT, SEC_DELIV, d.id, "Acceptance Criteria")], "Acceptance criteria")
+            crit_cell = _cell([crit_run])
+        elif len(crit_list) == 1:
+            crit_raw = crit_list[0]
+            crit_ph = is_placeholder_text(crit_raw) or "UNASSIGNED" in crit_raw.upper()
+            crit_run = value_run("" if crit_ph else crit_raw, [T(KIT, SEC_DELIV, d.id, "Acceptance Criteria")], "Acceptance criteria")
+            crit_cell = _cell([crit_run])
+        else:
+            lines: List[List[Run]] = []
+            for c in crit_list:
+                c_ph = is_placeholder_text(c) or "UNASSIGNED" in c.upper()
+                c_run = value_run("" if c_ph else c, [T(KIT, SEC_DELIV, d.id, "Acceptance Criteria")], "Acceptance criteria")
+                lines.append([plain("• ", MUTED), c_run])
+            crit_cell = _cell(*lines)
+
         wbs_code, gate = gate_of.get(d.id, ("", ""))
         if gate:
             gate_run = traced(gate, T(WORKBOOK, WBS, wbs_code, "Milestone ID"), element="Gate")
@@ -712,7 +726,7 @@ def _build_acceptance(ctx: _Ctx, kicker: str) -> SlideSpec:
             gate_run = plain(FT.PLACEHOLDER_TEXT, PLACEHOLDER)
         rows_all.append(RowSpec([
             _cell([traced(d.id, T(KIT, SEC_DELIV, d.id, "ID"), kind=STRONG, element="Deliverable ID")]),
-            _cell([crit_run]),
+            crit_cell,
             _cell([gate_run]),
         ]))
 
@@ -759,7 +773,12 @@ def _acceptance_points(ctx, slide, first_gate, steps, first, review_val, approve
             got = _pick([(TP.acceptance_evidence(first.id, short), [first.id, short], [T(KIT, SEC_DELIV, first.id, "ID"), ev_ref])])
             if got:
                 pts.append((got[0], got[2], got[1]))
-    pending = [d.id for d in b.deliverables if not d.acceptance_criteria or is_placeholder_text(d.acceptance_criteria) or "UNASSIGNED" in d.acceptance_criteria.upper()]
+    pending = [
+        d.id for d in b.deliverables
+        if not d.acceptance_criteria
+        or (isinstance(d.acceptance_criteria, list) and any(is_placeholder_text(c) or "UNASSIGNED" in c.upper() for c in d.acceptance_criteria))
+        or (isinstance(d.acceptance_criteria, str) and (is_placeholder_text(d.acceptance_criteria) or "UNASSIGNED" in d.acceptance_criteria.upper()))
+    ]
     if pending:
         pts.append((TP.criteria_to_confirm(len(pending), pending), [T(KIT, SEC_DELIV, i, "ID") for i in pending], pending))
 

@@ -187,7 +187,8 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
                 title = f"Phase {i // chunk_size + 1} Delivery"
                 deliv_items = []
                 for d in chunk:
-                    d_name = d.name or d.acceptance_criteria or f"Deliverable {d.id}"
+                    crit_fallback = d.acceptance_criteria[0] if (isinstance(d.acceptance_criteria, list) and d.acceptance_criteria) else (d.acceptance_criteria if isinstance(d.acceptance_criteria, str) else None)
+                    d_name = d.name or crit_fallback or f"Deliverable {d.id}"
                     did = d.id or ""
                     if did and not d_name.startswith(did):
                         deliv_items.append(f"{did} {d_name}")
