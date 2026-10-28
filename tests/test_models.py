@@ -71,7 +71,7 @@ def test_deliverable_defaults(sample_source_ref):
         source_reference=sample_source_ref
     )
     assert deliv.owner == "Unassigned"
-    assert deliv.acceptance_criteria is None
+    assert deliv.acceptance_criteria == []
 
 
 def test_milestone_dates(sample_source_ref):

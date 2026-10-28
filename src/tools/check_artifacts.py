@@ -237,6 +237,9 @@ def check_deck_invariants(
                             violations.append(InvariantViolation("INV-04", f"Slide {s_idx} table cell R{r_idx}C{c_idx} contains readiness term: '{c_txt}'", "Deck"))
                         if c_txt in ("[UNASSIGNED]", "[TBD]", "[CONFIRMATION REQUIRED]", "None", "null", "NULL"):
                             violations.append(InvariantViolation("INV-28", f"Slide {s_idx} table cell contains raw placeholder: '{c_txt}'", "Deck"))
+                        # HTL-62: Slide 4 (s_idx == 4) Column 1 (c_idx == 1) is the Acceptance Criteria column, which displays full contractual acceptance criteria and is exempt from the 15-word bullet limit.
+                        if s_idx == 4 and c_idx == 1:
+                            continue
                         if r_idx > 0 and len(c_txt.split()) > 15 and not c_txt.startswith("+"):
                             # If cell contains multiple lines (e.g. deliverables list), check each line.
                             # A line over 15 words is accepted only when DECK-05 allows no shorter cut: it holds a

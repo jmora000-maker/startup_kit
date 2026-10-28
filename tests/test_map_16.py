@@ -212,23 +212,23 @@ def test_map_16_undivide_sow_section_3_27_deliverables_and_acceptance_criteria()
         d = baseline.deliverables[idx - 1]
         assert d.id == f"DEL-{idx:02d}"
         assert d.name == wo_title
-        assert d.acceptance_criteria == ac_text
+        assert "; ".join(d.acceptance_criteria) == ac_text or d.acceptance_criteria == [ac_text]
         assert d.sow_reference == ref
 
     # 3. Check specific DEL-02 and DEL-04 items (connector ingestion criteria attached to its own deliverable)
     del_04 = baseline.deliverables[3]  # Ingestion connectors for the three (3) Launch Sources
     assert del_04.id == "DEL-04"
-    assert "Each Launch Source connector completes a scheduled ingestion run on staging" in del_04.acceptance_criteria
+    assert any("Each Launch Source connector completes a scheduled ingestion run on staging" in c for c in del_04.acceptance_criteria)
     assert del_04.sow_reference == "M1-WO-04"
 
     del_02 = baseline.deliverables[1]  # Normalization layer and ingestion framework deployed in Client's AWS account
     assert del_02.id == "DEL-02"
-    assert "The AWS data tier can be provisioned in Client's AWS account" in del_02.acceptance_criteria
+    assert any("The AWS data tier can be provisioned in Client's AWS account" in c for c in del_02.acceptance_criteria)
     assert del_02.sow_reference == "M1-WO-02"
 
     del_03 = baseline.deliverables[2]  # Infrastructure-as-code definition for the AWS data tier
     assert del_03.id == "DEL-03"
-    assert "The AWS data tier can be provisioned in Client's AWS account" in del_03.acceptance_criteria
+    assert any("The AWS data tier can be provisioned in Client's AWS account" in c for c in del_03.acceptance_criteria)
     assert del_03.sow_reference == "M1-WO-03"
 
     # 4. Check that no INV-39 mismatch warning is recorded when counts match

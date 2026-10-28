@@ -26,7 +26,7 @@ def test_inv27_passes_on_every_fixture(name, tmp_path):
 def test_inv27_fails_when_a_table_exceeds_capacity(arc_bundle, tmp_path):
     prs = Presentation(str(arc_bundle["deck_path"]))
     tbl = slide_tables(prs.slides[3])[0].table._tbl
-    for _ in range(6):
+    for _ in range(10):
         tbl.append(copy.deepcopy(tbl.tr_lst[1]))
     broken = tmp_path / "broken_capacity.pptx"
     prs.save(str(broken))

@@ -403,8 +403,8 @@ def test_automated_status_synchronization_during_reingestion(multi_defect_baseli
     # Assert DEL-02 clean extracted text
     deliv_02 = next(d for d in rescored_baseline.deliverables if d.id == "DEL-02")
     assert deliv_02.owner == "Jane Specialist"
-    assert "Objective UAT" in deliv_02.acceptance_criteria
-    assert "[ACT-" not in deliv_02.acceptance_criteria
+    assert any("Objective UAT" in c for c in deliv_02.acceptance_criteria)
+    assert not any("[ACT-" in c for c in deliv_02.acceptance_criteria)
 
 
 # =============================================================================

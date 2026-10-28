@@ -58,12 +58,12 @@ def test_b1_acceptance_merge_jaccard_similarity_different_order():
 
     deliv_map = {d.id: d for d in baseline.deliverables}
     # DEL-01 (Auth) should have merged acc_items[1] (Auth)
-    assert deliv_map["DEL-01"].acceptance_criteria == "SSO works"
+    assert deliv_map["DEL-01"].acceptance_criteria == ["SSO works"]
     assert deliv_map["DEL-01"].evidence_required == "Auth logs"
     assert deliv_map["DEL-01"].client_approver == "John Approver"
 
     # DEL-02 (Shell) should have merged acc_items[0] (Shell)
-    assert deliv_map["DEL-02"].acceptance_criteria == "Shell loads"
+    assert deliv_map["DEL-02"].acceptance_criteria == ["Shell loads"]
     assert deliv_map["DEL-02"].evidence_required == "Shell logs"
     assert deliv_map["DEL-02"].client_approver == "Jane Approver"
 

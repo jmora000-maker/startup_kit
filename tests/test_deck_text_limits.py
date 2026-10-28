@@ -103,7 +103,8 @@ def test_inv28_accepts_a_cell_over_15_words_only_when_deck_05_allows_no_shorter_
     """DECK-05 wins over the 15-word guide: a first clause with no earlier boundary is shown whole, not cut again."""
     deck_res = export_onboarding_deck(arc_baseline, tmp_path)
     prs = pptx.Presentation(str(deck_res.file_path))
-    table = [sh for sh in prs.slides[3].shapes if getattr(sh, "has_table", False) and sh.has_table][0].table
+    # Test on Slide 5 (Risks table) where the 15-word limit applies
+    table = [sh for sh in prs.slides[4].shapes if getattr(sh, "has_table", False) and sh.has_table][0].table
     cell_run = table.cell(1, 1).text_frame.paragraphs[0].runs[0]
     # a 20-word text with a boundary after its eighth word: the builder must have used that boundary
     cell_run.text = "Negative tests pass and the scan is clean. Findings in Toptal-built components are remediated; findings in Client-built components are reported to the Client."

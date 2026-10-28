@@ -517,7 +517,7 @@
         [
           "DEL-01",
           "Micro-Frontend Shell",
-          "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s.",
+          "• Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s\n• remote mount P95 < 1s.",
           "Working shell in the target environment, performance test results against the stated targets, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -527,7 +527,7 @@
         [
           "DEL-02",
           "Azure AD / MSAL Authentication Integration",
-          "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works.",
+          "• Authentication success 100%\n• token acquisition P95 < 800ms\n• silent token refresh works.",
           "Authentication test results against the stated targets and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -537,7 +537,7 @@
         [
           "DEL-03",
           "Shell and Authentication E2E Test Harness",
-          "E2E coverage of composition, navigation and authentication; 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.",
+          "• E2E coverage of composition, navigation and authentication\n• 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.",
           "Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -547,7 +547,7 @@
         [
           "DEL-04",
           "Foundation Pipeline, Security and Data Validation Suites",
-          "Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report; the targets themselves are Client's to achieve.",
+          "• Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report\n• the targets themselves are Client's to achieve.",
           "Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -557,7 +557,7 @@
         [
           "DEL-05",
           "Faceted Search and Detail API Endpoints",
-          "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.",
+          "• Search P50 < 300ms, P90 < 700ms, P95 < 1s\n• detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.",
           "Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -567,7 +567,7 @@
         [
           "DEL-06",
           "Asynchronous Long-Running Query Processing",
-          "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green.",
+          "• Long queries offloaded\n• status poll P95 < 200ms\n• queue drains\n• health checks green.",
           "Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -577,7 +577,7 @@
         [
           "DEL-07",
           "Backend Integration, Load Tests and Performance Spike",
-          "Search P95 < 1s under load; p95 targets defined, query instrumentation implemented and tuning backlog triaged.",
+          "• Search P95 < 1s under load\n• p95 targets defined, query instrumentation implemented and tuning backlog triaged.",
           "Benchmark and observability outputs, test scripts, execution results report, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -587,7 +587,7 @@
         [
           "DEL-08",
           "OneGWAS Direct-Write Integration and Tests",
-          "100% of completed runs written; retryable errors recovered; write P95 < 60s; completion-to-searchable P95 < 5 min; failure/retry validated.",
+          "• 100% of completed runs written\n• retryable errors recovered\n• write P95 < 60s\n• completion-to-searchable P95 < 5 min\n• failure/retry validated.",
           "Integration test scripts, execution results against the targets, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -597,7 +597,7 @@
         [
           "DEL-09",
           "Data Ingestion and Migration Validation Suites",
-          "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.",
+          "• Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.",
           "Demonstration, technical test report, and repository verification for Data Ingestion and Migration Validation Suites.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -607,7 +607,7 @@
         [
           "DEL-10",
           "ARC Faceted Search and Results Table",
-          "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
+          "• Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
           "Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -617,7 +617,7 @@
         [
           "DEL-11",
           "Result Detail View and Interval Visualization",
-          "Detail view P90 < 1s; interval visualization render P95 < 1.5s.",
+          "• Detail view P90 < 1s\n• interval visualization render P95 < 1.5s.",
           "Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -627,7 +627,7 @@
         [
           "DEL-12",
           "Haplotype Filtering, Comparison and Backend Support",
-          "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works; filter and haplotype endpoints P95 < 1s with correct results against fixtures.",
+          "• Filtered results P90 < 1s\n• interval visualization P95 < 1.5s\n• comparison works\n• filter and haplotype endpoints P95 < 1s with correct results against fixtures.",
           "Performance and fixture test results, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -637,7 +637,7 @@
         [
           "DEL-13",
           "Nomenclature Service",
-          "Resolution correct for all mapped traits (100% in tests); lookup P95 < 200ms.",
+          "• Resolution correct for all mapped traits (100% in tests)\n• lookup P95 < 200ms.",
           "Test scripts, execution results against the targets, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -647,7 +647,7 @@
         [
           "DEL-14",
           "Frontend and Haplotype Test Suites",
-          "Unit coverage ≥80%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.",
+          "• Unit coverage ≥80%\n• key-flow integration green\n• search < 1s\n• haplotype integration tests green (100% of critical paths)\n• filters, comparison and rendering validated across haplotype types.",
           "Test scripts, execution results report, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -657,7 +657,7 @@
         [
           "DEL-15",
           "Integration, Performance, Security and Cross-Browser Test Suites",
-          "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.",
+          "• All flows executed at production-like volume\n• search P95 < 1s\n• authentication/security pass\n• Chrome and Edge validated\n• failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.",
           "Test scripts, execution results report, defect report, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -667,7 +667,7 @@
         [
           "DEL-16",
           "UAT Execution Records and Defect Log",
-          "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built work at exit.",
+          "• UAT cycles run\n• defects triaged and tracked\n• no open critical defects in Toptal-built work at exit.",
           "UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -677,7 +677,7 @@
         [
           "DEL-17",
           "Pre-Launch Hardening Iteration",
-          "All critical and high defects in Toptal-built work closed; full regression green before cutover.",
+          "• All critical and high defects in Toptal-built work closed\n• full regression green before cutover.",
           "UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -687,7 +687,7 @@
         [
           "DEL-18",
           "Production Smoke Test Results and 48-Hour Defect Watch",
-          "Production smoke 100% pass; 48-hour defect watch clean.",
+          "• Production smoke 100% pass\n• 48-hour defect watch clean.",
           "Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -697,7 +697,7 @@
         [
           "DEL-19",
           "MTA Store Parity and Usage-Zero Confirmation Report",
-          "Scripts executed and report issued against the target: parity confirmed; legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.",
+          "• Scripts executed and report issued against the target: parity confirmed\n• legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.",
           "Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
           "Mike Magwire and Satya",
           "Toptal",
@@ -707,7 +707,7 @@
         [
           "DEL-20",
           "Training Materials and User Documentation",
-          "Training materials and user documentation delivered and reviewed.",
+          "• Training materials and user documentation delivered and reviewed.",
           "Delivered training materials and user documentation, and signed milestone acceptance certification.",
           "Mike Magwire and Satya",
           "Toptal",
@@ -2798,7 +2798,7 @@
         "0",
         "",
         "",
-        "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s.; Evidence: Working shell in the target environment, performance test results against the stated targets, and signed milestone acceptance certification.",
+        "• Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s\n• remote mount P95 < 1s.\nEvidence: Working shell in the target environment, performance test results against the stated targets, and signed milestone acceptance certification.",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -2966,7 +2966,7 @@
         "0",
         "",
         "",
-        "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works.; Evidence: Authentication test results against the stated targets and signed milestone acceptance certification.",
+        "• Authentication success 100%\n• token acquisition P95 < 800ms\n• silent token refresh works.\nEvidence: Authentication test results against the stated targets and signed milestone acceptance certification.",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -3134,7 +3134,7 @@
         "0",
         "",
         "",
-        "E2E coverage of composition, navigation and authentication; 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.; Evidence: Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
+        "• E2E coverage of composition, navigation and authentication\n• 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.\nEvidence: Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -3302,7 +3302,7 @@
         "0",
         "",
         "",
-        "Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report; the targets themselves are Client's to achieve.; Evidence: Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
+        "• Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report\n• the targets themselves are Client's to achieve.\nEvidence: Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -3854,7 +3854,7 @@
         "0",
         "",
         "",
-        "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.; Evidence: Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
+        "• Search P50 < 300ms, P90 < 700ms, P95 < 1s\n• detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.\nEvidence: Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
         "RAID-30",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -4022,7 +4022,7 @@
         "0",
         "",
         "",
-        "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green.; Evidence: Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
+        "• Long queries offloaded\n• status poll P95 < 200ms\n• queue drains\n• health checks green.\nEvidence: Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
         "RAID-09, RAID-33, RAID-42",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -4190,7 +4190,7 @@
         "0",
         "",
         "",
-        "Search P95 < 1s under load; p95 targets defined, query instrumentation implemented and tuning backlog triaged.; Evidence: Benchmark and observability outputs, test scripts, execution results report, and signed milestone acceptance certification.",
+        "• Search P95 < 1s under load\n• p95 targets defined, query instrumentation implemented and tuning backlog triaged.\nEvidence: Benchmark and observability outputs, test scripts, execution results report, and signed milestone acceptance certification.",
         "RAID-27, RAID-30",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -4382,7 +4382,7 @@
         "0",
         "",
         "",
-        "100% of completed runs written; retryable errors recovered; write P95 < 60s; completion-to-searchable P95 < 5 min; failure/retry validated.; Evidence: Integration test scripts, execution results against the targets, and signed milestone acceptance certification.",
+        "• 100% of completed runs written\n• retryable errors recovered\n• write P95 < 60s\n• completion-to-searchable P95 < 5 min\n• failure/retry validated.\nEvidence: Integration test scripts, execution results against the targets, and signed milestone acceptance certification.",
         "RAID-30",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -4574,7 +4574,7 @@
         "0",
         "",
         "",
-        "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.; Evidence: Demonstration, technical test report, and repository verification for Data Ingestion and Migration Validation Suites.",
+        "• Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.; Evidence: Demonstration, technical test report, and repository verification for Data Ingestion and Migration Validation Suites.",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -5126,7 +5126,7 @@
         "0",
         "",
         "",
-        "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).; Evidence: Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
+        "• Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).; Evidence: Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -5294,7 +5294,7 @@
         "0",
         "",
         "",
-        "Detail view P90 < 1s; interval visualization render P95 < 1.5s.; Evidence: Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
+        "• Detail view P90 < 1s\n• interval visualization render P95 < 1.5s.\nEvidence: Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -5462,7 +5462,7 @@
         "0",
         "",
         "",
-        "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works; filter and haplotype endpoints P95 < 1s with correct results against fixtures.; Evidence: Performance and fixture test results, and signed milestone acceptance certification.",
+        "• Filtered results P90 < 1s\n• interval visualization P95 < 1.5s\n• comparison works\n• filter and haplotype endpoints P95 < 1s with correct results against fixtures.\nEvidence: Performance and fixture test results, and signed milestone acceptance certification.",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -5678,7 +5678,7 @@
         "0",
         "",
         "",
-        "Resolution correct for all mapped traits (100% in tests); lookup P95 < 200ms.; Evidence: Test scripts, execution results against the targets, and signed milestone acceptance certification.",
+        "• Resolution correct for all mapped traits (100% in tests)\n• lookup P95 < 200ms.\nEvidence: Test scripts, execution results against the targets, and signed milestone acceptance certification.",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -5870,7 +5870,7 @@
         "0",
         "",
         "",
-        "Unit coverage ≥80%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.; Evidence: Test scripts, execution results report, and signed milestone acceptance certification.",
+        "• Unit coverage ≥80%\n• key-flow integration green\n• search < 1s\n• haplotype integration tests green (100% of critical paths)\n• filters, comparison and rendering validated across haplotype types.\nEvidence: Test scripts, execution results report, and signed milestone acceptance certification.",
         "RAID-27",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -6398,7 +6398,7 @@
         "0",
         "",
         "",
-        "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.; Evidence: Test scripts, execution results report, defect report, and signed milestone acceptance certification.",
+        "• All flows executed at production-like volume\n• search P95 < 1s\n• authentication/security pass\n• Chrome and Edge validated\n• failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.\nEvidence: Test scripts, execution results report, defect report, and signed milestone acceptance certification.",
         "RAID-27",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -6566,7 +6566,7 @@
         "0",
         "",
         "",
-        "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built work at exit.; Evidence: UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
+        "• UAT cycles run\n• defects triaged and tracked\n• no open critical defects in Toptal-built work at exit.\nEvidence: UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -6734,7 +6734,7 @@
         "0",
         "",
         "",
-        "All critical and high defects in Toptal-built work closed; full regression green before cutover.; Evidence: UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
+        "• All critical and high defects in Toptal-built work closed\n• full regression green before cutover.\nEvidence: UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
         "",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -6902,7 +6902,7 @@
         "0",
         "",
         "",
-        "Production smoke 100% pass; 48-hour defect watch clean.; Evidence: Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
+        "• Production smoke 100% pass\n• 48-hour defect watch clean.\nEvidence: Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
         "RAID-34",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -7070,7 +7070,7 @@
         "0",
         "",
         "",
-        "Scripts executed and report issued against the target: parity confirmed; legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.; Evidence: Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
+        "• Scripts executed and report issued against the target: parity confirmed\n• legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.\nEvidence: Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
         "RAID-34",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -7238,7 +7238,7 @@
         "0",
         "",
         "",
-        "Training materials and user documentation delivered and reviewed.; Evidence: Delivered training materials and user documentation, and signed milestone acceptance certification.",
+        "• Training materials and user documentation delivered and reviewed.; Evidence: Delivered training materials and user documentation, and signed milestone acceptance certification.",
         "RAID-33, RAID-41",
         "Baseline - Deliverables",
         "Catalogue phase",
@@ -9003,71 +9003,41 @@
           ],
           [
             "DEL-01",
-            "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s",
+            "• Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s\n• remote mount P95 < 1s.",
             "M1"
           ],
           [
             "DEL-02",
-            "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works.",
+            "• Authentication success 100%\n• token acquisition P95 < 800ms\n• silent token refresh works.",
             "M1"
           ],
           [
             "DEL-03",
-            "E2E coverage of composition, navigation and authentication",
+            "• E2E coverage of composition, navigation and authentication\n• 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.",
             "M1"
           ],
           [
             "DEL-04",
-            "Negative tests pass and scan is clean, with Toptal-built findings remediated.",
+            "• Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report\n• the targets themselves are Client's to achieve.",
             "M1"
           ],
           [
             "DEL-05",
-            "Search P50 < 300ms, P90 < 700ms, P95 < 1s",
+            "• Search P50 < 300ms, P90 < 700ms, P95 < 1s\n• detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.",
             "M2"
           ],
           [
             "DEL-06",
-            "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green.",
+            "• Long queries offloaded\n• status poll P95 < 200ms\n• queue drains\n• health checks green.",
             "M2"
           ],
           [
             "DEL-07",
-            "Search P95 < 1s under load",
+            "• Search P95 < 1s under load\n• p95 targets defined, query instrumentation implemented and tuning backlog triaged.",
             "M2"
           ],
           [
-            "DEL-08",
-            "100% of completed runs written",
-            "M2"
-          ],
-          [
-            "DEL-09",
-            "Scripts delivered and executed with defect reports against targets",
-            "M2"
-          ],
-          [
-            "DEL-10",
-            "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
-            "M3"
-          ],
-          [
-            "DEL-11",
-            "Detail view P90 < 1s; interval visualization render P95 < 1.5s.",
-            "M3"
-          ],
-          [
-            "DEL-12",
-            "Filtered results P90 < 1s",
-            "M3"
-          ],
-          [
-            "DEL-13",
-            "Resolution correct for all mapped traits (100% in tests); lookup P95 < 200ms.",
-            "M3"
-          ],
-          [
-            "+7 more: DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20 (see Startup Kit · Deliverables and Acceptance Matrix)",
+            "+13 more: DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20 (see Startup Kit · Deliverables and Acceptance Matrix)",
             "",
             ""
           ]
