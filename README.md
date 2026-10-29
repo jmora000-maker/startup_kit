@@ -1,9 +1,10 @@
 # PMO Startup Kit Generator
 
-The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and kickoff materials to extract structured project management baselines via LLMs. It produces three core project delivery documents:
+The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and supporting kickoff materials to extract structured project management baselines via LLMs. It produces four core project delivery documents:
 - the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, RAID items, and assurance logs;
 - the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), containing an executive 7-slide briefing deck for talent onboarding (cover, five content slides, and a closing Your Project Kit slide), built with strict traceability back to the Kit and Workbook.
+- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), an executive 7-slide briefing deck for talent onboarding built with strict traceability back to the Kit and Workbook;
+- the **Client Kickoff Deck** (`.pptx`) and trace manifest (`.trace.json`), an executive 16-slide client-facing presentation synthesizing engagement purpose, customer-outcome problem & solution narratives, workstreams, delivery timelines, RAID logs, and immediate next steps.
 
 For detailed specification rules and background, see [spec/PMO_Startup_Kit_Consolidated_Spec.md](spec/PMO_Startup_Kit_Consolidated_Spec.md) and [spec/Review_Loop_Reference.md](spec/Review_Loop_Reference.md).
 
@@ -11,14 +12,15 @@ For detailed specification rules and background, see [spec/PMO_Startup_Kit_Conso
 
 ## 1. Purpose
 
-The tool reads a Statement of Work (SOW) and produces three standardized project management documents:
+The tool reads a Statement of Work (SOW) and supporting documents to produce four standardized project management deliverables:
 - the **Startup Kit** (`.docx`);
 - the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest.
+- the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest;
+- the **Client Kickoff Deck** (`.pptx`), with sixteen client-facing briefing slides and a companion `{Project}_Client_Kickoff_Deck.trace.json` manifest.
 
 ### Execution Interfaces & Storage Architecture
 The tool supports two primary workflows:
-- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to upload SOWs, inspect and edit extracted baseline facts, approve readiness scoring, and generate deliverables through a web interface.
+- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to ingest SOWs and supporting notes via dual upload slots (with SOW-first precedence and gap-filling), inspect and edit extracted baseline facts (with collapsed fact-category panels), approve verified baselines, and generate all four deliverables. Billed LLM extraction and generation actions are protected by a dedicated `GENERATION_PASSPHRASE` gate.
 - **Command-Line Interface (CLI)**: Run `python main.py` for batch extraction, headless processing, and automated pipeline execution.
 
 **Dual Storage Backend**: Review run states and generated documents are managed through the `ReviewStorage` abstraction (`src/review_storage/`):
@@ -250,6 +252,15 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 - **Trace manifest:** lists every element (slide, shape, displayed text, and its `Kit` / `Workbook` TraceRefs) and every talking point on slides 2 to 6. `check_artifacts` uses it.
 - **Text:** shown whole or cut only at a sentence or clause boundary; never an ellipsis, a comma cut, an unbalanced bracket, or a shortened name. Text that does not fit gets a smaller font (within the minimums), then a `+N more` row or line.
 - **Review aids:** `python -m src.tools.render_deck <deck.pptx>` renders each slide to a PNG beside the deck when LibreOffice is installed (set `SOFFICE_PATH` if it is not on `PATH`). `python -m src.tools.dump_deck <deck.pptx>` prints every slide's text, tables, notes, and the slide-part count.
+
+---
+
+## Client Kickoff Deck
+
+The Client Kickoff Deck (`{Project}_Client_Kickoff_Deck.pptx`) and its trace manifest (`{Project}_Client_Kickoff_Deck.trace.json`) provide a 16-slide client-facing briefing delivered at engagement launch.
+- **Core Slides**: Cover (Slide 1), Executive Summary & Engagement Context (Slide 5), Solution Overview & Out of Scope (Slide 6), Governance & Cadence, Timeline & Milestones, Key Risks (Slide 12), and Immediate Next Steps (Slide 15).
+- **Customer-Outcome Framing**: Slide 5 and Slide 6 feature LLM-synthesized narratives focused on business value and tangible capabilities received by the client, omitting raw internal delivery metrics and acceptance percentages.
+- **Dynamic Traceability**: Every content card and table row is mapped in the companion `.trace.json` manifest directly to its source field in the baseline charter, RAID log, or open items.
 
 ---
 

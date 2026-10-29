@@ -287,8 +287,12 @@ gcloud run deploy startup-kit-app `
   --image gcr.io/toptal-delivery-apps/startup-kit-app `
   --region us-east1 `
   --service-account cloudrun-sa@toptal-delivery-apps.iam.gserviceaccount.com `
-  --set-env-vars REVIEW_STORAGE_BACKEND=gcp,GCS_BUCKET_NAME=toptal-startup-kit-outputs,GOOGLE_CLOUD_PROJECT=toptal-delivery-apps,LLM_PROVIDER=anthropic `
+  --env-vars-file env-vars.yaml `
   --set-secrets ANTHROPIC_API_KEY=anthropic-api-key:latest `
+  --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
+  --set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest `
+  --timeout=1800 `
+  --min-instances=1 `
   --no-allow-unauthenticated
 ```
 

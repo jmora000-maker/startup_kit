@@ -2,7 +2,11 @@
 
 Oct 21, 2026 · @James
 
-The Startup Kit app reads a Statement of Work and other project documents a PMO uploads, uses AI to pull out the key facts (dates, deliverables, risks, contract terms), has a person confirm those facts are right, and then assembles everything into four ready-to-use project documents — a Startup Kit, a Readiness Checklist, a Delivery Workbook, and an Onboarding Deck.
+The Startup Kit app reads a Statement of Work and supporting kickoff materials uploaded by a PMO, uses AI to extract key structured facts (dates, deliverables, milestones, risks, and governance terms), enables human review and editing of those facts, and then assembles everything into four ready-to-use project delivery documents:
+- a **Startup Kit** (`.docx`),
+- a **Project Delivery Workbook** (`.xlsx`),
+- a **Talent Team Onboarding Deck** (`.pptx`), and
+- a **Client Kickoff Deck** (`.pptx`) with companion audit-trail trace manifests (`.trace.json`).
 
 ## Architecture
 
@@ -14,7 +18,11 @@ The app runs as one Streamlit service on Google Cloud Run, in a project called t
 
 &#91;embedded content: internal flow · five stages from upload to generated documents\]
 
-Upload starts the run: a Statement of Work and any supporting documents go in together. AI extraction reads them and pulls out structured facts — dates, deliverables, risks, contract terms. Validation is deterministic code, not AI: dozens of real business-rule checks run against the extracted facts, catching things like a deliverable with no real reference back to the source document, and automatically repairing some issues on their own. Human review is where a person actually reads the extracted facts, corrects anything wrong, and clicks Approve — nothing is generated without that explicit action. Only after approval does Generate run, assembling the approved facts into the four real documents.
+Upload starts the run on the Generate page via two dedicated upload slots: a required primary Statement of Work (SOW) slot and an optional supporting documents slot (accepting `.pdf`, `.docx`, `.pptx`, `.txt`, and `.md` notes). Extraction applies strict SOW-first precedence — the SOW is the definitive source of truth, while supporting notes fill missing context (such as concrete pain points for the problem statement). To prevent unauthorized API consumption, SOW uploads and document generation are protected by a generation passphrase.
+
+AI extraction reads the ingested documents and produces structured domain baselines, including customer-outcome narratives for the problem statement, solution overview, and success criteria. Validation runs deterministic business-rule checks against the extracted facts (e.g., verifying 1:1 structural counts of acceptance criteria, checking parent deliverable references, and repairing gate numbering).
+
+Human review is where a reviewer inspects the extracted baseline across collapsed fact categories on the Fact Review page, applies any necessary corrections, and clicks Approve — nothing is generated without explicit approval. Once approved, Generate executes, assembling the verified facts into the four polished deliverables.
 
 ## How it uses AI
 
