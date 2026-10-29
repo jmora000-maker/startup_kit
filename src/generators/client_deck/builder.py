@@ -420,40 +420,81 @@ def build_client_deck_model(baseline: StartupKitBaseline) -> ClientDeckModel:
     )
 
     # Slide 5 Traces
+    if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]":
+        why_traces = [TraceRef(artifact="Charter", locator="Project Purpose", key="project_purpose", field="project_purpose")]
+        why_derived = None
+    elif baseline.governance_context and baseline.governance_context.executive_summary:
+        why_traces = [TraceRef(artifact="GovernanceContext", locator="Executive Summary", key="executive_summary", field="executive_summary")]
+        why_derived = "Fallback"
+    else:
+        why_traces = [TraceRef(artifact="Charter", locator="Project Purpose", key="project_purpose", field="project_purpose")]
+        why_derived = "Default"
+
     manifest.add(
         slide=5,
         shape="Shape;176",
         element="Why are we doing this?",
         displayed_value=slide5.why_are_we_doing_this,
-        traces=[TraceRef(artifact="Charter", locator="Project Purpose", key="project_purpose", field="project_purpose")],
+        traces=why_traces,
+        derived=why_derived,
     )
+
+    if baseline.charter and baseline.charter.problem_statement and baseline.charter.problem_statement != "[CONFIRMATION REQUIRED]":
+        prob_traces = [TraceRef(artifact="Charter", locator="Problem Statement", key="problem_statement", field="problem_statement")]
+        prob_derived = None
+    else:
+        prob_traces = [TraceRef(artifact="Charter", locator="Problem Statement", key="problem_statement", field="problem_statement")]
+        prob_derived = "Fallback"
+
     manifest.add(
         slide=5,
         shape="Shape;180",
         element="What problem are we solving?",
         displayed_value=slide5.what_problem_are_we_solving,
-        traces=[
-            TraceRef(artifact="Charter", locator="Project Purpose", key="project_purpose", field="project_purpose"),
-            TraceRef(artifact="SOWInterpretation", locator="Constraints", key="constraints", field="constraints"),
-        ],
-        derived="Deterministic Synthesis",
+        traces=prob_traces,
+        derived=prob_derived,
     )
+
+    if baseline.charter and baseline.charter.success_criteria_summary and baseline.charter.success_criteria_summary != "[CONFIRMATION REQUIRED]":
+        succ_traces = [TraceRef(artifact="Charter", locator="Success Criteria Summary", key="success_criteria_summary", field="success_criteria_summary")]
+        succ_derived = None
+    elif baseline.charter and baseline.charter.success_criteria:
+        succ_traces = [TraceRef(artifact="Charter", locator="Success Criteria", key="success_criteria", field="success_criteria")]
+        succ_derived = "Deterministic Fallback"
+    else:
+        succ_traces = [TraceRef(artifact="Charter", locator="Success Criteria", key="success_criteria", field="success_criteria")]
+        succ_derived = "Default"
+
     manifest.add(
         slide=5,
         shape="Shape;184",
         element="What does success look like?",
         displayed_value=slide5.what_does_success_look_like,
-        traces=[TraceRef(artifact="Charter", locator="Success Criteria", key="success_criteria", field="success_criteria")],
-        derived="Prose Distillation",
+        traces=succ_traces,
+        derived=succ_derived,
     )
 
     # Slide 6 Traces
+    if baseline.charter and baseline.charter.solution_overview and baseline.charter.solution_overview != "[CONFIRMATION REQUIRED]":
+        so_traces = [TraceRef(artifact="Charter", locator="Solution Overview", key="solution_overview", field="solution_overview")]
+        so_derived = None
+    elif baseline.charter and baseline.charter.high_level_scope:
+        so_traces = [TraceRef(artifact="Charter", locator="High Level Scope", key="high_level_scope", field="high_level_scope")]
+        so_derived = "Deterministic Fallback"
+    elif baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]":
+        so_traces = [TraceRef(artifact="Charter", locator="Project Purpose", key="project_purpose", field="project_purpose")]
+        so_derived = "Deterministic Fallback"
+    else:
+        so_traces = [TraceRef(artifact="Charter", locator="Solution Overview", key="solution_overview", field="solution_overview")]
+        so_derived = "Default"
+
     manifest.add(
         slide=6,
         shape="Shape;194",
         element="Solution Overview",
         displayed_value=slide6.solution_overview,
-        traces=[TraceRef(artifact="Charter", locator="High Level Scope", key="high_level_scope", field="high_level_scope")],
+        traces=so_traces,
+        derived=so_derived,
     )
     for idx, ws in enumerate(slide6.workstreams):
         manifest.add(
@@ -462,6 +503,25 @@ def build_client_deck_model(baseline: StartupKitBaseline) -> ClientDeckModel:
             element=f"Workstream {idx+1}: {ws.title}",
             displayed_value="; ".join(ws.deliverables),
             traces=[TraceRef(artifact="Milestones", locator="Phase / Milestone", key=ws.title, field="deliverables")],
+        )
+    if slide6.out_of_scope:
+        if baseline.charter and baseline.charter.exclusions:
+            oos_traces = [TraceRef(artifact="Charter", locator="Exclusions", key="exclusions", field="exclusions")]
+            oos_derived = None
+        elif baseline.sow_interpretation and baseline.sow_interpretation.out_of_scope_items:
+            oos_traces = [TraceRef(artifact="SOWInterpretation", locator="Out of Scope Items", key="out_of_scope_items", field="out_of_scope_items")]
+            oos_derived = None
+        else:
+            oos_traces = [TraceRef(artifact="Charter", locator="Exclusions", key="exclusions", field="exclusions")]
+            oos_derived = "Default"
+
+        manifest.add(
+            slide=6,
+            shape="Shape;202",
+            element="Out of Scope",
+            displayed_value="; ".join(slide6.out_of_scope),
+            traces=oos_traces,
+            derived=oos_derived,
         )
 
     # Slide 12 Traces
