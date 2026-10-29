@@ -65,28 +65,27 @@ def scrub_commercial_clauses(text: str) -> str:
     return ""
 
 
-def format_success_criteria_prose(criteria: Sequence[str]) -> str:
-    """Distill success criteria list into narrative prose sentences (OUT-14.2 / HTL-50)."""
-    clean_items = [
-        c.strip().rstrip(".")
+def format_success_criteria_prose(criteria: Sequence[str], summary: Optional[str] = None) -> str:
+    """Distill success criteria into narrative prose sentences (OUT-14.2 / HTL-50 / HTL-60)."""
+    if summary and summary.strip() and summary.strip() != "[CONFIRMATION REQUIRED]":
+        scrubbed = scrub_commercial_clauses(summary.strip())
+        if scrubbed:
+            return scrubbed
+
+    # Tier 2 Deterministic Fallback (HTL-60)
+    clean = [
+        c.strip().rstrip(";. ")
         for c in (criteria or [])
-        if c.strip() and c.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(c)
+        if c and c.strip() and c.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(c)
     ]
-    if not clean_items:
+    if not clean:
         return "[To be confirmed in Project Success Agreement]"
 
-    norm_items = [
-        (it[0].lower() + it[1:] if len(it) > 1 else it.lower())
-        for it in clean_items
-    ]
-
-    if len(norm_items) == 1:
-        return f"Success is defined by {norm_items[0]}."
-    if len(norm_items) == 2:
-        return f"Success is defined by {norm_items[0]}, and {norm_items[1]}."
-
-    joined = "; ".join(norm_items[:-1]) + f"; and {norm_items[-1]}."
-    return f"Success is defined across key project milestones: {joined}"
+    sentences = []
+    for item in clean:
+        s = item[0].upper() + item[1:] if len(item) > 1 else item.upper()
+        sentences.append(s + ".")
+    return " ".join(sentences)
 
 
 def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
@@ -122,7 +121,15 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
     else:
         problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
 
-    success = format_success_criteria_prose(baseline.charter.success_criteria if baseline.charter else [])
+    raw_summary = (
+        baseline.charter.success_criteria_summary
+        if baseline.charter and baseline.charter.success_criteria_summary and baseline.charter.success_criteria_summary != "[CONFIRMATION REQUIRED]"
+        else None
+    )
+    success = format_success_criteria_prose(
+        baseline.charter.success_criteria if baseline.charter else [],
+        summary=raw_summary,
+    )
     return Slide5Model(
         why_are_we_doing_this=why,
         what_problem_are_we_solving=problem,
@@ -212,14 +219,34 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
             )
         )
 
-    # Solution Overview
+    # Solution Overview (HTL-60)
     overview = ""
-    if baseline.charter and baseline.charter.high_level_scope:
-        non_comm_scope = [s for s in baseline.charter.high_level_scope if s.strip() and not COMMERCIAL_EXCLUSION_REGEX.search(s)]
-        if non_comm_scope:
-            overview = " ".join([s.strip().rstrip(".") + "." for s in non_comm_scope])
-    if not overview and baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]":
-        overview = scrub_commercial_clauses(baseline.charter.project_purpose)
+    raw_overview = (
+        baseline.charter.solution_overview
+        if baseline.charter and baseline.charter.solution_overview and baseline.charter.solution_overview != "[CONFIRMATION REQUIRED]"
+        else None
+    )
+    if raw_overview:
+        overview = scrub_commercial_clauses(raw_overview)
+
+    if not overview:
+        # Tier 2 Deterministic Fallback:
+        clean_scope = [
+            s.strip().rstrip(";. ")
+            for s in (baseline.charter.high_level_scope if baseline.charter else [])
+            if s and s.strip() and s.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(s)
+        ]
+        if clean_scope:
+            sentences = []
+            for s in clean_scope:
+                s_cap = s[0].upper() + s[1:] if len(s) > 1 else s.upper()
+                sentences.append(s_cap + ".")
+            overview = " ".join(sentences)
+        elif baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]":
+            p = scrub_commercial_clauses(baseline.charter.project_purpose)
+            if p:
+                overview = p.rstrip(".") + "."
+
     if not overview:
         overview = "Comprehensive milestone-based delivery establishing core platform capabilities in alignment with contracted specifications."
 

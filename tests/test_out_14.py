@@ -394,30 +394,34 @@ def test_slide5_why_problem_success_synthesis(rich_client_deck_baseline):
     # What problem are we solving? (direct reading from charter.problem_statement)
     assert model.what_problem_are_we_solving == "Fragmented customer onboarding data across disparate legacy databases causing manual processing bottlenecks."
 
-    # What does success look like? (narrative prose, not bullet list)
-    assert model.what_does_success_look_like.startswith("Success is defined across key project milestones:")
-    assert "reduce onboarding processing latency" in model.what_does_success_look_like
-    assert "99.95% service uptime" in model.what_does_success_look_like
+    # What does success look like? (narrative prose, not bullet list, HTL-60)
+    assert "Reduce onboarding processing latency from 48 hours to under 15 minutes." in model.what_does_success_look_like
+    assert "Achieve 99.95% service uptime" in model.what_does_success_look_like
     assert "•" not in model.what_does_success_look_like
     assert "\n" not in model.what_does_success_look_like
 
 
 def test_format_success_criteria_prose_variations():
-    """OUT-14.2 / HTL-50: format_success_criteria_prose correctly formats 0, 1, 2, and 3+ criteria with zero-fabrication fallback."""
+    """OUT-14.2 / HTL-50 / HTL-60: format_success_criteria_prose correctly formats 0, 1, 2, 3+ criteria and summaries."""
     # 0 criteria -> explicit system placeholder
     assert format_success_criteria_prose([]) == "[To be confirmed in Project Success Agreement]"
 
     # 1 criterion
     c1 = format_success_criteria_prose(["Complete platform deployment on AWS"])
-    assert c1 == "Success is defined by complete platform deployment on AWS."
+    assert c1 == "Complete platform deployment on AWS."
 
     # 2 criteria
     c2 = format_success_criteria_prose(["Deliver Core API Gateway", "Achieve 99.9% uptime"])
-    assert c2 == "Success is defined by deliver Core API Gateway, and achieve 99.9% uptime."
+    assert c2 == "Deliver Core API Gateway. Achieve 99.9% uptime."
 
     # 3+ criteria
     c3 = format_success_criteria_prose(["Deliver API", "Deploy database", "Pass security audit"])
-    assert c3 == "Success is defined across key project milestones: deliver API; deploy database; and pass security audit."
+    assert c3 == "Deliver API. Deploy database. Pass security audit."
+
+    # Summary provided (Tier 1 LLM extraction synthesis)
+    summary_text = "Project success requires all core services operational in staging. Final sign-off is achieved upon passing full UAT."
+    c_sum = format_success_criteria_prose(["Deliver API", "Deploy database"], summary=summary_text)
+    assert c_sum == summary_text
 
 
 def test_slide5_problem_statement_direct_reading_and_fallbacks():
@@ -762,7 +766,7 @@ def test_end_to_end_freshly_generated_client_kickoff_deck(rich_client_deck_basel
     # 2. Slide 5 (Success Agreement)
     s5_text = "\n".join(s.text_frame.text for s in prs.slides[4].shapes if s.has_text_frame)
     assert "Modernize customer onboarding pipeline" in s5_text
-    assert "Success is defined across key project milestones" in s5_text
+    assert "Reduce onboarding processing latency" in s5_text
 
     # 3. Slide 6 (What We Will Deliver)
     s6_text = "\n".join(s.text_frame.text for s in prs.slides[5].shapes if s.has_text_frame)
@@ -831,11 +835,11 @@ def test_htl_48_real_failing_baseline_slide5_fit(sample_real_failing_client_base
     p2 = card2.text_frame.paragraphs[0]
 
     # Card 3 (Success Criteria - 5 item prose)
-    card3 = next(s for s in shapes if "Success is defined across key project milestones" in s.text_frame.text or s.shape_id == 184)
+    card3 = next(s for s in shapes if "All four milestones accepted" in s.text_frame.text or s.shape_id == 184)
     assert card3.text_frame.margin_top == 0
     p3 = card3.text_frame.paragraphs[0]
-    assert "all four milestones accepted within five business days" in card3.text_frame.text
-    assert "production live and handover complete" in card3.text_frame.text
+    assert "All four milestones accepted within five business days" in card3.text_frame.text
+    assert "Production live and handover complete" in card3.text_frame.text
 
     # HTL-52: All three cards must share identical uniform font size
     sz1 = p1.runs[0].font.size.pt

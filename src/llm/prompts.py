@@ -40,6 +40,10 @@ PROBLEM STATEMENT & GAP-FILLING INSTRUCTIONS:
 - CRITICAL: Do NOT restate the solution, project purpose, or list contracted deliverables (e.g. do NOT say "Building a Postgres schema and deploying microservices"). Focus exclusively on what is broken, manual, bottlenecked, or inadequate in the client's current state.
 - HONEST FALLBACK: If NEITHER the SOW nor any supporting document states an existing problem or current-state limitation, you MUST set problem_statement to null. Do NOT fabricate, infer, or invent a problem statement.
 
+SOLUTION OVERVIEW & SUCCESS CRITERIA SYNTHESIS INSTRUCTIONS:
+- solution_overview: A cohesive 2-3 sentence narrative describing the core technical solution, key workstreams, and delivery cadence. Must use active verbs and explain how the pieces connect into an integrated outcome, rather than listing deliverable titles or bullet points.
+- success_criteria_summary: A natural, multi-sentence paragraph (2-3 sentences) synthesizing what project success looks like across deliverable acceptance, performance/quality targets, and milestone completion. Must describe the logical connections between criteria rather than presenting them as disconnected bullet fragments.
+
 Extract:
 - project_name: Title of the project or engagement (a single clean title).
 - client_name: Name of the client or sponsoring organization.
@@ -50,6 +54,8 @@ Extract:
 - pmo_lead: Named PMO Lead if mentioned, else null.
 - executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.
 - problem_statement: 1-2 concise sentences stating the client's concrete current-state pain point or operational bottleneck. Set to null if not stated in source documents.
+- solution_overview: A cohesive 2-3 sentence narrative synthesizing the technical solution, key workstreams, and delivery cadence (using active verbs, not a bare list of deliverable titles).
+- success_criteria_summary: A natural 2-3 sentence narrative synthesizing what project success looks like across deliverable acceptance, performance/quality targets, and milestone completion.
 - source_reference: Document name, section/slide reference, and confidence score.
 
 DOCUMENTS CONTENT:
