@@ -132,7 +132,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.bold = True
 
         # Subtitle Shape
-        elif "Onboarding for Project Managers" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id == 94:
+        elif "Onboarding for Project Managers" in text or "Aligning on governance" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id == 94:
             tf = shape.text_frame
             tf.word_wrap = True
             tf.margin_top = 0
@@ -147,7 +147,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 tf._txBody.remove(p._p)
 
             p0 = tf.paragraphs[0]
-            p0.text = "Alignment on governance, outcomes and project plan."
+            p0.text = "Aligning on governance, outcomes and project plan."
             for r in p0.runs:
                 r.font.name = "Proxima Nova"
                 r.font.size = Pt(11)

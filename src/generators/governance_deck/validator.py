@@ -32,8 +32,8 @@ def check_governance_deck_traceability(
         s1_text = " ".join([s.text_frame.text for s in s1.shapes if s.has_text_frame])
         if "Governance Kickoff" not in s1_text:
             errors.append("Slide 1 title is missing 'Governance Kickoff'")
-        if "Alignment on governance, outcomes and project plan." not in s1_text:
-            errors.append("Slide 1 is missing subtitle 'Alignment on governance, outcomes and project plan.'")
+        if "Aligning on governance, outcomes and project plan." not in s1_text:
+            errors.append("Slide 1 is missing subtitle 'Aligning on governance, outcomes and project plan.'")
         if "[Client Name]" in s1_text or "[Project Name]" in s1_text:
             errors.append("Slide 1 contains unreplaced [Client Name] or [Project Name] placeholders")
 

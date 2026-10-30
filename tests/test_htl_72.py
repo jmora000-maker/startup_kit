@@ -3,7 +3,7 @@
 Verifies:
 1. Module scaffolding and exports in src/generators/governance_deck/
 2. Template fallback path resolution for PS_Governance Kickoff_TEMPLATE.pptx
-3. Slide 1 title substitution ('Governance Kickoff') and fixed subtitle ('Alignment on governance, outcomes and project plan.')
+3. Slide 1 title substitution ('Governance Kickoff') and fixed subtitle ('Aligning on governance, outcomes and project plan.')
 4. Cross-artifact consistency between PS Governance Kickoff Deck and Client Kickoff Deck across lifted slides (13, 14, 18, 19)
 5. 19-slide presentation structure and companion trace manifest generation
 """
@@ -69,7 +69,7 @@ def test_htl_72_slide1_title_and_subtitle_rendering(tmp_path):
     s1_text = " ".join([s.text_frame.text for s in slide1.shapes if s.has_text_frame])
     assert "Governance Kickoff" in s1_text
     assert "Portland General Electric Company" in s1_text
-    assert "Alignment on governance, outcomes and project plan." in s1_text
+    assert "Aligning on governance, outcomes and project plan." in s1_text
     assert "[Client Name]" not in s1_text
     assert "[Project Name]" not in s1_text
     assert "Onboarding for Project Managers staffed on" not in s1_text
