@@ -486,6 +486,10 @@ class SOWInterpretationSummary(BaseModel):
     platform_environment_commitments: List[str] = Field(default_factory=list)
     dependencies: List[str] = Field(default_factory=list)
     approval_expectations: str = "[CONFIRMATION REQUIRED]"
+    acceptance_process_narrative: Optional[str] = Field(
+        default=None,
+        description="Synthesized acceptance process narrative for the internal Talent Team."
+    )
     ambiguity_notes: List[str] = Field(default_factory=list)
     confirmation_required_items: List[str] = Field(default_factory=list)
     contract_ambiguities: List["ContractAmbiguityItem"] = Field(default_factory=list)
@@ -852,6 +856,10 @@ class SOWInterpretationExtraction(BaseModel):
     platform_environment_commitments: List[str] = Field(default_factory=list)
     dependencies: List[str] = Field(default_factory=list)
     approval_expectations: Optional[str] = None
+    acceptance_process_narrative: Optional[str] = Field(
+        default=None,
+        description="Synthesized acceptance process narrative for the internal Talent Team."
+    )
     ambiguity_notes: List[str] = Field(default_factory=list)
     source_reference: Optional[SourceReference] = None
 
@@ -863,6 +871,10 @@ class ScopeDecompositionExtraction(BaseModel):
 
 class AcceptanceProcessExtraction(BaseModel):
     acceptance_matrix_items: List[Deliverable] = Field(default_factory=list)
+    acceptance_process_narrative: Optional[str] = Field(
+        default=None,
+        description="Cohesive plain-language narrative synthesizing the contract-wide acceptance process for the Talent Team."
+    )
 
 
 class StakeholdersExtraction(BaseModel):

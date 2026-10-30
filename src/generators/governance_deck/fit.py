@@ -5,6 +5,7 @@ from src.generators.client_deck.fit import (
     fit_deliverables_for_block,
     select_fitting_font_size,
     truncate_at_clause,
+    wrap_lines,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "fit_deliverables_for_block",
     "select_fitting_font_size",
     "truncate_at_clause",
+    "wrap_lines",
 ]

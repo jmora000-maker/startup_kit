@@ -432,6 +432,12 @@ class BaselineAggregator:
         )
 
         # 8. Build Scope & Baseline Interpretation Summary (Layer 1)
+        acceptance_narrative: Optional[str] = None
+        if acceptance_ext and acceptance_ext.acceptance_process_narrative:
+            acceptance_narrative = sanitize_report_text(acceptance_ext.acceptance_process_narrative)
+        elif sow_interpretation_ext and sow_interpretation_ext.acceptance_process_narrative:
+            acceptance_narrative = sanitize_report_text(sow_interpretation_ext.acceptance_process_narrative)
+
         if sow_interpretation_ext:
             sow_summary = SOWInterpretationSummary(
                 contracted_deliverables=[sanitize_report_text(x) for x in (sow_interpretation_ext.contracted_deliverables or [d.name or d.description for d in deliverables])],
@@ -451,6 +457,7 @@ class BaselineAggregator:
                 ])],
                 dependencies=[sanitize_report_text(x) for x in (sow_interpretation_ext.dependencies or [da.description for da in dependencies_assumptions if da.type == "Dependency"])],
                 approval_expectations=sanitize_report_text(sow_interpretation_ext.approval_expectations or "Written sign-off by Client Approver within 5 business days of submission."),
+                acceptance_process_narrative=acceptance_narrative,
                 ambiguity_notes=[sanitize_report_text(x) for x in (sow_interpretation_ext.ambiguity_notes or [q for q in questions if "[CONFIRMATION REQUIRED]" in q])],
                 confirmation_required_items=[q for q in questions if "[CONFIRMATION REQUIRED]" in q],
                 contract_ambiguities=contract_ambiguities,
@@ -481,6 +488,7 @@ class BaselineAggregator:
                     "Architecture review board sign-off"
                 ],
                 approval_expectations="Written sign-off by Client Approver within 5 business days of submission.",
+                acceptance_process_narrative=acceptance_narrative,
                 ambiguity_notes=[q for q in questions if "[CONFIRMATION REQUIRED]" in q],
                 confirmation_required_items=[q for q in questions if "[CONFIRMATION REQUIRED]" in q],
                 contract_ambiguities=contract_ambiguities,

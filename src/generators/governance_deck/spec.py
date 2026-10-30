@@ -56,6 +56,7 @@ class Slide15AcceptanceCriteriaModel:
 class Slide16AcceptanceNarrativeModel:
     """Model for Slide 16 (How Milestone Acceptance Works - Phase 2)."""
     narrative: str = ""
+    tier: str = "Tier 1"
 
 
 @dataclass

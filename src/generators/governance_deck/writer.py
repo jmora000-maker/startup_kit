@@ -14,6 +14,7 @@ from src.generators.client_deck.fit import (
     fit_deliverables_for_block,
     select_fitting_font_size,
     truncate_at_clause,
+    wrap_lines,
 )
 from src.generators.client_deck.spec import (
     ClientDeckModel,
@@ -131,7 +132,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.bold = True
 
         # Subtitle Shape
-        elif "Onboarding for Project Managers" in text or "Aligning on outcomes" in text or shape.shape_id in (93, 94):
+        elif "Onboarding for Project Managers" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id in (93, 94):
             tf = shape.text_frame
             tf.word_wrap = True
             tf.margin_top = 0
@@ -146,7 +147,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 tf._txBody.remove(p._p)
 
             p0 = tf.paragraphs[0]
-            p0.text = "Aligning on outcomes, team, and how we'll deliver."
+            p0.text = "Alignment on governance, outcomes and project plan."
             for r in p0.runs:
                 r.font.name = "Proxima Nova"
                 r.font.size = Pt(11)
@@ -322,6 +323,118 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
         _format_table_cell(cell2, row_data.milestone_gate, font_size_pt=chosen_sz, color_rgb=RGBColor(0x04, 0x11, 0x33))
 
 
+def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 16 How Milestone Acceptance Works narrative with Proxima Nova typography and font fitting (HTL-72)."""
+    # 1. Clear placeholder shapes
+    for s in list(slide.shapes):
+        slide.shapes._spTree.remove(s._element)
+
+    # 2. Add Kicker
+    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
+    tf_k = kicker_box.text_frame
+    tf_k.word_wrap = True
+    tf_k.margin_top = 0
+    tf_k.margin_bottom = 0
+    tf_k.margin_left = 0
+    tf_k.margin_right = 0
+    p_k = tf_k.paragraphs[0]
+    p_k.text = "PROJECT SUCCESS AGREEMENT"
+    for r in p_k.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 3. Add Title
+    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
+    tf_t = title_box.text_frame
+    tf_t.word_wrap = True
+    tf_t.margin_top = 0
+    tf_t.margin_bottom = 0
+    tf_t.margin_left = 0
+    tf_t.margin_right = 0
+    p_t = tf_t.paragraphs[0]
+    p_t.text = "How milestone acceptance works"
+    for r in p_t.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(20)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 4. Add Subtitle
+    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
+    tf_s = sub_box.text_frame
+    tf_s.word_wrap = True
+    tf_s.margin_top = 0
+    tf_s.margin_bottom = 0
+    tf_s.margin_left = 0
+    tf_s.margin_right = 0
+    p_s = tf_s.paragraphs[0]
+    p_s.text = "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
+    for r in p_s.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+
+    # 5. Add Body Narrative Panel
+    narrative_text = model.slide16.narrative or "[CONFIRMATION REQUIRED]"
+    paragraphs = [p.strip() for p in narrative_text.split("\n") if p.strip()]
+
+    # Font fitting across candidate sizes
+    candidate_sizes = [12.0, 11.5, 11.0, 10.5, 10.0, 9.5, 9.0, 8.5]
+    chosen_sz = 10.0
+    for sz in candidate_sizes:
+        total_h = 0.0
+        for p in paragraphs:
+            lines = wrap_lines(p, width_in=8.8, size_pt=sz)
+            h_pt = lines * sz * 1.25 + 8.0
+            total_h += h_pt
+        if (total_h / 72.0) <= 3.55:  # Available height is ~3.60 in (from 1.45 to 5.05 in)
+            chosen_sz = sz
+            break
+
+    # Body Text Box (Left: 0.50 in, Top: 1.45 in, Width: 9.00 in, Height: 3.60 in)
+    body_box = slide.shapes.add_textbox(457200, 1325880, 8229600, 3291840)
+    tf_b = body_box.text_frame
+    tf_b.word_wrap = True
+    tf_b.margin_top = 0
+    tf_b.margin_bottom = 0
+    tf_b.margin_left = 0
+    tf_b.margin_right = 0
+    for bpr in body_box._element.xpath(".//a:bodyPr"):
+        bpr.set("anchor", "t")
+
+    for p_idx, p_text in enumerate(paragraphs):
+        p_elem = tf_b.paragraphs[0] if p_idx == 0 else tf_b.add_paragraph()
+        p_elem.space_before = Pt(0)
+        p_elem.space_after = Pt(8)
+        p_elem.line_spacing = 1.2
+
+        # Check for lead-in label like "Talent Team:"
+        if p_text.startswith("Talent Team:"):
+            lead_run = p_elem.add_run()
+            lead_run.text = "Talent Team: "
+            lead_run.font.name = "Proxima Nova"
+            lead_run.font.size = Pt(chosen_sz)
+            lead_run.font.bold = True
+            lead_run.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+            rest_text = p_text[len("Talent Team:"):].lstrip()
+            rest_run = p_elem.add_run()
+            rest_run.text = rest_text
+            rest_run.font.name = "Proxima Nova"
+            rest_run.font.size = Pt(chosen_sz)
+            rest_run.font.bold = False
+            rest_run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+        else:
+            run = p_elem.add_run()
+            run.text = p_text
+            run.font.name = "Proxima Nova"
+            run.font.size = Pt(chosen_sz)
+            run.font.bold = False
+            run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+
+
 def write_governance_deck(
     model: GovernanceDeckModel,
     target_path: Path,
@@ -482,6 +595,9 @@ def write_governance_deck(
 
     # Slide 15 (index 14): Acceptance Criteria Table (HTL-72)
     write_slide15_acceptance_criteria(prs_gov.slides[14], model)
+
+    # Slide 16 (index 15): How Milestone Acceptance Works Narrative (HTL-72)
+    write_slide16_acceptance_narrative(prs_gov.slides[15], model)
 
     # Slide 18 (index 17): Initial Risk Register (Client Slide 12)
     write_slide12(prs_gov.slides[17], client_deck_adapter)

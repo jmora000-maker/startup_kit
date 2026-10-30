@@ -32,8 +32,8 @@ def check_governance_deck_traceability(
         s1_text = " ".join([s.text_frame.text for s in s1.shapes if s.has_text_frame])
         if "Governance Kickoff" not in s1_text:
             errors.append("Slide 1 title is missing 'Governance Kickoff'")
-        if "Aligning on outcomes, team, and how we'll deliver." not in s1_text:
-            errors.append("Slide 1 is missing subtitle 'Aligning on outcomes, team, and how we'll deliver.'")
+        if "Alignment on governance, outcomes and project plan." not in s1_text:
+            errors.append("Slide 1 is missing subtitle 'Alignment on governance, outcomes and project plan.'")
         if "[Client Name]" in s1_text or "[Project Name]" in s1_text:
             errors.append("Slide 1 contains unreplaced [Client Name] or [Project Name] placeholders")
 
@@ -61,21 +61,30 @@ def check_governance_deck_traceability(
         if "Deliverable acceptance criteria" not in s15_text:
             errors.append("Slide 15 is missing title 'Deliverable acceptance criteria'")
 
-    # 6. Slide 18 (Risk Register) Validation
+    # 6. Slide 16 (How Milestone Acceptance Works) Validation
+    if len(prs.slides) >= 16:
+        s16 = prs.slides[15]
+        s16_text = " ".join([s.text_frame.text for s in s16.shapes if s.has_text_frame])
+        if "How milestone acceptance works" not in s16_text:
+            errors.append("Slide 16 is missing title 'How milestone acceptance works'")
+        if "[Pre-filled:" in s16_text or "[CONFIRMATION REQUIRED]" in s16_text:
+            errors.append("Slide 16 contains unreplaced placeholder text")
+
+    # 7. Slide 18 (Risk Register) Validation
     if len(prs.slides) >= 18:
         s18 = prs.slides[17]
         table_found = any(s.has_table for s in s18.shapes)
         if not table_found:
             errors.append("Slide 18 is missing Initial Risk Register table")
 
-    # 7. Slide 19 (Next Steps) Validation
+    # 8. Slide 19 (Next Steps) Validation
     if len(prs.slides) >= 19:
         s19 = prs.slides[18]
         table_found = any(s.has_table for s in s19.shapes)
         if not table_found:
             errors.append("Slide 19 is missing Next Steps table")
 
-    # 8. Companion Trace Manifest Validation
+    # 9. Companion Trace Manifest Validation
     manifest_path = pptx_path.with_name(f"{pptx_path.stem}.trace.json")
     if not manifest_path.exists():
         errors.append(f"Trace manifest file missing at {manifest_path}")

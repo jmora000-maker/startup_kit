@@ -3,7 +3,7 @@
 Verifies:
 1. Module scaffolding and exports in src/generators/governance_deck/
 2. Template fallback path resolution for PS_Governance Kickoff_TEMPLATE.pptx
-3. Slide 1 title substitution ('Governance Kickoff') and fixed subtitle ('Aligning on outcomes, team, and how we'll deliver.')
+3. Slide 1 title substitution ('Governance Kickoff') and fixed subtitle ('Alignment on governance, outcomes and project plan.')
 4. Cross-artifact consistency between PS Governance Kickoff Deck and Client Kickoff Deck across lifted slides (13, 14, 18, 19)
 5. 19-slide presentation structure and companion trace manifest generation
 """
@@ -69,7 +69,7 @@ def test_htl_72_slide1_title_and_subtitle_rendering(tmp_path):
     s1_text = " ".join([s.text_frame.text for s in slide1.shapes if s.has_text_frame])
     assert "Governance Kickoff" in s1_text
     assert "Portland General Electric Company" in s1_text
-    assert "Aligning on outcomes, team, and how we'll deliver." in s1_text
+    assert "Alignment on governance, outcomes and project plan." in s1_text
     assert "[Client Name]" not in s1_text
     assert "[Project Name]" not in s1_text
     assert "Onboarding for Project Managers staffed on" not in s1_text
@@ -397,3 +397,149 @@ def test_htl_72_slide15_custom_deliverables_and_placeholders(tmp_path):
     r2_col1_paras = [p.text.strip() for p in table.rows[2].cells[1].text_frame.paragraphs if p.text.strip()]
     assert len(r2_col1_paras) == 1
     assert r2_col1_paras[0] == "[CONFIRMATION REQUIRED]"
+
+
+def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
+    """HTL-72: Verify Slide 16 renders Tier 1 synthesized narrative with Proxima Nova typography, bold lead-in, and trace attribution."""
+    import json
+    baseline = _build_pge_baseline()
+    pge_narrative = (
+        "Talent Team: Deliver the six outputs together as Milestone 1, the Cloud Migration Assessment Report, "
+        "with estimated completion on November 18, 2026, and notify Client when the milestone is complete. "
+        "That notice starts a 5-business-day acceptance period for Client to evaluate, review, or test the outputs "
+        "against their specifications and acceptance criteria in all material respects; Alicia Cook is responsible "
+        "for acceptance, supported by client SMEs as needed. The separate 3-business-day client decision turnaround "
+        "for review items does not replace the milestone acceptance period or establish a supplier rework deadline.\n\n"
+        "If an output materially fails its requirements, Client must provide written notice identifying the "
+        "non-conformance and required modifications before the acceptance period ends. Toptal must use commercially "
+        "reasonable efforts to correct the affected output and resubmit it for acceptance; no correction or resubmission "
+        "deadline is specified. If Toptal cannot remedy a non-conforming portion after three repeated attempts, as "
+        "determined within Client's reasonable discretion, Client may terminate the engagement and must pay amounts "
+        "due or accrued through termination, including work in progress.\n\n"
+        "The milestone or applicable portion is deemed accepted if Client does not provide the required written "
+        "non-conformance notice before the acceptance period expires, or if Client begins commercial or production "
+        "use of the output. Client must sign and deliver a milestone acceptance certification, and Milestone 1 sign-off "
+        "is the listed invoice trigger. Weekly status reports also request acceptance or feedback, but milestone "
+        "acceptance follows the completion-notice and review process above."
+    )
+    baseline.sow_interpretation.acceptance_process_narrative = pge_narrative
+
+    res = export_governance_deck(baseline, tmp_path / "slide16_tier1")
+    prs = pptx.Presentation(str(res.file_path))
+    slide16 = prs.slides[15]  # 0-indexed slide 16
+
+    # 1. Header validations
+    textboxes = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
+    assert "PROJECT SUCCESS AGREEMENT" in textboxes
+    assert "How milestone acceptance works" in textboxes
+    assert any("Workflow, review turnarounds, remediation thresholds" in t for t in textboxes)
+
+    # 2. Body narrative panel validation
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Talent Team:" in s.text_frame.text]
+    assert len(body_shapes) == 1
+    tf = body_shapes[0].text_frame
+    paras = [p for p in tf.paragraphs if p.text.strip()]
+    assert len(paras) == 3
+
+    # Check lead-in formatting on paragraph 0
+    p0_runs = paras[0].runs
+    assert len(p0_runs) >= 2
+    assert p0_runs[0].text == "Talent Team: "
+    assert p0_runs[0].font.bold is True
+    assert p0_runs[0].font.size.pt <= 11.5
+
+    # Check content in paragraphs
+    assert "Alicia Cook is responsible for acceptance" in paras[0].text
+    assert "three repeated attempts" in paras[1].text
+    assert "deemed accepted if Client does not provide" in paras[2].text
+
+    # 3. Geometry and clearance: text box must fit cleanly within slide height (5.625 in)
+    shape_top_in = body_shapes[0].top / 914400.0
+    shape_height_in = body_shapes[0].height / 914400.0
+    assert shape_top_in <= 1.50
+    assert shape_top_in + shape_height_in <= 5.25
+
+    # 4. Trace manifest validation
+    manifest_path = res.file_path.with_name(f"{res.file_path.stem}.trace.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    s16_entries = [e for e in manifest_data["entries"] if e["slide"] == 16]
+    assert len(s16_entries) == 1
+    assert s16_entries[0]["element"] == "Acceptance Process Narrative"
+    assert s16_entries[0]["traces"][0]["field"] == "acceptance_process_narrative"
+    assert s16_entries[0]["traces"][0]["key"] == "acceptance_process_narrative"
+
+
+def test_htl_72_slide16_tier2_fallback_and_dynamic_trace(tmp_path):
+    """HTL-72: Verify Slide 16 executes deterministic Tier 2 fallback when narrative field is None and attributes trace dynamically."""
+    import json
+    baseline = _build_pge_baseline()
+    baseline.sow_interpretation.acceptance_process_narrative = None
+    baseline.sow_interpretation.approval_expectations = "Formal written sign-off within 5 business days of Milestone 1 report submission."
+    baseline.deliverables[0].rejection_rework_path = "Talent PM / Team rework within 3 business days of notice"
+
+    res = export_governance_deck(baseline, tmp_path / "slide16_tier2")
+    prs = pptx.Presentation(str(res.file_path))
+    slide16 = prs.slides[15]
+
+    s16_texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
+    assert any("Formal written sign-off within 5 business days" in t for t in s16_texts)
+    assert any("Talent PM / Team rework within 3 business days of notice" in t for t in s16_texts)
+
+    # Trace manifest attribution: Tier 2 must trace to approval_expectations and DEL-01 Rejection / Rework Path
+    manifest_path = res.file_path.with_name(f"{res.file_path.stem}.trace.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    s16_entries = [e for e in manifest_data["entries"] if e["slide"] == 16]
+    assert len(s16_entries) == 1
+    assert s16_entries[0]["element"] == "Acceptance Process Narrative (Fallback)"
+    trace_locators = [(t["locator"], t["key"], t["field"]) for t in s16_entries[0]["traces"]]
+    assert ("SOW Interpretation", "approval_expectations", "approval_expectations") in trace_locators
+    assert ("Deliverables", "DEL-01", "Rejection / Rework Path") in trace_locators
+
+
+def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
+    """HTL-72: Verify Slide 16 scales naturally to complex multi-step acceptance narrative (ARC Genomics) with full typography fit."""
+    baseline = _build_pge_baseline()
+    arc_narrative = (
+        "Talent Team: Acceptance occurs at each of five milestone gates, not through separate review clocks for every story. "
+        "Deliver the milestone outputs and notify Client of completion; this starts a 10-business-day period for evaluation, "
+        "review, and testing. Hold the milestone acceptance review at milestone end, with Mike Magwire responsible for acceptance "
+        "and sign-off and Client providing a signed milestone acceptance certification. UAT runs after each milestone, with two runs "
+        "per milestone included; additional runs require a change order. The listed target dates are estimated milestone completion "
+        "dates, not separately specified story submission deadlines.\n\n"
+        "Client must identify material non-conformance and required modifications in writing before the review period ends. "
+        "Toptal then uses commercially reasonable efforts to modify and resubmit the affected output; no supplier remediation "
+        "deadline or separate resubmission review window is specified. Mike Magwire participates in a working session to resolve "
+        "material concerns. If Toptal cannot remedy the non-conforming portion after three repeated attempts, as reasonably assessed "
+        "by Client, Client may terminate and must pay amounts due or accrued through termination, including work in progress. "
+        "Acceptance is deemed to occur if timely written rejection is absent or Client begins commercial or production use of the "
+        "applicable output. Even a 100% criterion is satisfied by material conformity where deviations do not materially affect "
+        "functionality, performance, security, or usability.\n\n"
+        "Apply the named acceptance exceptions carefully: Certification output requires delivered and executed test scripts plus "
+        "a defect report, not achievement of client-owned targets; Client remedies those failures, and additional retest runs require "
+        "a change order. For the specified test-suite deliverables, acceptance requires scripts, target-environment execution, and a "
+        "results report; target achievement belongs to the corresponding build story. A missed latency or render-time target is treated "
+        "as met for Toptal when telemetry attributes it to client-owned or client-provided components or conditions outside Toptal's "
+        "reasonable control, with the finding recorded for Client remediation. Hypercare acceptance depends on making four weeks of "
+        "capacity available at 40 hours per week for each of two roles, starting on the later of production go-live and Milestone 4 "
+        "acceptance; unused capacity expires, and no response-time or resolution-time SLA applies."
+    )
+    baseline.sow_interpretation.acceptance_process_narrative = arc_narrative
+
+    res = export_governance_deck(baseline, tmp_path / "slide16_arc")
+    prs = pptx.Presentation(str(res.file_path))
+    slide16 = prs.slides[15]
+
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Talent Team:" in s.text_frame.text]
+    assert len(body_shapes) == 1
+    tf = body_shapes[0].text_frame
+    paras = [p for p in tf.paragraphs if p.text.strip()]
+    assert len(paras) == 3
+
+    # Selected font size scales appropriately for longer narrative
+    assert paras[0].runs[0].font.size.pt <= 10.5
+    assert "Mike Magwire responsible for acceptance" in paras[0].text
+    assert "Hypercare acceptance depends on making four weeks" in paras[2].text
