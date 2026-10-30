@@ -120,6 +120,7 @@ class AppConfig:
     review_storage_backend: str = os.getenv("REVIEW_STORAGE_BACKEND", "local").lower()
     deck_template_path: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
     client_deck_template_path: Path = Path(os.getenv("CLIENT_DECK_TEMPLATE_PATH", "templates/Project_Kickoff_Deck_TEMPLATE.pptx"))
+    governance_deck_template_path: Path = Path(os.getenv("GOVERNANCE_DECK_TEMPLATE_PATH", "templates/PS_Governance Kickoff_TEMPLATE.pptx"))
     # HTL-27: the app's "Advanced (admin)" section passphrase. In production this is read from a
     # Secret Manager value exposed as this same environment variable; for local development, when
     # the variable is unset, it falls back to a clear, documented, non-secret placeholder (never a
@@ -133,6 +134,7 @@ class AppConfig:
 
 DECK_TEMPLATE_PATH: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
 CLIENT_DECK_TEMPLATE_PATH: Path = Path(os.getenv("CLIENT_DECK_TEMPLATE_PATH", "templates/Project_Kickoff_Deck_TEMPLATE.pptx"))
+GOVERNANCE_DECK_TEMPLATE_PATH: Path = Path(os.getenv("GOVERNANCE_DECK_TEMPLATE_PATH", "templates/PS_Governance Kickoff_TEMPLATE.pptx"))
 
 
 # Tool reserved prefixes that must never be classified as SOW identifiers (v6 Section 1.1)
