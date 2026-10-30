@@ -102,7 +102,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
         text = shape.text_frame.text
 
         # Title Shape
-        if "[Client Name]" in text or "[Project Name]" in text or shape.shape_id in (92, 93):
+        if "[Client Name]" in text or "[Project Name]" in text or shape.shape_id == 93:
             tf = shape.text_frame
             tf.word_wrap = True
             tf.margin_top = 0
@@ -132,7 +132,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.bold = True
 
         # Subtitle Shape
-        elif "Onboarding for Project Managers" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id in (93, 94):
+        elif "Onboarding for Project Managers" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id == 94:
             tf = shape.text_frame
             tf.word_wrap = True
             tf.margin_top = 0
