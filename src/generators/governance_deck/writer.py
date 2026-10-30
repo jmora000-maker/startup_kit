@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Tuple
 import pptx
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
 
@@ -435,6 +436,148 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
             run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
 
+def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 17 Approach 3-card layout with uniform font fitting and Proxima Nova typography (HTL-72)."""
+    # 1. Clear any placeholder shapes
+    for s in list(slide.shapes):
+        slide.shapes._spTree.remove(s._element)
+
+    # 2. Add Kicker
+    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
+    tf_k = kicker_box.text_frame
+    tf_k.word_wrap = True
+    tf_k.margin_top = 0
+    tf_k.margin_bottom = 0
+    tf_k.margin_left = 0
+    tf_k.margin_right = 0
+    p_k = tf_k.paragraphs[0]
+    p_k.text = model.slide17.kicker or "PROJECT SUCCESS AGREEMENT"
+    for r in p_k.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 3. Add Title
+    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
+    tf_t = title_box.text_frame
+    tf_t.word_wrap = True
+    tf_t.margin_top = 0
+    tf_t.margin_bottom = 0
+    tf_t.margin_left = 0
+    tf_t.margin_right = 0
+    p_t = tf_t.paragraphs[0]
+    p_t.text = model.slide17.title or "Approach"
+    for r in p_t.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(20)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 4. Add Subtitle
+    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
+    tf_s = sub_box.text_frame
+    tf_s.word_wrap = True
+    tf_s.margin_top = 0
+    tf_s.margin_bottom = 0
+    tf_s.margin_left = 0
+    tf_s.margin_right = 0
+    p_s = tf_s.paragraphs[0]
+    p_s.text = model.slide17.subtitle or "Execution phases, workstream deliverables, and governance model."
+    for r in p_s.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+
+    # 5. Add 3 Cards (Left, Middle, Right)
+    # Card geometry matching Governance Slide 5/10 (Inches -> EMUs):
+    # Width: 2.778 in (2,540,092 EMU), Height: 3.250 in (2,971,800 EMU), Top: 1.675 in (1,531,620 EMU)
+    # Left positions: 0.668 in (610,870 EMU), 3.611 in (3,301,898 EMU), 6.554 in (5,992,926 EMU)
+    card_w = 2540092
+    card_h = 2971800
+    top_pos = 1531620
+    left_positions = [610870, 3301898, 5992926]
+
+    cards = model.slide17.cards
+    if not cards:
+        return
+
+    # Pass 1: Compute uniform fitting font size across all cards for bullets
+    candidate_sizes = [10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
+    avail_w_in = 2.40
+    avail_h_in = 2.05
+
+    card_best_sizes = []
+    for c in cards[:3]:
+        c_sz = 8.0
+        for sz in candidate_sizes:
+            tot_h = 0.0
+            for b in c.bullets:
+                lines = wrap_lines(f"• {b}", width_in=avail_w_in, size_pt=sz)
+                tot_h += lines * sz * 1.15 + 5.0
+            if (tot_h / 72.0) <= avail_h_in:
+                c_sz = sz
+                break
+        card_best_sizes.append(c_sz)
+
+    uniform_sz = min(card_best_sizes) if card_best_sizes else 9.0
+
+    # Pass 2: Render card background shapes and text boxes
+    for idx, (c, left_pos) in enumerate(zip(cards[:3], left_positions)):
+        # Card container rectangle
+        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left_pos, top_pos, card_w, card_h)
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xFA)
+        shape.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
+        shape.line.width = Pt(1)
+
+        # Inset text box
+        # Inset: left + 0.18 in (164,592 EMU), top + 0.16 in (146,304 EMU), width - 0.36 in (2,210,908 EMU), height - 0.32 in (2,679,192 EMU)
+        tb = slide.shapes.add_textbox(left_pos + 164592, top_pos + 146304, 2210908, 2679192)
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.margin_top = 0
+        tf.margin_bottom = 0
+        tf.margin_left = 0
+        tf.margin_right = 0
+        for bpr in tb._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+
+        # Paragraph 0: Category / Kicker
+        p_cat = tf.paragraphs[0]
+        p_cat.text = c.category
+        p_cat.space_after = Pt(2)
+        for r in p_cat.runs:
+            r.font.name = "Proxima Nova"
+            r.font.size = Pt(8.5)
+            r.font.bold = True
+            r.font.color.rgb = RGBColor(0x2E, 0x5A, 0xAC)
+
+        # Paragraph 1: Card Title
+        p_title = tf.add_paragraph()
+        p_title.text = c.title
+        p_title.space_after = Pt(2)
+        for r in p_title.runs:
+            r.font.name = "Proxima Nova"
+            r.font.size = Pt(13)
+            r.font.bold = True
+            r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+        # Paragraph 2: Card Lead / Subtitle
+        p_lead = tf.add_paragraph()
+        p_lead.text = c.lead
+        p_lead.space_after = Pt(8)
+        for r in p_lead.runs:
+            r.font.name = "Proxima Nova"
+            r.font.size = Pt(9.5)
+            r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+
+        # Paragraphs 3+: Bullets
+        for b in c.bullets:
+            p_b = tf.add_paragraph()
+            _set_paragraph_bullet_format(p_b, font_size_pt=uniform_sz, text=b)
+
+
 def write_governance_deck(
     model: GovernanceDeckModel,
     target_path: Path,
@@ -598,6 +741,9 @@ def write_governance_deck(
 
     # Slide 16 (index 15): How Milestone Acceptance Works Narrative (HTL-72)
     write_slide16_acceptance_narrative(prs_gov.slides[15], model)
+
+    # Slide 17 (index 16): Approach 3-Card Layout (HTL-72)
+    write_slide17_approach(prs_gov.slides[16], model)
 
     # Slide 18 (index 17): Initial Risk Register (Client Slide 12)
     write_slide12(prs_gov.slides[17], client_deck_adapter)

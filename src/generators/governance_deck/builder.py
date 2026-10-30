@@ -15,6 +15,7 @@ from src.generators.client_deck.builder import (
 )
 from src.generators.governance_deck.spec import (
     AcceptanceCriterionRow,
+    ApproachCard,
     GovernanceDeckModel,
     NextStepItem,
     RiskItem,
@@ -23,6 +24,7 @@ from src.generators.governance_deck.spec import (
     Slide14DeliverModel,
     Slide15AcceptanceCriteriaModel,
     Slide16AcceptanceNarrativeModel,
+    Slide17ApproachModel,
     Slide18RisksModel,
     Slide19NextStepsModel,
     WorkstreamBlock,
@@ -167,6 +169,123 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
     return Slide16AcceptanceNarrativeModel(narrative=narrative, tier="Tier 2")
 
 
+def build_slide17_model(
+    baseline: StartupKitBaseline,
+    wb: Optional[WorkbookModel] = None,
+) -> Slide17ApproachModel:
+    """Build Slide 17 model (Approach 3-card layout) from WBS, Milestones, Workstreams, and Governance (HTL-72)."""
+    if wb is None:
+        wb = build_workbook_model(baseline)
+
+    # 1. Card 1: Phase & Schedule (WBS level 1 phase rows + Milestones)
+    l1_phases = [w for w in wb.wbs_rows if w.level == 1] if wb and wb.wbs_rows else []
+    phase_names = [p.name for p in l1_phases if p.name]
+
+    c1_bullets: List[str] = []
+    if len(phase_names) > 1:
+        c1_bullets.append(f"{len(phase_names)}-phase execution lifecycle: " + ", ".join(phase_names[:4]) + ".")
+    elif len(phase_names) == 1:
+        c1_bullets.append(f"Structured assessment lifecycle focused on {phase_names[0]} discovery and execution roadmap.")
+    else:
+        c1_bullets.append("Structured single-phase assessment focused on current-state discovery and cloud roadmap.")
+
+    if baseline.milestones:
+        for m in baseline.milestones[:2]:
+            date_str = ""
+            if m.external_date:
+                if hasattr(m.external_date, "strftime"):
+                    date_str = f" target completion on {m.external_date.strftime('%B %d, %Y')}"
+                else:
+                    date_str = f" target completion on {m.external_date}"
+            desc = m.description or m.id
+            if not desc.lower().startswith("milestone"):
+                desc = f"{m.id}: {desc}"
+            c1_bullets.append(f"{desc}{date_str}.")
+    else:
+        c1_bullets.append("Key milestone gates and deliverable targets aligned to contractual delivery schedule.")
+
+    c1_bullets.append("Work packages and critical path dependencies tracked via WBS with weekly PMO review.")
+
+    card1 = ApproachCard(
+        category="PHASE & SCHEDULE",
+        title="Assessment & Schedule" if len(phase_names) <= 1 else "Phases & Schedule",
+        lead="Execution Timeline",
+        bullets=c1_bullets,
+    )
+
+    # 2. Card 2: Workstream Execution (Charter workstreams + Deliverables)
+    c2_bullets: List[str] = []
+    scope_items = baseline.charter.high_level_scope if baseline.charter and baseline.charter.high_level_scope else []
+    if scope_items:
+        delivs = baseline.deliverables or []
+        for idx, s in enumerate(scope_items[:3]):
+            s_clean = s.rstrip(".")
+            if len(scope_items) == 3 and len(delivs) == 6:
+                if idx == 0:
+                    c2_bullets.append(f"{s_clean} (DEL-01).")
+                elif idx == 1:
+                    c2_bullets.append(f"{s_clean} (DEL-02).")
+                elif idx == 2:
+                    c2_bullets.append(f"{s_clean} (DEL-03, DEL-04, DEL-05, DEL-06).")
+            else:
+                c2_bullets.append(f"{s_clean}.")
+    elif baseline.deliverables:
+        chunk_size = max(1, (len(baseline.deliverables) + 2) // 3)
+        for i in range(0, min(len(baseline.deliverables), chunk_size * 3), chunk_size):
+            chunk = baseline.deliverables[i : i + chunk_size]
+            deliv_ids = ", ".join([d.id for d in chunk])
+            names = "; ".join([d.name for d in chunk if d.name])
+            c2_bullets.append(f"{names} ({deliv_ids}).")
+    else:
+        c2_bullets.append("Core workstream delivery and backlog execution aligned with project objectives.")
+
+    card2 = ApproachCard(
+        category="WORKSTREAM EXECUTION",
+        title="Workstream Execution",
+        lead="Core Delivery Streams",
+        bullets=c2_bullets,
+    )
+
+    # 3. Card 3: Governance & Acceptance (Governance Context + SOW Interpretation)
+    c3_bullets: List[str] = []
+    gov_tier = (
+        baseline.governance_context.governance_tier
+        if baseline.governance_context and baseline.governance_context.governance_tier
+        else (baseline.charter.governance_tier if baseline.charter and baseline.charter.governance_tier else baseline.governance_tier)
+    )
+    c3_bullets.append(f"{gov_tier} Tier Governance: structured oversight, risk monitoring, and alignment across PMO, Delivery Manager, and Client Sponsor.")
+
+    app_exp = (
+        baseline.sow_interpretation.approval_expectations
+        if baseline.sow_interpretation and baseline.sow_interpretation.approval_expectations and "[CONFIRMATION" not in baseline.sow_interpretation.approval_expectations.upper()
+        else None
+    )
+    if app_exp:
+        c3_bullets.append(f"Review SLA & Acceptance: {app_exp}")
+    elif baseline.deliverables and baseline.deliverables[0].review_window:
+        rw = baseline.deliverables[0].review_window
+        appr = baseline.deliverables[0].client_approver or "Client Approver"
+        c3_bullets.append(f"Review SLA & Acceptance: {rw} review period with formal written sign-off by {appr}.")
+    else:
+        c3_bullets.append("Review SLA & Acceptance: Formal written milestone sign-off within standard review window.")
+
+    c3_bullets.append("Decision Rights & Controls: Weekly status reporting, proactive RAID log tracking, and milestone gate sign-offs.")
+
+    card3 = ApproachCard(
+        category="GOVERNANCE & CONTROLS",
+        title="Governance & Acceptance",
+        lead="PMO & Client Oversight",
+        bullets=c3_bullets,
+    )
+
+    return Slide17ApproachModel(
+        kicker="PROJECT SUCCESS AGREEMENT",
+        title="Approach",
+        subtitle="Execution phases, workstream deliverables, and governance model.",
+        cards=[card1, card2, card3],
+    )
+
+
 def build_slide18_model(baseline: StartupKitBaseline) -> Slide18RisksModel:
     """Build Slide 18 model (Initial Risk Register) reusing client deck slide 12 extraction (HTL-72)."""
     s12 = client_build_slide12_model(baseline)
@@ -211,6 +330,7 @@ def build_governance_deck_model(
     slide14 = build_slide14_model(baseline)
     slide15 = build_slide15_model(baseline, wb=wb)
     slide16 = build_slide16_model(baseline)
+    slide17 = build_slide17_model(baseline, wb=wb)
     slide18 = build_slide18_model(baseline)
     slide19 = build_slide19_model(baseline)
 
@@ -425,7 +545,76 @@ def build_governance_deck_model(
             values=[slide16.narrative],
         )
 
-    # 6. Slide 18 Traces (Lifted Client Slide 12)
+    # 6. Slide 17 Traces (Approach 3-Card Layout)
+    if len(slide17.cards) >= 3:
+        # Card 1: Phase & Schedule
+        manifest.add(
+            slide=17,
+            shape="Card 1: Phase & Schedule",
+            element="Approach: Phase & Schedule",
+            displayed_value="\n".join(slide17.cards[0].bullets),
+            traces=[
+                TraceRef(
+                    artifact="Workbook",
+                    locator="WBS",
+                    key="Phase rows",
+                    field="name",
+                ),
+                TraceRef(
+                    artifact="Kit",
+                    locator="Milestones",
+                    key="milestones",
+                    field="external_date",
+                ),
+            ],
+            values=slide17.cards[0].bullets,
+        )
+        # Card 2: Workstream Execution
+        manifest.add(
+            slide=17,
+            shape="Card 2: Workstream Execution",
+            element="Approach: Workstream Execution",
+            displayed_value="\n".join(slide17.cards[1].bullets),
+            traces=[
+                TraceRef(
+                    artifact="Kit",
+                    locator="Charter",
+                    key="high_level_scope",
+                    field="high_level_scope",
+                ),
+                TraceRef(
+                    artifact="Kit",
+                    locator="Deliverables",
+                    key="deliverables",
+                    field="name",
+                ),
+            ],
+            values=slide17.cards[1].bullets,
+        )
+        # Card 3: Governance & Acceptance
+        manifest.add(
+            slide=17,
+            shape="Card 3: Governance & Acceptance",
+            element="Approach: Governance & Acceptance",
+            displayed_value="\n".join(slide17.cards[2].bullets),
+            traces=[
+                TraceRef(
+                    artifact="Kit",
+                    locator="Governance Context",
+                    key="governance_tier",
+                    field="governance_tier",
+                ),
+                TraceRef(
+                    artifact="Kit",
+                    locator="SOW Interpretation",
+                    key="approval_expectations",
+                    field="approval_expectations",
+                ),
+            ],
+            values=slide17.cards[2].bullets,
+        )
+
+    # 7. Slide 18 Traces (Lifted Client Slide 12)
     for risk in slide18.risks:
         manifest.add(
             slide=18,
@@ -442,7 +631,7 @@ def build_governance_deck_model(
             ],
         )
 
-    # 7. Slide 19 Traces (Lifted Client Slide 15)
+    # 8. Slide 19 Traces (Lifted Client Slide 15)
     for step in slide19.next_steps:
         manifest.add(
             slide=19,
@@ -466,6 +655,7 @@ def build_governance_deck_model(
         slide14=slide14,
         slide15=slide15,
         slide16=slide16,
+        slide17=slide17,
         slide18=slide18,
         slide19=slide19,
         manifest=manifest,

@@ -60,9 +60,21 @@ class Slide16AcceptanceNarrativeModel:
 
 
 @dataclass
+class ApproachCard:
+    """One approach card on Slide 17 (Approach - Phase 2)."""
+    category: str
+    title: str
+    lead: str
+    bullets: List[str] = field(default_factory=list)
+
+
+@dataclass
 class Slide17ApproachModel:
-    """Model for Slide 17 (Approach - Phase 2)."""
-    pass
+    """Model for Slide 17 (Approach 3-card layout - Phase 2)."""
+    kicker: str = "PROJECT SUCCESS AGREEMENT"
+    title: str = "Approach"
+    subtitle: str = "Execution phases, workstream deliverables, and governance model."
+    cards: List[ApproachCard] = field(default_factory=list)
 
 
 @dataclass
