@@ -1,8 +1,11 @@
 """Pure builder module transforming StartupKitBaseline into GovernanceDeckModel (HTL-72)."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 from src.core.models import StartupKitBaseline
 from src.generators.kit_values import kit_header_values
+from src.generators.onboarding_deck.textrules import is_placeholder_text
+from src.generators.pmo_workbook.builder import DEFENSIVE_FILTER_REGEX, build_workbook_model
+from src.generators.pmo_workbook.rows import WorkbookModel
 from src.generators.client_deck.builder import (
     build_slide1_model as client_build_slide1_model,
     build_slide5_model as client_build_slide5_model,
@@ -11,12 +14,14 @@ from src.generators.client_deck.builder import (
     build_slide15_model as client_build_slide15_model,
 )
 from src.generators.governance_deck.spec import (
+    AcceptanceCriterionRow,
     GovernanceDeckModel,
     NextStepItem,
     RiskItem,
     Slide1Model,
     Slide13WhyModel,
     Slide14DeliverModel,
+    Slide15AcceptanceCriteriaModel,
     Slide18RisksModel,
     Slide19NextStepsModel,
     WorkstreamBlock,
@@ -58,6 +63,49 @@ def build_slide14_model(baseline: StartupKitBaseline) -> Slide14DeliverModel:
     )
 
 
+def build_slide15_model(
+    baseline: StartupKitBaseline,
+    wb: Optional[WorkbookModel] = None,
+) -> Slide15AcceptanceCriteriaModel:
+    """Build Slide 15 model (Deliverable Acceptance Criteria table) carrying forward List[str] criteria (HTL-62/63/64/72)."""
+    if wb is None:
+        wb = build_workbook_model(baseline)
+
+    gate_of: Dict[str, Tuple[str, str]] = {}
+    if wb is not None and getattr(wb, "wbs_rows", None):
+        for w in wb.wbs_rows:
+            if w.deliverable_id and w.element_type == "Deliverable" and w.milestone_id:
+                gate_of.setdefault(w.deliverable_id, (w.wbs_code, w.milestone_id))
+
+    rows: List[AcceptanceCriterionRow] = []
+    for d in (baseline.deliverables or []):
+        if DEFENSIVE_FILTER_REGEX.search(d.name or "") or DEFENSIVE_FILTER_REGEX.search(d.description or ""):
+            continue
+        crit_list = d.acceptance_criteria if isinstance(d.acceptance_criteria, list) else ([d.acceptance_criteria] if d.acceptance_criteria else [])
+        filtered_crits: List[str] = []
+        for c in crit_list:
+            if not c:
+                continue
+            c_str = str(c).strip()
+            if is_placeholder_text(c_str) or "UNASSIGNED" in c_str.upper():
+                continue
+            filtered_crits.append(c_str)
+
+        wbs_code, gate = gate_of.get(d.id, ("", ""))
+        gate_display = gate if gate else "[CONFIRMATION REQUIRED]"
+
+        rows.append(
+            AcceptanceCriterionRow(
+                deliverable_id=d.id,
+                deliverable_name=d.name or "",
+                acceptance_criteria=filtered_crits,
+                milestone_gate=gate_display,
+                wbs_code=wbs_code,
+            )
+        )
+    return Slide15AcceptanceCriteriaModel(rows=rows)
+
+
 def build_slide18_model(baseline: StartupKitBaseline) -> Slide18RisksModel:
     """Build Slide 18 model (Initial Risk Register) reusing client deck slide 12 extraction (HTL-72)."""
     s12 = client_build_slide12_model(baseline)
@@ -89,7 +137,10 @@ def build_slide19_model(baseline: StartupKitBaseline) -> Slide19NextStepsModel:
     return Slide19NextStepsModel(next_steps=step_items)
 
 
-def build_governance_deck_model(baseline: StartupKitBaseline) -> GovernanceDeckModel:
+def build_governance_deck_model(
+    baseline: StartupKitBaseline,
+    wb: Optional[WorkbookModel] = None,
+) -> GovernanceDeckModel:
     """Complete builder transforming StartupKitBaseline into GovernanceDeckModel with 19-slide trace manifest (HTL-72)."""
     project_name = baseline.project_name or "Project Baseline"
     manifest = GovernanceDeckTraceManifest(project_name=project_name)
@@ -97,6 +148,7 @@ def build_governance_deck_model(baseline: StartupKitBaseline) -> GovernanceDeckM
     slide1 = build_slide1_model(baseline)
     slide13 = build_slide13_model(baseline)
     slide14 = build_slide14_model(baseline)
+    slide15 = build_slide15_model(baseline, wb=wb)
     slide18 = build_slide18_model(baseline)
     slide19 = build_slide19_model(baseline)
 
@@ -216,7 +268,41 @@ def build_governance_deck_model(baseline: StartupKitBaseline) -> GovernanceDeckM
             values=slide14.out_of_scope,
         )
 
-    # 4. Slide 18 Traces (Lifted Client Slide 12)
+    # 4. Slide 15 Traces (Deliverable Acceptance Criteria Table)
+    for row in slide15.rows:
+        traces = [
+            TraceRef(
+                artifact="Kit",
+                locator="Deliverables",
+                key=row.deliverable_id,
+                field="ID",
+            ),
+            TraceRef(
+                artifact="Kit",
+                locator="Deliverables",
+                key=row.deliverable_id,
+                field="Acceptance Criteria",
+            ),
+        ]
+        if row.wbs_code:
+            traces.append(
+                TraceRef(
+                    artifact="Workbook",
+                    locator="WBS",
+                    key=row.wbs_code,
+                    field="Milestone ID",
+                )
+            )
+        manifest.add(
+            slide=15,
+            shape="Table: Deliverable Acceptance Criteria",
+            element=f"Deliverable: {row.deliverable_id}",
+            displayed_value=f"{row.deliverable_id} ({row.deliverable_name}): {' | '.join(row.acceptance_criteria)} [Gate: {row.milestone_gate}]",
+            traces=traces,
+            values=row.acceptance_criteria,
+        )
+
+    # 5. Slide 18 Traces (Lifted Client Slide 12)
     for risk in slide18.risks:
         manifest.add(
             slide=18,
@@ -233,7 +319,7 @@ def build_governance_deck_model(baseline: StartupKitBaseline) -> GovernanceDeckM
             ],
         )
 
-    # 5. Slide 19 Traces (Lifted Client Slide 15)
+    # 6. Slide 19 Traces (Lifted Client Slide 15)
     for step in slide19.next_steps:
         manifest.add(
             slide=19,
@@ -255,6 +341,7 @@ def build_governance_deck_model(baseline: StartupKitBaseline) -> GovernanceDeckM
         slide1=slide1,
         slide13=slide13,
         slide14=slide14,
+        slide15=slide15,
         slide18=slide18,
         slide19=slide19,
         manifest=manifest,

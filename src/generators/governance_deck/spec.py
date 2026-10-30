@@ -37,9 +37,19 @@ class Slide14DeliverModel:
 
 
 @dataclass
+class AcceptanceCriterionRow:
+    """One deliverable row in Slide 15 Deliverable Acceptance Criteria table (HTL-72)."""
+    deliverable_id: str
+    deliverable_name: str
+    acceptance_criteria: List[str] = field(default_factory=list)
+    milestone_gate: str = ""
+    wbs_code: str = ""
+
+
+@dataclass
 class Slide15AcceptanceCriteriaModel:
     """Model for Slide 15 (Acceptance Criteria - Phase 2)."""
-    pass
+    rows: List[AcceptanceCriterionRow] = field(default_factory=list)
 
 
 @dataclass

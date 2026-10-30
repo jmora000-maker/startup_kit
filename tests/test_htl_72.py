@@ -177,8 +177,8 @@ def test_htl_72_placeholder_eradication(tmp_path):
                     assert "[Workstream or Feature" not in txt
 
 
-def test_htl_72_slide12_template_placeholders_intact(tmp_path):
-    """HTL-72: Verify Slide 12 is a direct unmodified lift of Project Kickoff Deck page 3 placeholders (left for human editing)."""
+def test_htl_72_slide12_template_placeholders_and_images_intact(tmp_path):
+    """HTL-72: Verify Slide 12 is a direct unmodified lift of Project Kickoff Deck page 3 placeholders and icon images (left for human editing)."""
     baseline = _build_pge_baseline()
     baseline.charter.delivery_manager = "Yulia Ainley"
     baseline.charter.talent_pm = "Jane Doe"
@@ -190,22 +190,30 @@ def test_htl_72_slide12_template_placeholders_intact(tmp_path):
     slide12 = prs.slides[11]  # 0-indexed slide 12
     s12_texts = [s.text_frame.text.strip() for s in slide12.shapes if s.has_text_frame and s.text_frame.text.strip()]
 
-    # Must contain exact Project Kickoff Deck page 3 template placeholders
+    # 1. Must contain exact Project Kickoff Deck page 3 template placeholders
     assert "YOUR TEAM" in s12_texts
     assert "The people delivering your project" in s12_texts
     assert "Name" in s12_texts
     assert "Role" in s12_texts
     assert "Location" in s12_texts
 
-    # Must NOT populate real baseline leadership names or roles
+    # 2. Must NOT populate real baseline leadership names or roles
     assert "Yulia Ainley" not in s12_texts
     assert "Jane Doe" not in s12_texts
     assert "Alex PMO" not in s12_texts
     assert "[UNASSIGNED - TO BE CONFIRMED]" not in s12_texts
 
+    # 3. Image relationships must point to generic GIF/PNG placeholder icons, NOT real JPEG photographs
+    image_targets = [rel.target_ref for rel in slide12.part.rels.values() if "image" in rel.reltype]
+    assert len(image_targets) >= 3
+    for target in image_targets:
+        assert not target.lower().endswith(".jpg"), f"Slide 12 must not contain real JPEG photos: {target}"
+        assert not target.lower().endswith(".jpeg"), f"Slide 12 must not contain real JPEG photos: {target}"
+        assert target.lower().endswith(".png") or target.lower().endswith(".gif")
 
-def test_htl_72_slide1_long_title_overflow_regression(tmp_path):
-    """HTL-72: Regression test for Slide 1 overflow bug with realistically long client and project names (PGE)."""
+
+def test_htl_72_slide1_title_rendering_and_clearance_regression(tmp_path):
+    """HTL-72: Verify Slide 1 font-fitting scales dynamically to prevent overflow and guarantees positive clearance above divider line."""
     baseline = _build_pge_baseline()
     client_name = "Portland General Electric Company"
     project_name = "Cloud Migration Assessment – Operational Compliance Program (OCP)"
@@ -213,36 +221,34 @@ def test_htl_72_slide1_long_title_overflow_regression(tmp_path):
     baseline.governance_context.client_name = client_name
     baseline.project_name = project_name
 
-    composite_title = f"{client_name}\n{project_name} Governance Kickoff"
-    from src.generators.client_deck.fit import estimate_text_height, select_fitting_font_size
-
-    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.5, 9.0]
-    sz, _ = select_fitting_font_size(
-        composite_title,
-        width_in=3.30,
-        max_height_in=0.70,
-        candidate_sizes=candidate_sizes,
-        is_bold=True,
-    )
-    est_height_pt = estimate_text_height(composite_title, width_in=3.30, size_pt=sz, is_bold=True)
-    est_height_in = est_height_pt / 72.0
-
-    # Ensure font size scales down appropriately and total text height leaves clean buffer (>= 0.70 in) above divider line (4.423 in)
-    assert sz <= 10.0
-    assert est_height_in <= 0.70
-    title_bottom_in = 2.966 + est_height_in
-    assert title_bottom_in < 3.75  # Over 0.65 in margin above divider line at 4.423 in
-
-    # Verify rendered output PPTX
-    res = export_governance_deck(baseline, tmp_path / "pge_long_title")
+    res = export_governance_deck(baseline, tmp_path / "pge_title_clearance")
     prs = pptx.Presentation(str(res.file_path))
     s1 = prs.slides[0]
 
     title_shape = [s for s in s1.shapes if s.has_text_frame and "Governance Kickoff" in s.text_frame.text][0]
-    assert title_shape.top / 914400 < 3.0  # Top position unchanged at ~2.97 in
     runs = [r for p in title_shape.text_frame.paragraphs for r in p.runs]
     assert len(runs) > 0
-    assert runs[0].font.size.pt <= 10.0
+
+    # 1. Chosen font size must scale down to <= 12.0 pt for long PGE title
+    chosen_sz = runs[0].font.size.pt
+    assert chosen_sz <= 12.0, f"Chosen font size {chosen_sz} pt must be <= 12.0 pt to prevent title overflow"
+
+    # 2. Text height measurement and clearance verification
+    composite_title = f"{client_name}\n{project_name} Governance Kickoff"
+    from src.generators.client_deck.fit import estimate_text_height, wrap_lines
+    est_height_pt = estimate_text_height(composite_title, width_in=3.30, size_pt=chosen_sz, is_bold=True)
+    est_height_in = est_height_pt / 72.0
+    title_top_in = title_shape.top / 914400.0  # ~2.966 in
+    title_bottom_in = title_top_in + est_height_in
+
+    divider_line_top_in = 4.423  # Layout divider line at 4.423 in (4,044,275 EMUs)
+    subtitle_top_in = 4.542      # Subtitle at 4.542 in (4,153,150 EMUs)
+
+    clearance_above_divider = divider_line_top_in - title_bottom_in
+    assert clearance_above_divider >= 0.35, f"Clearance above divider line must be >= 0.35 in, got {clearance_above_divider:.3f} in"
+    assert title_bottom_in < subtitle_top_in - 0.40, f"Title bottom ({title_bottom_in:.3f} in) must not overlap subtitle ({subtitle_top_in:.3f} in)"
+
+    # 3. Content verification
     assert "Portland General Electric Company" in title_shape.text_frame.text
     assert "Governance Kickoff" in title_shape.text_frame.text
 
@@ -275,3 +281,119 @@ def test_htl_72_tier1_customer_outcome_framing(tmp_path):
     # Slide 14 (What We Deliver)
     s14_texts = [s.text_frame.text.strip() for s in prs.slides[13].shapes if s.has_text_frame]
     assert any("The engagement delivers a comprehensive assessment" in t for t in s14_texts)
+
+
+def test_htl_72_slide15_deliverable_acceptance_criteria_pge(tmp_path):
+    """HTL-72: Verify Slide 15 renders Deliverable Acceptance Criteria table with 12 countable bullets and gate mapping (HTL-62/64/72)."""
+    import json
+    baseline = _build_pge_baseline()
+    res = export_governance_deck(baseline, tmp_path / "slide15_test")
+
+    prs = pptx.Presentation(str(res.file_path))
+    slide15 = prs.slides[14]  # 0-indexed slide 15
+
+    # 1. Header & Textbox validations
+    textboxes = [s.text_frame.text.strip() for s in slide15.shapes if s.has_text_frame and not s.has_table]
+    assert "PROJECT SUCCESS AGREEMENT" in textboxes
+    assert "Deliverable acceptance criteria" in textboxes
+    assert any("Contractual criteria and verification requirements mapped to milestone gates." in t for t in textboxes)
+
+    # 2. Table structure validation
+    table_shapes = [s for s in slide15.shapes if s.has_table]
+    assert len(table_shapes) == 1
+    table_shape = table_shapes[0]
+    table = table_shape.table
+    assert len(table.rows) == 7  # 1 header + 6 deliverables
+    assert len(table.columns) == 3
+
+    # Geometry & clearance validation: table must not clip bottom of slide (5.625 in)
+    tbl_top_in = table_shape.top / 914400.0
+    tbl_height_in = table_shape.height / 914400.0
+    tbl_bottom_in = tbl_top_in + tbl_height_in
+    assert tbl_top_in <= 1.60
+    assert tbl_bottom_in <= 4.50  # Over 1.10 in clearance above slide bottom at 5.625 in
+
+    # 3. Header row
+    h0 = table.rows[0].cells[0].text.strip()
+    h1 = table.rows[0].cells[1].text.strip()
+    h2 = table.rows[0].cells[2].text.strip()
+    assert h0 == "Deliverable"
+    assert h1 == "Acceptance Criteria"
+    assert h2 == "Milestone Gate"
+
+    # 4. Data rows and countable bullet verification (HTL-64 principle: count them, don't just check text)
+    expected_ids = ["DEL-01", "DEL-02", "DEL-03", "DEL-04", "DEL-05", "DEL-06"]
+    total_criteria_bullets = 0
+
+    for idx, expected_id in enumerate(expected_ids, start=1):
+        row = table.rows[idx]
+        col0_text = row.cells[0].text.strip()
+        col1_text = row.cells[1].text.strip()
+        col2_text = row.cells[2].text.strip()
+
+        assert expected_id in col0_text
+        assert col2_text == "M1"  # Gated to M1 for PGE
+
+        # Count individual criteria paragraphs in column 1
+        crit_paras = [p.text.strip() for p in row.cells[1].text_frame.paragraphs if p.text.strip()]
+        assert len(crit_paras) == 2  # Exactly 2 criteria per PGE deliverable
+        total_criteria_bullets += len(crit_paras)
+
+        for p_text in crit_paras:
+            assert p_text.startswith("• ")
+
+    assert total_criteria_bullets == 12  # All 12 PGE criteria rendered
+
+    # 5. Trace Manifest verification
+    manifest_path = res.file_path.with_name(f"{res.file_path.stem}.trace.json")
+    assert manifest_path.exists()
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    s15_entries = [e for e in manifest_data["entries"] if e["slide"] == 15]
+    assert len(s15_entries) == 6  # 6 deliverable entries
+
+    for entry in s15_entries:
+        assert entry["shape"] == "Table: Deliverable Acceptance Criteria"
+        trace_fields = [t["field"] for t in entry["traces"]]
+        assert "ID" in trace_fields
+        assert "Acceptance Criteria" in trace_fields
+        assert "Milestone ID" in trace_fields
+
+
+def test_htl_72_slide15_custom_deliverables_and_placeholders(tmp_path):
+    """HTL-72: Verify Slide 15 handles single criterion, empty criteria, and unconfirmed gates."""
+    from src.core.models import Deliverable
+    baseline = _build_pge_baseline()
+    baseline.deliverables = [
+        Deliverable(
+            id="DEL-01",
+            name="Single Criterion Item",
+            acceptance_criteria=["Single explicit criterion without bullet prefix."],
+        ),
+        Deliverable(
+            id="DEL-02",
+            name="Unassigned Item",
+            acceptance_criteria=[],
+        ),
+    ]
+
+    res = export_governance_deck(baseline, tmp_path / "custom_deliv_test")
+    prs = pptx.Presentation(str(res.file_path))
+    slide15 = prs.slides[14]
+
+    table_shapes = [s for s in slide15.shapes if s.has_table]
+    assert len(table_shapes) == 1
+    table = table_shapes[0].table
+    assert len(table.rows) == 3  # 1 header + 2 deliverables
+
+    # Row 1: Single criterion rendered without "• " bullet
+    r1_col1_paras = [p.text.strip() for p in table.rows[1].cells[1].text_frame.paragraphs if p.text.strip()]
+    assert len(r1_col1_paras) == 1
+    assert not r1_col1_paras[0].startswith("• ")
+    assert "Single explicit criterion" in r1_col1_paras[0]
+
+    # Row 2: Empty criteria rendered as [CONFIRMATION REQUIRED]
+    r2_col1_paras = [p.text.strip() for p in table.rows[2].cells[1].text_frame.paragraphs if p.text.strip()]
+    assert len(r2_col1_paras) == 1
+    assert r2_col1_paras[0] == "[CONFIRMATION REQUIRED]"

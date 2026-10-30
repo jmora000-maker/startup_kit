@@ -51,21 +51,31 @@ def check_governance_deck_traceability(
         if "[high level summary" in s14_text or "[Workstream or Feature" in s14_text:
             errors.append("Slide 14 contains unreplaced placeholder text")
 
-    # 5. Slide 18 (Risk Register) Validation
+    # 5. Slide 15 (Acceptance Criteria) Validation
+    if len(prs.slides) >= 15:
+        s15 = prs.slides[14]
+        table_found = any(s.has_table for s in s15.shapes)
+        if not table_found:
+            errors.append("Slide 15 is missing Deliverable Acceptance Criteria table")
+        s15_text = " ".join([s.text_frame.text for s in s15.shapes if s.has_text_frame])
+        if "Deliverable acceptance criteria" not in s15_text:
+            errors.append("Slide 15 is missing title 'Deliverable acceptance criteria'")
+
+    # 6. Slide 18 (Risk Register) Validation
     if len(prs.slides) >= 18:
         s18 = prs.slides[17]
         table_found = any(s.has_table for s in s18.shapes)
         if not table_found:
             errors.append("Slide 18 is missing Initial Risk Register table")
 
-    # 6. Slide 19 (Next Steps) Validation
+    # 7. Slide 19 (Next Steps) Validation
     if len(prs.slides) >= 19:
         s19 = prs.slides[18]
         table_found = any(s.has_table for s in s19.shapes)
         if not table_found:
             errors.append("Slide 19 is missing Next Steps table")
 
-    # 7. Companion Trace Manifest Validation
+    # 8. Companion Trace Manifest Validation
     manifest_path = pptx_path.with_name(f"{pptx_path.stem}.trace.json")
     if not manifest_path.exists():
         errors.append(f"Trace manifest file missing at {manifest_path}")

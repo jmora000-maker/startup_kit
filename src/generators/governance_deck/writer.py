@@ -76,21 +76,21 @@ def resolve_client_deck_template_path(custom_path: Optional[Path] = None) -> Pat
 
 def write_slide1(slide, model: GovernanceDeckModel) -> None:
     """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' and fixed subtitle (HTL-72)."""
-    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.5, 9.0]
+    candidate_sizes = [28.0, 24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0]
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
 
     # Composite text for title line-wrapping and height estimation
     composite_title = f"{client_name}\n{project_name} Governance Kickoff"
 
-    # Slide 1 available geometry:
+    # Available geometry on Slide 1:
     # Title box top = 2.966 in (2,712,227 EMUs), Layout divider line top = 4.423 in (4,044,375 EMUs).
-    # To guarantee generous visual clearance (>= 0.70 in) above the divider line and subtitle (top = 4.542 in),
-    # max_height_in is strictly bounded to 0.70 in (~50.4 pt).
+    # To guarantee generous positive visual clearance (>= 0.40 in) above the divider line and subtitle (top = 4.542 in),
+    # max_height_in is constrained to 1.00 in across candidate sizes.
     title_sz, _ = select_fitting_font_size(
         composite_title,
         width_in=3.30,
-        max_height_in=0.70,
+        max_height_in=1.00,
         candidate_sizes=candidate_sizes,
         is_bold=True,
     )
@@ -152,6 +152,176 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.size = Pt(11)
 
 
+def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 15 Deliverable Acceptance Criteria table with multi-bullet criteria and uniform font fitting (HTL-62/63/64/72)."""
+    # 1. Clear any placeholder shapes
+    for s in list(slide.shapes):
+        slide.shapes._spTree.remove(s._element)
+
+    # 2. Add Kicker
+    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
+    tf_k = kicker_box.text_frame
+    tf_k.word_wrap = True
+    tf_k.margin_top = 0
+    tf_k.margin_bottom = 0
+    tf_k.margin_left = 0
+    tf_k.margin_right = 0
+    p_k = tf_k.paragraphs[0]
+    p_k.text = "PROJECT SUCCESS AGREEMENT"
+    for r in p_k.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 3. Add Title
+    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
+    tf_t = title_box.text_frame
+    tf_t.word_wrap = True
+    tf_t.margin_top = 0
+    tf_t.margin_bottom = 0
+    tf_t.margin_left = 0
+    tf_t.margin_right = 0
+    p_t = tf_t.paragraphs[0]
+    p_t.text = "Deliverable acceptance criteria"
+    for r in p_t.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(20)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+    # 4. Add Subtitle
+    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
+    tf_s = sub_box.text_frame
+    tf_s.word_wrap = True
+    tf_s.margin_top = 0
+    tf_s.margin_bottom = 0
+    tf_s.margin_left = 0
+    tf_s.margin_right = 0
+    p_s = tf_s.paragraphs[0]
+    p_s.text = "Contractual criteria and verification requirements mapped to milestone gates."
+    for r in p_s.runs:
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(11)
+        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+
+    # 5. Add Table (Left: 0.50 in, Top: 1.52 in, Width: 9.00 in, Height: 2.80 in)
+    rows = model.slide15.rows
+    num_rows = len(rows)
+    table_rows = max(2, num_rows + 1)
+    table_shape = slide.shapes.add_table(table_rows, 3, 457200, 1389888, 8229600, 2560320)
+    table = table_shape.table
+
+    # Column widths: Col 0: 2.00 in (1,828,800), Col 1: 5.80 in (5,303,520), Col 2: 1.20 in (1,097,280)
+    table.columns[0].width = 1828800
+    table.columns[1].width = 5303520
+    table.columns[2].width = 1097280
+
+    # Header Row (Row 0)
+    headers = ["Deliverable", "Acceptance Criteria", "Milestone Gate"]
+    for col_idx, h_text in enumerate(headers):
+        cell = table.rows[0].cells[col_idx]
+        _format_table_cell(cell, h_text, font_size_pt=10.0, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
+
+    if not rows:
+        cell0 = table.rows[1].cells[0]
+        _format_table_cell(cell0, "[CONFIRMATION REQUIRED]", font_size_pt=8.0)
+        return
+
+    # Pass 1: Compute uniform table font size
+    cell_candidate_sizes = [8.5, 8.0, 7.5, 7.0]
+    chosen_sz = 8.0
+    for sz in cell_candidate_sizes:
+        fits = True
+        for r in rows:
+            crit_text = "\n".join(f"• {c}" for c in r.acceptance_criteria) if len(r.acceptance_criteria) > 1 else (r.acceptance_criteria[0] if r.acceptance_criteria else "")
+            h_pt = estimate_text_height(crit_text, width_in=5.6, size_pt=sz)
+            if h_pt > 36.0:  # max row height in pt for 6 deliverables
+                fits = False
+                break
+        if fits:
+            chosen_sz = sz
+            break
+
+    # Pass 2: Populate Data Rows
+    for r_idx, row_data in enumerate(rows):
+        row = table.rows[r_idx + 1]
+
+        # Col 0: Deliverable (ID bold + Name)
+        cell0 = row.cells[0]
+        tf0 = cell0.text_frame
+        tf0.word_wrap = True
+        tf0.margin_top = 0
+        tf0.margin_bottom = 0
+        tf0.margin_left = 0
+        tf0.margin_right = 0
+        for tcPr in cell0._tc.xpath(".//a:tcPr"):
+            tcPr.set("anchor", "t")
+            tcPr.set("marT", "18288")
+            tcPr.set("marB", "18288")
+            tcPr.set("marL", "36576")
+            tcPr.set("marR", "36576")
+
+        p0 = tf0.paragraphs[0]
+        p0.space_before = Pt(0)
+        p0.space_after = Pt(0)
+        p0.text = ""
+        r_id = p0.add_run()
+        r_id.text = row_data.deliverable_id
+        r_id.font.name = "Proxima Nova"
+        r_id.font.size = Pt(chosen_sz)
+        r_id.font.bold = True
+        r_id.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+        if row_data.deliverable_name:
+            r_name = p0.add_run()
+            r_name.text = f"\n{row_data.deliverable_name}"
+            r_name.font.name = "Proxima Nova"
+            r_name.font.size = Pt(7.5)
+            r_name.font.bold = False
+            r_name.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+
+        # Col 1: Acceptance Criteria (Separate countable bullets)
+        cell1 = row.cells[1]
+        tf1 = cell1.text_frame
+        tf1.word_wrap = True
+        tf1.margin_top = 0
+        tf1.margin_bottom = 0
+        tf1.margin_left = 0
+        tf1.margin_right = 0
+        for tcPr in cell1._tc.xpath(".//a:tcPr"):
+            tcPr.set("anchor", "t")
+            tcPr.set("marT", "18288")
+            tcPr.set("marB", "18288")
+            tcPr.set("marL", "36576")
+            tcPr.set("marR", "36576")
+
+        if not row_data.acceptance_criteria:
+            p = tf1.paragraphs[0]
+            p.space_before = Pt(0)
+            p.space_after = Pt(0)
+            p.text = "[CONFIRMATION REQUIRED]"
+            for r in p.runs:
+                r.font.name = "Proxima Nova"
+                r.font.size = Pt(chosen_sz)
+                r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+        else:
+            use_bullets = len(row_data.acceptance_criteria) > 1
+            for c_idx, crit in enumerate(row_data.acceptance_criteria):
+                p = tf1.paragraphs[0] if c_idx == 0 else tf1.add_paragraph()
+                p.space_before = Pt(0)
+                p.space_after = Pt(1)
+                p.text = f"• {crit}" if use_bullets else crit
+                for r in p.runs:
+                    r.font.name = "Proxima Nova"
+                    r.font.size = Pt(chosen_sz)
+                    r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+        # Col 2: Milestone Gate
+        cell2 = row.cells[2]
+        _format_table_cell(cell2, row_data.milestone_gate, font_size_pt=chosen_sz, color_rgb=RGBColor(0x04, 0x11, 0x33))
+
+
 def write_governance_deck(
     model: GovernanceDeckModel,
     target_path: Path,
@@ -189,12 +359,36 @@ def write_governance_deck(
     for shape in prs_client.slides[11].shapes:
         s_risk.shapes._spTree.append(copy.deepcopy(shape._element))
 
-    # Copy Slide 3 shapes (Team Roster placeholders) from Client Deck onto Gov Slide 12 (index 11)
+    # Copy Slide 3 shapes (Team Roster placeholders) and images from Client Deck onto Gov Slide 12 (index 11)
     s_gov_12 = prs_gov.slides[11]
     for s in list(s_gov_12.shapes):
         s_gov_12.shapes._spTree.remove(s._element)
-    for s in prs_client.slides[2].shapes:
-        s_gov_12.shapes._spTree.append(copy.deepcopy(s._element))
+
+    # Drop existing image relationships from s_gov_12.part to avoid stale/wrong photo targets
+    for rId in list(s_gov_12.part.rels.keys()):
+        rel = s_gov_12.part.rels[rId]
+        if "image" in rel.reltype:
+            s_gov_12.part.drop_rel(rId)
+
+    # Map client slide 3 image relationships into s_gov_12.part
+    rId_map = {}
+    import io
+    for old_rId, rel in prs_client.slides[2].part.rels.items():
+        if "image" in rel.reltype:
+            client_img_part = rel.target_part
+            image_stream = io.BytesIO(client_img_part.blob)
+            target_img_part, new_rId = s_gov_12.part.get_or_add_image_part(image_stream)
+            rId_map[old_rId] = new_rId
+
+    # Copy shapes and update blip r:embed to faithful client template image references
+    ns_r = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    for shape in prs_client.slides[2].shapes:
+        elem = copy.deepcopy(shape._element)
+        for blip in elem.xpath(".//a:blip"):
+            old_embed = blip.get(f"{{{ns_r}}}embed")
+            if old_embed and old_embed in rId_map:
+                blip.set(f"{{{ns_r}}}embed", rId_map[old_embed])
+        s_gov_12.shapes._spTree.append(elem)
 
     # Copy Slide 5 shapes (Why We're Here) from Client Deck onto Gov Slide 13 (index 12)
     s_gov_13 = prs_gov.slides[12]
@@ -285,6 +479,9 @@ def write_governance_deck(
 
     # Slide 14 (index 13): What We Deliver (Client Slide 6)
     write_slide6(prs_gov.slides[13], client_deck_adapter)
+
+    # Slide 15 (index 14): Acceptance Criteria Table (HTL-72)
+    write_slide15_acceptance_criteria(prs_gov.slides[14], model)
 
     # Slide 18 (index 17): Initial Risk Register (Client Slide 12)
     write_slide12(prs_gov.slides[17], client_deck_adapter)
