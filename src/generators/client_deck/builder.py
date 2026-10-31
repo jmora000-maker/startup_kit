@@ -316,7 +316,7 @@ def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
                     "",
                     mitigation_raw,
                     flags=re.IGNORECASE,
-                ).strip().rstrip(",")
+                ).strip(" .,;:-")
                 if not mitigation_clean:
                     mitigation_clean = (
                         "Report defects early and agree remediation timelines with Client"
