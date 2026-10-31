@@ -24,7 +24,7 @@ def check_governance_deck_traceability(
 
     # 1. Slide Count
     rows_s15 = model.slide15.rows
-    max_per_page = 6 if len(rows_s15) <= 6 else 4
+    max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
     total_s15_pages = len(chunks_s15)
     expected_slides = 18 + total_s15_pages

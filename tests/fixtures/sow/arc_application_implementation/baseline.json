@@ -167,7 +167,7 @@
       "Client completion of client-built work, environment support, reviews and approvals before dependent Toptal work is scheduled."
     ],
     "approval_expectations": "Each milestone is an acceptance gate with its own sign-off. The client has 5 business days from notice of completion to review and give written notice of failure, otherwise the milestone is deemed accepted (also if used in production). The client signs a milestone acceptance certification through its designated approvers (Mike Magwire and Satya). Failed items get written non-conformance details and up to three rework attempts. Weekly status reports require written confirmation or feedback, and a Milestone Acceptance Review is held at the end of each milestone.",
-    "acceptance_process_narrative": "**Inputs ready:** Client dependencies must be met before delivery milestones can proceed, including environment access, data provisioning, and client SME availability.\n**Execution and tracking:** Work is organized across 6 delivery milestones. Bi-weekly status reports and regular sprint check-ins track progress toward milestone acceptance criteria.\n**Submission:** Formal delivery package submitted to Client Approver upon milestone completion with completion notice, triggering the acceptance review period.\n**Review:** Client has a defined review window (typically 5 business days for major deliverables, 10 business days for platform validation) to evaluate deliverables against agreed acceptance criteria.\n**Deliverable-specific rules:** Milestone 1 (Foundation) requires infrastructure sign-off; Milestone 2 (Data Pipeline) requires data integrity validation; Milestone 3 (Analytics Engine) requires algorithm verification; Milestone 4 (User Interface) requires UX/functional sign-off; Milestone 5 (Integration & Security) requires security audit pass; Milestone 6 (Production Cutover & Hypercare) requires successful cutover and hypercare stability.\n**Triage:** Defects or non-conformances identified during review are categorized: blocking defects require remediation before acceptance; non-blocking items or minor issues may be addressed in subsequent milestones or hypercare by mutual agreement.\n**Remediation:** Toptal addresses blocking defects within a commercially reasonable remediation window and resubmits the deliverable package for re-review.\n**Deemed accepted:** If the Client does not provide written notice of non-conformance or rejection within the review window, the milestone deliverables are deemed accepted.\n**Sign-off:** Written acceptance certification executed by the Client Approver upon successful review or deemed acceptance, authorizing milestone invoice issuance.\n**Next gate:** Acceptance of the current milestone serves as the formal gate prerequisite for billing and progression to subsequent delivery phases.\n**Exceptions:** Specific deliverables with custom acceptance paths (e.g., hypercare exit criteria, third-party security certifications) follow their defined validation protocols as documented in the deliverable matrix.",
+    "acceptance_process_narrative": "**Inputs ready:** Client must provide environment access, Snowflake schema deployment (HS-4781), upstream systems access (MTA, 1GWAS, GATS-B, GWAS Atlas), and design system tokens/components before dependent work proceeds. Client SME availability (Mike Magwire and Satya) is required for scheduled walkthroughs.\n**Execution and tracking:** Work is organized across 5 delivery phases: P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch, and Hypercare Support. Weekly status reports track progress against user stories (HS-####) and milestone acceptance criteria, managed by Toptal Delivery Manager Saadia Iqbal.\n**Submission:** Formal delivery package submitted to Client Approver Mike Magwire upon completion of each milestone with written completion notice (email suffices), initiating the Milestone Acceptance Period.\n**Review:** Client has 10 business days from the completion notice to evaluate, review, and test the Work Output against specifications and Acceptance Criteria in all material respects.\n**Deliverable-specific rules:** P1 Foundation requires micro-frontend shell and MSAL authentication sign-off; P2a Services and Data requires FastAPI backend and Snowflake integration (HS-4781); P2b Application Surface requires UI/UX validation and OneGWAS/GWAS Atlas workflows; P3 Launch requires production cutover, zero legacy MTA Store traffic (HS-4788), and defect resolution; Hypercare requires 30-day operational stability and warranty support.\n**Triage:** If Client identifies material non-conformance, Client provides written notice specifying non-conformance details and required modifications. Non-blocking items may be triaged for subsequent sprints or Hypercare by mutual agreement.\n**Remediation:** Toptal uses commercially reasonable efforts to modify non-conforming Work Output and resubmits for client acceptance.\n**Rework limit:** Up to three (3) repeated remediation attempts are permitted; if unresolved within Client's reasonable discretion, contractual dispute escalation applies.\n**Deemed accepted:** If Client provides no written notice of failure within the 10-business-day window or commences commercial/production use, the milestone is deemed accepted.\n**Sign-off:** Mike Magwire executes and delivers written milestone acceptance certification upon successful review or deemed acceptance, authorizing milestone billing.\n**Next gate:** Formal milestone sign-off acts as the contractual gateway for phase progression and invoice issuance for each fixed-fee milestone.\n**Exceptions:** Scope or dependency changes (e.g. schema changes or third-party items) follow formal Change Order procedures; escalation follows Level 1 (Saadia Iqbal / Mike Magwire within 5 business days), Level 2, and Level 3 dispute protocols.",
     "ambiguity_notes": [
       "The start date has not been confirmed as agreed, and the whole phase sequence depends on it.",
       "It is unclear who covers design/UX work, as no design role is named on either side for a scientist-facing interface.",
@@ -586,7 +586,7 @@
         "confidence_score": 0.9
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage ≥90%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision ≥85%, taxonomy coverage ≥80%. Achieving the targets is the Client's responsibility.",
+      "acceptance_criteria": "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage \u226590%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision \u226585%, taxonomy coverage \u226580%. Achieving the targets is the Client's responsibility.",
       "sow_reference": "HS-4797, HS-4785, HS-4807, HS-4801, HS-4791",
       "evidence_required": "[CONFIRMATION REQUIRED]",
       "client_approver": "Mike Magwire and Satya",
@@ -697,7 +697,7 @@
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Unit coverage ≥80%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.",
+      "acceptance_criteria": "Unit coverage \u226580%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.",
       "sow_reference": "HS-4775, HS-4815, HS-4811",
       "evidence_required": "Test scripts, execution results report, and signed milestone acceptance certification.",
       "client_approver": "Mike Magwire and Satya",
@@ -2383,7 +2383,7 @@
     },
     {
       "id": "DEC-14",
-      "decision_text": "The estimated schedule is 26 weeks from an estimated start of October 7, 2026 to April 6, 2027 (P1 weeks 1–6, P2a 7–16, P2b 17–21, P3 22–26). If the start date moves by mutual agreement, the end date shifts equally without a Change Order.",
+      "decision_text": "The estimated schedule is 26 weeks from an estimated start of October 7, 2026 to April 6, 2027 (P1 weeks 1\u20136, P2a 7\u201316, P2b 17\u201321, P3 22\u201326). If the start date moves by mutual agreement, the end date shifts equally without a Change Order.",
       "decision_owner": "Toptal and Syngenta",
       "decision_date": null,
       "rationale": "Keeping the performance period constant protects the plan if the start moves. The schedule assumes no holiday stoppages.",
@@ -2661,7 +2661,7 @@
       "decision_or_activity": "Scope & change",
       "pmo_lead": "R",
       "delivery_manager": "A",
-      "talent_pm": "—",
+      "talent_pm": "\u2014",
       "sales_accounts": "C, R",
       "client": "A"
     },

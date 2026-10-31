@@ -72,6 +72,15 @@ def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> 
     elif field.self_describing:
         st.text_area("Your value", value=current, key=widget_key, on_change=on_change)
     else:
+        if field.key in ("project_identity.project_name", "project_identity.client_name"):
+            proj_cur = state_persistence.persisted_value(store_name, "project_identity.project_name", "")
+            client_cur = state_persistence.persisted_value(store_name, "project_identity.client_name", "")
+            comb_len = len((proj_cur or "").strip()) + len((client_cur or "").strip())
+            if comb_len > 60:
+                st.caption(
+                    f"⚠️ Combined Client & Project Name length ({comb_len} chars) exceeds 60 characters and risks Slide 1 title overflow. "
+                    "Consider shortening one or both names."
+                )
         st.text_input("Your value", value=current, key=widget_key, on_change=on_change)
 
 
@@ -193,6 +202,16 @@ def _render_fact_review_page() -> None:
         with st.expander(cat.title, expanded=False):
             if cat.note:
                 st.info(cat.note)
+            if cat.key == "project_identity":
+                proj_cur = state_persistence.persisted_value(store_name, "project_identity.project_name", "")
+                client_cur = state_persistence.persisted_value(store_name, "project_identity.client_name", "")
+                comb_len = len((proj_cur or "").strip()) + len((client_cur or "").strip())
+                if comb_len > 60:
+                    st.warning(
+                        f"Slide 1 title length notice: Combined Client Name and Project Name length ({comb_len} chars) "
+                        "exceeds 60 characters and risks Slide 1 title wrapping or overflow in kickoff presentations. "
+                        "Consider shortening the Project Name or Client Name using the fields below."
+                    )
             for field in cat.fields:
                 with st.container(border=True):
                     _render_field(field, store_name=store_name, key_prefix=key_prefix)

@@ -149,6 +149,30 @@ from tests.deck_bundle import load_baseline
 from src.llm.validation import validate_and_repair_baseline
 
 
+PGE_ACCEPTANCE_PROCESS_NARRATIVE = (
+    "Inputs ready: Confirm Client has issued the Purchase Order before work starts, and that environment read access, "
+    "discovery tooling access, spend data and SME availability are in place before Day 1. Client decision turnaround on review items is assumed to be within 3 business days.\n"
+    "Execution: Deliver all six Work Output items (Portfolio Inventory, Dependency Map, Workload Disposition Register, "
+    "Target Architecture Recommendation, Business Case & TCO Model, Migration Wave Plan & Roadmap) as Milestone 1, targeting November 18, 2026. "
+    "Send the weekly status report and ask Client Contact Alicia Cook to confirm acceptance or give feedback on each one.\n"
+    "Submission: Give Alicia Cook formal notice that Milestone 1 is complete. The 5-business-day Milestone Acceptance Period starts from the date of that notice, so record the date.\n"
+    "Review: Client has 5 business days from the completion notice to evaluate the Work Output against its specifications and Acceptance Criteria in all material respects. "
+    "Milestone review sessions with the Client Contact (and Client SMEs as needed) cover the Work Output against the criteria.\n"
+    "Deemed accepted: If Client gives no written notice of failure within the 5 business days, or starts using the Work Output commercially or in production, "
+    "Milestone 1 is deemed accepted. Client is still expected to sign and deliver a certification of Milestone acceptance.\n"
+    "Triage: If Client finds a material non-conformance, it must notify Supplier in writing, stating how the output does not conform and what modifications are required. "
+    "Check the notice for these details and clarify any gaps with the Client Contact.\n"
+    "Remediation: Supplier uses commercially reasonable efforts to modify the non-conforming Work Output and resubmits it for acceptance. "
+    "No supplier rework turnaround is stated, so agree a date with Client at the time of notice.\n"
+    "Rework limit: If Supplier cannot remedy a non-conforming portion within Client's reasonable discretion after 3 repeated attempts, Client may terminate the SOW. "
+    "On termination Client pays all amounts due or accrued through the termination date, including work in progress.\n"
+    "Sign-off and invoicing: Milestone 1 sign-off is the invoice trigger for the full fixed fee, with an estimated invoice date of 11/18/2026. "
+    "If the actual completion date differs, notify Client in writing (email suffices).\n"
+    "Exceptions: Dependencies, workloads or scope found later may require a Change Order. Delays caused by the Client Contact being unavailable or late on "
+    "Client responsibilities may justify an equitable adjustment to schedule and fees."
+)
+
+
 def _build_pge_baseline(deliverables=None) -> StartupKitBaseline:
     charter = ProjectStartupCharter(
         project_name="Cloud Migration Assessment – Operational Compliance Program (OCP)",
@@ -231,6 +255,7 @@ def _build_pge_baseline(deliverables=None) -> StartupKitBaseline:
             "Availability of PGE technical SMEs for interview walkthroughs.",
         ],
         approval_expectations="Formal written sign-off within 5 business days of Milestone 1 report submission.",
+        acceptance_process_narrative=PGE_ACCEPTANCE_PROCESS_NARRATIVE,
         ambiguity_notes=[],
         confirmation_required_items=[],
     )

@@ -12,6 +12,7 @@ from pptx.dml.color import RGBColor
 
 from src.config import CLIENT_DECK_TEMPLATE_PATH, GOVERNANCE_DECK_TEMPLATE_PATH
 from src.generators.client_deck.fit import (
+    BOLD_CHAR_WIDTH_FACTOR,
     estimate_text_height,
     fit_deliverables_for_block,
     select_fitting_font_size,
@@ -79,7 +80,7 @@ def resolve_client_deck_template_path(custom_path: Optional[Path] = None) -> Pat
 
 def write_slide1(slide, model: GovernanceDeckModel) -> None:
     """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' and fixed subtitle (HTL-72)."""
-    candidate_sizes = [16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0]
+    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0]
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
 
@@ -87,15 +88,21 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
     composite_title = f"{client_name}\n{project_name} Governance Kickoff"
 
     # Available geometry on Slide 1:
-    # Title box top = 2.966 in (2,712,227 EMUs), Layout divider line top = 4.423 in (4,044,375 EMUs).
-    # Box width = 5.80 in, max_height_in = 1.05 in to guarantee robust clearance (>= 0.45 in) above divider line.
-    title_sz, _ = select_fitting_font_size(
-        composite_title,
-        width_in=5.80,
-        max_height_in=1.05,
-        candidate_sizes=candidate_sizes,
-        is_bold=True,
-    )
+    # Title box top = 2.966 in (213.56 pt / 2,712,227 EMUs). Subtitle is placed at Top = 4.542 in (327.02 pt / 4,153,150 EMUs).
+    # Box width = 5.80 in. Try 24pt first; measure actual wrap lines to step down for long composite names
+    # to guarantee positive clearance above the subtitle without overlap.
+    title_sz = 12.0
+    for sz in candidate_sizes:
+        num_lines = wrap_lines(composite_title, width_in=5.80, size_pt=sz, char_width_factor=BOLD_CHAR_WIDTH_FACTOR)
+        if num_lines <= 3:
+            title_sz = sz
+            break
+        elif num_lines == 4 and sz <= 13.0:
+            title_sz = sz
+            break
+        elif num_lines >= 5 and sz <= 12.0:
+            title_sz = sz
+            break
 
     for shape in slide.shapes:
         if not shape.has_text_frame:
@@ -134,6 +141,7 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
 
         # Subtitle Shape
         elif "Onboarding for Project Managers" in text or "Aligning on governance" in text or "Alignment on governance" in text or "Aligning on outcomes" in text or shape.shape_id == 94:
+            shape.top = 4153150  # 4.542 in (template default)
             tf = shape.text_frame
             tf.word_wrap = True
             tf.margin_top = 0
@@ -366,7 +374,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
     # 3. Add Title
-    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
+    title_box = slide.shapes.add_textbox(457200, 600000, 8023800, 300000)
     tf_t = title_box.text_frame
     tf_t.word_wrap = True
     tf_t.margin_top = 0
@@ -377,12 +385,12 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     p_t.text = "How milestone acceptance works"
     for r in p_t.runs:
         r.font.name = "Proxima Nova"
-        r.font.size = Pt(20)
+        r.font.size = Pt(19)
         r.font.bold = True
         r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
     # 4. Add Subtitle
-    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
+    sub_box = slide.shapes.add_textbox(457200, 940000, 8023800, 240000)
     tf_s = sub_box.text_frame
     tf_s.word_wrap = True
     tf_s.margin_top = 0
@@ -393,7 +401,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     p_s.text = "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
     for r in p_s.runs:
         r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
+        r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
 
     # 5. Parse step sequence
@@ -497,10 +505,10 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
             r_body.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
     else:
-        # Multi-step layout (6-12 steps, e.g. ARC with 11 steps):
-        # Top 4-stage chevron process pipeline + 2-column detailed step cards below
-        pipeline_top = 1353312   # 1.48 in
-        pipeline_h = 320040      # 0.35 in
+        # Multi-step layout (6-12 steps, e.g. ARC with 12 steps, PGE with 10 steps):
+        # Top 4-stage chevron process pipeline + detailed step cards container below
+        pipeline_top = 1206855   # 1.32 in
+        pipeline_h = 274320      # 0.30 in
         total_w = 8229600        # 9.00 in
         chev_gap = 73152         # 0.08 in
         chev_w = (total_w - 3 * chev_gap) // 4
@@ -527,25 +535,31 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
             r_c = p_c.add_run()
             r_c.text = stage_title
             r_c.font.name = "Proxima Nova"
-            r_c.font.size = Pt(8.5)
+            r_c.font.size = Pt(8.0)
             r_c.font.bold = True
             r_c.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
-        # Body container below pipeline (Top = 1.90 in, Height = 3.30 in)
-        body_top = 1737360       # 1.90 in
-        body_h = 3017520         # 3.30 in
-        candidate_sizes = [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5]
-        space_after_pt = 3.0 if len(parsed_steps) >= 8 else 5.0
-        line_spacing = 1.12 if len(parsed_steps) >= 8 else 1.18
+        # Body container below pipeline (Top = 1.68 in, Height = 3.42 in, Bottom = 5.10 in / 367.2 pt)
+        body_top = 1536192       # 1.68 in
+        body_h = 3127248         # 3.42 in
+        pad_lr = 91440           # 0.10 in
+        pad_tb = 73152           # 0.08 in
 
-        chosen_sz = 8.0
+        candidate_sizes = [9.5, 9.0, 8.5, 8.0, 7.5, 7.0]
+        space_after_pt = 1.5 if len(parsed_steps) >= 9 else (2.5 if len(parsed_steps) >= 6 else 4.0)
+        line_spacing = 1.05
+
+        avail_w_in = (total_w - 2 * pad_lr) / 914400.0  # 8.80 in
+        avail_h_pt = (body_h - 2 * pad_tb) / 12700.0   # 234.7 pt
+
+        chosen_sz = 7.5
         for sz in candidate_sizes:
             tot_h = 0.0
             for label, body in parsed_steps:
                 full_line = f"{label} {body}" if label else body
-                lines = wrap_lines(full_line, width_in=8.8, size_pt=sz)
+                lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=sz, char_width_factor=0.52)
                 tot_h += lines * sz * line_spacing + space_after_pt
-            if (tot_h / 72.0) <= 3.25:
+            if tot_h <= (avail_h_pt - 10.0):
                 chosen_sz = sz
                 break
 
@@ -556,7 +570,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         card_bg.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
         card_bg.line.width = Pt(1)
 
-        body_box = slide.shapes.add_textbox(457200 + 109728, body_top + 91440, total_w - 219456, body_h - 182880)
+        body_box = slide.shapes.add_textbox(457200 + pad_lr, body_top + pad_tb, total_w - 2 * pad_lr, body_h - 2 * pad_tb)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
         tf_b.margin_top = 0
@@ -829,9 +843,9 @@ def write_governance_deck(
     for s in prs_client.slides[5].shapes:
         s_gov_14.shapes._spTree.append(copy.deepcopy(s._element))
 
-    # Calculate Slide 15 chunks (max 6 deliverables if <= 6 total, otherwise max 4 per slide page)
+    # Calculate Slide 15 chunks (max 7 deliverables on a single page if <= 7 total, otherwise max 4 per slide page)
     rows_s15 = model.slide15.rows
-    max_per_page = 6 if len(rows_s15) <= 6 else 4
+    max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
     total_s15_pages = len(chunks_s15)
 

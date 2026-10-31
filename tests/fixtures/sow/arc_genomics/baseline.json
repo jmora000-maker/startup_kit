@@ -71,10 +71,10 @@
       "DEL-19: Training Materials and User Documentation"
     ],
     "key_milestones_summary": [
-      "M1: P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1–6). ([DATE TBD])",
-      "M2: P2a Services and Data accepted: FastAPI search/detail endpoints, async query processing, OneGWAS integration, performance spike, and data ingestion validation delivered (est. weeks 7–16). ([DATE TBD])",
-      "M3: P2b Application Surface accepted: faceted search UI, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (est. weeks 17–21). ([DATE TBD])",
-      "M4: P3 Launch accepted: integration, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials delivered (est. weeks 22–26). ([DATE TBD])"
+      "M1: P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1\u20136). ([DATE TBD])",
+      "M2: P2a Services and Data accepted: FastAPI search/detail endpoints, async query processing, OneGWAS integration, performance spike, and data ingestion validation delivered (est. weeks 7\u201316). ([DATE TBD])",
+      "M3: P2b Application Surface accepted: faceted search UI, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (est. weeks 17\u201321). ([DATE TBD])",
+      "M4: P3 Launch accepted: integration, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials delivered (est. weeks 22\u201326). ([DATE TBD])"
     ],
     "contract_type": "Fixed Bid",
     "governance_tier": "Partnered",
@@ -82,7 +82,7 @@
     "governance_model": "PMO Partnered Tier Governance Model",
     "major_startup_risks": [
       "Latency and render-time targets may be missed because they depend on Client-owned components (Snowflake sizing, Azure AD, CloudFront, OneGWAS, network).",
-      "Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%, taxonomy coverage ≥80%), causing schedule slippage and re-test cycles.",
+      "Client-built components may fail certification targets (e.g., PubMed precision \u226585%, GWAS Atlas coverage \u226590%, taxonomy coverage \u226580%), causing schedule slippage and re-test cycles.",
       "Changes outside Toptal's control, such as upstream Snowflake schema changes or API taxonomy shifts, may force rework of test scripts and additional test cycles."
     ],
     "delivery_manager": "[UNASSIGNED - TO BE CONFIRMED]",
@@ -168,7 +168,7 @@
       "Client remediation of failed Certification targets is required before re-tests and Milestone progression."
     ],
     "approval_expectations": "Each Milestone is an acceptance gate with Client Sign-Off through designated approvers, following a Milestone Acceptance Review at the end of each Milestone and UAT after each Milestone. Test-suite deliverables are accepted on delivery of scripts, execution and a results report, and Certification criteria are accepted on test execution and a defect report, not on achieving the target. The Client Contact is asked to confirm acceptance or give feedback on each weekly status report, and to respond in writing to decision requests.",
-    "acceptance_process_narrative": "**Inputs ready:** Client dependencies must be met before delivery milestones can proceed, including environment access, data provisioning, and client SME availability.\n**Execution and tracking:** Work is organized across 6 delivery milestones. Bi-weekly status reports and regular sprint check-ins track progress toward milestone acceptance criteria.\n**Submission:** Formal delivery package submitted to Client Approver upon milestone completion with completion notice, triggering the acceptance review period.\n**Review:** Client has a defined review window (typically 5 business days for major deliverables, 10 business days for platform validation) to evaluate deliverables against agreed acceptance criteria.\n**Deliverable-specific rules:** Milestone 1 (Foundation) requires infrastructure sign-off; Milestone 2 (Data Pipeline) requires data integrity validation; Milestone 3 (Analytics Engine) requires algorithm verification; Milestone 4 (User Interface) requires UX/functional sign-off; Milestone 5 (Integration & Security) requires security audit pass; Milestone 6 (Production Cutover & Hypercare) requires successful cutover and hypercare stability.\n**Triage:** Defects or non-conformances identified during review are categorized: blocking defects require remediation before acceptance; non-blocking items or minor issues may be addressed in subsequent milestones or hypercare by mutual agreement.\n**Remediation:** Toptal addresses blocking defects within a commercially reasonable remediation window and resubmits the deliverable package for re-review.\n**Deemed accepted:** If the Client does not provide written notice of non-conformance or rejection within the review window, the milestone deliverables are deemed accepted.\n**Sign-off:** Written acceptance certification executed by the Client Approver upon successful review or deemed acceptance, authorizing milestone invoice issuance.\n**Next gate:** Acceptance of the current milestone serves as the formal gate prerequisite for billing and progression to subsequent delivery phases.\n**Exceptions:** Specific deliverables with custom acceptance paths (e.g., hypercare exit criteria, third-party security certifications) follow their defined validation protocols as documented in the deliverable matrix.",
+    "acceptance_process_narrative": "**Inputs ready:** Client must provide environment access, Snowflake schema deployment (HS-4781), upstream systems access (MTA, 1GWAS, GATS-B, GWAS Atlas), and design system tokens/components before dependent work proceeds. Client SME availability (Mike Magwire and Satya) is required for scheduled walkthroughs.\n**Execution and tracking:** Work is organized across 5 delivery phases: P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch, and Hypercare Support. Weekly status reports track progress against user stories (HS-####) and milestone acceptance criteria, managed by Toptal Delivery Manager Saadia Iqbal.\n**Submission:** Formal delivery package submitted to Client Approver Mike Magwire upon completion of each milestone with written completion notice (email suffices), initiating the Milestone Acceptance Period.\n**Review:** Client has 10 business days from the completion notice to evaluate, review, and test the Work Output against specifications and Acceptance Criteria in all material respects.\n**Deliverable-specific rules:** P1 Foundation requires micro-frontend shell and MSAL authentication sign-off; P2a Services and Data requires FastAPI backend and Snowflake integration (HS-4781); P2b Application Surface requires UI/UX validation and OneGWAS/GWAS Atlas workflows; P3 Launch requires production cutover, zero legacy MTA Store traffic (HS-4788), and defect resolution; Hypercare requires 30-day operational stability and warranty support.\n**Triage:** If Client identifies material non-conformance, Client provides written notice specifying non-conformance details and required modifications. Non-blocking items may be triaged for subsequent sprints or Hypercare by mutual agreement.\n**Remediation:** Toptal uses commercially reasonable efforts to modify non-conforming Work Output and resubmits for client acceptance.\n**Rework limit:** Up to three (3) repeated remediation attempts are permitted; if unresolved within Client's reasonable discretion, contractual dispute escalation applies.\n**Deemed accepted:** If Client provides no written notice of failure within the 10-business-day window or commences commercial/production use, the milestone is deemed accepted.\n**Sign-off:** Mike Magwire executes and delivers written milestone acceptance certification upon successful review or deemed acceptance, authorizing milestone billing.\n**Next gate:** Formal milestone sign-off acts as the contractual gateway for phase progression and invoice issuance for each fixed-fee milestone.\n**Exceptions:** Scope or dependency changes (e.g. schema changes or third-party items) follow formal Change Order procedures; escalation follows Level 1 (Saadia Iqbal / Mike Magwire within 5 business days), Level 2, and Level 3 dispute protocols.",
     "ambiguity_notes": [
       "The number of ARC-specific design-system components included in the estimate is left as a placeholder [N].",
       "The Client approvers for Milestone Sign-Off are not named.",
@@ -194,7 +194,7 @@
       {
         "anomaly_id": "AMB-01",
         "category": "Date Conflict",
-        "conflicting_clauses": "Schedule: \"P1 weeks 1–6, P2a weeks 7–16, P2b weeks 17–21, P3 weeks 22–26\" and \"P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; P3 begins upon acceptance of P2b\". Client dependencies: \"must be completed before the related Toptal-owned Work can begin\".",
+        "conflicting_clauses": "Schedule: \"P1 weeks 1\u20136, P2a weeks 7\u201316, P2b weeks 17\u201321, P3 weeks 22\u201326\" and \"P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; P3 begins upon acceptance of P2b\". Client dependencies: \"must be completed before the related Toptal-owned Work can begin\".",
         "risk_impact": "Fixed week ranges conflict with start dates that depend on Client work and Client sign-off. Client delays could consume Toptal schedule and margin with no stated relief.",
         "recommended_clarification": "Do the week ranges move with actual gate and dependency completion? Is a delay in Client dependencies or sign-off an explicit trigger for a schedule extension or Change Order?",
         "status": "Open",
@@ -222,7 +222,7 @@
       {
         "anomaly_id": "AMB-03",
         "category": "Scope Contradiction",
-        "conflicting_clauses": "Milestones are named P1, P2a, P2b, P3, but the Work Output table labels them Milestone 1–4 (P2b = Milestone 3, P3 = Milestone 4). Cross-references also point to the wrong places: Certification labels are said to be in the QA section but sit in the Work Output table, a non-existent \"Client-built\" subsection is cited, and Client responsibilities are cited as the governance section.",
+        "conflicting_clauses": "Milestones are named P1, P2a, P2b, P3, but the Work Output table labels them Milestone 1\u20134 (P2b = Milestone 3, P3 = Milestone 4). Cross-references also point to the wrong places: Certification labels are said to be in the QA section but sit in the Work Output table, a non-existent \"Client-built\" subsection is cited, and Client responsibilities are cited as the governance section.",
         "risk_impact": "Inconsistent milestone naming and broken cross-references can cause disputes over which gate, billing event or criterion applies, for example \"Milestone 3 screens\" design delivery.",
         "recommended_clarification": "Please confirm one milestone naming convention (P-codes or numbers) and correct the cross-references so Certification labels, Client responsibilities and design deliverables map to the right milestones.",
         "status": "Open",
@@ -579,7 +579,7 @@
         "confidence_score": 0.9
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Targets are ≥90% GWAS Atlas import coverage with schema-change handling verified, MTA domain-user comparison sign-off with the data-quality log triaged/closed, and 100% of sampled PHG/GATSBY keys matching. Acceptance requires delivery and execution of the scripts and a defect report; achieving the targets is the Client's responsibility.",
+      "acceptance_criteria": "Targets are \u226590% GWAS Atlas import coverage with schema-change handling verified, MTA domain-user comparison sign-off with the data-quality log triaged/closed, and 100% of sampled PHG/GATSBY keys matching. Acceptance requires delivery and execution of the scripts and a defect report; achieving the targets is the Client's responsibility.",
       "sow_reference": "HS-4797, HS-4785, HS-4807",
       "evidence_required": "[CONFIRMATION REQUIRED]",
       "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
@@ -599,7 +599,7 @@
         "confidence_score": 0.9
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Targets are ≥85% precision on key fields with a green E2E run, and ≥80% taxonomy coverage with approvals captured. Acceptance requires delivery and execution of the scripts and a defect report; achieving the targets is the Client's responsibility.",
+      "acceptance_criteria": "Targets are \u226585% precision on key fields with a green E2E run, and \u226580% taxonomy coverage with approvals captured. Acceptance requires delivery and execution of the scripts and a defect report; achieving the targets is the Client's responsibility.",
       "sow_reference": "HS-4801, HS-4791",
       "evidence_required": "[CONFIRMATION REQUIRED]",
       "client_approver": "[UNASSIGNED - TO BE CONFIRMED]",
@@ -679,7 +679,7 @@
         "confidence_score": 0.9
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Unit coverage ≥80%, key-flow integration green and search < 1s. Haplotype integration tests green on 100% of critical paths, 100% of mapped-trait resolutions correct, and haplotype filters, comparison and rendering validated across haplotype types.",
+      "acceptance_criteria": "Unit coverage \u226580%, key-flow integration green and search < 1s. Haplotype integration tests green on 100% of critical paths, 100% of mapped-trait resolutions correct, and haplotype filters, comparison and rendering validated across haplotype types.",
       "sow_reference": "HS-4775, HS-4815, HS-4794, HS-4811",
       "evidence_required": "Working service and the nomenclature test suite results (HS-4794) showing 100% mapped-trait resolution correct and lookup P95 < 200ms. (Shared evidence item covering HS-4793, HS-4794)",
       "client_approver": "Client's designated Milestone Sign-Off approver (name not specified)",
@@ -793,7 +793,7 @@
   "milestones": [
     {
       "id": "M1",
-      "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1–6).",
+      "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1\u20136).",
       "external_date": null,
       "internal_buffer_date": null,
       "owner": "Delivery Manager",
@@ -804,7 +804,7 @@
         "Coding and delivery documentation standards provided on or before the start date"
       ],
       "critical_path_assumptions": [
-        "Schedule is measured from the Start Date: weeks 1–6",
+        "Schedule is measured from the Start Date: weeks 1\u20136",
         "No holiday breaks or stoppages assumed",
         "UAT runs after the milestone, limited to two runs"
       ],
@@ -817,7 +817,7 @@
     },
     {
       "id": "M2",
-      "description": "P2a Services and Data accepted: FastAPI search/detail endpoints, async query processing, OneGWAS integration, performance spike, and data ingestion validation delivered (est. weeks 7–16).",
+      "description": "P2a Services and Data accepted: FastAPI search/detail endpoints, async query processing, OneGWAS integration, performance spike, and data ingestion validation delivered (est. weeks 7\u201316).",
       "external_date": null,
       "internal_buffer_date": null,
       "owner": "Delivery Manager",
@@ -828,7 +828,7 @@
         "Client maintains development environment and resolves blockers"
       ],
       "critical_path_assumptions": [
-        "Schedule is measured from the Start Date: weeks 7–16",
+        "Schedule is measured from the Start Date: weeks 7\u201316",
         "Cogen API assumed ~95% available and stable",
         "Upstream Snowflake schema changes or taxonomy shifts handled by Change Order"
       ],
@@ -841,7 +841,7 @@
     },
     {
       "id": "M3",
-      "description": "P2b Application Surface accepted: faceted search UI, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (est. weeks 17–21).",
+      "description": "P2b Application Surface accepted: faceted search UI, result detail and haplotype visualization, haplotype endpoints, nomenclature service, and related test suites delivered (est. weeks 17\u201321).",
       "external_date": null,
       "internal_buffer_date": null,
       "owner": "Delivery Manager",
@@ -851,7 +851,7 @@
         "Client provides design system access and advance notice of design-system changes"
       ],
       "critical_path_assumptions": [
-        "Schedule is measured from the Start Date: weeks 17–21",
+        "Schedule is measured from the Start Date: weeks 17\u201321",
         "Estimates cover only a limited number of ARC-specific components; additional components addressed by Change Order"
       ],
       "source_reference": {
@@ -863,7 +863,7 @@
     },
     {
       "id": "M4",
-      "description": "P3 Launch accepted: integration, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials delivered (est. weeks 22–26).",
+      "description": "P3 Launch accepted: integration, security and cross-browser testing, UAT, hardening, production smoke tests with 48-hour defect watch, and training materials delivered (est. weeks 22\u201326).",
       "external_date": null,
       "internal_buffer_date": null,
       "owner": "Delivery Manager",
@@ -874,7 +874,7 @@
         "Client remediates defects in Client-built components"
       ],
       "critical_path_assumptions": [
-        "Schedule is measured from the Start Date: weeks 22–26",
+        "Schedule is measured from the Start Date: weeks 22\u201326",
         "UAT limited to two runs per milestone; additional runs by Change Order",
         "Hypercare beyond the 48-hour defect watch is out of scope"
       ],
@@ -1772,7 +1772,7 @@
     {
       "id": "R-02",
       "type": "Risk",
-      "description": "Client-built components may fail certification targets (e.g., PubMed precision ≥85%, GWAS Atlas coverage ≥90%, taxonomy coverage ≥80%), causing schedule slippage and re-test cycles.",
+      "description": "Client-built components may fail certification targets (e.g., PubMed precision \u226585%, GWAS Atlas coverage \u226590%, taxonomy coverage \u226580%), causing schedule slippage and re-test cycles.",
       "owner": "Client",
       "status": "Open",
       "source_reference": {
@@ -2368,7 +2368,7 @@
       "decision_or_activity": "Scope & change",
       "pmo_lead": "R",
       "delivery_manager": "A",
-      "talent_pm": "—",
+      "talent_pm": "\u2014",
       "sales_accounts": "C, R",
       "client": "A"
     },
@@ -2382,11 +2382,11 @@
     }
   ],
   "commercial_guardrails": {
-    "contract_type_implication": "Fixed Bid: fixed fees are tied to four sequential milestones (P1 weeks 1–6, P2a weeks 7–16, P2b weeks 17–21, P3 weeks 22–26), each an acceptance gate. Any effort beyond the defined work output must go through a Change Order, or the delivery team absorbs it.",
+    "contract_type_implication": "Fixed Bid: fixed fees are tied to four sequential milestones (P1 weeks 1\u20136, P2a weeks 7\u201316, P2b weeks 17\u201321, P3 weeks 22\u201326), each an acceptance gate. Any effort beyond the defined work output must go through a Change Order, or the delivery team absorbs it.",
     "billing_consumption_assumption": "Billing follows milestone acceptance and Client sign-off, not timesheets, and the weekly status report includes a milestone billing snapshot. The schedule and fees assume no holiday stoppages.",
     "staffing_assumption": "Team size is not specified. Toptal staff join the Client's daily standups and test Toptal-built work plus the listed Client-built certification items. Delivery depends on timely Client availability of domain users, domain experts, scientist UAT groups and the IdP team.",
     "commercial_exposure_note": "Margin is exposed to Client-built dependencies finishing late, Cogen API availability below ~95%, and Snowflake schema or taxonomy changes. It is also exposed to UAT beyond two runs per milestone, extra re-test cycles, and design-system changes. Each of these is a Change Order item and must not be absorbed.",
-    "approved_work_rule": "Only the stories listed as work output under milestones P1–P3 and any signed Change Orders are authorized. Work starts only after the related Client-owned dependencies are complete.",
+    "approved_work_rule": "Only the stories listed as work output under milestones P1\u2013P3 and any signed Change Orders are authorized. Work starts only after the related Client-owned dependencies are complete.",
     "non_approved_work_rule": "No out-of-scope work without a written Change Order. This covers platform/DevOps, security design, architecture/design stories, data model and ingestion builds, remediation of Client-built defects, design-system changes, and hypercare beyond the 48-hour defect watch.",
     "work_at_risk_rule": "Starting Toptal work before its Client dependencies are complete, or beyond approved scope, is work at risk. It requires written PMO Lead approval and executive exception sign-off.",
     "change_control_trigger": "A Change Order is required for: UAT runs beyond two per milestone; additional re-test runs; Cogen availability below ~95%; upstream Snowflake schema or taxonomy changes causing script rework; and design-system changes or components beyond the estimated count. Testing of other Client-built components, or any other scope shift, also triggers one.",
@@ -2723,7 +2723,7 @@
       "target_table_title": "Milestone Delivery Plan",
       "target_column_header": "External Date",
       "target_entity_id": "M1",
-      "finding_description": "Milestone M1 (P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1–6).) commitment date or buffer unconfirmed.",
+      "finding_description": "Milestone M1 (P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, E2E test harness, and pipeline/security/data-model validation delivered (est. weeks 1\u20136).) commitment date or buffer unconfirmed.",
       "required_action": "Lock external milestone date and 7-day internal buffer for M1.",
       "owner": "Delivery Manager",
       "resolution_deadline": "Prior to Mobilize Kickoff",
@@ -3149,7 +3149,7 @@
     {
       "anomaly_id": "AMB-01",
       "category": "Date Conflict",
-      "conflicting_clauses": "Schedule: \"P1 weeks 1–6, P2a weeks 7–16, P2b weeks 17–21, P3 weeks 22–26\" and \"P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; P3 begins upon acceptance of P2b\". Client dependencies: \"must be completed before the related Toptal-owned Work can begin\".",
+      "conflicting_clauses": "Schedule: \"P1 weeks 1\u20136, P2a weeks 7\u201316, P2b weeks 17\u201321, P3 weeks 22\u201326\" and \"P2a begins upon completion of HS-4781; P2b begins upon acceptance of P2a; P3 begins upon acceptance of P2b\". Client dependencies: \"must be completed before the related Toptal-owned Work can begin\".",
       "risk_impact": "Fixed week ranges conflict with start dates that depend on Client work and Client sign-off. Client delays could consume Toptal schedule and margin with no stated relief.",
       "recommended_clarification": "Do the week ranges move with actual gate and dependency completion? Is a delay in Client dependencies or sign-off an explicit trigger for a schedule extension or Change Order?",
       "status": "Open",
@@ -3177,7 +3177,7 @@
     {
       "anomaly_id": "AMB-03",
       "category": "Scope Contradiction",
-      "conflicting_clauses": "Milestones are named P1, P2a, P2b, P3, but the Work Output table labels them Milestone 1–4 (P2b = Milestone 3, P3 = Milestone 4). Cross-references also point to the wrong places: Certification labels are said to be in the QA section but sit in the Work Output table, a non-existent \"Client-built\" subsection is cited, and Client responsibilities are cited as the governance section.",
+      "conflicting_clauses": "Milestones are named P1, P2a, P2b, P3, but the Work Output table labels them Milestone 1\u20134 (P2b = Milestone 3, P3 = Milestone 4). Cross-references also point to the wrong places: Certification labels are said to be in the QA section but sit in the Work Output table, a non-existent \"Client-built\" subsection is cited, and Client responsibilities are cited as the governance section.",
       "risk_impact": "Inconsistent milestone naming and broken cross-references can cause disputes over which gate, billing event or criterion applies, for example \"Milestone 3 screens\" design delivery.",
       "recommended_clarification": "Please confirm one milestone naming convention (P-codes or numbers) and correct the cross-references so Certification labels, Client responsibilities and design deliverables map to the right milestones.",
       "status": "Open",
