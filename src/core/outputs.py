@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.generators.pmo_workbook import PMOWorkbookResult
     from src.generators.onboarding_deck import OnboardingDeckResult
+    from src.generators.governance_deck import GovernanceDeckResult
     from src.generators.client_deck import ClientDeckResult
     from src.core.models import StartupKitBaseline, ValidationReport
 
@@ -18,6 +19,7 @@ class OutputSelection:
     workbook: bool = True
     slides: bool = False
     client_deck: bool = False
+    governance_deck: bool = False
 
     @classmethod
     def from_flags(
@@ -29,15 +31,17 @@ class OutputSelection:
         export_tools: bool = False,
         slides: bool = False,
         client_deck: bool = False,
+        governance_deck: bool = False,
     ) -> "OutputSelection":
+        has_slides = slides or governance_deck
         if all_:
-            return cls(kit=True, checklist=True, workbook=True, slides=True, client_deck=True)
-        if slides:
+            return cls(kit=True, checklist=True, workbook=True, slides=True, client_deck=True, governance_deck=True)
+        if has_slides:
             # DECK-02: --slides implies writing Kit and Workbook as deck sources
-            return cls(kit=True, checklist=checklist, workbook=True, slides=True, client_deck=client_deck)
-        if not (kit or checklist or export_tools or slides or client_deck):
+            return cls(kit=True, checklist=checklist, workbook=True, slides=True, client_deck=client_deck, governance_deck=True)
+        if not (kit or checklist or export_tools or has_slides or client_deck):
             return cls()  # default: workbook only
-        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=slides, client_deck=client_deck)
+        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=has_slides, client_deck=client_deck, governance_deck=has_slides)
 
 
 @dataclass(frozen=True)
@@ -45,8 +49,10 @@ class RunResult:
     kit_path: Optional[Path] = None
     checklist_path: Optional[Path] = None
     workbook: Optional["PMOWorkbookResult"] = None
-    slides: Optional["OnboardingDeckResult"] = None
+    slides: Optional[Union["OnboardingDeckResult", "GovernanceDeckResult"]] = None
     slides_path: Optional[Path] = None
+    governance_deck: Optional["GovernanceDeckResult"] = None
+    governance_deck_path: Optional[Path] = None
     client_deck: Optional["ClientDeckResult"] = None
     client_deck_path: Optional[Path] = None
     readiness_score: float = 0.0

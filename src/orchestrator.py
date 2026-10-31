@@ -41,6 +41,7 @@ from src.llm.aggregator import BaselineAggregator
 from src.generators.docx_generator import DocxGenerator
 from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
 from src.generators.onboarding_deck import export_onboarding_deck, OnboardingDeckResult
+from src.generators.governance_deck import export_governance_deck, GovernanceDeckResult
 from src.generators.client_deck import export_client_deck, ClientDeckResult
 from src.scoring.cli_reporter import (
     format_readiness_cli_summary,
@@ -610,9 +611,9 @@ class StartupKitController:
             written_paths.append(wb_result.file_path)
 
         if outputs.slides:
-            progress("generating", "Onboarding Deck")
-            logger.info("Exporting Talent Onboarding Deck to %s", out_path)
-            deck_result = export_onboarding_deck(baseline, out_path, start_date=start_date)
+            progress("generating", "PS Governance Kickoff")
+            logger.info("Exporting PS Governance Kickoff Deck to %s", out_path)
+            deck_result = export_governance_deck(baseline, out_path)
             written_paths.append(deck_result.file_path)
             written_paths.append(deck_result.manifest_path)
 
@@ -645,6 +646,8 @@ class StartupKitController:
             workbook=wb_result,
             slides=deck_result,
             slides_path=deck_result.file_path if deck_result else None,
+            governance_deck=deck_result if isinstance(deck_result, GovernanceDeckResult) else None,
+            governance_deck_path=deck_result.file_path if (deck_result and isinstance(deck_result, GovernanceDeckResult)) else None,
             client_deck=client_deck_result,
             client_deck_path=client_deck_result.file_path if client_deck_result else None,
             readiness_score=baseline.readiness_score,
@@ -843,11 +846,11 @@ class StartupKitController:
             wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
             written_paths.append(wb_result.file_path)
 
-        deck_result: Optional[OnboardingDeckResult] = None
+        deck_result: Optional[Union[GovernanceDeckResult, OnboardingDeckResult]] = None
         if outputs.slides:
-            progress("generating", "Onboarding Deck")
-            logger.info("Exporting Talent Onboarding Deck to %s", export_dir)
-            deck_result = export_onboarding_deck(baseline, export_dir, start_date=start_date)
+            progress("generating", "PS Governance Kickoff")
+            logger.info("Exporting PS Governance Kickoff Deck to %s", export_dir)
+            deck_result = export_governance_deck(baseline, export_dir)
             written_paths.append(deck_result.file_path)
             written_paths.append(deck_result.manifest_path)
 
@@ -884,6 +887,8 @@ class StartupKitController:
             workbook=wb_result,
             slides=deck_result,
             slides_path=deck_result.file_path if deck_result else None,
+            governance_deck=deck_result if isinstance(deck_result, GovernanceDeckResult) else None,
+            governance_deck_path=deck_result.file_path if (deck_result and isinstance(deck_result, GovernanceDeckResult)) else None,
             client_deck=client_deck_result,
             client_deck_path=client_deck_result.file_path if client_deck_result else None,
             readiness_score=baseline.readiness_score,

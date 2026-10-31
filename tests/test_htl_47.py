@@ -39,7 +39,7 @@ def test_validate_output_selection_all_false_returns_error():
     error = validate_output_selection(outputs=outputs)
     assert error is not None
     assert "Select at least one output deliverable" in error
-    assert "Startup Kit, Delivery Workbook, or Onboarding Deck" in error
+    assert "Startup Kit, Delivery Workbook, or PS Governance Kickoff" in error
 
 
 def test_validate_output_selection_booleans_all_false_returns_error():

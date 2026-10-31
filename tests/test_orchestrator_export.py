@@ -62,4 +62,4 @@ def test_orchestrator_run_with_slides(tmp_path, caplog):
     assert run_result.slides_path is not None
     assert run_result.slides_path.exists()
     assert run_result.slides.manifest_path.exists()
-    assert "Deck sources: Startup Kit and Project Delivery Workbook also written" in caplog.text or "Exporting Talent Onboarding Deck" in caplog.text
+    assert "Deck sources: Startup Kit and Project Delivery Workbook also written" in caplog.text or "Exporting PS Governance Kickoff" in caplog.text or "Exporting Talent Onboarding Deck" in caplog.text

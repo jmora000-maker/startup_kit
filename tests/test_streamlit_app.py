@@ -1388,13 +1388,13 @@ def test_fact_review_persisted_formatted_label_resolves_to_run_id(tmp_path, monk
 
 
 def test_htl_45_document_type_checkboxes_all_default_to_false():
-    """HTL-45 / OUT-13a: Every active document-type checkbox (Startup Kit,
-    Delivery Workbook, and Onboarding Deck) on both Generate and Re-ingest tabs
+    """HTL-45 / OUT-13a / HTL-72: Every active document-type checkbox (Startup Kit,
+    Delivery Workbook, and PS Governance Kickoff) on both Generate and Re-ingest tabs
     defaults to unchecked (False), and Readiness Checklist is discontinued."""
     at = _make_app_test().run()
 
     # Generate tab checkboxes
-    gen_deck_cb = [cb for cb in at.checkbox if cb.label == "Onboarding Deck" and cb.key == "gen_out_slides"]
+    gen_deck_cb = [cb for cb in at.checkbox if cb.label == "PS Governance Kickoff" and cb.key == "gen_out_slides"]
     assert len(gen_deck_cb) == 1
     assert gen_deck_cb[0].value is False
 
@@ -1404,7 +1404,7 @@ def test_htl_45_document_type_checkboxes_all_default_to_false():
     gen_labels = {
         "Startup Kit": "gen_out_kit",
         "Delivery Workbook": "gen_out_workbook",
-        "Onboarding Deck": "gen_out_slides",
+        "PS Governance Kickoff": "gen_out_slides",
     }
     for label, key in gen_labels.items():
         cbs = [cb for cb in at.checkbox if cb.key == key]
@@ -1417,7 +1417,7 @@ def test_htl_45_document_type_checkboxes_all_default_to_false():
     reingest_labels = {
         "Startup Kit": "reingest_out_kit",
         "Delivery Workbook": "reingest_out_workbook",
-        "Onboarding Deck": "reingest_out_slides",
+        "PS Governance Kickoff": "reingest_out_slides",
     }
     for label, key in reingest_labels.items():
         cbs = [cb for cb in at.checkbox if cb.key == key]

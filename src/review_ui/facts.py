@@ -525,6 +525,8 @@ def label_for_generated_file(filename: str) -> str:
         return "Startup Kit (.docx)"
     if filename.endswith("_Project_Delivery_Workbook.xlsx"):
         return "Project Delivery Workbook (.xlsx)"
+    if filename.endswith("_PS_Governance_Kickoff.pptx"):
+        return "PS Governance Kickoff (.pptx)"
     if filename.endswith("_Talent_Onboarding_Deck.pptx"):
         return "Talent Onboarding Deck (.pptx)"
     if filename.endswith("_Client_Kickoff_Deck.pptx"):

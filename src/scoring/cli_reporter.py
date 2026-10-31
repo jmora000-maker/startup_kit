@@ -257,10 +257,10 @@ def print_workbook_export_summary(
 
 
 def format_deck_export_summary(
-    result: OnboardingDeckResult,
+    result: Any,
     use_color: Optional[bool] = None
 ) -> str:
-    """Format an executive CLI summary of the Talent Onboarding Deck export (DECK-16)."""
+    """Format an executive CLI summary of the Deck export (DECK-16 / HTL-72)."""
     if use_color is None:
         if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
             use_color = False
@@ -282,31 +282,42 @@ def format_deck_export_summary(
     res_path = result.file_path.resolve() if hasattr(result.file_path, "resolve") else result.file_path
     man_path = result.manifest_path.resolve() if hasattr(result.manifest_path, "resolve") else result.manifest_path
 
-    total = result.elements_total or result.trace_entries_count
-    traced = result.elements_traced if result.elements_total else result.trace_entries_count
+    is_gov = "Governance" in str(result.file_path) or getattr(result, "slides_count", 0) == 19
+    title_text = "PS GOVERNANCE KICKOFF DECK" if is_gov else "TALENT ONBOARDING DECK"
+
+    total = getattr(result, "elements_total", None) or getattr(result, "trace_entries_count", 0)
+    traced = getattr(result, "elements_traced", None) if getattr(result, "elements_total", None) else getattr(result, "trace_entries_count", 0)
     pct = f"{100.0 * traced / total:.0f}" if total else "100"
+    overflow = getattr(result, "overflow_rows", 0)
+
+    slides_desc = f"{result.slides_count} slides"
+    if not is_gov and result.slides_count == 7:
+        slides_desc = f"{result.slides_count} slides (Cover, Charter, Schedule, Acceptance, Risks, Collaboration, Your Project Kit)"
 
     lines = [
         sep_double,
-        f"{COLOR_BOLD}{COLOR_CYAN}                     TALENT ONBOARDING DECK{COLOR_RESET}",
+        f"{COLOR_BOLD}{COLOR_CYAN}                     {title_text}{COLOR_RESET}",
         sep_single,
-        f"   • Slides               : {result.slides_count} slides (Cover, Charter, Schedule, Acceptance, Risks, Collaboration, Your Project Kit)",
+        f"   • Slides               : {slides_desc}",
         f"   • Content elements     : {total} elements",
         f"   • Elements traced      : {pct}% ({traced}/{total} elements traced)",
-        f"   • Omitted-ID rows used : {result.overflow_rows}",
+    ]
+    if overflow:
+        lines.append(f"   • Omitted-ID rows used : {overflow}")
+    lines.extend([
         f"   • Trace Manifest       : {man_path}",
         sep_single,
         f"   • Output File Path     : {res_path}",
         sep_double,
-    ]
+    ])
 
     return "\n".join(lines)
 
 
 def print_deck_export_summary(
-    result: OnboardingDeckResult,
+    result: Any,
     use_color: Optional[bool] = None
 ) -> None:
-    """Print the formatted Talent Onboarding Deck export summary to standard output."""
+    """Print the formatted Deck export summary to standard output."""
     summary_text = format_deck_export_summary(result, use_color=use_color)
     print(summary_text)

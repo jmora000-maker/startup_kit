@@ -83,7 +83,7 @@ def validate_output_selection(
     else:
         selected = True
     if not selected:
-        return "Select at least one output deliverable (Startup Kit, Delivery Workbook, or Onboarding Deck) before generating."
+        return "Select at least one output deliverable (Startup Kit, Delivery Workbook, or PS Governance Kickoff) before generating."
     return None
 
 
@@ -153,8 +153,11 @@ def collect_download_targets(run_result: RunResult) -> List[DownloadTarget]:
     if run_result.workbook is not None:
         targets.append(DownloadTarget("Project Delivery Workbook (.xlsx)", run_result.workbook.file_path))
     if run_result.slides is not None:
-        targets.append(DownloadTarget("Talent Onboarding Deck (.pptx)", run_result.slides.file_path))
-        targets.append(DownloadTarget("Deck Trace Manifest (.json)", run_result.slides.manifest_path))
+        is_gov = "Governance" in str(run_result.slides.file_path) or not str(run_result.slides.file_path).endswith("_Talent_Onboarding_Deck.pptx")
+        deck_label = "PS Governance Kickoff (.pptx)" if is_gov else "Talent Onboarding Deck (.pptx)"
+        manifest_label = "PS Governance Kickoff Trace Manifest (.json)" if is_gov else "Deck Trace Manifest (.json)"
+        targets.append(DownloadTarget(deck_label, run_result.slides.file_path))
+        targets.append(DownloadTarget(manifest_label, run_result.slides.manifest_path))
     if run_result.client_deck is not None:
         targets.append(DownloadTarget("Client Kickoff Deck (.pptx)", run_result.client_deck.file_path))
         targets.append(DownloadTarget("Client Deck Trace Manifest (.json)", run_result.client_deck.manifest_path))
@@ -679,7 +682,7 @@ def render() -> None:
 
     st.title("Generate / Re-ingest a Startup Kit")
     st.caption(
-        "Upload a Statement of Work (SOW) or supporting project documents to automatically generate a complete PMO Startup Kit, Delivery Workbook, and Onboarding Deck."
+        "Upload a Statement of Work (SOW) or supporting project documents to automatically generate a complete PMO Startup Kit, Delivery Workbook, and PS Governance Kickoff deck."
     )
 
     tab_generate, tab_reingest = st.tabs(["Generate from SOW upload", "Re-ingest an existing Kit"])
@@ -796,7 +799,7 @@ def render() -> None:
                 GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col2.checkbox
             )
             slides = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_slides", "Onboarding Deck", False, widget_fn=col3.checkbox
+                GENERATE_STORE, "gen_out_slides", "PS Governance Kickoff", False, widget_fn=col3.checkbox
             )
             client_deck = _persisted_checkbox(
                 GENERATE_STORE, "gen_out_client_deck", "Client Kickoff Deck", False, widget_fn=col4.checkbox
@@ -966,7 +969,7 @@ def render() -> None:
                 REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", False, widget_fn=rcol2.checkbox
             )
             slides_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_slides", "Onboarding Deck", False, widget_fn=rcol3.checkbox
+                REINGEST_STORE, "reingest_out_slides", "PS Governance Kickoff", False, widget_fn=rcol3.checkbox
             )
             client_deck_r = _persisted_checkbox(
                 REINGEST_STORE, "reingest_out_client_deck", "Client Kickoff Deck", False, widget_fn=rcol4.checkbox

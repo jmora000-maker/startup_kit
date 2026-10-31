@@ -212,14 +212,16 @@ def parse_args():
     )
     parser.add_argument(
         "--slides",
+        "--governance-deck",
         action="store_true",
-        help="Write the Talent Team Onboarding Deck PowerPoint presentation"
+        dest="slides",
+        help="Write the PS Governance Kickoff PowerPoint presentation"
     )
     parser.add_argument(
         "--all",
         action="store_true",
         dest="all_outputs",
-        help="Write the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck"
+        help="Write the Startup Kit, the Project Delivery Workbook, and the PS Governance Kickoff deck"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -445,7 +447,8 @@ def main():
             if run_result.workbook:
                 logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
             if run_result.slides:
-                logger.info("Talent Onboarding Deck: %s", run_result.slides.file_path.resolve())
+                deck_name = "PS Governance Kickoff" if "Governance" in str(run_result.slides.file_path) else "Talent Onboarding Deck"
+                logger.info("%s: %s", deck_name, run_result.slides.file_path.resolve())
             return 0
 
         # Mode 1: Initial Generation
@@ -534,7 +537,8 @@ def main():
         if run_result.workbook:
             logger.info("Project Delivery Workbook: %s", run_result.workbook.file_path.resolve())
         if run_result.slides:
-            logger.info("Talent Onboarding Deck: %s", run_result.slides.file_path.resolve())
+            deck_name = "PS Governance Kickoff" if "Governance" in str(run_result.slides.file_path) else "Talent Onboarding Deck"
+            logger.info("%s: %s", deck_name, run_result.slides.file_path.resolve())
         return 0
 
     except Exception as exc:

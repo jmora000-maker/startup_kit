@@ -186,8 +186,8 @@ def test_put_generated_files_called_and_returns_valid_file_references(tmp_path):
     expected_filenames = [
         "References_Project_Startup_Kit.docx",
         "References_Project_Project_Delivery_Workbook.xlsx",
-        "References_Project_Talent_Onboarding_Deck.pptx",
-        "References_Project_Talent_Onboarding_Deck.trace.json",
+        "References_Project_PS_Governance_Kickoff.pptx",
+        "References_Project_PS_Governance_Kickoff.trace.json",
     ]
 
     for fname in expected_filenames:
@@ -226,8 +226,8 @@ def test_htl_36_document_selection_checkboxes_honored_in_generation(tmp_path):
 
     # Verify that ONLY Workbook and Deck (with its trace manifest) were generated
     assert "Subset_Selection_Project_Project_Delivery_Workbook.xlsx" in references
-    assert "Subset_Selection_Project_Talent_Onboarding_Deck.pptx" in references
-    assert "Subset_Selection_Project_Talent_Onboarding_Deck.trace.json" in references
+    assert "Subset_Selection_Project_PS_Governance_Kickoff.pptx" in references
+    assert "Subset_Selection_Project_PS_Governance_Kickoff.trace.json" in references
 
     # Verify that Startup Kit and Readiness Checklist were NOT generated
     assert "Subset_Selection_Project_Startup_Kit.docx" not in references

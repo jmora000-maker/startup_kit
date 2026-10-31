@@ -166,7 +166,7 @@ def test_on_progress_fires_expected_stage_sequence_for_run(populated_inputs_dir,
         "Startup Kit",
         "Readiness Checklist",
         "Delivery Workbook",
-        "Onboarding Deck",
+        "PS Governance Kickoff",
     ]
 
 
