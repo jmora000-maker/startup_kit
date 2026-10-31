@@ -502,7 +502,7 @@ def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
     # 3. Geometry and clearance: text box must fit cleanly within slide height (5.625 in)
     shape_top_in = body_shapes[0].top / 914400.0
     shape_height_in = body_shapes[0].height / 914400.0
-    assert shape_top_in <= 1.50
+    assert shape_top_in <= 2.05
     assert shape_top_in + shape_height_in <= 5.25
 
     # 4. Trace manifest validation
