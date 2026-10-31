@@ -1,7 +1,7 @@
-"""HTL-75 / HTL-81 / HTL-82: Administrative Manage Runs UI module for PMO Startup Kit.
+"""HTL-75 / HTL-81 / HTL-82 / HTL-83: Administrative Manage Runs UI module for PMO Startup Kit.
 
 Provides an admin-passphrase-gated dashboard to view, archive, unarchive,
-and permanently purge review runs (single and bulk) and their associated files,
+and permanently purge review runs (via selection) and their associated files,
 with state-persisted tab navigation.
 """
 
@@ -186,7 +186,6 @@ def render() -> None:
                                     storage.purge_run(r.run_id)
                                     success_count += 1
                                     st.session_state.pop(f"chk_select_{r.run_id}", None)
-                                    st.session_state.pop(f"chk_purge_{r.run_id}", None)
                                 except Exception as exc:  # noqa: BLE001
                                     logger.exception("Failed to purge run %s", r.run_id)
                                     failed.append((r.run_id, str(exc)))
@@ -239,7 +238,7 @@ def render() -> None:
             # Individual Run Cards
             for run in sorted_archived:
                 with st.container(border=True):
-                    c_chk, c_info, c_action = st.columns([0.5, 3.5, 2])
+                    c_chk, c_info, c_action = st.columns([0.5, 4.5, 1])
                     with c_chk:
                         st.checkbox(
                             "Select run",
@@ -249,43 +248,16 @@ def render() -> None:
                     with c_info:
                         _render_run_info(run, is_archived=True)
                     with c_action:
-                        act_col1, act_col2 = st.columns(2)
-                        with act_col1:
-                            if st.button("Unarchive", key=f"btn_unarchive_{run.run_id}"):
-                                try:
-                                    storage.unarchive_run(run.run_id)
-                                    st.session_state.pop(f"chk_select_{run.run_id}", None)
-                                    st.session_state.pop(f"chk_purge_{run.run_id}", None)
-                                    st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
-                                        f"Run '{run.run_id}' restored to active."
-                                    )
-                                    st.rerun()
-                                except Exception as exc:  # noqa: BLE001
-                                    st.session_state[SESSION_KEY_FLASH_ERROR] = (
-                                        f"Failed to unarchive run '{run.run_id}': {exc}"
-                                    )
-                                    st.rerun()
-                        with act_col2:
-                            confirm_purge = st.checkbox(
-                                "Confirm delete",
-                                key=f"chk_purge_{run.run_id}",
-                            )
-                            if st.button(
-                                "Purge",
-                                key=f"btn_purge_{run.run_id}",
-                                disabled=not confirm_purge,
-                                type="primary",
-                            ):
-                                try:
-                                    storage.purge_run(run.run_id)
-                                    st.session_state.pop(f"chk_select_{run.run_id}", None)
-                                    st.session_state.pop(f"chk_purge_{run.run_id}", None)
-                                    st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
-                                        f"Run '{run.run_id}' and all associated files permanently purged."
-                                    )
-                                    st.rerun()
-                                except Exception as exc:  # noqa: BLE001
-                                    st.session_state[SESSION_KEY_FLASH_ERROR] = (
-                                        f"Failed to purge run '{run.run_id}': {exc}"
-                                    )
-                                    st.rerun()
+                        if st.button("Unarchive", key=f"btn_unarchive_{run.run_id}"):
+                            try:
+                                storage.unarchive_run(run.run_id)
+                                st.session_state.pop(f"chk_select_{run.run_id}", None)
+                                st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
+                                    f"Run '{run.run_id}' restored to active."
+                                )
+                                st.rerun()
+                            except Exception as exc:  # noqa: BLE001
+                                st.session_state[SESSION_KEY_FLASH_ERROR] = (
+                                    f"Failed to unarchive run '{run.run_id}': {exc}"
+                                )
+                                st.rerun()

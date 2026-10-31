@@ -160,8 +160,8 @@ def test_manage_runs_archive_and_unarchive_flow(clean_storage):
     assert metrics_restored.get("Archived Runs") == "0"
 
 
-def test_manage_runs_single_purge_flow_deletes_run_and_preserves_tab(clean_storage, tmp_path):
-    """Verify purging an archived run deletes files and record, preserving Archived tab across rerun."""
+def test_manage_runs_single_run_purge_via_selection_deletes_run_and_preserves_tab(clean_storage, tmp_path):
+    """Verify purging a single archived run via selection checkbox deletes files and record, preserving Archived tab (HTL-83)."""
     run_id = _seed_sample_run(clean_storage, "Project Phoenix")
 
     # Put a generated file
@@ -183,10 +183,19 @@ def test_manage_runs_single_purge_flow_deletes_run_and_preserves_tab(clean_stora
     at.radio(key="manage_runs_view_tab").set_value("archived").run()
     assert at.radio(key="manage_runs_view_tab").value == "archived"
 
-    # Check confirm purge checkbox and click Purge
-    at.checkbox(key=f"chk_purge_{run_id}").check().run()
-    at.button(key=f"btn_purge_{run_id}").click().run()
+    # Select the single run via checkbox
+    at.checkbox(key=f"chk_select_{run_id}").check().run()
+    assert not at.exception
+    assert at.button(key="btn_bulk_purge_init").disabled is False
 
+    # Click Purge Selected (1)
+    at.button(key="btn_bulk_purge_init").click().run()
+    assert not at.exception
+    assert at.button(key="btn_bulk_purge_confirm")
+    assert any("Project Phoenix" in str(m.value) for m in at.markdown)
+
+    # Click Confirm & Delete 1 Runs
+    at.button(key="btn_bulk_purge_confirm").click().run()
     assert not at.exception
 
     # Verify tab remained 'archived' across rerun (HTL-81)
