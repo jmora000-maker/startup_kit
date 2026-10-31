@@ -167,15 +167,16 @@ def collect_download_targets(run_result: RunResult) -> List[DownloadTarget]:
 
 
 def is_admin_unlocked(entered_passphrase: str, configured_passphrase: str) -> bool:
-    """HTL-27: the Advanced (admin) section unlocks only on an exact, non-empty match against the
-    configured passphrase (``config.admin_passphrase``: an env var locally, a Secret Manager value
-    in production). An empty configured passphrase never unlocks, even against an empty entry --
+    """HTL-27 / HTL-75: the Advanced (admin) and Manage Runs sections unlock on a match against
+    the configured passphrase (``config.admin_passphrase``: an env var locally, a Secret Manager value
+    in production). Surrounding whitespace is stripped from both to ensure resilience against
+    clipboard formatting. An empty configured passphrase never unlocks, even against an empty entry --
     there is always a non-empty value configured in practice (the dev-only placeholder, at worst),
     so this is a defensive refusal, not a usable bypass.
     """
-    if not configured_passphrase:
+    if not configured_passphrase or not entered_passphrase:
         return False
-    return entered_passphrase == configured_passphrase
+    return entered_passphrase.strip() == configured_passphrase.strip()
 
 
 def is_generation_unlocked(entered_passphrase: str, configured_passphrase: str) -> bool:
