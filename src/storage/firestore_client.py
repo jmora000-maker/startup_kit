@@ -84,6 +84,7 @@ def write_run(
     outputs: Optional[Dict[str, Any]] = None,
     review_audit: Optional[Dict[str, Any]] = None,
     generation_started_at: Optional[Any] = None,
+    archived: Optional[bool] = None,
     client: Optional[firestore.Client] = None,
 ) -> Dict[str, Any]:
     """Create or overwrite the runs/{run_id} document.
@@ -112,6 +113,13 @@ def write_run(
         "validation_report": sanitized_validation,
         "updated_at": firestore.SERVER_TIMESTAMP,
     }
+
+    if archived is not None:
+        run_data["archived"] = archived
+    elif existing_data and "archived" in existing_data:
+        run_data["archived"] = existing_data["archived"]
+    else:
+        run_data["archived"] = False
 
     if existing_data and "created_at" in existing_data:
         run_data["created_at"] = existing_data["created_at"]
@@ -255,3 +263,56 @@ def query_milestones_by_date_range(
             data["run_id"] = doc.reference.parent.parent.id
         results.append(data)
     return results
+
+
+def set_run_archived(
+    run_id: str,
+    archived: bool,
+    client: Optional[firestore.Client] = None,
+) -> None:
+    """Update archived flag on runs/{run_id}."""
+    db = client or get_firestore_client()
+    doc_ref = db.collection("runs").document(run_id)
+    snapshot = doc_ref.get()
+    if not snapshot.exists:
+        raise FileNotFoundError(f"Run {run_id!r} not found in Firestore.")
+    doc_ref.update({
+        "archived": archived,
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def delete_run(
+    run_id: str,
+    client: Optional[firestore.Client] = None,
+    max_batch_size: int = 450,
+) -> None:
+    """Delete runs/{run_id} and all its subcollections in chunked batches <= max_batch_size.
+    
+    Raises FileNotFoundError if the run does not exist, and ValueError if the run is not archived.
+    """
+    db = client or get_firestore_client()
+    run_ref = db.collection("runs").document(run_id)
+    snapshot = run_ref.get()
+    if not snapshot.exists:
+        raise FileNotFoundError(f"Run {run_id!r} not found in Firestore.")
+
+    data = snapshot.to_dict() or {}
+    if not data.get("archived", False):
+        raise ValueError(
+            f"delete_run guard failed for {run_id!r}: run is not archived. "
+            "Only archived runs can be deleted."
+        )
+
+    # Delete all documents in milestone subcollection in chunked batches <= max_batch_size
+    milestones_coll = run_ref.collection("milestones")
+    docs = list(milestones_coll.stream())
+    for i in range(0, len(docs), max_batch_size):
+        chunk = docs[i : i + max_batch_size]
+        batch = db.batch()
+        for doc in chunk:
+            batch.delete(doc.reference)
+        batch.commit()
+
+    # Delete parent document
+    run_ref.delete()

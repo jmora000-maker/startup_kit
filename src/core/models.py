@@ -798,6 +798,7 @@ class ReviewRunSummary(BaseModel):
     state: str
     created_at: datetime
     generation_started_at: Optional[datetime] = Field(default=None)
+    archived: bool = Field(default=False)
 
 
 class ReviewRun(ReviewRunSummary):

@@ -109,13 +109,29 @@ class ReviewStorage(ABC):
         pass
 
     @abstractmethod
-    def list_runs(self, state: Optional[str] = None) -> List[ReviewRunSummary]:
-        """List every stored run, optionally filtered to one state; with no filter, list all."""
+    def list_runs(self, state: Optional[str] = None, include_archived: bool = True) -> List[ReviewRunSummary]:
+        """List every stored run, optionally filtered to one state; with no filter, list all.
+        If include_archived is False, excludes runs where archived is True."""
         pass
 
     def list_pending_runs(self) -> List[ReviewRunSummary]:
         """Convenience method to list runs awaiting review (state='pending_review', HTL-04)."""
         return self.list_runs(state="pending_review")
+
+    @abstractmethod
+    def archive_run(self, run_id: str) -> None:
+        """Mark run as archived (archived=True)."""
+        pass
+
+    @abstractmethod
+    def unarchive_run(self, run_id: str) -> None:
+        """Mark run as active (archived=False)."""
+        pass
+
+    @abstractmethod
+    def purge_run(self, run_id: str) -> None:
+        """Permanently delete run record and all associated files. Raises ValueError if run is not archived."""
+        pass
 
     @abstractmethod
     def update_status(self, run_id: str, new_state: str, if_state: Optional[str] = None) -> None:

@@ -21,6 +21,8 @@ from src.storage.firestore_client import (
     query_runs_by_status as fs_query_runs_by_status,
     sync_milestones as fs_sync_milestones,
     write_run as fs_write_run,
+    set_run_archived as fs_set_run_archived,
+    delete_run as fs_delete_run,
 )
 from src.storage.gcs_client import (
     get_bucket_name,
@@ -28,6 +30,7 @@ from src.storage.gcs_client import (
     upload_file as gcs_upload_file,
     download_file_bytes as gcs_download_file_bytes,
     list_run_files as gcs_list_run_files,
+    delete_run_files as gcs_delete_run_files,
 )
 
 PENDING_REVIEW = "pending_review"
@@ -144,6 +147,7 @@ class FirestoreReviewStorage(ReviewStorage):
         created_at = self._created_at(run_id, doc.get("created_at"))
         generation_started_at = self._parse_timestamp(doc.get("generation_started_at"))
         outputs = doc.get("outputs")
+        archived = doc.get("archived", False)
 
         return ReviewRun(
             run_id=run_id,
@@ -151,12 +155,13 @@ class FirestoreReviewStorage(ReviewStorage):
             state=state,
             created_at=created_at,
             generation_started_at=generation_started_at,
+            archived=archived,
             baseline=baseline,
             validation_report=validation_report,
             outputs=outputs,
         )
 
-    def list_runs(self, state: Optional[str] = None) -> List[ReviewRunSummary]:
+    def list_runs(self, state: Optional[str] = None, include_archived: bool = True) -> List[ReviewRunSummary]:
         if state is not None:
             docs = fs_query_runs_by_status(status=state, client=self.client)
         else:
@@ -169,6 +174,9 @@ class FirestoreReviewStorage(ReviewStorage):
 
         summaries: List[ReviewRunSummary] = []
         for doc in docs:
+            is_archived = doc.get("archived", False)
+            if not include_archived and is_archived:
+                continue
             run_id = doc.get("run_id", "")
             baseline = doc.get("baseline") or {}
             project_name = doc.get("project_name") or baseline.get("project_name", "")
@@ -182,12 +190,37 @@ class FirestoreReviewStorage(ReviewStorage):
                     state=run_state,
                     created_at=created_at,
                     generation_started_at=generation_started_at,
+                    archived=is_archived,
                 )
             )
         return summaries
 
     def list_pending_runs(self) -> List[ReviewRunSummary]:
         return self.list_runs(state=PENDING_REVIEW)
+
+    def archive_run(self, run_id: str) -> None:
+        """Mark run as archived (archived=True)."""
+        fs_set_run_archived(run_id, True, client=self.client)
+
+    def unarchive_run(self, run_id: str) -> None:
+        """Mark run as active (archived=False)."""
+        fs_set_run_archived(run_id, False, client=self.client)
+
+    def purge_run(self, run_id: str) -> None:
+        """Permanently delete run record and all associated files. Raises ValueError if run is not archived."""
+        doc = fs_get_run(run_id, client=self.client)
+        if doc is None:
+            raise FileNotFoundError(f"Run {run_id!r} not found in Firestore.")
+        if not doc.get("archived", False):
+            raise ValueError(
+                f"purge_run guard failed for {run_id!r}: run is not archived. "
+                "Only archived runs can be purged."
+            )
+        # 1. Delete all GCS blobs under runs/{run_id}/
+        gcs_delete_run_files(run_id, client=get_storage_client(), bucket_name=self.bucket_name)
+
+        # 2. Delete Firestore milestone subcollection (chunked <=450) and parent document
+        fs_delete_run(run_id, client=self.client, max_batch_size=450)
 
     def update_status(self, run_id: str, new_state: str, if_state: Optional[str] = None) -> None:
         if new_state not in LEGAL_STATES:

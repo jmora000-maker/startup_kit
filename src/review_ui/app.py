@@ -29,6 +29,7 @@ from src.config import config
 from src.review_storage import get_review_storage  # noqa: E402
 from src.review_ui import facts as review  # noqa: E402
 from src.review_ui import generate as generate_page  # noqa: E402
+from src.review_ui import manage_runs as manage_runs_page  # noqa: E402
 from src.review_ui import state_persistence  # noqa: E402
 from src.review_ui.constants import CONTRACT_TYPES, GOVERNANCE_TIERS, resolve_select_index  # noqa: E402
 from src.version import __version__  # noqa: E402
@@ -92,7 +93,7 @@ def _render_fact_review_page() -> None:
         st.success(flash_success)
 
     storage = get_review_storage()
-    all_runs = storage.list_runs()
+    all_runs = storage.list_runs(include_archived=False)
     runs = [r for r in all_runs if r.state in ("pending_review", "approved", "generated")]
     runs.sort(key=lambda r: (r.state != "pending_review", r.state != "approved", -r.created_at.timestamp()))
 
@@ -387,14 +388,16 @@ def main() -> None:
     st.set_page_config(page_title="PMO Startup Kit", layout="wide")
     page = st.sidebar.radio(
         "Page",
-        ["Generate / Re-ingest", "Fact Review"],
+        ["Generate / Re-ingest", "Fact Review", "Manage Runs"],
         key="app_page_selector",
     )
     st.sidebar.caption(f"v{__version__}")
     if page == "Generate / Re-ingest":
         generate_page.render()
-    else:
+    elif page == "Fact Review":
         _render_fact_review_page()
+    elif page == "Manage Runs":
+        manage_runs_page.render()
 
 
 main()

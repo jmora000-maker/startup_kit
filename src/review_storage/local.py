@@ -82,7 +82,7 @@ class LocalReviewStorage(ReviewStorage):
         run_dir.mkdir(parents=True, exist_ok=True)
         self._write_json(self._baseline_path(run_id), baseline)
         self._write_json(self._validation_report_path(run_id), validation_report)
-        status_data: dict = {"state": PENDING_REVIEW}
+        status_data: dict = {"state": PENDING_REVIEW, "archived": False}
         if outputs is not None:
             status_data["outputs"] = outputs
         self._write_json(self._status_path(run_id), status_data)
@@ -116,21 +116,25 @@ class LocalReviewStorage(ReviewStorage):
             self._write_json(status_path, status_data)
 
     def get_run(self, run_id: str) -> ReviewRun:
+        status_path = self._status_path(run_id)
+        if not status_path.exists():
+            raise FileNotFoundError(f"Run {run_id!r} not found in {self.base_dir}")
         baseline = self._read_json(self._baseline_path(run_id))
         validation_report = self._read_json(self._validation_report_path(run_id))
-        status = self._read_json(self._status_path(run_id))
+        status = self._read_json(status_path)
         return ReviewRun(
             run_id=run_id,
             project_name=baseline.get("project_name", ""),
             state=status["state"],
             created_at=self._created_at(run_id),
             generation_started_at=self._parse_timestamp(status.get("generation_started_at")),
+            archived=status.get("archived", False),
             baseline=baseline,
             validation_report=validation_report,
             outputs=status.get("outputs"),
         )
 
-    def list_runs(self, state: Optional[str] = None) -> List[ReviewRunSummary]:
+    def list_runs(self, state: Optional[str] = None, include_archived: bool = True) -> List[ReviewRunSummary]:
         if not self.base_dir.exists():
             return []
         summaries: List[ReviewRunSummary] = []
@@ -146,6 +150,9 @@ class LocalReviewStorage(ReviewStorage):
             run_state = status_dict["state"]
             if state is not None and run_state != state:
                 continue
+            is_archived = status_dict.get("archived", False)
+            if not include_archived and is_archived:
+                continue
             project_name = self._read_json(baseline_path).get("project_name", "")
             summaries.append(
                 ReviewRunSummary(
@@ -154,12 +161,48 @@ class LocalReviewStorage(ReviewStorage):
                     state=run_state,
                     created_at=self._created_at(run_id),
                     generation_started_at=self._parse_timestamp(status_dict.get("generation_started_at")),
+                    archived=is_archived,
                 )
             )
         return summaries
 
     def list_pending_runs(self) -> List[ReviewRunSummary]:
         return self.list_runs(state=PENDING_REVIEW)
+
+    def archive_run(self, run_id: str) -> None:
+        """Mark run as archived (archived=True)."""
+        status_path = self._status_path(run_id)
+        if not status_path.exists():
+            raise FileNotFoundError(f"Run {run_id!r} not found in {self.base_dir}")
+        with _UPDATE_LOCK:
+            status_data = self._read_json(status_path)
+            status_data["archived"] = True
+            self._write_json(status_path, status_data)
+
+    def unarchive_run(self, run_id: str) -> None:
+        """Mark run as active (archived=False)."""
+        status_path = self._status_path(run_id)
+        if not status_path.exists():
+            raise FileNotFoundError(f"Run {run_id!r} not found in {self.base_dir}")
+        with _UPDATE_LOCK:
+            status_data = self._read_json(status_path)
+            status_data["archived"] = False
+            self._write_json(status_path, status_data)
+
+    def purge_run(self, run_id: str) -> None:
+        """Permanently delete run record and all associated files. Raises ValueError if run is not archived."""
+        run_dir = self._run_dir(run_id)
+        status_path = self._status_path(run_id)
+        if not run_dir.exists() or not status_path.exists():
+            raise FileNotFoundError(f"Run {run_id!r} not found in {self.base_dir}")
+        with _UPDATE_LOCK:
+            status_data = self._read_json(status_path)
+            if not status_data.get("archived", False):
+                raise ValueError(
+                    f"purge_run guard failed for {run_id!r}: run is not archived. "
+                    "Only archived runs can be purged."
+                )
+            shutil.rmtree(run_dir)
 
     def update_status(self, run_id: str, new_state: str, if_state: Optional[str] = None) -> None:
         if new_state not in LEGAL_STATES:
