@@ -112,6 +112,8 @@ def sanitize_financial_text(text: Optional[str]) -> str:
     if s.startswith("="):
         return s
 
+    original = s
+
     # 1. Phrases with 'Fee of $12,345' -> 'Fee' (or 'Invoice of $12,345' -> 'Invoice')
     s = re.sub(
         r'\b(fee|invoice|payment|cost)\s+of\s+(?:\$|USD\s*|CAD\s*|EUR\s*|GBP\s*)[\d,]+(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?\b',
@@ -175,6 +177,10 @@ def sanitize_financial_text(text: Optional[str]) -> str:
         s,
         flags=re.IGNORECASE
     )
+
+    # If no financial substitutions were made, return original text untouched
+    if s == original:
+        return text
 
     # Clean up empty parens left over from removing figures, dangling punctuation, multiple spaces
     s = re.sub(r'(?<![A-Za-z0-9_])\(\s*\)', '', s)

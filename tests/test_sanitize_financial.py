@@ -88,6 +88,13 @@ def test_negative_legitimate_numeric_content_preservation():
         "Gate G-01 checklist",
         "Per spec v3 A7 and v4 A16",
         "Rev 2 update",
+        # Lowercase bullet lines and criteria without financial content
+        "• remote mount P95 < 1s.",
+        "• token acquisition P95 < 800ms",
+        "remote mount P95 < 1s.",
+        "token acquisition P95 < 800ms",
+        "• system latency < 50ms under peak load",
+        "acceptance criteria line item starting lower-case",
     ]
 
     for sample in legitimate_samples:
