@@ -198,14 +198,16 @@ CONSTRAINTS:
 2. Keep all text fields (description, acceptance criteria, evidence, rework path) brief and direct (1-2 sentences maximum).
 3. Do NOT cite or reference the SOW, contracts, or source documents in descriptions or criteria.
 4. ACCURACY ON TIMELINES: Distinguish client decision turnaround (e.g. client turnaround on decision or feedback within 3 business days) from supplier rework turnaround. Do NOT conflate client decision turnaround with supplier rework or resubmission windows. If a specific rework/remediation window for the supplier is not explicitly stated in the source text, state the remedy process directly (e.g. remediation/rework upon notice of non-conformance) without inventing a supplier turnaround timeframe.
-5. ACCEPTANCE PROCESS NARRATIVE SYNTHESIS INSTRUCTIONS:
-- Synthesize a cohesive 2-3 paragraph plain-language narrative explaining to the Talent Team how milestone acceptance actually works for this specific engagement.
-- Include explicit process mechanics and terms from the SOW: submission workflow, review windows/turnarounds (e.g. 5 business days), rejection/remediation procedures (e.g. up to 3 rework attempts), resubmission timelines (e.g. within 3 business days), formal sign-off roles/steps, and any "deemed accepted" conditions or named exceptions.
-- INVERSE OF CLIENT-FACING RULE: Since this slide is internal, addressed to the Talent Team about process mechanics, raw contractual specifics (day counts, resubmission limits, named steps) MUST be included, not stripped out.
-- EVIDENCE-GROUNDED HONEST FALLBACK: Ground all details strictly in the provided SOW language. If specific terms (e.g. deemed acceptance, rework limits) are not stated in the SOW, do NOT invent them. Set acceptance_process_narrative to null if no acceptance process details exist in the source documents.
+5. ACCEPTANCE PROCESS WALKTHROUGH SYNTHESIS INSTRUCTIONS:
+- Synthesize an actionable, sequential, named-step walkthrough explaining to the Talent Team and PM how to actually achieve milestone acceptance from the customer for this specific engagement.
+- Structure the walkthrough as a series of sequential steps (each on its own line/paragraph), with each step starting with a short, bold-style named label (e.g., "Inputs ready:", "Execution:", "Submission:", "Review:", "Triage:", "Remediation:", "Deemed accepted:", "Sign-off:", "Next gate:", "Exceptions:") followed by a concise, SOW-grounded explanation of what actually happens at that step and what the PM needs to execute, track, or watch for.
+- Ground the step set strictly in whatever the real SOW actually describes (e.g., submission workflow, client review turnaround, feedback/defect notice requirements, remediation and rework attempt limits, resubmission rules, deemed acceptance triggers, invoice/milestone certification sign-offs, and any named deliverable-specific exceptions). Do not force a fixed universal step list; derive the specific sequence from this SOW's real process.
+- INVERSE OF CLIENT-FACING RULE: Since this slide is internal, addressed to the Talent Team about process mechanics, raw contractual specifics (exact day counts, resubmission limits, named roles/approvers, deemed-acceptance conditions) MUST be included, not stripped out.
+- FINANCIAL EXCLUSION: Strictly EXCLUDE all specific dollar amounts, fee numbers, and monetary figures (e.g., do NOT include '$19,650.00' or budget totals). Mention invoicing, fixed-fee structure, or billing triggers purely by milestone reference (e.g., 'triggers milestone invoice release' or 'fixed-fee invoice trigger'), never by dollar amount.
+- EVIDENCE-GROUNDED HONEST FALLBACK: Ground all steps and details strictly in the provided SOW language. Never invent steps, SLAs, or conditions not stated in the SOW. Set acceptance_process_narrative to null if no acceptance process details exist in the source documents.
 
 Extract:
-- acceptance_process_narrative: Cohesive plain-language narrative (2-3 paragraphs) synthesizing the contract-wide milestone acceptance process for the Talent Team, or null if no acceptance process details exist.
+- acceptance_process_narrative: Actionable, sequential named-step walkthrough (with short bold-style step labels like 'Submission:', 'Review:', etc., each on its own line) explaining the milestone acceptance mechanics to the PM, or null if no acceptance process details exist.
 - acceptance_matrix_items: List of distinct deliverables with acceptance details.
 
 For each deliverable:

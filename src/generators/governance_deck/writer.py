@@ -3,6 +3,7 @@
 import copy
 import os
 from pathlib import Path
+import re
 from typing import List, Optional, Tuple
 import pptx
 from pptx.enum.shapes import MSO_SHAPE
@@ -324,8 +325,25 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
         _format_table_cell(cell2, row_data.milestone_gate, font_size_pt=chosen_sz, color_rgb=RGBColor(0x04, 0x11, 0x33))
 
 
+def _parse_step_line(line: str) -> Tuple[Optional[str], str]:
+    """Parse a step line into (label, body), supporting **Label:**, **Label**: and Label: formats."""
+    # Match markdown bold label: **Label:** rest or **Label**: rest
+    m_md = re.match(r"^\*\*(.+?):?\*\*:?\s*(.*)$", line)
+    if m_md:
+        label = m_md.group(1).rstrip(":") + ":"
+        body = m_md.group(2)
+        return label, body
+    # Match plain label: Label: rest (where label is reasonable length <= 40 chars and starts with alpha)
+    m_plain = re.match(r"^([A-Za-z0-9][A-Za-z0-9 /–—&'-]{1,40}:)\s*(.*)$", line)
+    if m_plain:
+        label = m_plain.group(1)
+        body = m_plain.group(2)
+        return label, body
+    return None, line
+
+
 def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 16 How Milestone Acceptance Works narrative with Proxima Nova typography and font fitting (HTL-72)."""
+    """Populate Slide 16 How Milestone Acceptance Works sequential named-step walkthrough with Proxima Nova typography and font fitting (HTL-72)."""
     # 1. Clear placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
@@ -377,18 +395,24 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r.font.size = Pt(11)
         r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
 
-    # 5. Add Body Narrative Panel
+    # 5. Add Body Walkthrough Panel
     narrative_text = model.slide16.narrative or "[CONFIRMATION REQUIRED]"
     paragraphs = [p.strip() for p in narrative_text.split("\n") if p.strip()]
+    parsed_steps = [_parse_step_line(p) for p in paragraphs]
+
+    # Spacing and line spacing scaled based on step count
+    space_after_pt = 3.5 if len(paragraphs) >= 8 else (5.0 if len(paragraphs) >= 5 else 8.0)
+    line_spacing = 1.15 if len(paragraphs) >= 6 else 1.20
 
     # Font fitting across candidate sizes
-    candidate_sizes = [12.0, 11.5, 11.0, 10.5, 10.0, 9.5, 9.0, 8.5]
-    chosen_sz = 10.0
+    candidate_sizes = [11.5, 11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5]
+    chosen_sz = 8.5
     for sz in candidate_sizes:
         total_h = 0.0
-        for p in paragraphs:
-            lines = wrap_lines(p, width_in=8.8, size_pt=sz)
-            h_pt = lines * sz * 1.25 + 8.0
+        for label, body in parsed_steps:
+            full_line = f"{label} {body}" if label else body
+            lines = wrap_lines(full_line, width_in=8.8, size_pt=sz)
+            h_pt = lines * sz * line_spacing + space_after_pt
             total_h += h_pt
         if (total_h / 72.0) <= 3.55:  # Available height is ~3.60 in (from 1.45 to 5.05 in)
             chosen_sz = sz
@@ -405,31 +429,29 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     for bpr in body_box._element.xpath(".//a:bodyPr"):
         bpr.set("anchor", "t")
 
-    for p_idx, p_text in enumerate(paragraphs):
+    for p_idx, (label, body) in enumerate(parsed_steps):
         p_elem = tf_b.paragraphs[0] if p_idx == 0 else tf_b.add_paragraph()
         p_elem.space_before = Pt(0)
-        p_elem.space_after = Pt(8)
-        p_elem.line_spacing = 1.2
+        p_elem.space_after = Pt(space_after_pt)
+        p_elem.line_spacing = line_spacing
 
-        # Check for lead-in label like "Talent Team:"
-        if p_text.startswith("Talent Team:"):
+        if label:
             lead_run = p_elem.add_run()
-            lead_run.text = "Talent Team: "
+            lead_run.text = f"{label} "
             lead_run.font.name = "Proxima Nova"
             lead_run.font.size = Pt(chosen_sz)
             lead_run.font.bold = True
             lead_run.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-            rest_text = p_text[len("Talent Team:"):].lstrip()
             rest_run = p_elem.add_run()
-            rest_run.text = rest_text
+            rest_run.text = body
             rest_run.font.name = "Proxima Nova"
             rest_run.font.size = Pt(chosen_sz)
             rest_run.font.bold = False
             rest_run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
         else:
             run = p_elem.add_run()
-            run.text = p_text
+            run.text = body
             run.font.name = "Proxima Nova"
             run.font.size = Pt(chosen_sz)
             run.font.bold = False
@@ -645,6 +667,16 @@ def write_governance_deck(
             if old_embed and old_embed in rId_map:
                 blip.set(f"{{{ns_r}}}embed", rId_map[old_embed])
         s_gov_12.shapes._spTree.append(elem)
+
+    # Override Slide 12 title to "The people delivering this project" (Governance template wording, HTL-72)
+    for shape in s_gov_12.shapes:
+        if shape.has_text_frame and "The people delivering" in shape.text_frame.text:
+            for p in shape.text_frame.paragraphs:
+                for r in p.runs:
+                    if "your project" in r.text:
+                        r.text = r.text.replace("your project", "this project")
+                if "your project" in p.text:
+                    p.text = p.text.replace("your project", "this project")
 
     # Copy Slide 5 shapes (Why We're Here) from Client Deck onto Gov Slide 13 (index 12)
     s_gov_13 = prs_gov.slides[12]

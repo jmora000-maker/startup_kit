@@ -37,7 +37,16 @@ def check_governance_deck_traceability(
         if "[Client Name]" in s1_text or "[Project Name]" in s1_text:
             errors.append("Slide 1 contains unreplaced [Client Name] or [Project Name] placeholders")
 
-    # 3. Slide 13 (Why We're Here) Validation
+    # 3. Slide 12 (Team Roster) Validation
+    if len(prs.slides) >= 12:
+        s12 = prs.slides[11]
+        s12_text = " ".join([s.text_frame.text for s in s12.shapes if s.has_text_frame])
+        if "The people delivering this project" not in s12_text:
+            errors.append("Slide 12 title is missing 'The people delivering this project'")
+        if "The people delivering your project" in s12_text:
+            errors.append("Slide 12 title still contains 'The people delivering your project'")
+
+    # 4. Slide 13 (Why We're Here) Validation
     if len(prs.slides) >= 13:
         s13 = prs.slides[12]
         s13_text = " ".join([s.text_frame.text for s in s13.shapes if s.has_text_frame])

@@ -1,5 +1,6 @@
 """Pure builder module transforming StartupKitBaseline into GovernanceDeckModel (HTL-72)."""
 
+import re
 from typing import Dict, List, Optional, Tuple
 from src.core.models import StartupKitBaseline
 from src.generators.kit_values import kit_header_values
@@ -109,19 +110,31 @@ def build_slide15_model(
     return Slide15AcceptanceCriteriaModel(rows=rows)
 
 
+def _sanitize_no_dollars(text: str) -> str:
+    """Sanitize dollar amounts and financial figures from acceptance process text."""
+    if not text:
+        return text
+    # Remove phrases like 'of $19,650.00', 'the $19,650.00', or standalone '$19,650.00'
+    cleaned = re.sub(r'\b(?:of\s+|the\s+)?\$[\d,]+(?:\.\d{2})?\s*', '', text)
+    # Clean up double spaces or awkward punctuation left over
+    cleaned = re.sub(r'\s+([,\.])', r'\1', cleaned)
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    return cleaned.strip()
+
+
 def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrativeModel:
     """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis (HTL-72)."""
     sow = baseline.sow_interpretation
     # Tier 1: LLM synthesized acceptance process narrative
     if sow and sow.acceptance_process_narrative and sow.acceptance_process_narrative.strip():
         return Slide16AcceptanceNarrativeModel(
-            narrative=sow.acceptance_process_narrative.strip(),
+            narrative=_sanitize_no_dollars(sow.acceptance_process_narrative.strip()),
             tier="Tier 1",
         )
 
     # Tier 2: Deterministic grounded fallback
-    # Assembles a structured narrative from approval_expectations, review_window, client_approver, rejection_rework_path
-    parts: List[str] = []
+    # Assembles a structured named-step walkthrough from approval_expectations, review_window, client_approver, rejection_rework_path
+    steps: List[str] = []
 
     first_deliv = baseline.deliverables[0] if baseline.deliverables else None
     approver = (
@@ -135,38 +148,50 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
         else None
     )
 
+    # Step 1: Submission
+    if baseline.milestones:
+        m = baseline.milestones[0]
+        date_str = f" on or before estimated completion date {m.external_date}" if m.external_date else ""
+        steps.append(f"Submission: Deliver work outputs formally for {m.id} ({m.description or 'Milestone'}){date_str} and notify client in writing to initiate the acceptance clock.")
+    else:
+        steps.append("Submission: Deliver work outputs formally upon milestone completion and notify client in writing to initiate the acceptance clock.")
+
+    # Step 2: Review
     app_exp = (
         sow.approval_expectations
         if sow and sow.approval_expectations and "[CONFIRMATION" not in sow.approval_expectations.upper()
         else None
     )
-
     if app_exp:
-        parts.append(app_exp)
+        clean_app_exp = _sanitize_no_dollars(app_exp)
+        steps.append(f"Review: {clean_app_exp}")
     else:
-        intro = "Deliverables are submitted formally for milestone review."
         if approver and review_window:
-            intro = f"Deliverables are submitted formally to {approver} for review within a {review_window} review period."
+            steps.append(f"Review: {approver} conducts evaluation against acceptance criteria within a {review_window} review window.")
         elif approver:
-            intro = f"Deliverables are submitted formally to {approver} for review and acceptance."
+            steps.append(f"Review: {approver} conducts formal evaluation against acceptance criteria.")
         elif review_window:
-            intro = f"Deliverables are submitted formally for review within a {review_window} review period."
-        parts.append(intro)
+            steps.append(f"Review: Client conducts formal evaluation against acceptance criteria within a {review_window} review window.")
+        else:
+            steps.append("Review: Client evaluates delivered work outputs against agreed acceptance criteria.")
 
+    # Step 3: Remediation / If rejected
     rework = (
         first_deliv.rejection_rework_path
         if first_deliv and first_deliv.rejection_rework_path and "[CONFIRMATION" not in first_deliv.rejection_rework_path.upper()
         else None
     )
     if rework:
-        parts.append(rework)
+        clean_rework = _sanitize_no_dollars(rework)
+        steps.append(f"Remediation: {clean_rework}")
     else:
-        parts.append(
-            "In the event of material non-conformance, written notice of required modifications must be provided before the acceptance period expires, followed by commercially reasonable remediation efforts."
-        )
+        steps.append("Remediation: In the event of material non-conformance, client provides specific written notice of deficiency, followed by commercially reasonable remediation efforts.")
 
-    narrative = "\n\n".join(parts)
-    return Slide16AcceptanceNarrativeModel(narrative=narrative, tier="Tier 2")
+    # Step 4: Deemed accepted & Sign-off
+    steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
+
+    narrative = "\n".join(steps)
+    return Slide16AcceptanceNarrativeModel(narrative=_sanitize_no_dollars(narrative), tier="Tier 2")
 
 
 def build_slide17_model(

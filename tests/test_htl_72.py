@@ -190,9 +190,10 @@ def test_htl_72_slide12_template_placeholders_and_images_intact(tmp_path):
     slide12 = prs.slides[11]  # 0-indexed slide 12
     s12_texts = [s.text_frame.text.strip() for s in slide12.shapes if s.has_text_frame and s.text_frame.text.strip()]
 
-    # 1. Must contain exact Project Kickoff Deck page 3 template placeholders
+    # 1. Must contain exact Project Kickoff Deck page 3 template placeholders with Governance wording "this project"
     assert "YOUR TEAM" in s12_texts
-    assert "The people delivering your project" in s12_texts
+    assert "The people delivering this project" in s12_texts
+    assert "The people delivering your project" not in s12_texts
     assert "Name" in s12_texts
     assert "Role" in s12_texts
     assert "Location" in s12_texts
@@ -404,23 +405,26 @@ def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
     import json
     baseline = _build_pge_baseline()
     pge_narrative = (
-        "Talent Team: Deliver the six outputs together as Milestone 1, the Cloud Migration Assessment Report, "
-        "with estimated completion on November 18, 2026, and notify Client when the milestone is complete. "
-        "That notice starts a 5-business-day acceptance period for Client to evaluate, review, or test the outputs "
-        "against their specifications and acceptance criteria in all material respects; Alicia Cook is responsible "
-        "for acceptance, supported by client SMEs as needed. The separate 3-business-day client decision turnaround "
-        "for review items does not replace the milestone acceptance period or establish a supplier rework deadline.\n\n"
-        "If an output materially fails its requirements, Client must provide written notice identifying the "
-        "non-conformance and required modifications before the acceptance period ends. Toptal must use commercially "
-        "reasonable efforts to correct the affected output and resubmit it for acceptance; no correction or resubmission "
-        "deadline is specified. If Toptal cannot remedy a non-conforming portion after three repeated attempts, as "
-        "determined within Client's reasonable discretion, Client may terminate the engagement and must pay amounts "
-        "due or accrued through termination, including work in progress.\n\n"
-        "The milestone or applicable portion is deemed accepted if Client does not provide the required written "
-        "non-conformance notice before the acceptance period expires, or if Client begins commercial or production "
-        "use of the output. Client must sign and deliver a milestone acceptance certification, and Milestone 1 sign-off "
-        "is the listed invoice trigger. Weekly status reports also request acceptance or feedback, but milestone "
-        "acceptance follows the completion-notice and review process above."
+        "Inputs ready: Confirm Client has issued the Purchase Order before work starts, and that environment read access, "
+        "discovery tooling access, spend data and SME availability are in place before Day 1. Client decision turnaround on review items is assumed to be within 3 business days.\n"
+        "Execution: Deliver all six Work Output items (Portfolio Inventory, Dependency Map, Workload Disposition Register, "
+        "Target Architecture Recommendation, Business Case & TCO Model, Migration Wave Plan & Roadmap) as Milestone 1, targeting November 18, 2026. "
+        "Send the weekly status report and ask Client Contact Alicia Cook to confirm acceptance or give feedback on each one.\n"
+        "Submission: Give Alicia Cook formal notice that Milestone 1 is complete. The 5-business-day Milestone Acceptance Period starts from the date of that notice, so record the date.\n"
+        "Review: Client has 5 business days from the completion notice to evaluate the Work Output against its specifications and Acceptance Criteria in all material respects. "
+        "Milestone review sessions with the Client Contact (and Client SMEs as needed) cover the Work Output against the criteria.\n"
+        "Deemed accepted: If Client gives no written notice of failure within the 5 business days, or starts using the Work Output commercially or in production, "
+        "Milestone 1 is deemed accepted. Client is still expected to sign and deliver a certification of Milestone acceptance.\n"
+        "Triage: If Client finds a material non-conformance, it must notify Supplier in writing, stating how the output does not conform and what modifications are required. "
+        "Check the notice for these details and clarify any gaps with the Client Contact.\n"
+        "Remediation: Supplier uses commercially reasonable efforts to modify the non-conforming Work Output and resubmits it for acceptance. "
+        "No supplier rework turnaround is stated, so agree a date with Client at the time of notice.\n"
+        "Rework limit: If Supplier cannot remedy a non-conforming portion within Client's reasonable discretion after 3 repeated attempts, Client may terminate the SOW. "
+        "On termination Client pays all amounts due or accrued through the termination date, including work in progress.\n"
+        "Sign-off and invoicing: Milestone 1 sign-off is the invoice trigger for the full fixed fee, with an estimated invoice date of 11/18/2026. "
+        "If the actual completion date differs, notify Client in writing (email suffices).\n"
+        "Exceptions: Dependencies, workloads or scope found later may require a Change Order. Delays caused by the Client Contact being unavailable or late on "
+        "Client responsibilities may justify an equitable adjustment to schedule and fees."
     )
     baseline.sow_interpretation.acceptance_process_narrative = pge_narrative
 
@@ -435,23 +439,24 @@ def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
     assert any("Workflow, review turnarounds, remediation thresholds" in t for t in textboxes)
 
     # 2. Body narrative panel validation
-    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Talent Team:" in s.text_frame.text]
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and ("Inputs ready:" in s.text_frame.text or "Submission:" in s.text_frame.text or "Talent Team:" in s.text_frame.text)]
     assert len(body_shapes) == 1
     tf = body_shapes[0].text_frame
     paras = [p for p in tf.paragraphs if p.text.strip()]
-    assert len(paras) == 3
+    assert len(paras) >= 3
 
     # Check lead-in formatting on paragraph 0
     p0_runs = paras[0].runs
     assert len(p0_runs) >= 2
-    assert p0_runs[0].text == "Talent Team: "
     assert p0_runs[0].font.bold is True
     assert p0_runs[0].font.size.pt <= 11.5
 
     # Check content in paragraphs
-    assert "Alicia Cook is responsible for acceptance" in paras[0].text
-    assert "three repeated attempts" in paras[1].text
-    assert "deemed accepted if Client does not provide" in paras[2].text
+    assert any("Alicia Cook" in p.text for p in paras)
+    assert any("repeated attempts" in p.text or "remediation" in p.text.lower() for p in paras)
+    assert any("deemed accepted" in p.text.lower() for p in paras)
+    # Strictly no dollar signs or monetary amounts on Slide 16
+    assert not any("$" in p.text for p in paras)
 
     # 3. Geometry and clearance: text box must fit cleanly within slide height (5.625 in)
     shape_top_in = body_shapes[0].top / 914400.0
@@ -484,8 +489,10 @@ def test_htl_72_slide16_tier2_fallback_and_dynamic_trace(tmp_path):
     slide16 = prs.slides[15]
 
     s16_texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
-    assert any("Formal written sign-off within 5 business days" in t for t in s16_texts)
-    assert any("Talent PM / Team rework within 3 business days of notice" in t for t in s16_texts)
+    assert any("Submission:" in t for t in s16_texts)
+    assert any("Review:" in t for t in s16_texts)
+    assert any("Remediation:" in t for t in s16_texts)
+    assert any("Deemed accepted" in t for t in s16_texts)
 
     # Trace manifest attribution: Tier 2 must trace to approval_expectations and DEL-01 Rejection / Rework Path
     manifest_path = res.file_path.with_name(f"{res.file_path.stem}.trace.json")
@@ -504,28 +511,17 @@ def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
     """HTL-72: Verify Slide 16 scales naturally to complex multi-step acceptance narrative (ARC Genomics) with full typography fit."""
     baseline = _build_pge_baseline()
     arc_narrative = (
-        "Talent Team: Acceptance occurs at each of five milestone gates, not through separate review clocks for every story. "
-        "Deliver the milestone outputs and notify Client of completion; this starts a 10-business-day period for evaluation, "
-        "review, and testing. Hold the milestone acceptance review at milestone end, with Mike Magwire responsible for acceptance "
-        "and sign-off and Client providing a signed milestone acceptance certification. UAT runs after each milestone, with two runs "
-        "per milestone included; additional runs require a change order. The listed target dates are estimated milestone completion "
-        "dates, not separately specified story submission deadlines.\n\n"
-        "Client must identify material non-conformance and required modifications in writing before the review period ends. "
-        "Toptal then uses commercially reasonable efforts to modify and resubmit the affected output; no supplier remediation "
-        "deadline or separate resubmission review window is specified. Mike Magwire participates in a working session to resolve "
-        "material concerns. If Toptal cannot remedy the non-conforming portion after three repeated attempts, as reasonably assessed "
-        "by Client, Client may terminate and must pay amounts due or accrued through termination, including work in progress. "
-        "Acceptance is deemed to occur if timely written rejection is absent or Client begins commercial or production use of the "
-        "applicable output. Even a 100% criterion is satisfied by material conformity where deviations do not materially affect "
-        "functionality, performance, security, or usability.\n\n"
-        "Apply the named acceptance exceptions carefully: Certification output requires delivered and executed test scripts plus "
-        "a defect report, not achievement of client-owned targets; Client remedies those failures, and additional retest runs require "
-        "a change order. For the specified test-suite deliverables, acceptance requires scripts, target-environment execution, and a "
-        "results report; target achievement belongs to the corresponding build story. A missed latency or render-time target is treated "
-        "as met for Toptal when telemetry attributes it to client-owned or client-provided components or conditions outside Toptal's "
-        "reasonable control, with the finding recorded for Client remediation. Hypercare acceptance depends on making four weeks of "
-        "capacity available at 40 hours per week for each of two roles, starting on the later of production go-live and Milestone 4 "
-        "acceptance; unused capacity expires, and no response-time or resolution-time SLA applies."
+        "**Inputs ready:** Client dependencies must be met before delivery milestones can proceed, including environment access, data provisioning, and client SME availability.\n"
+        "**Execution and tracking:** Work is organized across 6 delivery milestones. Bi-weekly status reports and regular sprint check-ins track progress toward milestone acceptance criteria.\n"
+        "**Submission:** Formal delivery package submitted to Client Approver upon milestone completion with completion notice, triggering the acceptance review period.\n"
+        "**Review:** Client has a defined review window (typically 5 business days for major deliverables, 10 business days for platform validation) to evaluate deliverables against agreed acceptance criteria.\n"
+        "**Deliverable-specific rules:** Milestone 1 (Foundation) requires infrastructure sign-off; Milestone 2 (Data Pipeline) requires data integrity validation; Milestone 3 (Analytics Engine) requires algorithm verification; Milestone 4 (User Interface) requires UX/functional sign-off; Milestone 5 (Integration & Security) requires security audit pass; Milestone 6 (Production Cutover & Hypercare) requires successful cutover and hypercare stability.\n"
+        "**Triage:** Defects or non-conformances identified during review are categorized: blocking defects require remediation before acceptance; non-blocking items or minor issues may be addressed in subsequent milestones or hypercare by mutual agreement.\n"
+        "**Remediation:** Toptal addresses blocking defects within a commercially reasonable remediation window and resubmits the deliverable package for re-review.\n"
+        "**Deemed accepted:** If the Client does not provide written notice of non-conformance or rejection within the review window, the milestone deliverables are deemed accepted.\n"
+        "**Sign-off:** Written acceptance certification executed by the Client Approver upon successful review or deemed acceptance, authorizing milestone invoice issuance.\n"
+        "**Next gate:** Acceptance of the current milestone serves as the formal gate prerequisite for billing and progression to subsequent delivery phases.\n"
+        "**Exceptions:** Specific deliverables with custom acceptance paths (e.g., hypercare exit criteria, third-party security certifications) follow their defined validation protocols as documented in the deliverable matrix."
     )
     baseline.sow_interpretation.acceptance_process_narrative = arc_narrative
 
@@ -533,16 +529,18 @@ def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
     prs = pptx.Presentation(str(res.file_path))
     slide16 = prs.slides[15]
 
-    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Talent Team:" in s.text_frame.text]
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Inputs ready:" in s.text_frame.text]
     assert len(body_shapes) == 1
     tf = body_shapes[0].text_frame
     paras = [p for p in tf.paragraphs if p.text.strip()]
-    assert len(paras) == 3
+    assert len(paras) == 11
 
     # Selected font size scales appropriately for longer narrative
     assert paras[0].runs[0].font.size.pt <= 10.5
-    assert "Mike Magwire responsible for acceptance" in paras[0].text
-    assert "Hypercare acceptance depends on making four weeks" in paras[2].text
+    assert paras[0].runs[0].text == "Inputs ready: "
+    assert paras[0].runs[0].font.bold is True
+    assert "Client dependencies must be met" in paras[0].text
+    assert "Exceptions: " in paras[10].text
 
 
 def test_htl_72_slide17_approach_3card_layout_pge(tmp_path):
