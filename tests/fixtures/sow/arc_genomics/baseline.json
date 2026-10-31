@@ -18,6 +18,8 @@
     "project_name": "ARC Genomics Platform",
     "client_name": "Syngenta",
     "project_purpose": "Build part of the ARC application and automate its QA testing so ARC can launch as one application within the client's larger genomics platform.",
+    "solution_overview": "The engagement delivers the scientist-facing ARC genomics application and automated QA test suites across four sequential milestones. Workstreams establish the micro-frontend shell and authentication, develop FastAPI search and direct-write services on Snowflake, build the interactive frontend with haplotype visualization, and execute comprehensive integration, performance, and UAT validation cycles.",
+    "success_criteria_summary": "Project success is defined by formal milestone sign-offs across all four delivery phases, sub-second search and detail API response times, and 100% passing production smoke tests with a clean 48-hour defect watch. The client receives fully tested micro-frontend and backend services integrated with Snowflake and confirmed MTA Store feature parity.",
     "delivery_objectives": [
       "Build the micro-frontend shell with global navigation, routing and Azure AD/MSAL authentication.",
       "Deliver FastAPI faceted search, detail, asynchronous query and haplotype endpoints over Snowflake ARC tables.",

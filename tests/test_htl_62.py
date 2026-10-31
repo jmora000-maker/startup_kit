@@ -182,6 +182,18 @@ def _build_pge_baseline(deliverables=None) -> StartupKitBaseline:
             "The OCP application is an aging custom system with recurring production failures "
             "and unflagged manual data overrides causing gaps at required 3-hour compliance intervals."
         ),
+        solution_overview=(
+            "The engagement delivers a comprehensive assessment and cloud migration roadmap for "
+            "PGE's Operational Compliance Program (OCP) systems. Workstreams inventory in-scope "
+            "workloads and map dependencies to establish target architectures and a multi-year TCO model. "
+            "Delivery culminates in a 7 Rs disposition register and sequenced migration wave plan aligned "
+            "with compliance standards."
+        ),
+        success_criteria_summary=(
+            "The client receives a clear, evidence-backed view of their OCP infrastructure and modern "
+            "cloud architecture options. They can confidently decide workload disposition and wave sequencing, "
+            "supported by an actionable multi-year TCO model and validated migration roadmap."
+        ),
         delivery_objectives=[
             "Assess current-state OCP infrastructure and custom stored procedure business logic",
             "Produce comprehensive workload portfolio inventory and dependency mapping",

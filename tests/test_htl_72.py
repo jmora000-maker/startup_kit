@@ -88,7 +88,7 @@ def test_htl_72_slide1_real_baselines_font_size_and_clearance(tmp_path):
     assert arc_run.font.size.pt == 24.0
     assert arc_run.font.size == 304800  # EMU
 
-    # 2. PGE Baseline (longer name dynamically steps down to safe font size with positive clearance)
+    # 2. PGE Baseline (assert 24.0pt unconditionally)
     pge_baseline = _build_pge_baseline()
     pge_res = export_governance_deck(pge_baseline, tmp_path / "pge_s1")
     pge_prs = pptx.Presentation(str(pge_res.file_path))
@@ -96,8 +96,8 @@ def test_htl_72_slide1_real_baselines_font_size_and_clearance(tmp_path):
 
     pge_title_shape = [s for s in pge_s1.shapes if s.has_text_frame and s.shape_id == 93][0]
     pge_run = pge_title_shape.text_frame.paragraphs[0].runs[0]
-    assert pge_run.font.size.pt <= 16.0
-    assert pge_run.font.size.pt >= 12.0
+    assert pge_run.font.size.pt == 24.0
+    assert pge_run.font.size == 304800  # EMU
 
 
 def test_htl_72_slide13_greenfield_null_fallback_behavior(tmp_path):
@@ -255,7 +255,7 @@ def test_htl_72_slide12_template_placeholders_and_images_intact(tmp_path):
 
 
 def test_htl_72_slide1_title_rendering_and_clearance_regression(tmp_path):
-    """HTL-72: Verify Slide 1 font-fitting scales dynamically to prevent overflow and guarantees positive clearance above divider line."""
+    """HTL-72: Verify Slide 1 title renders at 24pt unconditionally matching Client Kickoff Deck behavior."""
     baseline = _build_pge_baseline()
     client_name = "Portland General Electric Company"
     project_name = "Cloud Migration Assessment – Operational Compliance Program (OCP)"
@@ -271,25 +271,12 @@ def test_htl_72_slide1_title_rendering_and_clearance_regression(tmp_path):
     runs = [r for p in title_shape.text_frame.paragraphs for r in p.runs]
     assert len(runs) > 0
 
-    # 1. Chosen font size steps down dynamically for long composite title
+    # 1. Chosen font size must be 24.0 pt unconditionally
     chosen_sz = runs[0].font.size.pt
-    assert chosen_sz <= 16.0, f"Chosen font size {chosen_sz} pt must step down <= 16.0 pt"
-    assert chosen_sz >= 12.0, f"Chosen font size {chosen_sz} pt must be >= 12.0 pt"
+    assert chosen_sz == 24.0, f"Chosen font size {chosen_sz} pt must be 24.0 pt"
+    assert runs[0].font.size == 304800  # EMU
 
-    # 2. Text height measurement and clearance verification
-    composite_title = f"{client_name}\n{project_name} Governance Kickoff"
-    from src.generators.client_deck.fit import estimate_text_height, wrap_lines
-    est_height_pt = estimate_text_height(composite_title, width_in=5.80, size_pt=chosen_sz, is_bold=True)
-    est_height_in = est_height_pt / 72.0
-    title_top_in = title_shape.top / 914400.0  # ~2.966 in
-    title_bottom_in = title_top_in + est_height_in
-
-    subtitle_top_in = 4.542      # Subtitle positioned at template default 4.542 in
-
-    clearance_above_subtitle = subtitle_top_in - title_bottom_in
-    assert clearance_above_subtitle >= 0.10, f"Clearance above subtitle must be >= 0.10 in, got {clearance_above_subtitle:.3f} in"
-
-    # 3. Content verification
+    # 2. Content verification
     assert "Portland General Electric Company" in title_shape.text_frame.text
     assert "Governance Kickoff" in title_shape.text_frame.text
 
@@ -713,3 +700,55 @@ def test_htl_72_fact_review_title_length_warning():
     proj_val_short = state_persistence.persisted_value(store_name, "project_identity.project_name", "")
     comb_len_short = len(client_val_short.strip()) + len(proj_val_short.strip())
     assert comb_len_short <= 60
+
+
+def test_htl_76_baseline_fixtures_contain_tier1_synthesis_fields():
+    """HTL-76: Fail if solution_overview or success_criteria_summary are missing/null/empty in baseline fixtures."""
+    for fixture_key in ["arc_application_implementation", "arc_genomics"]:
+        baseline = load_baseline(fixture_key)
+        assert baseline.charter is not None, f"Charter missing in fixture {fixture_key}"
+        assert baseline.charter.solution_overview, f"solution_overview missing or empty in fixture {fixture_key}"
+        assert len(baseline.charter.solution_overview.strip()) > 30, f"solution_overview too short in fixture {fixture_key}"
+        assert "[CONFIRMATION REQUIRED]" not in baseline.charter.solution_overview
+
+        assert baseline.charter.success_criteria_summary, f"success_criteria_summary missing or empty in fixture {fixture_key}"
+        assert len(baseline.charter.success_criteria_summary.strip()) > 30, f"success_criteria_summary too short in fixture {fixture_key}"
+        assert "[CONFIRMATION REQUIRED]" not in baseline.charter.success_criteria_summary
+
+    pge_baseline = _build_pge_baseline()
+    assert pge_baseline.charter.solution_overview
+    assert len(pge_baseline.charter.solution_overview.strip()) > 30
+    assert pge_baseline.charter.success_criteria_summary
+    assert len(pge_baseline.charter.success_criteria_summary.strip()) > 30
+
+
+def test_htl_76_decks_render_tier1_and_reject_tier2_fallback(tmp_path):
+    """HTL-76: Verify rendered presentations display Tier 1 connected prose and do NOT fall back to Tier 2 noun-phrase lists."""
+    # 1. ARC Application Implementation
+    arc_baseline = load_baseline("arc_application_implementation")
+    arc_res = export_governance_deck(arc_baseline, tmp_path / "arc_htl76")
+    arc_prs = pptx.Presentation(str(arc_res.file_path))
+
+    # Slide 13 (Why We Are Here / Success)
+    s13_texts = [s.text_frame.text.strip() for s in arc_prs.slides[12].shapes if s.has_text_frame]
+    assert any("Project success is defined by formal milestone sign-offs" in t for t in s13_texts)
+    assert not any("Project purpose:" in t for t in s13_texts)
+
+    # Slide 14 (What We Will Deliver / Solution Overview)
+    s14_texts = [s.text_frame.text.strip() for s in arc_prs.slides[13].shapes if s.has_text_frame]
+    assert any("The engagement delivers the scientist-facing ARC genomics application" in t for t in s14_texts)
+    assert not any("P1 Foundation (est. weeks 1-6):" in t for t in s14_texts)
+
+    # 2. PGE Baseline
+    pge_baseline = _build_pge_baseline()
+    pge_res = export_governance_deck(pge_baseline, tmp_path / "pge_htl76")
+    pge_prs = pptx.Presentation(str(pge_res.file_path))
+
+    # Slide 13
+    pge_s13_texts = [s.text_frame.text.strip() for s in pge_prs.slides[12].shapes if s.has_text_frame]
+    assert any("The client receives a clear, evidence-backed view" in t for t in pge_s13_texts)
+
+    # Slide 14
+    pge_s14_texts = [s.text_frame.text.strip() for s in pge_prs.slides[13].shapes if s.has_text_frame]
+    assert any("The engagement delivers a comprehensive assessment" in t for t in pge_s14_texts)
+    assert not any("Portfolio inventory across in-scope workloads. Dependency mapping" in t for t in pge_s14_texts)

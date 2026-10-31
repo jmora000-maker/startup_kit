@@ -79,30 +79,10 @@ def resolve_client_deck_template_path(custom_path: Optional[Path] = None) -> Pat
 
 
 def write_slide1(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' and fixed subtitle (HTL-72)."""
-    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0]
+    """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' at 24pt and fixed subtitle (HTL-72)."""
+    title_sz = 24.0
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
-
-    # Composite text for title line-wrapping and height estimation
-    composite_title = f"{client_name}\n{project_name} Governance Kickoff"
-
-    # Available geometry on Slide 1:
-    # Title box top = 2.966 in (213.56 pt / 2,712,227 EMUs). Subtitle is placed at Top = 4.542 in (327.02 pt / 4,153,150 EMUs).
-    # Box width = 5.80 in. Try 24pt first; measure actual wrap lines to step down for long composite names
-    # to guarantee positive clearance above the subtitle without overlap.
-    title_sz = 12.0
-    for sz in candidate_sizes:
-        num_lines = wrap_lines(composite_title, width_in=5.80, size_pt=sz, char_width_factor=BOLD_CHAR_WIDTH_FACTOR)
-        if num_lines <= 3:
-            title_sz = sz
-            break
-        elif num_lines == 4 and sz <= 13.0:
-            title_sz = sz
-            break
-        elif num_lines >= 5 and sz <= 12.0:
-            title_sz = sz
-            break
 
     for shape in slide.shapes:
         if not shape.has_text_frame:
