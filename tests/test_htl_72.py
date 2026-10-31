@@ -585,7 +585,7 @@ def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
 
 
 def test_htl_72_slide17_approach_3card_layout_pge(tmp_path):
-    """HTL-72: Verify Slide 17 renders 3-card Approach layout with SOW-grounded content for PGE and zero overflow."""
+    """HTL-72: Verify Slide 17 renders redesigned 3-card Approach layout (Schedule / Milestones / Workstream Execution) for PGE and zero overflow."""
     baseline = _build_pge_baseline()
     res = export_governance_deck(baseline, tmp_path / "slide17_pge")
     prs = pptx.Presentation(str(res.file_path))
@@ -595,30 +595,34 @@ def test_htl_72_slide17_approach_3card_layout_pge(tmp_path):
     textboxes = [s.text_frame.text.strip() for s in slide17.shapes if s.has_text_frame]
     assert "PROJECT SUCCESS AGREEMENT" in textboxes
     assert "Approach" in textboxes
-    assert any("Execution phases, workstream deliverables" in t for t in textboxes)
+    assert any("Execution phases, milestones, and workstream deliverables." in t for t in textboxes)
 
-    # 2. Card validations (3 cards)
-    card_texts = [s.text_frame.text for s in slide17.shapes if s.has_text_frame and ("PHASE & SCHEDULE" in s.text_frame.text or "WORKSTREAM EXECUTION" in s.text_frame.text or "GOVERNANCE & CONTROLS" in s.text_frame.text)]
+    # 2. Card validations (3 cards: Schedule, Milestones, Workstream Execution)
+    card_texts = [s.text_frame.text for s in slide17.shapes if s.has_text_frame and ("PHASE & SCHEDULE" in s.text_frame.text or "KEY MILESTONES" in s.text_frame.text or "WORKSTREAM EXECUTION" in s.text_frame.text)]
     assert len(card_texts) == 3
 
-    # Card 1: Phase & Schedule
+    # Card 1: Schedule
     c1 = card_texts[0]
-    assert "Assessment & Schedule" in c1 or "Phases & Schedule" in c1
-    assert "November 18, 2026" in c1
-    assert "WBS with weekly PMO review" in c1
+    assert "Schedule" in c1
+    assert "Execution Lifecycle" in c1
+    assert "PMO schedule tracking" in c1 or "delivery cadence" in c1
 
-    # Card 2: Workstream Execution
+    # Card 2: Milestones
     c2 = card_texts[1]
-    assert "Workstream Execution" in c2
-    assert "DEL-01" in c2
-    assert "DEL-02" in c2
-    assert "DEL-03" in c2 or "DEL-06" in c2
+    assert "Milestones" in c2
+    assert "Gates & Target Dates" in c2
+    assert "November 18, 2026" in c2
 
-    # Card 3: Governance & Acceptance
+    # Card 3: Workstream Execution
     c3 = card_texts[2]
-    assert "Governance & Acceptance" in c3
-    assert "Partnered Tier Governance" in c3
-    assert "5 business days" in c3
+    assert "Workstream Execution" in c3
+    assert "DEL-01" in c3
+    assert "DEL-02" in c3
+    assert "DEL-03" in c3 or "DEL-06" in c3
+
+    # Ensure Governance & Acceptance card is not on Slide 17
+    all_s17_text = " ".join(textboxes + card_texts)
+    assert "Governance & Acceptance" not in all_s17_text
 
     # 3. Geometry and clearance: all cards must fit within slide height (5.625 in)
     for s in slide17.shapes:
@@ -640,27 +644,25 @@ def test_htl_72_slide17_approach_trace_manifest(tmp_path):
     assert len(s17_entries) == 3
 
     elements = [e["element"] for e in s17_entries]
-    assert "Approach: Phase & Schedule" in elements
+    assert "Approach: Schedule" in elements
+    assert "Approach: Milestones" in elements
     assert "Approach: Workstream Execution" in elements
-    assert "Approach: Governance & Acceptance" in elements
 
     # Verify locators
     c1_traces = [t["locator"] for t in s17_entries[0]["traces"]]
     assert "WBS" in c1_traces
-    assert "Milestones" in c1_traces
 
     c2_traces = [t["locator"] for t in s17_entries[1]["traces"]]
-    assert "Charter" in c2_traces
-    assert "Deliverables" in c2_traces
+    assert "Milestones" in c2_traces
 
     c3_traces = [t["locator"] for t in s17_entries[2]["traces"]]
-    assert "Governance Context" in c3_traces
-    assert "SOW Interpretation" in c3_traces
+    assert "Charter" in c3_traces
+    assert "Deliverables" in c3_traces
 
 
 def test_htl_72_slide17_multi_phase_arc_genomics(tmp_path):
-    """HTL-72: Verify Slide 17 scales naturally to multi-phase delivery lifecycle (ARC Genomics)."""
-    baseline = load_baseline()
+    """HTL-72: Verify Slide 17 scales naturally to multi-phase delivery lifecycle (ARC Genomics) with zero overflow."""
+    baseline = load_baseline("arc_application_implementation")
     res = export_governance_deck(baseline, tmp_path / "slide17_arc")
     prs = pptx.Presentation(str(res.file_path))
     slide17 = prs.slides[16]
@@ -668,5 +670,19 @@ def test_htl_72_slide17_multi_phase_arc_genomics(tmp_path):
     card_texts = [s.text_frame.text for s in slide17.shapes if s.has_text_frame and "PHASE & SCHEDULE" in s.text_frame.text]
     assert len(card_texts) == 1
     c1 = card_texts[0]
-    assert "Phases & Schedule" in c1
-    assert "phase execution lifecycle" in c1 or "Phase" in c1
+    assert "Schedule" in c1
+    assert "4-phase execution lifecycle" in c1
+
+    milestone_texts = [s.text_frame.text for s in slide17.shapes if s.has_text_frame and "KEY MILESTONES" in s.text_frame.text]
+    assert len(milestone_texts) == 1
+    c2 = milestone_texts[0]
+    assert "M1: P1 Foundation" in c2
+    assert "November 17, 2026" in c2
+    assert "M4: P3 Launch" in c2
+    assert "April 06, 2027" in c2
+
+    # Verify all shapes fit within slide boundaries
+    for s in slide17.shapes:
+        top_in = s.top / 914400.0
+        h_in = s.height / 914400.0
+        assert top_in + h_in <= 5.25
