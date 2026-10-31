@@ -79,7 +79,7 @@ def resolve_client_deck_template_path(custom_path: Optional[Path] = None) -> Pat
 
 def write_slide1(slide, model: GovernanceDeckModel) -> None:
     """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' and fixed subtitle (HTL-72)."""
-    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0]
+    candidate_sizes = [16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0]
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
 
@@ -88,11 +88,11 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
 
     # Available geometry on Slide 1:
     # Title box top = 2.966 in (2,712,227 EMUs), Layout divider line top = 4.423 in (4,044,375 EMUs).
-    # Box width = 5.80 in, max_height_in = 1.40 in.
+    # Box width = 5.80 in, max_height_in = 1.05 in to guarantee robust clearance (>= 0.45 in) above divider line.
     title_sz, _ = select_fitting_font_size(
         composite_title,
         width_in=5.80,
-        max_height_in=1.40,
+        max_height_in=1.05,
         candidate_sizes=candidate_sizes,
         is_bold=True,
     )
@@ -154,8 +154,13 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.size = Pt(11)
 
 
-def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 15 Deliverable Acceptance Criteria table with multi-bullet criteria and uniform font fitting (HTL-62/63/64/72)."""
+def write_slide15_acceptance_criteria_page(
+    slide,
+    rows: List[AcceptanceCriterionRow],
+    page_num: int = 1,
+    total_pages: int = 1,
+) -> None:
+    """Populate one Slide 15 Deliverable Acceptance Criteria table page with multi-bullet criteria and uniform font fitting (HTL-62/63/64/72)."""
     # 1. Clear any placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
@@ -201,17 +206,19 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
     tf_s.margin_left = 0
     tf_s.margin_right = 0
     p_s = tf_s.paragraphs[0]
-    p_s.text = "Contractual criteria and verification requirements mapped to milestone gates."
+    if total_pages > 1:
+        p_s.text = f"Contractual criteria and verification requirements mapped to milestone gates (Part {page_num} of {total_pages})."
+    else:
+        p_s.text = "Contractual criteria and verification requirements mapped to milestone gates."
     for r in p_s.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(11)
         r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
 
-    # 5. Add Table (Left: 0.50 in, Top: 1.52 in, Width: 9.00 in, Height: 2.80 in)
-    rows = model.slide15.rows
+    # 5. Add Table (Left: 0.50 in, Top: 1.48 in, Width: 9.00 in, Height: 2.00 in)
     num_rows = len(rows)
     table_rows = max(2, num_rows + 1)
-    table_shape = slide.shapes.add_table(table_rows, 3, 457200, 1389888, 8229600, 2560320)
+    table_shape = slide.shapes.add_table(table_rows, 3, 457200, 1353312, 8229600, 1828800)
     table = table_shape.table
 
     # Column widths: Col 0: 2.00 in (1,828,800), Col 1: 5.80 in (5,303,520), Col 2: 1.20 in (1,097,280)
@@ -220,30 +227,14 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
     table.columns[2].width = 1097280
 
     # Header Row (Row 0)
-    headers = ["Deliverable", "Acceptance Criteria", "Milestone Gate"]
-    for col_idx, h_text in enumerate(headers):
-        cell = table.rows[0].cells[col_idx]
-        _format_table_cell(cell, h_text, font_size_pt=10.0, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
+    _format_table_cell(table.cell(0, 0), "Deliverable", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
+    _format_table_cell(table.cell(0, 1), "Acceptance Criteria", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
+    _format_table_cell(table.cell(0, 2), "Milestone Gate", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
 
     if not rows:
         cell0 = table.rows[1].cells[0]
         _format_table_cell(cell0, "[CONFIRMATION REQUIRED]", font_size_pt=8.0)
         return
-
-    # Pass 1: Compute uniform table font size
-    cell_candidate_sizes = [8.5, 8.0, 7.5, 7.0]
-    chosen_sz = 8.0
-    for sz in cell_candidate_sizes:
-        fits = True
-        for r in rows:
-            crit_text = "\n".join(f"• {c}" for c in r.acceptance_criteria) if len(r.acceptance_criteria) > 1 else (r.acceptance_criteria[0] if r.acceptance_criteria else "")
-            h_pt = estimate_text_height(crit_text, width_in=5.6, size_pt=sz)
-            if h_pt > 36.0:  # max row height in pt for 6 deliverables
-                fits = False
-                break
-        if fits:
-            chosen_sz = sz
-            break
 
     # Pass 2: Populate Data Rows
     for r_idx, row_data in enumerate(rows):
@@ -251,8 +242,8 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
 
         # Col 0: Deliverable (ID bold + Name)
         cell0 = row.cells[0]
+        cell0.text = ""
         tf0 = cell0.text_frame
-        tf0.word_wrap = True
         tf0.margin_top = 0
         tf0.margin_bottom = 0
         tf0.margin_left = 0
@@ -264,29 +255,26 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
             tcPr.set("marL", "36576")
             tcPr.set("marR", "36576")
 
-        p0 = tf0.paragraphs[0]
-        p0.space_before = Pt(0)
-        p0.space_after = Pt(0)
-        p0.text = ""
-        r_id = p0.add_run()
-        r_id.text = row_data.deliverable_id
-        r_id.font.name = "Proxima Nova"
-        r_id.font.size = Pt(chosen_sz)
-        r_id.font.bold = True
-        r_id.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        p0_1 = tf0.paragraphs[0]
+        p0_1.text = row_data.deliverable_id
+        if p0_1.runs:
+            p0_1.runs[0].font.name = "Proxima Nova"
+            p0_1.runs[0].font.size = Pt(8.0)
+            p0_1.runs[0].font.bold = True
+            p0_1.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
         if row_data.deliverable_name:
-            r_name = p0.add_run()
-            r_name.text = f"\n{row_data.deliverable_name}"
-            r_name.font.name = "Proxima Nova"
-            r_name.font.size = Pt(7.5)
-            r_name.font.bold = False
-            r_name.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+            p0_2 = tf0.add_paragraph()
+            p0_2.text = row_data.deliverable_name
+            if p0_2.runs:
+                p0_2.runs[0].font.name = "Proxima Nova"
+                p0_2.runs[0].font.size = Pt(7.5)
+                p0_2.runs[0].font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
-        # Col 1: Acceptance Criteria (Separate countable bullets)
+        # Col 1: Acceptance Criteria (Multi-bullet)
         cell1 = row.cells[1]
+        cell1.text = ""
         tf1 = cell1.text_frame
-        tf1.word_wrap = True
         tf1.margin_top = 0
         tf1.margin_bottom = 0
         tf1.margin_left = 0
@@ -298,30 +286,44 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
             tcPr.set("marL", "36576")
             tcPr.set("marR", "36576")
 
-        if not row_data.acceptance_criteria:
-            p = tf1.paragraphs[0]
-            p.space_before = Pt(0)
-            p.space_after = Pt(0)
-            p.text = "[CONFIRMATION REQUIRED]"
-            for r in p.runs:
-                r.font.name = "Proxima Nova"
-                r.font.size = Pt(chosen_sz)
-                r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
-        else:
-            use_bullets = len(row_data.acceptance_criteria) > 1
-            for c_idx, crit in enumerate(row_data.acceptance_criteria):
-                p = tf1.paragraphs[0] if c_idx == 0 else tf1.add_paragraph()
-                p.space_before = Pt(0)
-                p.space_after = Pt(1)
-                p.text = f"• {crit}" if use_bullets else crit
-                for r in p.runs:
-                    r.font.name = "Proxima Nova"
-                    r.font.size = Pt(chosen_sz)
-                    r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        crits = row_data.acceptance_criteria or ["[CONFIRMATION REQUIRED]"]
+        for c_idx, crit in enumerate(crits):
+            p = tf1.paragraphs[0] if c_idx == 0 else tf1.add_paragraph()
+            p.text = f"• {crit}" if len(crits) > 1 else crit
+            if p.runs:
+                p.runs[0].font.name = "Proxima Nova"
+                p.runs[0].font.size = Pt(7.5)
+                p.runs[0].font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+            p.line_spacing = 1.05
+            p.space_after = Pt(2)
 
         # Col 2: Milestone Gate
         cell2 = row.cells[2]
-        _format_table_cell(cell2, row_data.milestone_gate, font_size_pt=chosen_sz, color_rgb=RGBColor(0x04, 0x11, 0x33))
+        cell2.text = ""
+        tf2 = cell2.text_frame
+        tf2.margin_top = 0
+        tf2.margin_bottom = 0
+        tf2.margin_left = 0
+        tf2.margin_right = 0
+        for tcPr in cell2._tc.xpath(".//a:tcPr"):
+            tcPr.set("anchor", "t")
+            tcPr.set("marT", "18288")
+            tcPr.set("marB", "18288")
+            tcPr.set("marL", "36576")
+            tcPr.set("marR", "36576")
+
+        p2 = tf2.paragraphs[0]
+        p2.text = row_data.milestone_gate or "—"
+        if p2.runs:
+            p2.runs[0].font.name = "Proxima Nova"
+            p2.runs[0].font.size = Pt(8.0)
+            p2.runs[0].font.bold = True
+            p2.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+
+def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 15 Deliverable Acceptance Criteria table (HTL-62/63/64/72)."""
+    write_slide15_acceptance_criteria_page(slide, model.slide15.rows, page_num=1, total_pages=1)
 
 
 def _parse_step_line(line: str) -> Tuple[Optional[str], str]:
@@ -827,17 +829,30 @@ def write_governance_deck(
     for s in prs_client.slides[5].shapes:
         s_gov_14.shapes._spTree.append(copy.deepcopy(s._element))
 
-    # Reorder slides into exact 19-slide sequence:
+    # Calculate Slide 15 chunks (max 6 deliverables if <= 6 total, otherwise max 4 per slide page)
+    rows_s15 = model.slide15.rows
+    max_per_page = 6 if len(rows_s15) <= 6 else 4
+    chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
+    total_s15_pages = len(chunks_s15)
+
+    # Extra slides for Slide 15 continuation pages
+    extra_crit_indices = []
+    for _ in range(total_s15_pages - 1):
+        s_extra = prs_gov.slides.add_slide(layout_default)
+        extra_crit_indices.append(len(prs_gov.slides) - 1)
+
+    # Reorder slides into exact sequence:
     # 0..10: Slides 1..11
     # 11: Slide 12 (Team Roster - index 11)
     # 12: Slide 13 (Why We're Here - index 12)
     # 13: Slide 14 (What We Deliver - index 13)
-    # 14: Slide 15 (Acceptance Criteria - index 17)
-    # 15: Slide 16 (How Acceptance Works - index 18)
-    # 16: Slide 17 (Approach - index 14)
-    # 17: Slide 18 (Initial Risk Register - index 19)
-    # 18: Slide 19 (Next Steps - index 15)
-    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 17, 18, 14, 19, 15]
+    # 14..14+total_s15_pages-1: Slide 15 pages (Acceptance Criteria - index 17 + extra_crit_indices)
+    # 14+total_s15_pages: Slide 16 (How Acceptance Works - index 18)
+    # 15+total_s15_pages: Slide 17 (Approach - index 14)
+    # 16+total_s15_pages: Slide 18 (Initial Risk Register - index 19)
+    # 17+total_s15_pages: Slide 19 (Next Steps - index 15)
+    crit_indices = [17] + extra_crit_indices
+    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] + crit_indices + [18, 14, 19, 15]
     sldIdLst = prs_gov.slides._sldIdLst
     all_sld_ids = list(sldIdLst)
 
@@ -903,20 +918,26 @@ def write_governance_deck(
     # Slide 14 (index 13): What We Deliver (Client Slide 6)
     write_slide6(prs_gov.slides[13], client_deck_adapter)
 
-    # Slide 15 (index 14): Acceptance Criteria Table (HTL-72)
-    write_slide15_acceptance_criteria(prs_gov.slides[14], model)
+    # Slide 15 pages (starting at index 14): Acceptance Criteria Table (HTL-72)
+    for c_idx, chunk_rows in enumerate(chunks_s15):
+        write_slide15_acceptance_criteria_page(
+            prs_gov.slides[14 + c_idx],
+            chunk_rows,
+            page_num=c_idx + 1,
+            total_pages=total_s15_pages,
+        )
 
-    # Slide 16 (index 15): How Milestone Acceptance Works Narrative (HTL-72)
-    write_slide16_acceptance_narrative(prs_gov.slides[15], model)
+    # Slide 16: How Milestone Acceptance Works Narrative (HTL-72)
+    write_slide16_acceptance_narrative(prs_gov.slides[14 + total_s15_pages], model)
 
-    # Slide 17 (index 16): Approach 3-Card Layout (HTL-72)
-    write_slide17_approach(prs_gov.slides[16], model)
+    # Slide 17: Approach 3-Card Layout (HTL-72)
+    write_slide17_approach(prs_gov.slides[15 + total_s15_pages], model)
 
-    # Slide 18 (index 17): Initial Risk Register (Client Slide 12)
-    write_slide12(prs_gov.slides[17], client_deck_adapter)
+    # Slide 18: Initial Risk Register (Client Slide 12)
+    write_slide12(prs_gov.slides[16 + total_s15_pages], client_deck_adapter)
 
-    # Slide 19 (index 18): Next Steps (Client Slide 15)
-    write_slide15(prs_gov.slides[18], client_deck_adapter)
+    # Slide 19: Next Steps (Client Slide 15)
+    write_slide15(prs_gov.slides[17 + total_s15_pages], client_deck_adapter)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     prs_gov.save(str(target_path))

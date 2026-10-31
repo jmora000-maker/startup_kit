@@ -85,8 +85,8 @@ def test_htl_72_slide1_real_baselines_font_size_and_clearance(tmp_path):
 
     arc_title_shape = [s for s in arc_s1.shapes if s.has_text_frame and s.shape_id == 93][0]
     arc_run = arc_title_shape.text_frame.paragraphs[0].runs[0]
-    assert arc_run.font.size.pt == 24.0
-    assert arc_run.font.size == 304800  # EMU
+    assert arc_run.font.size.pt == 16.0
+    assert arc_run.font.size == 203200  # EMU
 
     # 2. PGE Baseline
     pge_baseline = _build_pge_baseline()
@@ -96,8 +96,8 @@ def test_htl_72_slide1_real_baselines_font_size_and_clearance(tmp_path):
 
     pge_title_shape = [s for s in pge_s1.shapes if s.has_text_frame and s.shape_id == 93][0]
     pge_run = pge_title_shape.text_frame.paragraphs[0].runs[0]
-    assert pge_run.font.size.pt == 20.0
-    assert pge_run.font.size == 254000  # EMU
+    assert pge_run.font.size.pt == 16.0
+    assert pge_run.font.size == 203200  # EMU
 
 
 def test_htl_72_slide13_greenfield_null_fallback_behavior(tmp_path):
@@ -193,7 +193,7 @@ def test_htl_72_cross_artifact_consistency_arc_baseline(tmp_path):
     assert len(gov_model.slide19.next_steps) == len(client_model.slide15.next_steps)
 
     gov_res = export_governance_deck(arc_baseline, tmp_path / "gov_arc")
-    assert gov_res.slides_count == 19
+    assert gov_res.slides_count == 23
     assert gov_res.trace_entries_count >= 10
 
     errs = check_governance_deck_traceability(gov_model, gov_res.file_path)
@@ -271,9 +271,9 @@ def test_htl_72_slide1_title_rendering_and_clearance_regression(tmp_path):
     runs = [r for p in title_shape.text_frame.paragraphs for r in p.runs]
     assert len(runs) > 0
 
-    # 1. Chosen font size must scale to 20.0 pt for PGE title within 5.80 in box
+    # 1. Chosen font size must scale to 16.0 pt for PGE title within 5.80 in box
     chosen_sz = runs[0].font.size.pt
-    assert chosen_sz == 20.0, f"Chosen font size {chosen_sz} pt must be 20.0 pt"
+    assert chosen_sz == 16.0, f"Chosen font size {chosen_sz} pt must be 16.0 pt"
 
     # 2. Text height measurement and clearance verification
     composite_title = f"{client_name}\n{project_name} Governance Kickoff"
@@ -665,7 +665,7 @@ def test_htl_72_slide17_multi_phase_arc_genomics(tmp_path):
     baseline = load_baseline("arc_application_implementation")
     res = export_governance_deck(baseline, tmp_path / "slide17_arc")
     prs = pptx.Presentation(str(res.file_path))
-    slide17 = prs.slides[16]
+    slide17 = [s for s in prs.slides if any(sh.has_text_frame and sh.text_frame.text == "Approach" for sh in s.shapes)][0]
 
     card_texts = [s.text_frame.text for s in slide17.shapes if s.has_text_frame and "PHASE & SCHEDULE" in s.text_frame.text]
     assert len(card_texts) == 1

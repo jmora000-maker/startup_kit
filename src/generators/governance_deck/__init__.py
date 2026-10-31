@@ -43,10 +43,15 @@ def export_governance_deck(
     )
     manifest_path = target_path.with_name(f"{clean_name}_PS_Governance_Kickoff.trace.json")
 
+    rows_s15 = model.slide15.rows
+    max_per_page = 6 if len(rows_s15) <= 6 else 4
+    chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
+    total_slides = 18 + len(chunks_s15)
+
     return GovernanceDeckResult(
         file_path=saved_path,
         manifest_path=manifest_path,
-        slides_count=19,
+        slides_count=total_slides,
         trace_entries_count=len(model.manifest.entries),
         project_name=baseline.project_name,
     )
