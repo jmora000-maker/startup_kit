@@ -79,7 +79,7 @@ def resolve_client_deck_template_path(custom_path: Optional[Path] = None) -> Pat
 
 def write_slide1(slide, model: GovernanceDeckModel) -> None:
     """Populate Slide 1 [Client Name] and [Project Name] placeholders with 'Governance Kickoff' and fixed subtitle (HTL-72)."""
-    candidate_sizes = [28.0, 24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0]
+    candidate_sizes = [24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 13.0, 12.0, 11.0, 10.0]
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
 
@@ -88,12 +88,11 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
 
     # Available geometry on Slide 1:
     # Title box top = 2.966 in (2,712,227 EMUs), Layout divider line top = 4.423 in (4,044,375 EMUs).
-    # To guarantee generous positive visual clearance (>= 0.40 in) above the divider line and subtitle (top = 4.542 in),
-    # max_height_in is constrained to 1.00 in across candidate sizes.
+    # Box width = 5.80 in, max_height_in = 1.40 in.
     title_sz, _ = select_fitting_font_size(
         composite_title,
-        width_in=3.30,
-        max_height_in=1.00,
+        width_in=5.80,
+        max_height_in=1.40,
         candidate_sizes=candidate_sizes,
         is_bold=True,
     )
