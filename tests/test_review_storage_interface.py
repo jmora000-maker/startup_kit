@@ -36,7 +36,7 @@ def test_create_run_writes_htl03_file_layout(storage):
     assert (run_dir / "baseline.json").exists()
     assert (run_dir / "validation_report.json").exists()
     status = json.loads((run_dir / "status.json").read_text(encoding="utf-8"))
-    assert status == {"state": "pending_review"}
+    assert status == {"state": "pending_review", "archived": False}
 
 
 def test_list_runs_with_no_filter_returns_all(storage):
