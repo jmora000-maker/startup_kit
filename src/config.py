@@ -97,6 +97,100 @@ def sanitize_report_text(text: Optional[str]) -> str:
     return cleaned.strip()
 
 
+def sanitize_financial_text(text: Optional[str]) -> str:
+    """HTL-77: Systematically strip raw dollar figures, currency amounts, hourly rates, and milestone fees from text.
+    
+    Ensures zero financial figures appear in generated artifacts while preserving all legitimate numeric content
+    (dates, percentages, durations, intervals, SLA windows, WBS codes, deliverable IDs, formulas).
+    """
+    if not text:
+        return "" if text is None else str(text)
+
+    s = str(text)
+
+    # Formulas starting with '=' should remain intact
+    if s.startswith("="):
+        return s
+
+    # 1. Phrases with 'Fee of $12,345' -> 'Fee' (or 'Invoice of $12,345' -> 'Invoice')
+    s = re.sub(
+        r'\b(fee|invoice|payment|cost)\s+of\s+(?:\$|USD\s*|CAD\s*|EUR\s*|GBP\s*)[\d,]+(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?\b',
+        r'\1',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 2. '$19,650 fee' -> 'Fee'
+    s = re.sub(
+        r'(?:\$|USD\s*|CAD\s*|EUR\s*|GBP\s*)[\d,]+(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?\s+fee\b',
+        'fee',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 3. 'an amount of $12,345' / 'an amount of 100 USD' -> ''
+    s = re.sub(
+        r'\b(?:an?\s+)?(?:amount|cost|price|sum|total)\s+of\s+(?:(?:\$|USD\s*|CAD\s*|EUR\s*|GBP\s*)[\d,]+(?:\.\d+)?|[\d,]+(?:\.\d+)?\s*(?:USD|CAD|EUR|GBP|dollars?))(?:\s*(?:k|m|b|million|billion|thousand))?\b',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 4. 'at / for / of $12,345' or 'at / for / of 120 USD' -> ''
+    s = re.sub(
+        r'\b(?:at|for|of)\s+(?:(?:\$|USD\s*|CAD\s*|EUR\s*|GBP\s*)[\d,]+(?:\.\d+)?|[\d,]+(?:,\d{3})*(?:\.\d+)?\s*(?:USD|CAD|EUR|GBP|dollars?))(?:\s*(?:k|m|b|million|billion|thousand))?(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month|yr|year))?\b',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 5. Standalone currency figures: $19,650, $19,650.00, $50k, USD 50,000, 50,000 USD, 50 dollars
+    s = re.sub(
+        r'(?:\$|€|£|¥)\s*[\d,]+(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?(?:\s*(?:USD|CAD|EUR|GBP|dollars?))?(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month|yr|year))?',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 6. ISO currency preceding numbers: USD 50,000 / CAD 1,000
+    s = re.sub(
+        r'\b(?:USD|CAD|EUR|GBP)\s+[\d,]+(?:\.\d+)?(?:\s*(?:k|m|b|million|billion|thousand))?(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month|yr|year))?\b',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 7. Numbers followed by currency word/ISO: 50,000 USD, 50 dollars, 100 dollars / hr
+    s = re.sub(
+        r'\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:USD|CAD|EUR|GBP|dollars?)\b(?:\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month|yr|year))?',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # 8. Standalone rates: 150/hr, 200 / hour, 50/day
+    s = re.sub(
+        r'\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:/|\bper\s+)\s*(?:hr|hour|day|wk|week|mo|month|yr|year)\b',
+        '',
+        s,
+        flags=re.IGNORECASE
+    )
+
+    # Clean up empty parens left over from removing figures, dangling punctuation, multiple spaces
+    s = re.sub(r'(?<![A-Za-z0-9_])\(\s*\)', '', s)
+    s = re.sub(r'\s{2,}', ' ', s)
+    s = re.sub(r'\s+([,.:;])', r'\1', s)
+    s = re.sub(r'([;:,])\s*([;:,])+', r'\1', s)
+    s = re.sub(r'^[,\s.:;-]+', '', s)
+    s = s.strip()
+
+    # Capitalize cleanly if the first word became lower-case after stripping leading financial figure
+    if s and s[0].islower():
+        s = s[0].upper() + s[1:]
+
+    return s
+
+
 @dataclass
 class AppConfig:
     inputs_dir: Path = Path(os.getenv("INPUTS_DIR", "inputs"))

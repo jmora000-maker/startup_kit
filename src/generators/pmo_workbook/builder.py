@@ -8,6 +8,7 @@ from typing import List, Dict, Optional, Tuple, Set, Sequence, Union, Any
 
 from src.config import (
     sanitize_report_text,
+    sanitize_financial_text,
     normalize_person_name,
     extract_sow_references,
     detect_sow_reference_kind,
@@ -341,11 +342,12 @@ def last_working_day_before(d: date) -> date:
 
 
 def clean_text_v2(text: Optional[str]) -> str:
-    """Sanitize report text, remove ACTION_TAG_REGEX matches, collapse whitespace and trim stray punctuation."""
+    """Sanitize report text, scrub financial figures (HTL-77), remove ACTION_TAG_REGEX matches, collapse whitespace and trim stray punctuation."""
     if not text:
         return ""
     sanitized = sanitize_report_text(str(text))
-    cleaned = ACTION_TAG_REGEX.sub("", sanitized)
+    financial_cleaned = sanitize_financial_text(sanitized)
+    cleaned = ACTION_TAG_REGEX.sub("", financial_cleaned)
     # Collapse whitespace
     cleaned = " ".join(cleaned.split())
     # Trim stray ;, ,, and - at either end
@@ -354,10 +356,11 @@ def clean_text_v2(text: Optional[str]) -> str:
 
 
 def clean_contract_text(text: Optional[str]) -> str:
-    """Clean text for contract clarification rows without removing contract references (v3 A7)."""
+    """Clean text for contract clarification rows without removing contract references (v3 A7), while scrubbing financial figures (HTL-77)."""
     if not text:
         return ""
-    cleaned = ACTION_TAG_REGEX.sub("", str(text))
+    financial_cleaned = sanitize_financial_text(str(text))
+    cleaned = ACTION_TAG_REGEX.sub("", financial_cleaned)
     cleaned = " ".join(cleaned.split())
     return cleaned.strip(" ;,-\t\r\n")
 
