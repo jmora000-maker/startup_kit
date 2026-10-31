@@ -1,7 +1,8 @@
-"""HTL-75: Administrative Manage Runs UI module for PMO Startup Kit.
+"""HTL-75 / HTL-81 / HTL-82: Administrative Manage Runs UI module for PMO Startup Kit.
 
 Provides an admin-passphrase-gated dashboard to view, archive, unarchive,
-and permanently purge review runs and their associated files.
+and permanently purge review runs (single and bulk) and their associated files,
+with state-persisted tab navigation.
 """
 
 import logging
@@ -16,6 +17,8 @@ from src.review_ui.generate import is_admin_unlocked
 logger = logging.getLogger(__name__)
 
 SESSION_KEY_UNLOCKED = "manage_runs_admin_unlocked"
+SESSION_KEY_VIEW_TAB = "manage_runs_view_tab"
+SESSION_KEY_BULK_PURGE_CONFIRMING = "manage_runs_bulk_purge_confirming"
 SESSION_KEY_FLASH_SUCCESS = "manage_runs_flash_success"
 SESSION_KEY_FLASH_ERROR = "manage_runs_flash_error"
 
@@ -59,12 +62,17 @@ def render() -> None:
             "This administrative section is protected by an admin passphrase. "
             "Enter the passphrase to view, archive, unarchive, or permanently purge review runs."
         )
-        entered_passphrase = st.text_input(
-            "Admin Passphrase",
-            type="password",
-            key="manage_runs_passphrase_input",
-        )
-        submitted = st.button("Unlock Manage Runs", key="manage_runs_unlock_button")
+        with st.form("manage_runs_gate_form", border=False):
+            entered_passphrase = st.text_input(
+                "Admin Passphrase",
+                type="password",
+                key="manage_runs_passphrase_input",
+            )
+            submitted = st.form_submit_button(
+                "Unlock Manage Runs",
+                key="manage_runs_unlock_button",
+                type="primary",
+            )
 
         if submitted:
             if is_admin_unlocked(entered_passphrase or "", config.admin_passphrase):
@@ -102,13 +110,21 @@ def render() -> None:
     m2.metric("Active Runs", len(active_runs))
     m3.metric("Archived Runs", len(archived_runs))
 
-    # Tabs
-    tab_active, tab_archived = st.tabs([
-        f"Active Runs ({len(active_runs)})",
-        f"Archived Runs ({len(archived_runs)})",
-    ])
+    # HTL-81: Stateful Tab Navigation via horizontal radio
+    if SESSION_KEY_VIEW_TAB not in st.session_state:
+        st.session_state[SESSION_KEY_VIEW_TAB] = "active"
 
-    with tab_active:
+    selected_view = st.radio(
+        "View",
+        options=["active", "archived"],
+        format_func=lambda x: f"Active Runs ({len(active_runs)})"
+        if x == "active"
+        else f"Archived Runs ({len(archived_runs)})",
+        horizontal=True,
+        key=SESSION_KEY_VIEW_TAB,
+    )
+
+    if selected_view == "active":
         if not active_runs:
             st.info("No active runs.")
         else:
@@ -132,14 +148,104 @@ def render() -> None:
                                 )
                                 st.rerun()
 
-    with tab_archived:
+    elif selected_view == "archived":
         if not archived_runs:
             st.info("No archived runs.")
         else:
             sorted_archived = sorted(archived_runs, key=lambda r: -r.created_at.timestamp())
+
+            # HTL-82: Bulk selection controls and multi-run purge
+            selected_runs = [
+                r for r in sorted_archived
+                if st.session_state.get(f"chk_select_{r.run_id}", False)
+            ]
+
+            # 2-Stage Confirmation Panel
+            if st.session_state.get(SESSION_KEY_BULK_PURGE_CONFIRMING, False) and selected_runs:
+                with st.container(border=True):
+                    st.warning(
+                        f"⚠️ **Confirm Bulk Purge**: You are about to permanently delete **{len(selected_runs)}** "
+                        "archived run(s) and all associated files. This action cannot be undone."
+                    )
+                    st.markdown("**Selected Runs to Purge:**")
+                    for r in selected_runs:
+                        proj_title = r.project_name if r.project_name else "Untitled Project"
+                        st.markdown(f"- **{proj_title}** (`{r.run_id}`)")
+
+                    c_confirm, c_cancel = st.columns([2, 1])
+                    with c_confirm:
+                        if st.button(
+                            f"Confirm & Delete {len(selected_runs)} Runs",
+                            key="btn_bulk_purge_confirm",
+                            type="primary",
+                        ):
+                            success_count = 0
+                            failed = []
+                            for r in selected_runs:
+                                try:
+                                    storage.purge_run(r.run_id)
+                                    success_count += 1
+                                    st.session_state.pop(f"chk_select_{r.run_id}", None)
+                                    st.session_state.pop(f"chk_purge_{r.run_id}", None)
+                                except Exception as exc:  # noqa: BLE001
+                                    logger.exception("Failed to purge run %s", r.run_id)
+                                    failed.append((r.run_id, str(exc)))
+
+                            st.session_state[SESSION_KEY_BULK_PURGE_CONFIRMING] = False
+                            if failed:
+                                fail_summary = "; ".join(f"{rid}: {msg}" for rid, msg in failed)
+                                if success_count > 0:
+                                    st.session_state[SESSION_KEY_FLASH_ERROR] = (
+                                        f"Purged {success_count} run(s). {len(failed)} failed: {fail_summary}"
+                                    )
+                                else:
+                                    st.session_state[SESSION_KEY_FLASH_ERROR] = (
+                                        f"Failed to purge {len(failed)} run(s): {fail_summary}"
+                                    )
+                            else:
+                                st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
+                                    f"Successfully purged {success_count} run(s) and all associated files."
+                                )
+                            st.rerun()
+
+                    with c_cancel:
+                        if st.button("Cancel", key="btn_bulk_purge_cancel"):
+                            st.session_state[SESSION_KEY_BULK_PURGE_CONFIRMING] = False
+                            st.rerun()
+
+            # Bulk Action Toolbar
+            col_sel_all, col_desel_all, col_bulk_purge, _ = st.columns([1, 1, 2, 2])
+            with col_sel_all:
+                if st.button("Select All", key="btn_select_all_archived"):
+                    for r in sorted_archived:
+                        st.session_state[f"chk_select_{r.run_id}"] = True
+                    st.rerun()
+            with col_desel_all:
+                if st.button("Deselect All", key="btn_deselect_all_archived"):
+                    for r in sorted_archived:
+                        st.session_state[f"chk_select_{r.run_id}"] = False
+                    st.rerun()
+            with col_bulk_purge:
+                selected_count = len(selected_runs)
+                if st.button(
+                    f"Purge Selected ({selected_count})",
+                    key="btn_bulk_purge_init",
+                    disabled=(selected_count == 0),
+                    type="primary" if selected_count > 0 else "secondary",
+                ):
+                    st.session_state[SESSION_KEY_BULK_PURGE_CONFIRMING] = True
+                    st.rerun()
+
+            # Individual Run Cards
             for run in sorted_archived:
                 with st.container(border=True):
-                    c_info, c_action = st.columns([3, 2])
+                    c_chk, c_info, c_action = st.columns([0.5, 3.5, 2])
+                    with c_chk:
+                        st.checkbox(
+                            "Select run",
+                            key=f"chk_select_{run.run_id}",
+                            label_visibility="collapsed",
+                        )
                     with c_info:
                         _render_run_info(run, is_archived=True)
                     with c_action:
@@ -148,6 +254,8 @@ def render() -> None:
                             if st.button("Unarchive", key=f"btn_unarchive_{run.run_id}"):
                                 try:
                                     storage.unarchive_run(run.run_id)
+                                    st.session_state.pop(f"chk_select_{run.run_id}", None)
+                                    st.session_state.pop(f"chk_purge_{run.run_id}", None)
                                     st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
                                         f"Run '{run.run_id}' restored to active."
                                     )
@@ -170,6 +278,8 @@ def render() -> None:
                             ):
                                 try:
                                     storage.purge_run(run.run_id)
+                                    st.session_state.pop(f"chk_select_{run.run_id}", None)
+                                    st.session_state.pop(f"chk_purge_{run.run_id}", None)
                                     st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
                                         f"Run '{run.run_id}' and all associated files permanently purged."
                                     )
