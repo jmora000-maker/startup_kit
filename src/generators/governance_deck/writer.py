@@ -41,6 +41,7 @@ from src.generators.client_deck.writer import (
     write_slide12,
     write_slide15,
 )
+from src.generators.governance_deck.builder import _build_acceptance_cards, parse_step_line
 from src.generators.governance_deck.spec import GovernanceDeckModel
 
 
@@ -314,25 +315,11 @@ def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None
     write_slide15_acceptance_criteria_page(slide, model.slide15.rows, page_num=1, total_pages=1)
 
 
-def _parse_step_line(line: str) -> Tuple[Optional[str], str]:
-    """Parse a step line into (label, body), supporting **Label:**, **Label**: and Label: formats."""
-    # Match markdown bold label: **Label:** rest or **Label**: rest
-    m_md = re.match(r"^\*\*(.+?):?\*\*:?\s*(.*)$", line)
-    if m_md:
-        label = m_md.group(1).rstrip(":") + ":"
-        body = m_md.group(2)
-        return label, body
-    # Match plain label: Label: rest (where label is reasonable length <= 40 chars and starts with alpha)
-    m_plain = re.match(r"^([A-Za-z0-9][A-Za-z0-9 /–—&'-]{1,40}:)\s*(.*)$", line)
-    if m_plain:
-        label = m_plain.group(1)
-        body = m_plain.group(2)
-        return label, body
-    return None, line
+_parse_step_line = parse_step_line
 
 
 def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 16 How Milestone Acceptance Works visual process diagram with native PowerPoint shapes and SOW-grounded step details (HTL-72)."""
+    """Populate Slide 16 How Milestone Acceptance Works visual flowchart with loop-back and 3 deep-dive cards (HTL-72 / HTL-74 Option C)."""
     # 1. Clear placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
@@ -346,7 +333,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     tf_k.margin_left = 0
     tf_k.margin_right = 0
     p_k = tf_k.paragraphs[0]
-    p_k.text = "PROJECT SUCCESS AGREEMENT"
+    p_k.text = getattr(model.slide16, "kicker", None) or "PROJECT SUCCESS AGREEMENT"
     for r in p_k.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(11)
@@ -362,7 +349,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     tf_t.margin_left = 0
     tf_t.margin_right = 0
     p_t = tf_t.paragraphs[0]
-    p_t.text = "How milestone acceptance works"
+    p_t.text = getattr(model.slide16, "title", None) or "How milestone acceptance works"
     for r in p_t.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(19)
@@ -378,179 +365,198 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     tf_s.margin_left = 0
     tf_s.margin_right = 0
     p_s = tf_s.paragraphs[0]
-    p_s.text = "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
+    p_s.text = getattr(model.slide16, "subtitle", None) or "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
     for r in p_s.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
 
-    # 5. Parse step sequence
-    narrative_text = model.slide16.narrative or "[CONFIRMATION REQUIRED]"
-    paragraphs = [p.strip() for p in narrative_text.split("\n") if p.strip()]
-    parsed_steps = [_parse_step_line(p) for p in paragraphs]
-    num_steps = len(parsed_steps)
+    # -------------------------------------------------------------
+    # 5. Upper Zone: 4-Node Visual Flowchart with Remediation Loop
+    # -------------------------------------------------------------
+    flowchart_top = 1115568  # 1.22 in
+    node_h = 274320         # 0.30 in
+    total_w = 8229600       # 9.00 in
+    node_gap = 219456       # 0.24 in
+    node_w = (total_w - 3 * node_gap) // 4  # 1892832 EMU (2.07 in)
 
-    if num_steps <= 5:
-        # Standard 4-step layout: 4 side-by-side visual process cards with top stage badges and connectors
-        card_top = 1353312   # 1.48 in
-        card_h = 3383280     # 3.70 in
-        total_w = 8229600    # 9.00 in (from left 457200)
-        gap = 146304         # 0.16 in
-        card_w = (total_w - (num_steps - 1) * gap) // num_steps
+    flow_nodes = [
+        "1. Formal Submission",
+        "2. Client Review & SLAs",
+        "3. Decision / Defect Check",
+        "4. Sign-Off & Deemed Accepted",
+    ]
 
-        # Compute font size for cards
-        candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0, 7.5]
-        avail_w_in = card_w / 914400.0 - 0.25
-        avail_h_in = 2.65
-        chosen_sz = 8.0
-        for sz in candidate_sizes:
-            fits = True
-            for label, body in parsed_steps:
-                full_text = f"{label} {body}" if label else body
-                lines = wrap_lines(full_text, width_in=avail_w_in, size_pt=sz)
-                tot_h = lines * sz * 1.15 / 72.0
-                if tot_h > avail_h_in:
-                    fits = False
-                    break
-            if fits:
-                chosen_sz = sz
-                break
+    node_lefts = []
+    for idx, node_title in enumerate(flow_nodes):
+        n_left = 457200 + idx * (node_w + node_gap)
+        node_lefts.append(n_left)
 
-        for idx, (label, body) in enumerate(parsed_steps):
-            c_left = 457200 + idx * (card_w + gap)
+        # Node rounded box
+        node_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, n_left, flowchart_top, node_w, node_h)
+        node_shape.fill.solid()
+        if idx == 2:  # Decision Check
+            node_shape.fill.fore_color.rgb = RGBColor(0x1D, 0x29, 0x39)
+            node_shape.line.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+        elif idx == 3:  # Sign-Off & Deemed Accepted
+            node_shape.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
+            node_shape.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        else:
+            node_shape.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
+            node_shape.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-            # Container card
-            card_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, c_left, card_top, card_w, card_h)
-            card_shape.fill.solid()
-            card_shape.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xFA)
-            card_shape.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
-            card_shape.line.width = Pt(1)
+        tf_node = node_shape.text_frame
+        tf_node.margin_top = 0
+        tf_node.margin_bottom = 0
+        tf_node.margin_left = 0
+        tf_node.margin_right = 0
+        p_node = tf_node.paragraphs[0]
+        p_node.alignment = pptx.enum.text.PP_ALIGN.CENTER
+        r_node = p_node.add_run()
+        r_node.text = node_title
+        r_node.font.name = "Proxima Nova"
+        r_node.font.size = Pt(8.0)
+        r_node.font.bold = True
+        r_node.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
-            # Stage Pill Badge at top of card
-            badge_h = 256032   # 0.28 in
-            badge_inset = 91440
-            badge = slide.shapes.add_shape(
-                MSO_SHAPE.ROUNDED_RECTANGLE,
-                c_left + badge_inset,
-                card_top + badge_inset,
-                card_w - (2 * badge_inset),
-                badge_h,
-            )
-            badge.fill.solid()
-            badge.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
-            badge.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
-            tf_badge = badge.text_frame
-            tf_badge.margin_top = 0
-            tf_badge.margin_bottom = 0
-            tf_badge.margin_left = 0
-            tf_badge.margin_right = 0
-            p_badge = tf_badge.paragraphs[0]
-            p_badge.alignment = pptx.enum.text.PP_ALIGN.CENTER
-            r_badge = p_badge.add_run()
-            r_badge.text = f"STAGE {idx + 1:02d}"
-            r_badge.font.name = "Proxima Nova"
-            r_badge.font.size = Pt(8.5)
-            r_badge.font.bold = True
-            r_badge.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        # Connector arrow to next node
+        if idx < 3:
+            arrow_w = 128016   # 0.14 in
+            arrow_h = 128016   # 0.14 in
+            arrow_l = n_left + node_w + (node_gap - arrow_w) // 2
+            arrow_t = flowchart_top + (node_h - arrow_h) // 2
+            arrow = slide.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, arrow_l, arrow_t, arrow_w, arrow_h)
+            arrow.fill.solid()
+            arrow.fill.fore_color.rgb = RGBColor(0x98, 0xA2, 0xB3)
+            arrow.line.color.rgb = RGBColor(0x98, 0xA2, 0xB3)
 
-            # Content text box
-            tb_top = card_top + badge_h + (2 * badge_inset)
-            tb_h = card_h - (tb_top - card_top) - badge_inset
-            tb = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
-            tf = tb.text_frame
-            tf.word_wrap = True
-            tf.margin_top = 0
-            tf.margin_bottom = 0
-            tf.margin_left = 0
-            tf.margin_right = 0
-            for bpr in tb._element.xpath(".//a:bodyPr"):
-                bpr.set("anchor", "t")
+    # Remediation Loop-Back Band (Returns from Step 3 Decision Check back to Step 1/2)
+    loop_top = flowchart_top + node_h + 27432   # 1.55 in
+    loop_h = 164592                            # 0.18 in
+    loop_left = node_lefts[0] + 73152
+    loop_right = node_lefts[2] + node_w - 73152
+    loop_w = loop_right - loop_left
 
-            p_title = tf.paragraphs[0]
-            p_title.space_before = Pt(2)
-            p_title.space_after = Pt(4)
-            if label:
-                clean_lbl = label.rstrip(":")
-                r_lbl = p_title.add_run()
-                r_lbl.text = f"{clean_lbl}:\n"
-                r_lbl.font.name = "Proxima Nova"
-                r_lbl.font.size = Pt(chosen_sz + 1.5)
-                r_lbl.font.bold = True
-                r_lbl.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+    loop_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, loop_left, loop_top, loop_w, loop_h)
+    loop_shape.fill.solid()
+    loop_shape.fill.fore_color.rgb = RGBColor(0xF2, 0xF4, 0xF7)
+    loop_shape.line.color.rgb = RGBColor(0xD0, 0xD5, 0xDD)
+    loop_shape.line.width = Pt(0.75)
 
-            r_body = p_title.add_run()
-            r_body.text = body
-            r_body.font.name = "Proxima Nova"
-            r_body.font.size = Pt(chosen_sz)
-            r_body.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+    tf_loop = loop_shape.text_frame
+    tf_loop.margin_top = 0
+    tf_loop.margin_bottom = 0
+    tf_loop.margin_left = 0
+    tf_loop.margin_right = 0
+    p_loop = tf_loop.paragraphs[0]
+    p_loop.alignment = pptx.enum.text.PP_ALIGN.CENTER
+    r_loop = p_loop.add_run()
+    r_loop.text = "<- Deficiency Notice / Defect Triage & Remediation Loop (Rework & Resubmit)"
+    r_loop.font.name = "Proxima Nova"
+    r_loop.font.size = Pt(7.0)
+    r_loop.font.bold = True
+    r_loop.font.color.rgb = RGBColor(0x34, 0x40, 0x54)
 
-    else:
-        # Multi-step layout (6-12 steps, e.g. ARC with 12 steps, PGE with 10 steps):
-        # Top 4-stage chevron process pipeline + detailed step cards container below
-        pipeline_top = 1206855   # 1.32 in
-        pipeline_h = 274320      # 0.30 in
-        total_w = 8229600        # 9.00 in
-        chev_gap = 73152         # 0.08 in
-        chev_w = (total_w - 3 * chev_gap) // 4
+    # -------------------------------------------------------------
+    # 6. Lower Zone: 3 Deep-Dive Governance Cards
+    # -------------------------------------------------------------
+    cards = getattr(model.slide16, "cards", None)
+    if not cards:
+        narrative_text = model.slide16.narrative or "[CONFIRMATION REQUIRED]"
+        cards = _build_acceptance_cards(narrative_text)
 
-        pipeline_stages = [
-            "1. Formal Submission",
-            "2. Client Review & SLAs",
-            "3. Defect Triage & Fixes",
-            "4. Sign-off & Certification",
-        ]
-        for c_idx, stage_title in enumerate(pipeline_stages):
-            c_left = 457200 + c_idx * (chev_w + chev_gap)
-            chev = slide.shapes.add_shape(MSO_SHAPE.CHEVRON, c_left, pipeline_top, chev_w, pipeline_h)
-            chev.fill.solid()
-            chev.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33) if c_idx % 2 == 0 else RGBColor(0x1D, 0x29, 0x39)
-            chev.line.color.rgb = RGBColor(0x04, 0x11, 0x33) if c_idx % 2 == 0 else RGBColor(0x1D, 0x29, 0x39)
-            tf_c = chev.text_frame
-            tf_c.margin_top = 0
-            tf_c.margin_bottom = 0
-            tf_c.margin_left = 0
-            tf_c.margin_right = 0
-            p_c = tf_c.paragraphs[0]
-            p_c.alignment = pptx.enum.text.PP_ALIGN.CENTER
-            r_c = p_c.add_run()
-            r_c.text = stage_title
-            r_c.font.name = "Proxima Nova"
-            r_c.font.size = Pt(8.0)
-            r_c.font.bold = True
-            r_c.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    card_top = 1627632   # 1.78 in
+    card_h = 3154680     # 3.45 in  (bottom = 5.23 in <= 5.25 in ceiling)
+    gap = 146304         # 0.16 in
+    card_w = (total_w - 2 * gap) // 3  # 2645664 EMU (2.893 in)
 
-        # Body container below pipeline (Top = 1.68 in, Height = 3.42 in, Bottom = 5.10 in / 367.2 pt)
-        body_top = 1536192       # 1.68 in
-        body_h = 3127248         # 3.42 in
-        pad_lr = 91440           # 0.10 in
-        pad_tb = 73152           # 0.08 in
+    badge_h = 201168     # 0.22 in
+    badge_inset = 64008  # 0.07 in
 
-        candidate_sizes = [9.5, 9.0, 8.5, 8.0, 7.5, 7.0]
-        space_after_pt = 1.5 if len(parsed_steps) >= 9 else (2.5 if len(parsed_steps) >= 6 else 4.0)
-        line_spacing = 1.05
+    cat_top = card_top + badge_h + badge_inset + 18288  # +0.02 in
+    cat_h = 164592                                      # 0.18 in
+    tb_top = cat_top + cat_h + 18288                    # +0.02 in
+    tb_h = card_h - (tb_top - card_top) - badge_inset
+    avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.75 in
+    avail_h_pt = tb_h / 12700.0                        # ~206.6 pt
 
-        avail_w_in = (total_w - 2 * pad_lr) / 914400.0  # 8.80 in
-        avail_h_pt = (body_h - 2 * pad_tb) / 12700.0   # 234.7 pt
+    # Pass 1: Compute one shared font size across all 3 cards based on the densest card
+    candidate_sizes = [8.5, 8.0, 7.5, 7.0, 6.5, 6.0, 5.5]
+    line_spacing = 1.02
 
-        chosen_sz = 7.5
+    card_best_sizes = []
+    for card in cards[:3]:
+        space_after_pt = 1.0 if len(card.steps) >= 5 else (1.5 if len(card.steps) >= 4 else 2.0)
+        c_sz = candidate_sizes[-1]
         for sz in candidate_sizes:
             tot_h = 0.0
-            for label, body in parsed_steps:
-                full_line = f"{label} {body}" if label else body
-                lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=sz, char_width_factor=0.52)
+            for label, body in card.steps:
+                clean_lbl = label.rstrip(" :") if label else ""
+                full_line = f"{clean_lbl}: {body}" if clean_lbl else body
+                lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=sz, char_width_factor=0.55)
                 tot_h += lines * sz * line_spacing + space_after_pt
-            if tot_h <= (avail_h_pt - 10.0):
-                chosen_sz = sz
+            if tot_h <= (avail_h_pt - 4.0):
+                c_sz = sz
                 break
+        card_best_sizes.append(c_sz)
 
-        # Container card background
-        card_bg = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, 457200, body_top, total_w, body_h)
-        card_bg.fill.solid()
-        card_bg.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xFA)
-        card_bg.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
-        card_bg.line.width = Pt(1)
+    shared_sz = min(card_best_sizes) if card_best_sizes else candidate_sizes[-1]
 
-        body_box = slide.shapes.add_textbox(457200 + pad_lr, body_top + pad_tb, total_w - 2 * pad_lr, body_h - 2 * pad_tb)
+    # Pass 2: Render all 3 cards with the uniform shared font size
+    for c_idx, card in enumerate(cards[:3]):
+        c_left = 457200 + c_idx * (card_w + gap)
+
+        # Container Card Background
+        bg_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, c_left, card_top, card_w, card_h)
+        bg_card.fill.solid()
+        bg_card.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xFA)
+        bg_card.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
+        bg_card.line.width = Pt(1)
+
+        # Stage Pill Badge at Top of Card
+        badge = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            c_left + badge_inset,
+            card_top + badge_inset,
+            card_w - (2 * badge_inset),
+            badge_h,
+        )
+        badge.fill.solid()
+        badge.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
+        badge.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        tf_badge = badge.text_frame
+        tf_badge.margin_top = 0
+        tf_badge.margin_bottom = 0
+        tf_badge.margin_left = 0
+        tf_badge.margin_right = 0
+        p_badge = tf_badge.paragraphs[0]
+        p_badge.alignment = pptx.enum.text.PP_ALIGN.CENTER
+        r_badge = p_badge.add_run()
+        r_badge.text = card.stage_label
+        r_badge.font.name = "Proxima Nova"
+        r_badge.font.size = Pt(8.0)
+        r_badge.font.bold = True
+        r_badge.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+        # Category Title Box below badge
+        cat_box = slide.shapes.add_textbox(c_left + badge_inset, cat_top, card_w - (2 * badge_inset), cat_h)
+        tf_cat = cat_box.text_frame
+        tf_cat.word_wrap = True
+        tf_cat.margin_top = 0
+        tf_cat.margin_bottom = 0
+        tf_cat.margin_left = 0
+        tf_cat.margin_right = 0
+        p_cat = tf_cat.paragraphs[0]
+        r_cat = p_cat.add_run()
+        r_cat.text = card.title
+        r_cat.font.name = "Proxima Nova"
+        r_cat.font.size = Pt(8.0)
+        r_cat.font.bold = True
+        r_cat.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+
+        # Content Text Box
+        space_after_pt = 1.0 if len(card.steps) >= 5 else (1.5 if len(card.steps) >= 4 else 2.0)
+        body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
         tf_b.margin_top = 0
@@ -560,31 +566,32 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         for bpr in body_box._element.xpath(".//a:bodyPr"):
             bpr.set("anchor", "t")
 
-        for p_idx, (label, body) in enumerate(parsed_steps):
+        for p_idx, (label, body) in enumerate(card.steps):
             p_elem = tf_b.paragraphs[0] if p_idx == 0 else tf_b.add_paragraph()
             p_elem.space_before = Pt(0)
             p_elem.space_after = Pt(space_after_pt)
             p_elem.line_spacing = line_spacing
 
             if label:
+                clean_lbl = label.rstrip(" :")
                 lead_run = p_elem.add_run()
-                lead_run.text = f"{label} "
+                lead_run.text = f"{clean_lbl}: "
                 lead_run.font.name = "Proxima Nova"
-                lead_run.font.size = Pt(chosen_sz)
+                lead_run.font.size = Pt(shared_sz)
                 lead_run.font.bold = True
                 lead_run.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
                 rest_run = p_elem.add_run()
                 rest_run.text = body
                 rest_run.font.name = "Proxima Nova"
-                rest_run.font.size = Pt(chosen_sz)
+                rest_run.font.size = Pt(shared_sz)
                 rest_run.font.bold = False
                 rest_run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
             else:
                 run = p_elem.add_run()
                 run.text = body
                 run.font.name = "Proxima Nova"
-                run.font.size = Pt(chosen_sz)
+                run.font.size = Pt(shared_sz)
                 run.font.bold = False
                 run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
