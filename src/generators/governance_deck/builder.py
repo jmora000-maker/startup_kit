@@ -2,6 +2,7 @@
 
 import re
 from typing import Dict, List, Optional, Tuple
+from src.config import sanitize_financial_text
 from src.core.models import StartupKitBaseline
 from src.generators.kit_values import kit_header_values
 from src.generators.onboarding_deck.textrules import is_placeholder_text
@@ -15,6 +16,7 @@ from src.generators.client_deck.builder import (
     build_slide15_model as client_build_slide15_model,
 )
 from src.generators.governance_deck.spec import (
+    AcceptanceCardData,
     AcceptanceCriterionRow,
     ApproachCard,
     GovernanceDeckModel,
@@ -111,25 +113,134 @@ def build_slide15_model(
 
 
 def _sanitize_no_dollars(text: str) -> str:
-    """Sanitize dollar amounts and financial figures from acceptance process text."""
+    """Sanitize dollar amounts and financial figures from acceptance process text (HTL-74 / HTL-77)."""
     if not text:
         return text
-    # Remove phrases like 'of $19,650.00', 'the $19,650.00', or standalone '$19,650.00'
-    cleaned = re.sub(r'\b(?:of\s+|the\s+)?\$[\d,]+(?:\.\d{2})?\s*', '', text)
-    # Clean up double spaces or awkward punctuation left over
-    cleaned = re.sub(r'\s+([,\.])', r'\1', cleaned)
-    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    # Run full financial text sanitizer
+    cleaned = sanitize_financial_text(text)
+    # Ensure any remaining stray dollar figures or currency symbols are stripped
+    cleaned = re.sub(r'(?:\$|€|£|¥)\s*[\d,]+(?:\.\d+)?\s*', '', cleaned)
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+    cleaned = re.sub(r'\s+([,.:;])', r'\1', cleaned)
     return cleaned.strip()
 
 
+# Classification Taxonomy Constants (HTL-74 Option C)
+CARD_1_LABELS = {
+    "inputs ready", "prerequisites", "execution", "execution and tracking",
+    "delivery", "submission", "formal submission", "review", "client review",
+    "review period", "review and slas", "deliverable-specific rules", "acceptance period", "evaluation"
+}
+
+CARD_2_LABELS = {
+    "triage", "defect triage", "non-conformance", "deficiency", "defect notice",
+    "remediation", "remedy", "rework", "rework limit", "repeated attempts",
+    "cure period", "cure", "rejection", "rejection path"
+}
+
+CARD_3_LABELS = {
+    "deemed accepted", "deemed acceptance", "passive acceptance", "sign-off",
+    "sign-off and invoicing", "certification", "acceptance certification",
+    "next gate", "billing gate", "invoicing", "exceptions", "change orders",
+    "escalation", "dispute", "dispute protocols"
+}
+
+
+def parse_step_line(line: str) -> Tuple[Optional[str], str]:
+    """Parse a step line into (label, body), supporting **Label:**, **Label**: and Label: formats."""
+    m_md = re.match(r"^\*\*(.+?):?\*\*:?\s*(.*)$", line)
+    if m_md:
+        label = m_md.group(1).rstrip(":") + ":"
+        body = m_md.group(2)
+        return label, body
+    m_plain = re.match(r"^([A-Za-z0-9][A-Za-z0-9 /–—&'-]{1,40}:)\s*(.*)$", line)
+    if m_plain:
+        label = m_plain.group(1)
+        body = m_plain.group(2)
+        return label, body
+    return None, line
+
+
+def _classify_acceptance_step(label: Optional[str], body: str) -> int:
+    """Classify a narrative step into Card 1, 2, or 3 using label-first exact matching,
+    followed by phrasal word-boundary regexes, avoiding bare substring collisions (HTL-74)."""
+    clean_lbl = label.lower().strip(" :*#_-") if label else ""
+    if clean_lbl in CARD_1_LABELS:
+        return 1
+    if clean_lbl in CARD_2_LABELS:
+        return 2
+    if clean_lbl in CARD_3_LABELS:
+        return 3
+
+    full_text = f"{clean_lbl} {body}".lower()
+    if re.search(r'\b(defect|non-conformance|deficiency|remediation|rework|cure period|rejection)\b', full_text):
+        return 2
+    if re.search(r'\b(deemed accept|passive accept|sign-off|certification|invoice trigger|change order|dispute|escalation)\b', full_text):
+        return 3
+    if re.search(r'\b(inputs ready|prerequisite|submission|deliverable-specific|review window|review period|acceptance period|review session)\b', full_text):
+        return 1
+    return 1
+
+
+def _build_acceptance_cards(narrative_text: str) -> List[AcceptanceCardData]:
+    """Partition narrative steps into 3 structured acceptance cards with balanced fallback guarantees (HTL-74)."""
+    paragraphs = [p.strip() for p in narrative_text.split("\n") if p.strip()]
+    parsed_steps = [parse_step_line(p) for p in paragraphs]
+
+    c1_steps: List[Tuple[Optional[str], str]] = []
+    c2_steps: List[Tuple[Optional[str], str]] = []
+    c3_steps: List[Tuple[Optional[str], str]] = []
+
+    for label, body in parsed_steps:
+        target = _classify_acceptance_step(label, body)
+        if target == 1:
+            c1_steps.append((label, body))
+        elif target == 2:
+            c2_steps.append((label, body))
+        elif target == 3:
+            c3_steps.append((label, body))
+
+    # Balanced fallback guarantee: If SOW narrative was silent on triage/rework, populate Card 2 with standard contractual defaults
+    if not c2_steps:
+        c2_steps.append(("Defect Notice:", "Client provides specific written notice identifying non-conformance details and required modifications."))
+        c2_steps.append(("Remediation:", "Toptal applies commercially reasonable efforts to modify non-conforming items and resubmits for client review."))
+
+    # If Card 1 or Card 3 are empty for any unusual sparse narrative, provide clean baseline fallbacks
+    if not c1_steps:
+        c1_steps.append(("Submission:", "Delivery package formally submitted to client approver initiating acceptance review period."))
+    if not c3_steps:
+        c3_steps.append(("Sign-off:", "Formal certification or deemed acceptance authorises milestone completion and billing gate progression."))
+
+    return [
+        AcceptanceCardData(
+            stage_label="STAGE 01 & 02",
+            title="SUBMISSION & REVIEW PROTOCOLS",
+            steps=c1_steps,
+        ),
+        AcceptanceCardData(
+            stage_label="STAGE 03",
+            title="DEFECT TRIAGE & REMEDIATION",
+            steps=c2_steps,
+        ),
+        AcceptanceCardData(
+            stage_label="STAGE 04",
+            title="SIGN-OFF & CONTRACTUAL CLOSURE",
+            steps=c3_steps,
+        ),
+    ]
+
+
 def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrativeModel:
-    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis (HTL-72)."""
+    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis and 3-card classification (HTL-72 / HTL-74)."""
     sow = baseline.sow_interpretation
     # Tier 1: LLM synthesized acceptance process narrative
     if sow and sow.acceptance_process_narrative and sow.acceptance_process_narrative.strip():
+        narrative = _sanitize_no_dollars(sow.acceptance_process_narrative.strip())
+        cards = _build_acceptance_cards(narrative)
         return Slide16AcceptanceNarrativeModel(
-            narrative=_sanitize_no_dollars(sow.acceptance_process_narrative.strip()),
+            narrative=narrative,
             tier="Tier 1",
+            cards=cards,
         )
 
     # Tier 2: Deterministic grounded fallback
@@ -191,7 +302,13 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
     steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
 
     narrative = "\n".join(steps)
-    return Slide16AcceptanceNarrativeModel(narrative=_sanitize_no_dollars(narrative), tier="Tier 2")
+    clean_narrative = _sanitize_no_dollars(narrative)
+    cards = _build_acceptance_cards(clean_narrative)
+    return Slide16AcceptanceNarrativeModel(
+        narrative=clean_narrative,
+        tier="Tier 2",
+        cards=cards,
+    )
 
 
 def build_slide17_model(

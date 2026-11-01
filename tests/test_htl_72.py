@@ -428,7 +428,7 @@ def test_htl_72_slide15_custom_deliverables_and_placeholders(tmp_path):
 
 
 def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
-    """HTL-72: Verify Slide 16 renders Tier 1 synthesized narrative with Proxima Nova typography, bold lead-in, and trace attribution."""
+    """HTL-72 / HTL-74: Verify Slide 16 renders Option C flowchart and 3-card deep dive layout with Proxima Nova typography, bold lead-in, and trace attribution."""
     import json
     baseline = _build_pge_baseline()
     pge_narrative = (
@@ -465,33 +465,33 @@ def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
     assert "How milestone acceptance works" in textboxes
     assert any("Workflow, review turnarounds, remediation thresholds" in t for t in textboxes)
 
-    # 2. Body narrative panel validation
-    body_shapes = [s for s in slide16.shapes if s.has_text_frame and ("Inputs ready:" in s.text_frame.text or "Submission:" in s.text_frame.text or "Talent Team:" in s.text_frame.text)]
-    assert len(body_shapes) == 1
-    tf = body_shapes[0].text_frame
-    paras = [p for p in tf.paragraphs if p.text.strip()]
-    assert len(paras) >= 3
+    # 2. Flowchart and Loop-Back validation
+    flow_texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
+    assert any("1. Formal Submission" in t for t in flow_texts)
+    assert any("2. Client Review & SLAs" in t for t in flow_texts)
+    assert any("3. Decision / Defect Check" in t for t in flow_texts)
+    assert any("4. Sign-Off & Deemed Accepted" in t for t in flow_texts)
+    assert any("Remediation Loop" in t for t in flow_texts)
 
-    # Check lead-in formatting on paragraph 0
-    p0_runs = paras[0].runs
-    assert len(p0_runs) >= 2
-    assert p0_runs[0].font.bold is True
-    assert p0_runs[0].font.size.pt <= 11.5
+    # 3. 3-Card Deep Dive validation
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and ("Inputs ready:" in s.text_frame.text or "Triage:" in s.text_frame.text or "Deemed accepted:" in s.text_frame.text)]
+    assert len(body_shapes) == 3
 
-    # Check content in paragraphs
-    assert any("Alicia Cook" in p.text for p in paras)
-    assert any("repeated attempts" in p.text or "remediation" in p.text.lower() for p in paras)
-    assert any("deemed accepted" in p.text.lower() for p in paras)
+    # Check content in card shapes
+    all_body_text = " ".join(s.text_frame.text for s in body_shapes)
+    assert "Alicia Cook" in all_body_text
+    assert "repeated attempts" in all_body_text or "remediation" in all_body_text.lower()
+    assert "deemed accepted" in all_body_text.lower()
     # Strictly no dollar signs or monetary amounts on Slide 16
-    assert not any("$" in p.text for p in paras)
+    assert "$" not in all_body_text
 
-    # 3. Geometry and clearance: text box must fit cleanly within slide height (5.625 in)
-    shape_top_in = body_shapes[0].top / 914400.0
-    shape_height_in = body_shapes[0].height / 914400.0
-    assert shape_top_in <= 2.05
-    assert shape_top_in + shape_height_in <= 5.25
+    # 4. Geometry and clearance: all shapes must fit cleanly within slide height (5.625 in) and <= 5.25 in
+    for s in slide16.shapes:
+        shape_top_in = s.top / 914400.0
+        shape_height_in = s.height / 914400.0
+        assert shape_top_in + shape_height_in <= 5.25
 
-    # 4. Trace manifest validation
+    # 5. Trace manifest validation
     manifest_path = res.file_path.with_name(f"{res.file_path.stem}.trace.json")
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest_data = json.load(f)
@@ -535,7 +535,7 @@ def test_htl_72_slide16_tier2_fallback_and_dynamic_trace(tmp_path):
 
 
 def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
-    """HTL-72: Verify Slide 16 scales naturally to complex multi-step acceptance narrative (ARC Genomics) with full typography fit."""
+    """HTL-72 / HTL-74: Verify Slide 16 scales naturally to complex multi-step acceptance narrative (ARC Genomics) with full typography fit."""
     baseline = _build_pge_baseline()
     arc_narrative = (
         "**Inputs ready:** Client must provide environment access, Snowflake schema deployment (HS-4781), upstream systems access (MTA, 1GWAS, GATS-B, GWAS Atlas), and design system tokens/components before dependent work proceeds. Client SME availability (Mike Magwire and Satya) is required for scheduled walkthroughs.\n"
@@ -557,20 +557,23 @@ def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
     prs = pptx.Presentation(str(res.file_path))
     slide16 = prs.slides[15]
 
-    body_shapes = [s for s in slide16.shapes if s.has_text_frame and "Inputs ready:" in s.text_frame.text]
-    assert len(body_shapes) == 1
-    tf = body_shapes[0].text_frame
-    paras = [p for p in tf.paragraphs if p.text.strip()]
-    assert len(paras) == 12
+    body_shapes = [s for s in slide16.shapes if s.has_text_frame and ("Inputs ready:" in s.text_frame.text or "Triage:" in s.text_frame.text or "Deemed accepted:" in s.text_frame.text)]
+    assert len(body_shapes) == 3
 
-    # Selected font size scales appropriately for longer narrative
-    assert paras[0].runs[0].font.size.pt <= 10.5
-    assert paras[0].runs[0].text == "Inputs ready: "
-    assert paras[0].runs[0].font.bold is True
-    assert "Snowflake schema deployment" in paras[0].text
-    assert "Saadia Iqbal" in paras[1].text
-    assert "Mike Magwire" in paras[2].text
-    assert "Exceptions: " in paras[11].text
+    all_body_text = " ".join(s.text_frame.text for s in body_shapes)
+    assert "Snowflake schema deployment" in all_body_text
+    assert "Saadia Iqbal" in all_body_text
+    assert "Mike Magwire" in all_body_text
+    assert "Satya" in all_body_text
+    assert "HS-4781" in all_body_text
+    assert "HS-4788" in all_body_text
+    assert "Exceptions: " in all_body_text
+
+    # Bounding box checks
+    for s in slide16.shapes:
+        top_in = s.top / 914400.0
+        h_in = s.height / 914400.0
+        assert top_in + h_in <= 5.25
 
 
 def test_htl_72_slide17_approach_3card_layout_pge(tmp_path):

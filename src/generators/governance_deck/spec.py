@@ -1,7 +1,7 @@
 """Data specification for PS Governance Kickoff Deck generator (HTL-72)."""
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from src.generators.governance_deck.trace import GovernanceDeckTraceManifest
 
 
@@ -53,10 +53,25 @@ class Slide15AcceptanceCriteriaModel:
 
 
 @dataclass
+class AcceptanceCardData:
+    """One governance deep-dive card on Slide 16 (HTL-74 Option C)."""
+    title: str
+    stage_label: str
+    steps: List[Tuple[Optional[str], str]] = field(default_factory=list)
+
+
+@dataclass
 class Slide16AcceptanceNarrativeModel:
-    """Model for Slide 16 (How Milestone Acceptance Works - Phase 2)."""
+    """Model for Slide 16 (How Milestone Acceptance Works - Phase 2 / HTL-74 Option C)."""
+    kicker: str = "PROJECT SUCCESS AGREEMENT"
+    title: str = "How milestone acceptance works"
+    subtitle: str = "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
     narrative: str = ""
     tier: str = "Tier 1"
+    cards: List[AcceptanceCardData] = field(default_factory=list)
+
+
+Slide16Data = Slide16AcceptanceNarrativeModel
 
 
 @dataclass
