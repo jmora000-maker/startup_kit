@@ -197,39 +197,70 @@ def sanitize_financial_text(text: Optional[str]) -> str:
     return s
 
 
+def _clean_env_str(val: Optional[str], default: str = "") -> str:
+    """HTL-87: Strip leading/trailing whitespace and control characters (including \\r/\\n) from environment variables."""
+    if val is None:
+        return default
+    return val.strip()
+
+
 @dataclass
 class AppConfig:
     inputs_dir: Path = Path(os.getenv("INPUTS_DIR", "inputs"))
     mock_inputs_dir: Path = Path(os.getenv("MOCK_INPUTS_DIR", "tests/fixtures/sow/mock_sow/inputs"))
     output_dir: Path = Path(os.getenv("OUTPUT_DIR", "output"))
     mock_output_dir: Path = Path(os.getenv("MOCK_OUTPUT_DIR", "output/Reports/Test"))
-    default_provider: str = os.getenv("LLM_PROVIDER", "anthropic").lower()
-    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    default_provider: str = _clean_env_str(os.getenv("LLM_PROVIDER"), "anthropic").lower()
+    anthropic_api_key: str = _clean_env_str(os.getenv("ANTHROPIC_API_KEY"), "")
     anthropic_model: str = resolve_anthropic_model(os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5"))
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o")
+    openai_api_key: str = _clean_env_str(os.getenv("OPENAI_API_KEY"), "")
+    openai_model: str = _clean_env_str(os.getenv("OPENAI_MODEL"), "gpt-4o")
     temperature: float = float(os.getenv("TEMPERATURE", os.getenv("OPENAI_TEMPERATURE", "0.0")))
-    default_governance_tier: str = os.getenv("DEFAULT_GOVERNANCE_TIER", "Partnered")
-    default_contract_type: str = os.getenv("DEFAULT_CONTRACT_TYPE", "Time and Materials")
+    default_governance_tier: str = _clean_env_str(os.getenv("DEFAULT_GOVERNANCE_TIER"), "Partnered")
+    default_contract_type: str = _clean_env_str(os.getenv("DEFAULT_CONTRACT_TYPE"), "Time and Materials")
     max_tokens: int = int(os.getenv("MAX_TOKENS", "16384"))
-    llm_cache_mode: str = os.getenv("LLM_CACHE_MODE", "off").lower()
+    llm_cache_mode: str = _clean_env_str(os.getenv("LLM_CACHE_MODE"), "off").lower()
     llm_cache_dir: Path = Path(os.getenv("LLM_CACHE_DIR", "tests/fixtures/llm_cache"))
     # HTL-13: which ReviewStorage backend a paused review run is persisted through, mirroring
     # LLM_PROVIDER and LLM_CACHE_MODE's existing pattern ("local" or "gcp"; "local" is the default
     # everywhere except a deployed Cloud Run instance, HTL-14).
-    review_storage_backend: str = os.getenv("REVIEW_STORAGE_BACKEND", "local").lower()
+    review_storage_backend: str = _clean_env_str(os.getenv("REVIEW_STORAGE_BACKEND"), "local").lower()
     deck_template_path: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
     client_deck_template_path: Path = Path(os.getenv("CLIENT_DECK_TEMPLATE_PATH", "templates/Project_Kickoff_Deck_TEMPLATE.pptx"))
     governance_deck_template_path: Path = Path(os.getenv("GOVERNANCE_DECK_TEMPLATE_PATH", "templates/PS_Governance Kickoff_TEMPLATE.pptx"))
-    # HTL-27: the app's "Advanced (admin)" section passphrase. In production this is read from a
-    # Secret Manager value exposed as this same environment variable; for local development, when
-    # the variable is unset, it falls back to a clear, documented, non-secret placeholder (never a
-    # hardcoded real secret) so a developer can still reach the admin section locally.
-    admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "dev-only-change-me")
-    # HTL-46: the app's shared generation passphrase gate protecting billed LLM generation actions.
-    # In production this is read from Secret Manager (generation-passphrase); for local development,
-    # when unset, it falls back to a distinct placeholder that never collides with admin_passphrase.
-    generation_passphrase: str = os.getenv("GENERATION_PASSPHRASE", "dev-generation-only-change-me")
+    # HTL-27 / HTL-87: the app's "Advanced (admin)" section passphrase. In production this is read from a
+    # Secret Manager value exposed as this same environment variable; surrounding whitespace/control chars
+    # are stripped at load time.
+    admin_passphrase: str = _clean_env_str(os.getenv("ADMIN_PASSPHRASE"), "dev-only-change-me")
+    # HTL-46 / HTL-87: the app's shared generation passphrase gate protecting billed LLM generation actions.
+    # In production this is read from Secret Manager (generation-passphrase); surrounding whitespace/control chars
+    # are stripped at load time.
+    generation_passphrase: str = _clean_env_str(os.getenv("GENERATION_PASSPHRASE"), "dev-generation-only-change-me")
+
+    def __post_init__(self) -> None:
+        """HTL-87: Strip whitespace and control characters from all secret and string fields upon instantiation."""
+        if isinstance(self.anthropic_api_key, str):
+            self.anthropic_api_key = self.anthropic_api_key.strip()
+        if isinstance(self.openai_api_key, str):
+            self.openai_api_key = self.openai_api_key.strip()
+        if isinstance(self.admin_passphrase, str):
+            self.admin_passphrase = self.admin_passphrase.strip()
+        if isinstance(self.generation_passphrase, str):
+            self.generation_passphrase = self.generation_passphrase.strip()
+        if isinstance(self.default_provider, str):
+            self.default_provider = self.default_provider.strip().lower()
+        if isinstance(self.anthropic_model, str):
+            self.anthropic_model = self.anthropic_model.strip()
+        if isinstance(self.openai_model, str):
+            self.openai_model = self.openai_model.strip()
+        if isinstance(self.default_governance_tier, str):
+            self.default_governance_tier = self.default_governance_tier.strip()
+        if isinstance(self.default_contract_type, str):
+            self.default_contract_type = self.default_contract_type.strip()
+        if isinstance(self.llm_cache_mode, str):
+            self.llm_cache_mode = self.llm_cache_mode.strip().lower()
+        if isinstance(self.review_storage_backend, str):
+            self.review_storage_backend = self.review_storage_backend.strip().lower()
 
 
 DECK_TEMPLATE_PATH: Path = Path(os.getenv("DECK_TEMPLATE_PATH", "templates/Toptal_Presentation_Template.pptx"))
