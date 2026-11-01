@@ -116,25 +116,10 @@ def _format_table_cell(
 
 
 def write_slide1(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 1 [Client Name] and [Project Name] placeholders with deterministic text-fitting (HTL-49)."""
-    candidate_sizes = [28.0, 24.0, 22.0, 20.0, 18.0, 16.0, 14.0]
+    """Populate Slide 1 [Client Name] and [Project Name] placeholders at flat 24pt (HTL-72 / HTL-85)."""
+    title_sz = 24.0
     client_name = model.slide1.client_name or "Client"
     project_name = model.slide1.project_name or "Project Baseline"
-
-    # Composite text for title line-wrapping and height estimation
-    composite_title = f"{client_name}\n{project_name} Kickoff"
-
-    # Available geometry on Slide 1:
-    # Title box top = 2.97 in (2,712,227 EMUs), Subtitle box top = 4.54 in (4,153,150 EMUs).
-    # Total distance between title top and subtitle top is 1.576 in.
-    # Leaving an explicit 0.15 in visual separation buffer above the subtitle yields max_height_in = 1.42 in.
-    title_sz, _ = select_fitting_font_size(
-        composite_title,
-        width_in=3.30,
-        max_height_in=1.42,
-        candidate_sizes=candidate_sizes,
-        is_bold=True,
-    )
 
     for shape in slide.shapes:
         if not shape.has_text_frame:

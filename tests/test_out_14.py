@@ -949,7 +949,7 @@ def test_htl_48_end_to_end_real_failing_deck_generation(sample_real_failing_clie
 # =========================================================================
 
 def test_htl_49_slide1_long_names_deterministic_fit(tmp_path):
-    """HTL-49: Slide 1 strips native normAutofit, applies deterministic font scaling, and prevents subtitle overlap."""
+    """HTL-49 / HTL-85: Slide 1 strips native normAutofit, applies flat 24pt font sizing, and prevents subtitle overlap."""
     baseline = StartupKitBaseline(
         project_name="Pilot-Ready Product Implementation",
         charter=ProjectStartupCharter(
@@ -972,14 +972,13 @@ def test_htl_49_slide1_long_names_deterministic_fit(tmp_path):
     assert len(body_pr.xpath("./a:noAutofit")) == 1
     assert body_pr.get("anchor") == "t"
 
-    # Runs must have explicit font sizing and styling
+    # Runs must have explicit flat 24pt font sizing and styling (HTL-85)
     for p in title_shape.text_frame.paragraphs:
         for r in p.runs:
             assert r.font.name == "Proxima Nova"
             assert r.font.size is not None
-            # Font stepped down to fit available 1.42 in vertical clearance
-            assert r.font.size.pt <= 22.0
-            assert r.font.size.pt >= 14.0
+            assert r.font.size.pt == 24.0
+            assert r.font.size == 304800
 
     # Subtitle shape (Shape 1, ID 93) must remain intact and positioned below title area
     sub_shape = next(s for s in slide1.shapes if s.shape_id == 93 or (s.has_text_frame and "Aligning on outcomes" in s.text_frame.text))
@@ -987,7 +986,7 @@ def test_htl_49_slide1_long_names_deterministic_fit(tmp_path):
 
 
 def test_htl_49_slide1_short_names_fit(rich_client_deck_baseline, tmp_path):
-    """HTL-49: Short client and project names scale appropriately without native normAutofit."""
+    """HTL-49 / HTL-85: Short client and project names render at flat 24pt without native normAutofit."""
     out_file = tmp_path / "htl49_slide1_short.pptx"
     model = build_client_deck_model(rich_client_deck_baseline)
     write_client_deck(model, out_file)
@@ -1003,7 +1002,8 @@ def test_htl_49_slide1_short_names_fit(rich_client_deck_baseline, tmp_path):
     for p in title_shape.text_frame.paragraphs:
         for r in p.runs:
             assert r.font.size is not None
-            assert r.font.size.pt >= 18.0
+            assert r.font.size.pt == 24.0
+            assert r.font.size == 304800
 
 
 # =========================================================================

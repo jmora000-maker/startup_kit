@@ -39,7 +39,12 @@ logger = logging.getLogger(__name__)
 DEMO_FIXTURE_LABEL = review.DEMO_FIXTURE_OPTION
 
 
-def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> None:
+def _render_field(
+    field: review.FactField,
+    store_name: str,
+    key_prefix: str,
+    cat_defaults: Optional[Dict[str, str]] = None,
+) -> None:
     st.markdown(f"**{field.label}**")
     if field.context:
         st.caption(field.context)
@@ -74,8 +79,21 @@ def _render_field(field: review.FactField, store_name: str, key_prefix: str) -> 
         st.text_area("Your value", value=current, key=widget_key, on_change=on_change)
     else:
         if field.key in ("project_identity.project_name", "project_identity.client_name"):
-            proj_cur = state_persistence.persisted_value(store_name, "project_identity.project_name", "")
-            client_cur = state_persistence.persisted_value(store_name, "project_identity.client_name", "")
+            defaults = cat_defaults or {}
+            proj_default = defaults.get(
+                "project_identity.project_name",
+                field.value if field.key == "project_identity.project_name" else "",
+            )
+            client_default = defaults.get(
+                "project_identity.client_name",
+                field.value if field.key == "project_identity.client_name" else "",
+            )
+            proj_cur = state_persistence.persisted_value(
+                store_name, "project_identity.project_name", proj_default
+            )
+            client_cur = state_persistence.persisted_value(
+                store_name, "project_identity.client_name", client_default
+            )
             comb_len = len((proj_cur or "").strip()) + len((client_cur or "").strip())
             if comb_len > 60:
                 st.caption(
@@ -203,9 +221,21 @@ def _render_fact_review_page() -> None:
         with st.expander(cat.title, expanded=False):
             if cat.note:
                 st.info(cat.note)
+            cat_field_defaults = {f.key: f.value for f in cat.fields}
             if cat.key == "project_identity":
-                proj_cur = state_persistence.persisted_value(store_name, "project_identity.project_name", "")
-                client_cur = state_persistence.persisted_value(store_name, "project_identity.client_name", "")
+                proj_cur = state_persistence.persisted_value(
+                    store_name,
+                    "project_identity.project_name",
+                    cat_field_defaults.get("project_identity.project_name", baseline.project_name or ""),
+                )
+                client_cur = state_persistence.persisted_value(
+                    store_name,
+                    "project_identity.client_name",
+                    cat_field_defaults.get(
+                        "project_identity.client_name",
+                        (baseline.charter.client_name if baseline.charter else "") or "",
+                    ),
+                )
                 comb_len = len((proj_cur or "").strip()) + len((client_cur or "").strip())
                 if comb_len > 60:
                     st.warning(
@@ -215,7 +245,12 @@ def _render_fact_review_page() -> None:
                     )
             for field in cat.fields:
                 with st.container(border=True):
-                    _render_field(field, store_name=store_name, key_prefix=key_prefix)
+                    _render_field(
+                        field,
+                        store_name=store_name,
+                        key_prefix=key_prefix,
+                        cat_defaults=cat_field_defaults if cat.key == "project_identity" else None,
+                    )
             note_field_key = f"note::{cat.key}"
             note_widget_key = f"{key_prefix}::note::{cat.key}"
             note_current = state_persistence.persisted_value(store_name, note_field_key, "")
