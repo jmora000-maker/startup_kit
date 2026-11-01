@@ -39,6 +39,16 @@ logger = logging.getLogger(__name__)
 DEMO_FIXTURE_LABEL = review.DEMO_FIXTURE_OPTION
 
 
+def _is_trace_file(filename: str) -> bool:
+    """HTL-86: Identify per-deck trace manifest files that should only be downloadable when unlocked."""
+    clean = Path(filename).name
+    return (
+        clean.endswith(".trace.json")
+        or clean.endswith("_trace.json")
+        or clean.endswith("_Deck_Trace_Manifest.json")
+    )
+
+
 def _render_field(
     field: review.FactField,
     store_name: str,
@@ -202,6 +212,12 @@ def _render_fact_review_page() -> None:
             "generated": "Completed",
         }.get(run.state, run.state)
         st.caption(f"Project Run ID: `{selected_run_id}` | Status: **{state_display}**")
+
+    generate_page._render_admin_gate(
+        "fact_review",
+        caption_unlocked="Unlocked: Diagnostic trace files are available for download below.",
+        caption_locked="Standard review controls are shown below. Enter administrator passphrase to unlock diagnostic trace files and developer tools.",
+    )
 
     st.subheader(baseline.project_name)
 
@@ -390,33 +406,40 @@ def _render_fact_review_page() -> None:
                     generated_references = {p.name: str(p) for p in existing_files}
 
     if generated_references:
-        st.caption("Download generated files (each button saves the named file via your browser's own download)")
-        for filename, ref_path_str in generated_references.items():
-            clean_filename = Path(filename).name
-            try:
-                file_bytes = (
-                    storage.get_file_bytes(selected_run_id, ref_path_str)
-                    if not is_fixture
-                    else Path(ref_path_str).read_bytes()
-                )
-            except Exception as exc:
-                file_bytes = None
-                logger.warning(
-                    "Could not load '%s' for run '%s': %s",
-                    clean_filename,
-                    selected_run_id,
-                    exc,
-                )
-                st.warning(f"Could not load '{clean_filename}' for download: {exc}")
-            if file_bytes is not None:
-                label = review.label_for_generated_file(clean_filename)
-                st.download_button(
-                    label=f"Download {label}: {clean_filename}",
-                    data=file_bytes,
-                    file_name=clean_filename,
-                    mime="application/octet-stream",
-                    key=f"download::{selected_run_id}::{clean_filename}",
-                )
+        admin_unlocked = bool(st.session_state.get("fact_review_admin_unlocked", False))
+        visible_files = {
+            fn: path
+            for fn, path in generated_references.items()
+            if admin_unlocked or not _is_trace_file(fn)
+        }
+        if visible_files:
+            st.caption("Download generated files (each button saves the named file via your browser's own download)")
+            for filename, ref_path_str in visible_files.items():
+                clean_filename = Path(filename).name
+                try:
+                    file_bytes = (
+                        storage.get_file_bytes(selected_run_id, ref_path_str)
+                        if not is_fixture
+                        else Path(ref_path_str).read_bytes()
+                    )
+                except Exception as exc:
+                    file_bytes = None
+                    logger.warning(
+                        "Could not load '%s' for run '%s': %s",
+                        clean_filename,
+                        selected_run_id,
+                        exc,
+                    )
+                    st.warning(f"Could not load '{clean_filename}' for download: {exc}")
+                if file_bytes is not None:
+                    label = review.label_for_generated_file(clean_filename)
+                    st.download_button(
+                        label=f"Download {label}: {clean_filename}",
+                        data=file_bytes,
+                        file_name=clean_filename,
+                        mime="application/octet-stream",
+                        key=f"download::{selected_run_id}::{clean_filename}",
+                    )
 
 
 def main() -> None:

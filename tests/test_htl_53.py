@@ -97,7 +97,7 @@ def test_fact_review_all_expanders_on_page_are_collapsed_by_default(tmp_path, mo
     at.selectbox(key="fact_review_run_selector").set_value(run_id).run()
     assert not at.exception
 
-    # Total expanders = 7 categories + 1 generation access expander = 8 expanders
-    assert len(at.expander) == 8
+    # Total expanders = 1 admin gate + 7 categories + 1 generation access expander = 9 expanders
+    assert len(at.expander) == 9
     for exp in at.expander:
         assert not exp.proto.expanded, f"Expander '{exp.label}' was unexpectedly expanded by default"

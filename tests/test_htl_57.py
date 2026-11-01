@@ -47,6 +47,9 @@ def _make_unlocked_app_test() -> AppTest:
     at = AppTest.from_file(APP_FILE, default_timeout=10)
     at.session_state["generation_unlocked"] = True
     at.session_state["generation_unlocked_at"] = time.time()
+    at.session_state["gen_admin_unlocked"] = True
+    at.session_state["reingest_admin_unlocked"] = True
+    at.session_state["fact_review_admin_unlocked"] = True
     at.run()
     if at.radio(key="app_page_selector").value != "Generate / Re-ingest":
         at.radio(key="app_page_selector").set_value("Generate / Re-ingest").run()

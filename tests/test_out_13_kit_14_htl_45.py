@@ -366,6 +366,7 @@ def test_htl_45_generate_tab_output_checkboxes_default_to_false():
     at = AppTest.from_file(app_path, default_timeout=10)
     at.session_state["generation_unlocked"] = True
     at.session_state["generation_unlocked_at"] = time.time()
+    at.session_state["gen_admin_unlocked"] = True
     at.run()
 
     assert not at.exception

@@ -519,7 +519,7 @@ def test_format_run_error_blank_exception_message_falls_back_to_class_name():
 APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
 
 
-def _make_app_test(unlocked: bool = True):
+def _make_app_test(unlocked: bool = True, admin_unlocked: bool = True):
     import time
     from streamlit.testing.v1 import AppTest
 
@@ -527,6 +527,10 @@ def _make_app_test(unlocked: bool = True):
     if unlocked:
         at.session_state["generation_unlocked"] = True
         at.session_state["generation_unlocked_at"] = time.time()
+    if admin_unlocked:
+        at.session_state["gen_admin_unlocked"] = True
+        at.session_state["reingest_admin_unlocked"] = True
+        at.session_state["fact_review_admin_unlocked"] = True
     return at
 
 

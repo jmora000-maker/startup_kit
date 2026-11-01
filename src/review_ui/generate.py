@@ -612,8 +612,12 @@ def _persisted_selectbox(
     return widget_fn(label, options, index=index, key=field_key, on_change=on_change, **kwargs)
 
 
-def _render_admin_gate(key_prefix: str) -> bool:
-    """HTL-27: a collapsed, closed-by-default "Advanced (admin)" expander. An ordinary user never
+def _render_admin_gate(
+    key_prefix: str,
+    caption_unlocked: Optional[str] = None,
+    caption_locked: Optional[str] = None,
+) -> bool:
+    """HTL-27 / HTL-86: a collapsed, closed-by-default "Advanced (admin)" expander. An ordinary user never
     sees provider/model/mock/cache-mode controls at all -- they render only after this gate
     reports unlocked. Rendered outside any st.form, since a passphrase check needs to take effect
     immediately (a form only reacts on its own submit button)."""
@@ -625,10 +629,14 @@ def _render_admin_gate(key_prefix: str) -> bool:
 
     with st.expander("Advanced (admin)", expanded=False):
         if st.session_state[unlocked_key]:
-            st.caption("Unlocked: LLM provider/model, mock mode, and cache mode are set below.")
+            st.caption(
+                caption_unlocked
+                or "Unlocked: LLM provider/model, mock mode, and cache mode are set below."
+            )
         else:
             st.caption(
-                "Standard settings are pre-configured for production generation. Administrator credentials are only required for developer diagnostics and model overrides."
+                caption_locked
+                or "Standard settings are pre-configured for production generation. Administrator credentials are only required for developer diagnostics and model overrides."
             )
             entered = st.text_input(
                 "Admin passphrase", type="password", key=f"{key_prefix}_admin_passphrase_input"
@@ -795,16 +803,20 @@ def render() -> None:
                 provider, model, mock, cache_mode = "", "", False, "off"
             st.caption("Outputs to produce")
             col1, col2, col3, col4 = st.columns(4)
-            kit = _persisted_checkbox(GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col1.checkbox)
-            workbook = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col2.checkbox
+            client_deck = _persisted_checkbox(
+                GENERATE_STORE, "gen_out_client_deck", "Client Kickoff Deck", False, widget_fn=col1.checkbox
             )
             slides = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_slides", "PS Governance Kickoff", False, widget_fn=col3.checkbox
+                GENERATE_STORE, "gen_out_slides", "PS Governance Kickoff", False, widget_fn=col2.checkbox
             )
-            client_deck = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_client_deck", "Client Kickoff Deck", False, widget_fn=col4.checkbox
+            workbook = _persisted_checkbox(
+                GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col3.checkbox
             )
+            kit = False
+            if admin_unlocked_gen:
+                kit = _persisted_checkbox(
+                    GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col4.checkbox
+                )
             # HTL-29: "Review before finalizing" toggle, checked by default.
             review_before_finalizing = _persisted_checkbox(
                 GENERATE_STORE, "gen_review_before_finalizing", "Review before finalizing", True
@@ -965,16 +977,20 @@ def render() -> None:
                 provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
             st.caption("Outputs to regenerate")
             rcol1, rcol2, rcol3, rcol4 = st.columns(4)
-            kit_r = _persisted_checkbox(REINGEST_STORE, "reingest_out_kit", "Startup Kit", False, widget_fn=rcol1.checkbox)
-            workbook_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", False, widget_fn=rcol2.checkbox
+            client_deck_r = _persisted_checkbox(
+                REINGEST_STORE, "reingest_out_client_deck", "Client Kickoff Deck", False, widget_fn=rcol1.checkbox
             )
             slides_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_slides", "PS Governance Kickoff", False, widget_fn=rcol3.checkbox
+                REINGEST_STORE, "reingest_out_slides", "PS Governance Kickoff", False, widget_fn=rcol2.checkbox
             )
-            client_deck_r = _persisted_checkbox(
-                REINGEST_STORE, "reingest_out_client_deck", "Client Kickoff Deck", False, widget_fn=rcol4.checkbox
+            workbook_r = _persisted_checkbox(
+                REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", False, widget_fn=rcol3.checkbox
             )
+            kit_r = False
+            if admin_unlocked_r:
+                kit_r = _persisted_checkbox(
+                    REINGEST_STORE, "reingest_out_kit", "Startup Kit", False, widget_fn=rcol4.checkbox
+                )
             is_reingest_running = st.session_state.get("reingest_is_running", False)
             has_reingest_result = st.session_state.get("reingest_run_result") is not None
             reingest_disabled = is_reingest_running or has_reingest_result
