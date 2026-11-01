@@ -66,9 +66,9 @@ To ensure exact fidelity between contractual documents and generated delivery ar
 
 ---
 
-## 6. Companion Trace Manifests (`OUT-14`, `HTL-65`)
+## 6. Companion Trace Manifests (`OUT-14`, `HTL-65`, `HTL-72`)
 
-Every generated presentation deck is accompanied by a machine-readable JSON trace manifest (`{Project}_Client_Kickoff_Deck.trace.json` or `{Project}_Talent_Onboarding_Deck.trace.json`):
+Every generated presentation deck is accompanied by a machine-readable JSON trace manifest (`{Project}_Client_Kickoff_Deck.trace.json` or `{Project}_Governance_Deck_trace.json`):
 
 ### Manifest Structure
 Each entry in `entries[]` defines:
@@ -87,8 +87,35 @@ Trace generators evaluate the baseline's actual data state at export time:
 
 ---
 
-## 7. Security Gates & Human Review Controls (`HTL-46`, `HTL-53`)
+## 7. Slide 1 Title Sizing & Review Warnings (`HTL-72`, `HTL-84`, `HTL-85`)
 
+To ensure clean visual hierarchy across presentation decks without dynamic font shrinkage regressions:
+- **Flat 24pt Standard**: Title text on Slide 1 of both the PS Governance Kickoff Deck and Client Kickoff Deck is rendered at a fixed 24pt font.
+- **Fact Review Warning**: In `src/review_ui/app.py`, if the combined length of Client Name and Project Name (`len(project_name.strip()) + len(client_name.strip())`) exceeds 60 characters, the Fact Review interface displays a contextual warning advising reviewers that the combined title risks wrapping or overflow on Slide 1.
+
+---
+
+## 8. Financial Scrubbing in Delivery Workbook (`HTL-77`)
+
+To prevent billing figures, milestone fees, and commercial pricing terms from appearing in operational schedules:
+- **Downstream Generation Pipeline**: Financial scrubbing operates downstream specifically within the Project Delivery Workbook (`.xlsx`) generation pipeline (`src/generators/pmo_workbook/builder.py`), where `clean_text_v2` and `clean_contract_text` process Milestone descriptions, WBS tasks, and `critical_path_assumptions`.
+- **Regex Smoothing vs. Redaction Placeholders**: `sanitize_financial_text` (`src/config.py`) uses targeted regular expressions to strip raw dollar amounts (`$26,808`), milestone fees, and hourly rates (`150/hr`) while naturally smoothing sentences (e.g., transforming `"Fee of $26,808 is invoiced on acceptance"` to `"Fee is invoiced on acceptance"`). It never inserts `[REDACTED]` placeholder tokens.
+- **Preservation of Legitimate Numerics**: The sanitizer preserves formulas (cells starting with `=`), dates, percentages, SLA windows, durations, deliverable IDs, and WBS codes.
+- **Pipeline Scope**: Financial sanitization is scoped specifically to Workbook output generation and does not modify source text prior to LLM extraction or alter other baseline data.
+
+---
+
+## 9. Security Gates & Admin Controls (`HTL-46`, `HTL-53`, `HTL-75`, `HTL-86`)
+
+The application enforces role-appropriate security and diagnostic boundaries across three distinct surfaces:
 - **Billed LLM Action Protection (`GENERATION_PASSPHRASE`)**: Unauthenticated users may inspect public runs and review baseline facts, but SOW uploads and document generation require validation against `GENERATION_PASSPHRASE`.
-- **Administrative Settings Gate (`ADMIN_PASSPHRASE`)**: The "Advanced (admin)" configuration section is protected by `ADMIN_PASSPHRASE` (injected via Secret Manager in production).
+- **Administrative Settings & Deliverable Gating (`ADMIN_PASSPHRASE`, `HTL-27`, `HTL-86`)**:
+  - The "Advanced (admin)" configuration section exposes:
+    - **LLM Provider**: `LLM_PROVIDERS = ["anthropic", "openai"]` (default `config.default_provider`).
+    - **Model Override**: `PROVIDER_DEFAULT_MODEL_LABEL = "(provider default)"`, mapping to `MODEL_OPTIONS_BY_PROVIDER` (`claude-sonnet-5-5`, `claude-haiku-4-5-20251001` for Anthropic; `gpt-4o`, `gpt-6.1-sol` for OpenAI).
+    - **Mock Mode**: `gen_mock` / `reingest_mock` (default `False`), executing offline deterministic extraction via `MockLLMClient` (`create_mock_llm_client()`).
+    - **LLM Cache Mode**: `LLM_CACHE_MODES_IN_APP = ["off", "replay"]` (default `"off"`).
+  - The legacy "Startup Kit" deliverable checkbox is positioned as the final option in column 4 (`[Client Kickoff Deck, PS Governance Kickoff, Delivery Workbook, Startup Kit]`) and completely omitted when locked so other controls do not shift.
+- **Diagnostic Trace Download Gating (`ADMIN_PASSPHRASE`, `HTL-86`)**: On Fact Review, diagnostic per-deck trace JSON files (`.trace.json`, `_trace.json`, `_Deck_Trace_Manifest.json`) are completely absent when locked, and become available for download only when the Fact Review admin gate is unlocked.
+- **Manage Runs Lifecycle Dashboard (`ADMIN_PASSPHRASE`, `HTL-75`, `HTL-81`, `HTL-82`, `HTL-83`)**: Provides administrative status filtering, run archive/unarchive toggles, and bulk run purge capabilities.
 - **Collapsed Fact Review Ergonomics (`HTL-53`)**: All 14 Fact Review expandable category containers default to collapsed (`expanded=False`), allowing reviewers to focus on targeted validation without excessive scrolling.

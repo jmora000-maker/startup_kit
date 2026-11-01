@@ -3,10 +3,10 @@
 The PMO Startup Kit Generator ingests Statement of Work (SOW) documents and supporting kickoff materials to extract structured project management baselines via LLMs. It produces four core project delivery documents:
 - the **Startup Kit** (`.docx`), containing executive metadata, baseline governance tables, work packages, deliverables, milestones, RAID items, and assurance logs;
 - the **Project Delivery Workbook** (`.xlsx`), containing a Project Schedule of SOW acceptance gates by delivery phase, a Work Breakdown Structure (WBS) of deliverables and work items, and a consolidated RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`) and trace manifest (`.trace.json`), an executive 7-slide briefing deck for talent onboarding built with strict traceability back to the Kit and Workbook;
+- the **PS Governance Kickoff Deck** (`.pptx`) and trace manifest (`.trace.json`), an executive 7-slide presentation establishing project governance cadences, acceptance signoff workflows, team RACI allocations, and risk management baselines;
 - the **Client Kickoff Deck** (`.pptx`) and trace manifest (`.trace.json`), an executive 16-slide client-facing presentation synthesizing engagement purpose, customer-outcome problem & solution narratives, workstreams, delivery timelines, RAID logs, and immediate next steps.
 
-For detailed specification rules and background, see [spec/PMO_Startup_Kit_Consolidated_Spec.md](spec/PMO_Startup_Kit_Consolidated_Spec.md) and [spec/Review_Loop_Reference.md](spec/Review_Loop_Reference.md).
+For detailed specification rules and background, see [spec/PMO_Startup_Kit_Consolidated_Spec.md](spec/PMO_Startup_Kit_Consolidated_Spec.md) and [instructions/Review_Loop_Reference.md](instructions/Review_Loop_Reference.md).
 
 ---
 
@@ -15,12 +15,13 @@ For detailed specification rules and background, see [spec/PMO_Startup_Kit_Conso
 The tool reads a Statement of Work (SOW) and supporting documents to produce four standardized project management deliverables:
 - the **Startup Kit** (`.docx`);
 - the **Project Delivery Workbook** (`.xlsx`), with a Project Schedule of SOW acceptance gates by phase, a WBS of deliverables and work items, and a RAID Log;
-- the **Talent Team Onboarding Deck** (`.pptx`), with seven onboarding slides and a companion `{Project}_Talent_Onboarding_Deck.trace.json` manifest;
+- the **PS Governance Kickoff Deck** (`.pptx`), with seven governance onboarding slides and a companion `{Project}_Governance_Deck_trace.json` manifest;
 - the **Client Kickoff Deck** (`.pptx`), with sixteen client-facing briefing slides and a companion `{Project}_Client_Kickoff_Deck.trace.json` manifest.
 
 ### Execution Interfaces & Storage Architecture
 The tool supports two primary workflows:
-- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to ingest SOWs and supporting notes via dual upload slots (with SOW-first precedence and gap-filling), inspect and edit extracted baseline facts (with collapsed fact-category panels), approve verified baselines, and generate all four deliverables. Billed LLM extraction and generation actions are protected by a dedicated `GENERATION_PASSPHRASE` gate.
+- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to ingest SOWs and supporting notes via dual upload slots (with SOW-first precedence, automatic financial scrubbing, and gap-filling), inspect and edit extracted baseline facts (with collapsed fact-category panels), approve verified baselines, and generate deliverables. Billed LLM extraction and generation actions are protected by a dedicated `GENERATION_PASSPHRASE` gate.
+- **Manage Runs Admin Page**: A dedicated administrative interface for inspecting run lifecycles, filtering runs by status, archiving/unarchiving historical records, and performing bulk run purges (protected by `ADMIN_PASSPHRASE`).
 - **Command-Line Interface (CLI)**: Run `python main.py` for batch extraction, headless processing, and automated pipeline execution.
 
 **Dual Storage Backend**: Review run states and generated documents are managed through the `ReviewStorage` abstraction (`src/review_storage/`):
@@ -86,7 +87,7 @@ Create a `.env` file in the project root to configure application paths, API key
 - `LLM_CACHE_DIR`: Directory path where LLM request/response cache fixtures are stored.
 - `DECK_TEMPLATE_PATH`: Path to PowerPoint presentation template (default: `templates/Toptal_Presentation_Template.pptx`).
 - `REVIEW_STORAGE_BACKEND`: Storage backend selector (`local` [default] or `gcp` / `firestore`). Determines whether paused human review runs are stored locally in `review_queue/` or in Google Cloud Firestore and Cloud Storage.
-- `ADMIN_PASSPHRASE`: Passphrase protecting the Streamlit UI "Advanced (admin)" section. **WARNING**: The default value `dev-only-change-me` is intended strictly for local development and MUST be changed for any deployment beyond local development.
+- `ADMIN_PASSPHRASE`: Passphrase protecting administrative surfaces (the Generate/Re-ingest "Advanced (admin)" expander and Startup Kit checkbox, Fact Review diagnostic trace JSON downloads, and the Manage Runs page). **WARNING**: The default value `dev-only-change-me` is intended strictly for local development and MUST be changed for any deployment beyond local development.
 - `GENERATION_PASSPHRASE`: Passphrase protecting billed LLM generation actions (SOW upload and document generation). **WARNING**: The default value `dev-generation-only-change-me` is intended strictly for local development and MUST be set via Secret Manager in production (`generation-passphrase`).
 - `GCS_BUCKET_NAME`: Target Google Cloud Storage bucket name for generated deliverables (default: `toptal-startup-kit-outputs`).
 - `GOOGLE_CLOUD_PROJECT`: Google Cloud Platform project ID (default: `toptal-delivery-apps`).
@@ -103,8 +104,9 @@ Create a `.env` file in the project root to configure application paths, API key
 By default, when no output flag is provided, only the Project Delivery Workbook (`.xlsx`) is generated.
 - `--export-tools`: Write the Project Delivery Workbook Excel workbook (`.xlsx`) (default when no output flag is given).
 - `--kit`: Write the Startup Kit Word document (`.docx`).
-- `--slides`: Write the Talent Team Onboarding Deck (`.pptx`) and its trace manifest (`.trace.json`). Writing the deck automatically generates its source Kit and Workbook.
-- `--all`: Write all three outputs: the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck.
+- `--slides`: Write the PS Governance Kickoff Deck (`.pptx`) and its trace manifest (`.trace.json`). Writing the deck automatically generates its source Kit and Workbook.
+- `--client-deck`: Write the Client Kickoff Deck (`.pptx`) and its trace manifest (`.trace.json`).
+- `--all`: Write all core outputs: the Startup Kit, the Project Delivery Workbook, the PS Governance Kickoff Deck, and the Client Kickoff Deck.
 - `--checklist`: Deprecated (OUT-13a: Readiness Checklist deliverable is discontinued).
 
 ### Re-ingestion Workflow
@@ -136,8 +138,9 @@ All options as provided by `python main.py --help`:
 - `--export-tools`: Write the Project Delivery Workbook Excel workbook (default when no output flag is given).
 - `--kit`: Write the Startup Kit Word document.
 - `--checklist`: Deprecated (discontinued per OUT-13a).
-- `--slides`: Write the Talent Team Onboarding Deck PowerPoint presentation.
-- `--all`: Write the Startup Kit, the Project Delivery Workbook, and the Talent Onboarding Deck.
+- `--slides`: Write the PS Governance Kickoff Deck PowerPoint presentation and trace manifest.
+- `--client-deck`: Write the Client Kickoff Deck PowerPoint presentation and trace manifest.
+- `--all`: Write the Startup Kit, the Project Delivery Workbook, the PS Governance Kickoff Deck, and the Client Kickoff Deck.
 - `-v, --verbose`: Enable verbose debug logging.
 
 ### Input and Output Paths
@@ -229,7 +232,7 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
    ```
    Add `-Push` to push the resulting commit to `origin`.
 
-*Note*: Only a human may promote snapshots or edit files in `tests/oracles/`. For complete details on the find-check-fix diagnostic loop, see [spec/Review_Loop_Reference.md](spec/Review_Loop_Reference.md).
+*Note*: Only a human may promote snapshots or edit files in `tests/oracles/`. For complete details on the find-check-fix diagnostic loop, see [instructions/Review_Loop_Reference.md](instructions/Review_Loop_Reference.md).
 
 ---
 
@@ -243,11 +246,12 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 
 ---
 
-## Talent Team Onboarding Deck
+## PS Governance Kickoff Deck (`HTL-72`)
 
-`--slides` writes `{Project}_Talent_Onboarding_Deck.pptx` and `{Project}_Talent_Onboarding_Deck.trace.json` beside the Kit and Workbook; because every fact in the deck traces to those two documents, `--slides` also writes them in the same run (the log says `Deck sources: Startup Kit and Project Delivery Workbook also written`).
+`--slides` writes `{Project}_PS_Governance_Kickoff.pptx` and `{Project}_Governance_Deck_trace.json` beside the Kit and Workbook; because every fact in the deck traces to those two documents, `--slides` also writes them in the same run (the log says `Deck sources: Startup Kit and Project Delivery Workbook also written`).
 
-- **Slides:** Cover, Project Charter, Workstreams / Milestones / Deliverables / Dates, Acceptance Criteria, High-Risk Items, Client Collaboration, and Your Project Kit. Each slide carries talking points and a `SOURCES` line in its speaker notes.
+- **Slides:** Cover, Project Charter, Workstreams / Milestones / Deliverables / Dates, Acceptance Criteria, High-Risk Items, Client Collaboration & RACI, and Project Governance Toolkit. Each slide carries talking points and a `SOURCES` line in its speaker notes.
+- **Slide 1 Title Sizing (`HTL-72`, `HTL-84`, `HTL-85`):** Slide 1 cover slide title is rendered at a flat 24pt font for consistent presentation hierarchy. In Fact Review, if the combined Client Name and Project Name length exceeds 60 characters, a warning is triggered so reviewers are aware of potential title wrapping or overflow.
 - **Template:** `templates/Toptal_Presentation_Template.pptx`, or the path in `DECK_TEMPLATE_PATH`. The generator removes the template's slides and slide parts and builds on the `CUSTOM_1` (cover) and `CUSTOM_16` (content) layouts.
 - **Trace manifest:** lists every element (slide, shape, displayed text, and its `Kit` / `Workbook` TraceRefs) and every talking point on slides 2 to 6. `check_artifacts` uses it.
 - **Text:** shown whole or cut only at a sentence or clause boundary; never an ellipsis, a comma cut, an unbalanced bracket, or a shortened name. Text that does not fit gets a smaller font (within the minimums), then a `+N more` row or line.
@@ -259,8 +263,40 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 
 The Client Kickoff Deck (`{Project}_Client_Kickoff_Deck.pptx`) and its trace manifest (`{Project}_Client_Kickoff_Deck.trace.json`) provide a 16-slide client-facing briefing delivered at engagement launch.
 - **Core Slides**: Cover (Slide 1), Executive Summary & Engagement Context (Slide 5), Solution Overview & Out of Scope (Slide 6), Governance & Cadence, Timeline & Milestones, Key Risks (Slide 12), and Immediate Next Steps (Slide 15).
+- **Slide 1 Title Sizing (`HTL-72`, `HTL-84`, `HTL-85`):** Rendered at a flat 24pt font matching the PS Governance Kickoff Deck.
 - **Customer-Outcome Framing**: Slide 5 and Slide 6 feature LLM-synthesized narratives focused on business value and tangible capabilities received by the client, omitting raw internal delivery metrics and acceptance percentages.
 - **Dynamic Traceability**: Every content card and table row is mapped in the companion `.trace.json` manifest directly to its source field in the baseline charter, RAID log, or open items.
+
+---
+
+## Security Gates & Admin Controls (`HTL-27`, `HTL-75`, `HTL-86`)
+
+The application enforces role-appropriate security and diagnostic boundaries across three distinct surfaces:
+
+1. **Generation Gate (`GENERATION_PASSPHRASE`)**: Protects billed LLM operations (SOW document ingestion and deliverable file generation) while leaving Fact Review and run inspection open.
+2. **Generate & Re-ingest Admin Controls (`ADMIN_PASSPHRASE`)**:
+   - Collapsed "Advanced (admin)" expander exposing fine-grained model and execution overrides:
+     - **LLM Provider**: Dropdown selecting between `anthropic` and `openai` (defaults to server configuration `config.default_provider`, typically `anthropic`).
+     - **Model Override**: Dropdown defaulting to `(provider default)` (which resolves to `config.anthropic_model` or `config.openai_model`), with selectable options by provider:
+       - Anthropic: `claude-sonnet-5-5`, `claude-haiku-4-5-20251001`
+       - OpenAI: `gpt-4o`, `gpt-6.1-sol`
+     - **Mock Mode**: Checkbox (`gen_mock` / `reingest_mock`, default `False`) enabling offline deterministic execution via `MockLLMClient` (`create_mock_llm_client()`) against uploaded documents without requiring API keys or network connectivity.
+     - **LLM Cache Mode**: Dropdown exposing `off` (live API calls, default) and `replay` (replaying recorded test fixtures from `LLM_CACHE_DIR` without live API calls). Note: `record` mode is omitted from the UI to protect curated test fixtures and remains CLI-only.
+   - Gated "Startup Kit" deliverable checkbox (`gen_out_kit` / `reingest_out_kit`), positioned last in column 4 (`[Client Kickoff Deck, PS Governance Kickoff, Delivery Workbook, Startup Kit]`). The checkbox is completely absent from the UI when locked to avoid shifting ordinary reviewer layout.
+3. **Fact Review Diagnostic Downloads (`ADMIN_PASSPHRASE`)**:
+   - Gated by a dedicated `"fact_review_admin_unlocked"` session gate.
+   - Per-deck trace JSON files (`.trace.json`, `_trace.json`, `_Deck_Trace_Manifest.json`) are completely absent when locked, and render alongside standard deliverables when unlocked.
+4. **Manage Runs Administrative Page (`ADMIN_PASSPHRASE`, `HTL-75`, `HTL-81`, `HTL-82`, `HTL-83`)**:
+   - Dedicated navigation page for run lifecycle governance.
+   - Unlocked via `ADMIN_PASSPHRASE` with status filtering (`All`, `Pending Review`, `Approved`, `Generated`, `Archived`).
+   - Archive and unarchive controls for individual runs.
+   - Checkbox-driven bulk purge with confirmation for permanently removing archived runs and associated Cloud Storage / local files. Single-run purge buttons are omitted to prevent accidental data loss (`HTL-83`).
+
+---
+
+## Automatic Financial Scrubbing in Delivery Workbook (`HTL-77`)
+
+To prevent billing figures, milestone fees, and commercial pricing terms from appearing in operational schedules, financial scrubbing operates downstream specifically within the Project Delivery Workbook (`.xlsx`) generation pipeline (`clean_text_v2` and `clean_contract_text` via `sanitize_financial_text`). It applies targeted regular expressions to strip raw dollar amounts, currency symbols, milestone fees, and hourly rates from Milestone descriptions, WBS tasks, and `critical_path_assumptions` (e.g., transforming `"Fee of $26,808 is invoiced on acceptance"` to `"Fee is invoiced on acceptance"`). The transformation performs natural sentence smoothing without inserting `[REDACTED]` placeholder tokens, preserves formulas and legitimate numeric content (dates, percentages, durations, WBS codes), and does not alter text prior to LLM extraction or touch other baseline documents.
 
 ---
 

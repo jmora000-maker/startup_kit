@@ -378,10 +378,11 @@ redeploy.
 - **`--set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest`** — **deviation log, confirmed
   real:** this was missing from every deploy command after the interim app-wide passphrase gate
   was reverted (see Section 0 history) — but the revert only removed the *outer* gate; the app's
-  pre-existing, separate "Advanced (admin)" section inside the Generate page (its own passphrase
-  check, unrelated to that reverted experiment) still reads `config.admin_passphrase` at runtime.
+  administrative controls across three distinct surfaces (the Generate/Re-ingest "Advanced (admin)"
+  section and Startup Kit checkbox, Fact Review diagnostic trace JSON downloads, and the Manage Runs
+  admin dashboard) read `config.admin_passphrase` at runtime.
   With no secret wired in, the deployed container silently fell back to `config.py`'s hardcoded
-  default, `"dev-only-change-me"` — meaning the real admin section was accessible in production
+  default, `"dev-only-change-me"` — meaning real admin sections were accessible in production
   with a well-known, publicly-visible-in-source-code value, not actually protected at all. Confirm
   the real secret's value and access are in place (see Section 4) before relying on this.
 - **`--set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest`** — **HTL-46:** protects
