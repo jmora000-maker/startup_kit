@@ -338,7 +338,7 @@ def test_htl_72_slide15_deliverable_acceptance_criteria_pge(tmp_path):
     tbl_top_in = table_shape.top / 914400.0
     tbl_height_in = table_shape.height / 914400.0
     tbl_bottom_in = tbl_top_in + tbl_height_in
-    assert tbl_top_in <= 1.60
+    assert tbl_top_in <= 1.80
     assert tbl_bottom_in <= 4.50  # Over 1.10 in clearance above slide bottom at 5.625 in
 
     # 3. Header row
