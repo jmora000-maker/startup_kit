@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 184 · October 21, 2026
+Revision 185 · October 21, 2026
 
 ## 0. Document control
 
@@ -627,6 +627,21 @@ These rules must hold for every fixture and every generated output folder (QA-04
 | 168 | Adds `HTL-83`: remove the now-redundant single-run purge controls, since bulk "Purge Selected" (even at N=1) fully covers the single-run case. |
 | 169 | Marks `HTL-83` Done (v1.0.27) -- single-run purge controls removed after confirming real N=1 bulk-purge test coverage existed first, avoiding any regression gap during the transition. |
 
+
+
+## Open Backlog Priority Order
+
+**Set directly by the user.** Items not listed here (the `HTL-01`-`HTL-46` status-audit items, and `HTL-73`'s standing watch-item) are not part of this ordering.
+
+1. `HTL-91` -- validator error-detection branch coverage gap, `governance_deck`
+2. `HTL-92` -- validator error-detection branch coverage gap, `client_deck`
+3. `HTL-93` -- milestone phase reconciliation/gate fallback coverage gap, `pmo_workbook`
+4. `HTL-94` -- defensive baseline-object-drop logging coverage gap
+5. `HTL-90` -- adopt Streamlit `AppTest` for `review_ui` regression testing
+6. `HTL-69` -- durable anti-contamination test safeguard
+7. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
+8. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
+9. `HTL-51` -- background execution without keeping the browser open
 
 ## Appendix A: Workbook column layouts
 
