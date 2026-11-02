@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 186 · October 21, 2026
+Revision 187 · October 21, 2026
 
 ## 0. Document control
 
@@ -636,17 +636,25 @@ These rules must hold for every fixture and every generated output folder (QA-04
 
 ## Open Backlog Priority Order
 
-**Set directly by the user.** Items not listed here (the `HTL-01`-`HTL-46` status-audit items, and `HTL-73`'s standing watch-item) are not part of this ordering.
+**Set directly by the user; updated when the user says priorities changed.** Items not listed here (the `HTL-01`-`HTL-46` status-audit items, and `HTL-73`'s standing watch-item) are not part of this ordering.
 
-1. `HTL-91` -- validator error-detection branch coverage gap, `governance_deck`
-2. `HTL-92` -- validator error-detection branch coverage gap, `client_deck`
-3. `HTL-93` -- milestone phase reconciliation/gate fallback coverage gap, `pmo_workbook`
-4. `HTL-94` -- defensive baseline-object-drop logging coverage gap
-5. `HTL-90` -- adopt Streamlit `AppTest` for `review_ui` regression testing
-6. `HTL-69` -- durable anti-contamination test safeguard
-7. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
-8. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
-9. `HTL-51` -- background execution without keeping the browser open
+**Top priority, blocking the user's current project (set above the rest of the list):**
+1. `HTL-95` -- Slide 5/13 card body font size (8pt -> 10pt)
+2. `HTL-96` -- Slide 6/14 formatting (combined text box, real bullets, 5pt header spacing)
+3. `HTL-97` -- Slide 16 dynamic card box heights
+4. `HTL-98` -- remove Purchase Order references from all artifacts
+5. `HTL-99` -- fix the contradictory weekly-report acceptance narrative content bug
+
+**Below that, in the previously set order:**
+6. `HTL-91` -- validator error-detection branch coverage gap, `governance_deck`
+7. `HTL-92` -- validator error-detection branch coverage gap, `client_deck`
+8. `HTL-93` -- milestone phase reconciliation/gate fallback coverage gap, `pmo_workbook`
+9. `HTL-94` -- defensive baseline-object-drop logging coverage gap
+10. `HTL-90` -- adopt Streamlit `AppTest` for `review_ui` regression testing
+11. `HTL-69` -- durable anti-contamination test safeguard
+12. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
+13. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
+14. `HTL-51` -- background execution without keeping the browser open
 
 ## Appendix A: Workbook column layouts
 
