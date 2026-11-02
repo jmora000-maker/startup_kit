@@ -9,6 +9,7 @@ from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
 
 from src.config import CLIENT_DECK_TEMPLATE_PATH
+from src.generators.deck_header import apply_slide_header_formatting
 from src.generators.client_deck.fit import (
     estimate_text_height,
     fit_deliverables_for_block,
@@ -803,6 +804,19 @@ def write_client_deck(
         raise FileNotFoundError(f"Client Deck template not found at {src_template}")
 
     prs = pptx.Presentation(str(src_template))
+
+    # Format canonical slide headers across all content slides (HTL-88)
+    apply_slide_header_formatting(prs.slides[1], has_subtitle=False)
+    apply_slide_header_formatting(prs.slides[2], has_subtitle=False)
+    apply_slide_header_formatting(prs.slides[4])
+    apply_slide_header_formatting(prs.slides[5], has_subtitle=False)
+    apply_slide_header_formatting(prs.slides[7])
+    apply_slide_header_formatting(prs.slides[8])
+    apply_slide_header_formatting(prs.slides[9])
+    apply_slide_header_formatting(prs.slides[10])
+    apply_slide_header_formatting(prs.slides[11])
+    apply_slide_header_formatting(prs.slides[12])
+    apply_slide_header_formatting(prs.slides[14])
 
     # Populate slides 1, 5, 6, 12, 15 (0-indexed: 0, 4, 5, 11, 14)
     write_slide1(prs.slides[0], model)
