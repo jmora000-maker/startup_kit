@@ -470,13 +470,11 @@ def test_slide6_dynamic_layout_n4(rich_client_deck_baseline, tmp_path):
     assert "Out of Scope:" in all_text
     assert "Legacy mainframe decommissioning" in all_text
 
-    # Verify Solution Overview title (shape 193) and body (shape 194) clearance and styling
+    # Verify Solution Overview title (shape 193) contains combined heading and body (HTL-96)
     s193 = next(s for s in slide6.shapes if s.shape_id == 193 or (s.has_text_frame and "Solution Overview" in s.text_frame.text))
-    s194 = next(s for s in slide6.shapes if s.shape_id == 194 or (s.has_text_frame and "Modernize customer onboarding" in s.text_frame.text))
-    assert s194.top >= s193.top + s193.height
     assert len(s193._element.xpath(".//p:ph")) == 0
     assert s193.text_frame.paragraphs[0].runs[0].font.color.rgb == pptx.dml.color.RGBColor(255, 255, 255)
-    assert s194.text_frame.paragraphs[0].runs[0].font.color.rgb == pptx.dml.color.RGBColor(255, 255, 255)
+    assert "Core microservices development" in s193.text_frame.text
 
     # Verify deliverable boxes have native bullet formatting on every paragraph with text
     deliv_shapes = [s for s in slide6.shapes if s.shape_id in (205, 206, 208, 210)]
@@ -1166,7 +1164,7 @@ def test_htl_49_slide6_column_font_uniformity(sample_real_failing_client_baselin
 
 
 def test_slide6_right_column_left_alignment(tmp_path):
-    """Slide 6: Shape 193 ('Solution Overview'), Shape 194 (body), and Shape 202 ('Out of Scope:') share exact same left coordinate."""
+    """Slide 6: Shape 193 ('Solution Overview') and Shape 202 ('Out of Scope:') share exact same left coordinate (HTL-96)."""
     from tests.deck_bundle import load_baseline
     baseline = load_baseline()
     out_file = tmp_path / "align_test.pptx"
@@ -1177,14 +1175,11 @@ def test_slide6_right_column_left_alignment(tmp_path):
     slide6 = prs.slides[5]
 
     s193 = next(s for s in slide6.shapes if s.shape_id == 193 or (s.has_text_frame and "Solution Overview" in s.text_frame.text))
-    s194 = next(s for s in slide6.shapes if s.shape_id == 194 or (s.has_text_frame and "P1 Foundation" in s.text_frame.text or "Comprehensive" in s.text_frame.text))
     s202 = next(s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text))
 
     assert s193.left == 6347125
-    assert s194.left == 6347125
     assert s202.left == 6347125
     assert s193.width == 2600000
-    assert s194.width == 2600000
     assert s202.width == 2600000
 
 
@@ -1583,7 +1578,7 @@ def test_htl_54_risk_filtering_precision_arc_r02_retained(tmp_path):
 
 
 def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
-    """HTL-54: Slide 5 Card 2 clamps to 3 lines (~28.8 pt / 0.40 in) even with very long problem statements."""
+    """HTL-54 / HTL-95: Slide 5 Card 2 clamps to 2-3 lines (~33 pt / 0.46 in) even with very long problem statements at 10pt."""
     long_baseline = StartupKitBaseline(
         project_name="Long Text Card Bounding Validation Platform",
         charter=ProjectStartupCharter(
@@ -1611,8 +1606,9 @@ def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
     from src.generators.client_deck.fit import estimate_text_height
     c2_p = c2_shape.text_frame.paragraphs[0]
     font_sz = c2_p.runs[0].font.size.pt
+    assert font_sz == 10.0
     est_h = estimate_text_height(c2_text, width_in=7.75, size_pt=font_sz)
-    assert est_h <= 0.40 * 72.0 + 1e-4
+    assert est_h <= 0.46 * 72.0 + 1e-4
 
 
 def test_htl_54_fact_review_problem_statement_field_and_corrections():
@@ -1651,7 +1647,7 @@ def test_htl_54_fact_review_problem_statement_field_and_corrections():
 # =========================================================================
 
 def test_htl_61_slide6_uniform_panel_font_size(tmp_path):
-    """HTL-61: Slide 6 Solution Overview body and Out of Scope body share an identical uniform font size."""
+    """HTL-61 / HTL-96: Slide 6 Solution Overview body and Out of Scope body share an identical uniform font size in combined shape."""
     baseline = StartupKitBaseline(
         project_name="HTL-61 Font Uniformity Platform",
         charter=ProjectStartupCharter(
@@ -1679,12 +1675,12 @@ def test_htl_61_slide6_uniform_panel_font_size(tmp_path):
     prs = pptx.Presentation(str(out_file))
     slide6 = prs.slides[5]
 
-    # Find Solution Overview body shape (194) and Out of Scope shape (202)
-    s194 = next(s for s in slide6.shapes if s.shape_id == 194 or (s.has_text_frame and "Deliver a comprehensive" in s.text_frame.text))
+    # Find Solution Overview shape (193) and Out of Scope shape (202)
+    s193 = next(s for s in slide6.shapes if s.shape_id == 193 or (s.has_text_frame and "Deliver a comprehensive" in s.text_frame.text))
     s202 = next(s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text))
 
-    # Font size of Solution Overview body
-    so_p = s194.text_frame.paragraphs[0]
+    # Font size of Solution Overview body (paragraph 1)
+    so_p = s193.text_frame.paragraphs[1]
     so_font_pt = so_p.runs[0].font.size.pt
 
     # Font size of Out of Scope bullet items (paragraphs index >= 1)

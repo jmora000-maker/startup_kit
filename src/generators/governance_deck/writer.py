@@ -542,9 +542,17 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r_cat.font.bold = True
         r_cat.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-        # Content Text Box
+        # Content Text Box (HTL-97: dynamically sized to fit actual content)
         space_after_pt = 1.0 if len(card.steps) >= 5 else (1.5 if len(card.steps) >= 4 else 2.0)
-        body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
+        card_content_h_pt = 0.0
+        for label, body in card.steps:
+            clean_lbl = label.rstrip(" :") if label else ""
+            full_line = f"{clean_lbl}: {body}" if clean_lbl else body
+            lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=shared_sz, char_width_factor=0.55)
+            card_content_h_pt += lines * shared_sz * line_spacing + space_after_pt
+
+        dynamic_tb_h = min(tb_h, max(127000, int((card_content_h_pt + 4.0) * 12700)))
+        body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), dynamic_tb_h)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
         tf_b.margin_top = 0
