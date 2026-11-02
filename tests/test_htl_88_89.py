@@ -9,6 +9,7 @@ import pytest
 from tests.deck_bundle import load_baseline
 from tests.test_htl_62 import _build_pge_baseline
 from src.generators.client_deck import export_client_deck
+from src.generators.governance_deck import export_governance_deck
 from src.generators.deck_header import (
     apply_slide_header_formatting,
     identify_header_shapes,
@@ -186,3 +187,182 @@ def test_htl_88_pge_client_kickoff_deck_all_slides_header_standardization(tmp_pa
         assert k.text_frame.paragraphs[0].runs[0].font.size == Pt(9.0)
         assert t.text_frame.paragraphs[0].runs[0].font.size == Pt(24.0)
         assert s.text_frame.paragraphs[0].runs[0].font.size == Pt(9.0)
+
+
+def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_path):
+    """HTL-88: Verify all content slides in PS Governance Kickoff Deck adhere to canonical header standards."""
+    baseline = load_baseline("arc_genomics")
+    baseline.project_name = "ARC Application Implementation"
+    if baseline.charter:
+        baseline.charter.project_name = "ARC Application Implementation"
+
+    res = export_governance_deck(baseline, tmp_path / "gov_deck")
+    prs = pptx.Presentation(str(res.file_path))
+
+    # In PS Governance Kickoff Deck:
+    # Slide 2: Kicker only
+    # Slides 4, 5, 6, 7, 8, 9, 10, 12, 14: Kicker + Title only
+    # Slides 13, 15 (all pages), 16, 17, 18, 19: Kicker + Title + Subtitle
+
+    # Slide 2: Kicker only
+    slide2 = prs.slides[1]
+    k2, t2, s2 = identify_header_shapes(slide2)
+    assert k2 is not None, "Gov Slide 2 missing kicker shape"
+    assert t2 is None, "Gov Slide 2 should not have title shape"
+    assert s2 is None, "Gov Slide 2 should not have subtitle shape"
+    assert abs(k2.left - KICKER_LEFT) < 1000
+    assert abs(k2.top - KICKER_TOP) < 1000
+    assert k2.text_frame.paragraphs[0].text.isupper()
+    assert k2.text_frame.paragraphs[0].runs[0].font.size == Pt(9.0)
+    assert k2.text_frame.paragraphs[0].runs[0].font.bold is True
+    assert k2.text_frame.paragraphs[0].runs[0].font.color.rgb == RGBColor(0x2E, 0x5A, 0xAC)
+
+    kicker_title_only_slides = [4, 5, 6, 7, 8, 9, 10, 12, 14]
+
+    for s_num in kicker_title_only_slides:
+        slide = prs.slides[s_num - 1]
+        k, t, s = identify_header_shapes(slide)
+        assert k is not None, f"Gov Slide {s_num} missing kicker shape"
+        assert t is not None, f"Gov Slide {s_num} missing title shape"
+        assert s is None, f"Gov Slide {s_num} should not have a subtitle shape"
+
+        # Kicker invariants
+        assert abs(k.left - KICKER_LEFT) < 1000, f"Gov Slide {s_num} kicker left mismatch"
+        assert abs(k.top - KICKER_TOP) < 1000, f"Gov Slide {s_num} kicker top mismatch"
+        assert abs(k.width - KICKER_WIDTH) < 1000, f"Gov Slide {s_num} kicker width mismatch"
+        assert abs(k.height - KICKER_HEIGHT) < 1000, f"Gov Slide {s_num} kicker height mismatch"
+        kp = k.text_frame.paragraphs[0]
+        assert kp.text.isupper(), f"Gov Slide {s_num} kicker must be uppercase: {kp.text}"
+        assert kp.runs[0].font.name == "Proxima Nova"
+        assert kp.runs[0].font.size == Pt(9.0)
+        assert kp.runs[0].font.bold is True
+        assert kp.runs[0].font.color.rgb == RGBColor(0x2E, 0x5A, 0xAC)
+
+        # Title invariants
+        assert abs(t.left - TITLE_LEFT) < 1000, f"Gov Slide {s_num} title left mismatch"
+        assert abs(t.top - TITLE_TOP) < 1000, f"Gov Slide {s_num} title top mismatch"
+        assert abs(t.width - TITLE_WIDTH) < 1000, f"Gov Slide {s_num} title width mismatch"
+        assert abs(t.height - TITLE_HEIGHT) < 1000, f"Gov Slide {s_num} title height mismatch"
+        tp = t.text_frame.paragraphs[0]
+        assert tp.runs[0].font.name == "Proxima Nova"
+        assert tp.runs[0].font.size == Pt(24.0)
+        assert tp.runs[0].font.bold is True
+        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        if s_num == 6:
+            assert tp.text == "The PM owns the plan and the day-to-day work"
+
+    # Content slides with Subtitle: Slide 13 (Why we're here), Slide 15 pages (Acceptance Criteria),
+    # Slide 16 (How Acceptance Works), Slide 17 (Approach), Slide 18 (Risk Register), Slide 19 (Next Steps)
+    total_slides = len(prs.slides)
+    standard_3_element_indices = [12] + list(range(14, total_slides))
+    for s_idx in standard_3_element_indices:
+        slide = prs.slides[s_idx]
+        s_num = s_idx + 1
+        k, t, s = identify_header_shapes(slide)
+        assert k is not None, f"Gov Slide {s_num} missing kicker shape"
+        assert t is not None, f"Gov Slide {s_num} missing title shape"
+        assert s is not None, f"Gov Slide {s_num} missing subtitle shape"
+
+        # Kicker invariants
+        assert abs(k.left - KICKER_LEFT) < 1000, f"Gov Slide {s_num} kicker left mismatch"
+        assert abs(k.top - KICKER_TOP) < 1000, f"Gov Slide {s_num} kicker top mismatch"
+        kp = k.text_frame.paragraphs[0]
+        assert kp.text.isupper(), f"Gov Slide {s_num} kicker must be uppercase: {kp.text}"
+        assert kp.runs[0].font.name == "Proxima Nova"
+        assert kp.runs[0].font.size == Pt(9.0)
+        assert kp.runs[0].font.bold is True
+        assert kp.runs[0].font.color.rgb == RGBColor(0x2E, 0x5A, 0xAC)
+
+        # Title invariants
+        assert abs(t.left - TITLE_LEFT) < 1000, f"Gov Slide {s_num} title left mismatch"
+        assert abs(t.top - TITLE_TOP) < 1000, f"Gov Slide {s_num} title top mismatch"
+        tp = t.text_frame.paragraphs[0]
+        assert tp.runs[0].font.name == "Proxima Nova"
+        assert tp.runs[0].font.size == Pt(24.0)
+        assert tp.runs[0].font.bold is True
+        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+
+        # Subtitle invariants
+        assert abs(s.left - SUBTITLE_LEFT) < 1000, f"Gov Slide {s_num} subtitle left mismatch"
+        assert abs(s.top - SUBTITLE_TOP) < 1000, f"Gov Slide {s_num} subtitle top mismatch"
+        sp = s.text_frame.paragraphs[0]
+        assert sp.runs[0].font.name == "Proxima Nova"
+        assert sp.runs[0].font.size == Pt(9.0)
+        assert sp.runs[0].font.bold is False
+        assert sp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+
+
+def test_htl_89_governance_deck_tables_literal_navy_header_styling(tmp_path):
+    """HTL-89: Verify Slides 15, 18, and 19 tables in Governance Kickoff Deck all use literal RGB #041133 for header fills (not schemeClr)."""
+    for baseline_name, baseline in [
+        ("arc_genomics", load_baseline("arc_genomics")),
+        ("pge_ocp", _build_pge_baseline()),
+    ]:
+        if baseline_name == "arc_genomics":
+            baseline.project_name = "ARC Application Implementation"
+            if baseline.charter:
+                baseline.charter.project_name = "ARC Application Implementation"
+
+        res = export_governance_deck(baseline, tmp_path / f"gov_{baseline_name}")
+        prs = pptx.Presentation(str(res.file_path))
+
+        # Collect all tables across the deck
+        tables_with_titles = []
+        for s_idx, slide in enumerate(prs.slides):
+            for shape in slide.shapes:
+                if shape.has_table:
+                    headers = [shape.table.cell(0, c).text.strip() for c in range(len(shape.table.columns))]
+                    if any(h in ["Deliverable", "Risk Description", "Owner"] for h in headers):
+                        tables_with_titles.append((s_idx + 1, shape.table, headers))
+
+        assert len(tables_with_titles) >= 3, f"Expected at least 3 tables in {baseline_name}, found {len(tables_with_titles)}"
+
+        for s_num, tbl, headers in tables_with_titles:
+            # 1. Header Row (Row 0): Check literal RGB #041133 fill on every header cell
+            for col_idx in range(len(tbl.columns)):
+                cell = tbl.cell(0, col_idx)
+                tcPr = cell._tc.xpath(".//a:tcPr")[0]
+
+                # Assert literal srgbClr="041133" is present
+                solid_fill = tcPr.xpath("./a:solidFill/a:srgbClr")
+                assert solid_fill, f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) missing literal srgbClr solidFill"
+                assert solid_fill[0].get("val") == "041133", (
+                    f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) fill is {solid_fill[0].get('val')}, expected literal 041133"
+                )
+
+                # Assert NO theme color reference (schemeClr) exists
+                scheme_fill = tcPr.xpath("./a:solidFill/a:schemeClr")
+                assert not scheme_fill, (
+                    f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) must not use schemeClr: {scheme_fill[0].get('val') if scheme_fill else ''}"
+                )
+
+                # White bold Proxima Nova text
+                p = cell.text_frame.paragraphs[0]
+                assert p.runs[0].font.name == "Proxima Nova"
+                assert p.runs[0].font.bold is True
+                assert p.runs[0].font.color.rgb == RGBColor(0xFF, 0xFF, 0xFF)
+
+
+def test_htl_89_client_deck_tables_literal_navy_header_styling(tmp_path):
+    """HTL-89: Verify Slides 12 and 15 tables in Client Kickoff Deck use literal RGB #041133 for header fills."""
+    baseline = load_baseline("arc_genomics")
+    baseline.project_name = "ARC Application Implementation"
+    if baseline.charter:
+        baseline.charter.project_name = "ARC Application Implementation"
+
+    res = export_client_deck(baseline, tmp_path / "client_deck")
+    prs = pptx.Presentation(str(res.file_path))
+
+    for s_idx in [11, 14]:  # Slide 12 and Slide 15
+        slide = prs.slides[s_idx]
+        tbl_shape = next((s for s in slide.shapes if s.has_table), None)
+        assert tbl_shape is not None, f"Slide {s_idx + 1} missing table"
+        tbl = tbl_shape.table
+
+        for col_idx in range(len(tbl.columns)):
+            cell = tbl.cell(0, col_idx)
+            tcPr = cell._tc.xpath(".//a:tcPr")[0]
+            solid_fill = tcPr.xpath("./a:solidFill/a:srgbClr")
+            assert solid_fill, f"Client Slide {s_idx + 1} header cell (0, {col_idx}) missing literal solidFill"
+            assert solid_fill[0].get("val") == "041133"
+            assert not tcPr.xpath("./a:solidFill/a:schemeClr")

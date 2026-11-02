@@ -4,6 +4,7 @@ import copy
 import re
 from pathlib import Path
 from typing import List, Optional, Tuple
+from lxml import etree
 import pptx
 from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
@@ -114,6 +115,32 @@ def _format_table_cell(
                 run.font.bold = True
             if color_rgb:
                 run.font.color.rgb = color_rgb
+
+
+def _format_table_header_fill(
+    cell,
+    fill_hex: str = "041133",
+    font_name: str = "Proxima Nova",
+    font_size_pt: float = 11.0,
+    font_color_rgb: RGBColor = RGBColor(0xFF, 0xFF, 0xFF),
+    bold: bool = True,
+) -> None:
+    """Format table header cell with literal RGB background fill (#041133) and bold white text (HTL-89)."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    for child in list(tcPr):
+        if child.tag.endswith("solidFill"):
+            tcPr.remove(child)
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    solidFill = etree.SubElement(tcPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", val=fill_hex)
+
+    tf = cell.text_frame
+    for p in tf.paragraphs:
+        for r in p.runs:
+            r.font.name = font_name
+            r.font.size = Pt(font_size_pt)
+            r.font.bold = bold
+            r.font.color.rgb = font_color_rgb
 
 
 def write_slide1(slide, model: ClientDeckModel) -> None:
@@ -716,6 +743,9 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
     table_font_sz = min(all_sizes) if all_sizes else 9.5
 
     # Pass 2: Populate table rows with true table-wide uniform font size across all cells
+    for cell in table.rows[0].cells:
+        _format_table_header_fill(cell, fill_hex="041133")
+
     for i, risk in enumerate(rendered_risks):
         row = table.rows[i + 1]
         _format_table_cell(row.cells[0], desc_texts[i], table_font_sz)
@@ -769,6 +799,9 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
     table_font_sz = min(all_sizes) if all_sizes else 9.5
 
     # Pass 2: Populate table rows with true table-wide uniform font size across all cells
+    for cell in table.rows[0].cells:
+        _format_table_header_fill(cell, fill_hex="041133")
+
     for i in range(num_steps):
         step = steps[i]
         if i + 1 < len(table.rows):

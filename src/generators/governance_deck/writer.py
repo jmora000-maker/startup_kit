@@ -5,12 +5,14 @@ import os
 from pathlib import Path
 import re
 from typing import List, Optional, Tuple
+from lxml import etree
 import pptx
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
 
 from src.config import CLIENT_DECK_TEMPLATE_PATH, GOVERNANCE_DECK_TEMPLATE_PATH
+from src.generators.deck_header import apply_slide_header_formatting
 from src.generators.client_deck.fit import (
     BOLD_CHAR_WIDTH_FACTOR,
     estimate_text_height,
@@ -143,85 +145,122 @@ def write_slide1(slide, model: GovernanceDeckModel) -> None:
                 r.font.size = Pt(11)
 
 
+def _format_table_header_cell(
+    cell,
+    text: str,
+    font_size_pt: float = 9.5,
+    bold: bool = True,
+    border_hex: str = "D3DCEC",
+    fill_hex: str = "041133",
+) -> None:
+    """Format table header cell with dark navy background, white bold text, and D3DCEC borders (HTL-89)."""
+    cell.text = text
+    tf = cell.text_frame
+    tf.word_wrap = True
+    tf.margin_top = 0
+    tf.margin_bottom = 0
+    tf.margin_left = 0
+    tf.margin_right = 0
+
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcPr.set("anchor", "t")
+    tcPr.set("marT", "34300")
+    tcPr.set("marB", "34300")
+    tcPr.set("marL", "68600")
+    tcPr.set("marR", "68600")
+
+    for child in list(tcPr):
+        if child.tag.endswith("solidFill") or child.tag.endswith(("lnL", "lnR", "lnT", "lnB")):
+            tcPr.remove(child)
+
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    for side in ["lnL", "lnR", "lnT", "lnB"]:
+        ln = etree.SubElement(tcPr, f"{{{ns_a}}}{side}", w="12700", cap="flat", cmpd="sng")
+        sfill = etree.SubElement(ln, f"{{{ns_a}}}solidFill")
+        etree.SubElement(sfill, f"{{{ns_a}}}srgbClr", val=border_hex)
+
+    solidFill = etree.SubElement(tcPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", val=fill_hex)
+
+    for p in tf.paragraphs:
+        for run in p.runs:
+            run.font.name = "Proxima Nova"
+            run.font.size = Pt(font_size_pt)
+            run.font.bold = bold
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+
+def _format_table_data_cell_styling(
+    cell,
+    border_hex: str = "D3DCEC",
+    fill_hex: str = "FFFFFF",
+) -> None:
+    """Apply solid white fill, subtle gray-blue borders, and standard margins to table data cell (HTL-89)."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcPr.set("anchor", "t")
+    tcPr.set("marT", "18288")
+    tcPr.set("marB", "18288")
+    tcPr.set("marL", "36576")
+    tcPr.set("marR", "36576")
+
+    for child in list(tcPr):
+        if child.tag.endswith("solidFill") or child.tag.endswith(("lnL", "lnR", "lnT", "lnB")):
+            tcPr.remove(child)
+
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    for side in ["lnL", "lnR", "lnT", "lnB"]:
+        ln = etree.SubElement(tcPr, f"{{{ns_a}}}{side}", w="12700", cap="flat", cmpd="sng")
+        sfill = etree.SubElement(ln, f"{{{ns_a}}}solidFill")
+        etree.SubElement(sfill, f"{{{ns_a}}}srgbClr", val=border_hex)
+
+    solidFill = etree.SubElement(tcPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", val=fill_hex)
+
+
 def write_slide15_acceptance_criteria_page(
     slide,
     rows: List[AcceptanceCriterionRow],
     page_num: int = 1,
     total_pages: int = 1,
 ) -> None:
-    """Populate one Slide 15 Deliverable Acceptance Criteria table page with multi-bullet criteria and uniform font fitting (HTL-62/63/64/72)."""
+    """Populate one Slide 15 Deliverable Acceptance Criteria table page with multi-bullet criteria and uniform font fitting (HTL-62/63/64/72/88/89)."""
     # 1. Clear any placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
 
-    # 2. Add Kicker
-    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
-    tf_k = kicker_box.text_frame
-    tf_k.word_wrap = True
-    tf_k.margin_top = 0
-    tf_k.margin_bottom = 0
-    tf_k.margin_left = 0
-    tf_k.margin_right = 0
-    p_k = tf_k.paragraphs[0]
-    p_k.text = "PROJECT SUCCESS AGREEMENT"
-    for r in p_k.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
-
-    # 3. Add Title
-    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
-    tf_t = title_box.text_frame
-    tf_t.word_wrap = True
-    tf_t.margin_top = 0
-    tf_t.margin_bottom = 0
-    tf_t.margin_left = 0
-    tf_t.margin_right = 0
-    p_t = tf_t.paragraphs[0]
-    p_t.text = "Deliverable acceptance criteria"
-    for r in p_t.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(20)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
-
-    # 4. Add Subtitle
-    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
-    tf_s = sub_box.text_frame
-    tf_s.word_wrap = True
-    tf_s.margin_top = 0
-    tf_s.margin_bottom = 0
-    tf_s.margin_left = 0
-    tf_s.margin_right = 0
-    p_s = tf_s.paragraphs[0]
+    # 2. Add Header (HTL-88)
     if total_pages > 1:
-        p_s.text = f"Contractual criteria and verification requirements mapped to milestone gates (Part {page_num} of {total_pages})."
+        sub_text = f"Contractual criteria and verification requirements mapped to milestone gates (Part {page_num} of {total_pages})."
     else:
-        p_s.text = "Contractual criteria and verification requirements mapped to milestone gates."
-    for r in p_s.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
-        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+        sub_text = "Contractual criteria and verification requirements mapped to milestone gates."
+    apply_slide_header_formatting(
+        slide,
+        kicker_text="PROJECT SUCCESS AGREEMENT",
+        title_text="Deliverable acceptance criteria",
+        subtitle_text=sub_text,
+    )
 
-    # 5. Add Table (Left: 0.50 in, Top: 1.48 in, Width: 9.00 in, Height: 2.00 in)
+    # 3. Add Table (Left: 0.525 in, Top: 1.75 in, Width: 9.00 in, Height: 2.00 in)
     num_rows = len(rows)
     table_rows = max(2, num_rows + 1)
-    table_shape = slide.shapes.add_table(table_rows, 3, 457200, 1353312, 8229600, 1828800)
+    table_shape = slide.shapes.add_table(table_rows, 3, 480073, 1600200, 8229600, 1828800)
     table = table_shape.table
 
-    # Column widths: Col 0: 2.00 in (1,828,800), Col 1: 5.80 in (5,303,520), Col 2: 1.20 in (1,097,280)
+    # Column widths: Col 0: 2.00 in (1,828,800), Col 1: 5.70 in (5,212,080), Col 2: 1.30 in (1,188,720)
     table.columns[0].width = 1828800
-    table.columns[1].width = 5303520
-    table.columns[2].width = 1097280
+    table.columns[1].width = 5212080
+    table.columns[2].width = 1188720
 
     # Header Row (Row 0)
-    _format_table_cell(table.cell(0, 0), "Deliverable", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
-    _format_table_cell(table.cell(0, 1), "Acceptance Criteria", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
-    _format_table_cell(table.cell(0, 2), "Milestone Gate", font_size_pt=9.5, bold=True, color_rgb=RGBColor(0x04, 0x11, 0x33))
+    _format_table_header_cell(table.cell(0, 0), "Deliverable", font_size_pt=9.5, bold=True)
+    _format_table_header_cell(table.cell(0, 1), "Acceptance Criteria", font_size_pt=9.5, bold=True)
+    _format_table_header_cell(table.cell(0, 2), "Milestone Gate", font_size_pt=9.5, bold=True)
 
     if not rows:
         cell0 = table.rows[1].cells[0]
+        _format_table_data_cell_styling(cell0)
+        _format_table_data_cell_styling(table.rows[1].cells[1])
+        _format_table_data_cell_styling(table.rows[1].cells[2])
         _format_table_cell(cell0, "[CONFIRMATION REQUIRED]", font_size_pt=8.0)
         return
 
@@ -231,18 +270,13 @@ def write_slide15_acceptance_criteria_page(
 
         # Col 0: Deliverable (ID bold + Name)
         cell0 = row.cells[0]
+        _format_table_data_cell_styling(cell0)
         cell0.text = ""
         tf0 = cell0.text_frame
         tf0.margin_top = 0
         tf0.margin_bottom = 0
         tf0.margin_left = 0
         tf0.margin_right = 0
-        for tcPr in cell0._tc.xpath(".//a:tcPr"):
-            tcPr.set("anchor", "t")
-            tcPr.set("marT", "18288")
-            tcPr.set("marB", "18288")
-            tcPr.set("marL", "36576")
-            tcPr.set("marR", "36576")
 
         p0_1 = tf0.paragraphs[0]
         p0_1.text = row_data.deliverable_id
@@ -262,18 +296,13 @@ def write_slide15_acceptance_criteria_page(
 
         # Col 1: Acceptance Criteria (Multi-bullet)
         cell1 = row.cells[1]
+        _format_table_data_cell_styling(cell1)
         cell1.text = ""
         tf1 = cell1.text_frame
         tf1.margin_top = 0
         tf1.margin_bottom = 0
         tf1.margin_left = 0
         tf1.margin_right = 0
-        for tcPr in cell1._tc.xpath(".//a:tcPr"):
-            tcPr.set("anchor", "t")
-            tcPr.set("marT", "18288")
-            tcPr.set("marB", "18288")
-            tcPr.set("marL", "36576")
-            tcPr.set("marR", "36576")
 
         crits = row_data.acceptance_criteria or ["[CONFIRMATION REQUIRED]"]
         for c_idx, crit in enumerate(crits):
@@ -288,18 +317,13 @@ def write_slide15_acceptance_criteria_page(
 
         # Col 2: Milestone Gate
         cell2 = row.cells[2]
+        _format_table_data_cell_styling(cell2)
         cell2.text = ""
         tf2 = cell2.text_frame
         tf2.margin_top = 0
         tf2.margin_bottom = 0
         tf2.margin_left = 0
         tf2.margin_right = 0
-        for tcPr in cell2._tc.xpath(".//a:tcPr"):
-            tcPr.set("anchor", "t")
-            tcPr.set("marT", "18288")
-            tcPr.set("marB", "18288")
-            tcPr.set("marL", "36576")
-            tcPr.set("marR", "36576")
 
         p2 = tf2.paragraphs[0]
         p2.text = row_data.milestone_gate or "—"
@@ -319,63 +343,27 @@ _parse_step_line = parse_step_line
 
 
 def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 16 How Milestone Acceptance Works visual flowchart with loop-back and 3 deep-dive cards (HTL-72 / HTL-74 Option C)."""
+    """Populate Slide 16 How Milestone Acceptance Works visual flowchart with loop-back and 3 deep-dive cards (HTL-72 / HTL-74 Option C / HTL-88)."""
     # 1. Clear placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
 
-    # 2. Add Kicker
-    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
-    tf_k = kicker_box.text_frame
-    tf_k.word_wrap = True
-    tf_k.margin_top = 0
-    tf_k.margin_bottom = 0
-    tf_k.margin_left = 0
-    tf_k.margin_right = 0
-    p_k = tf_k.paragraphs[0]
-    p_k.text = getattr(model.slide16, "kicker", None) or "PROJECT SUCCESS AGREEMENT"
-    for r in p_k.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
-
-    # 3. Add Title
-    title_box = slide.shapes.add_textbox(457200, 600000, 8023800, 300000)
-    tf_t = title_box.text_frame
-    tf_t.word_wrap = True
-    tf_t.margin_top = 0
-    tf_t.margin_bottom = 0
-    tf_t.margin_left = 0
-    tf_t.margin_right = 0
-    p_t = tf_t.paragraphs[0]
-    p_t.text = getattr(model.slide16, "title", None) or "How milestone acceptance works"
-    for r in p_t.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(19)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
-
-    # 4. Add Subtitle
-    sub_box = slide.shapes.add_textbox(457200, 940000, 8023800, 240000)
-    tf_s = sub_box.text_frame
-    tf_s.word_wrap = True
-    tf_s.margin_top = 0
-    tf_s.margin_bottom = 0
-    tf_s.margin_left = 0
-    tf_s.margin_right = 0
-    p_s = tf_s.paragraphs[0]
-    p_s.text = getattr(model.slide16, "subtitle", None) or "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
-    for r in p_s.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(10)
-        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
+    # 2. Add Header (HTL-88)
+    kicker_txt = getattr(model.slide16, "kicker", None) or "PROJECT SUCCESS AGREEMENT"
+    title_txt = getattr(model.slide16, "title", None) or "How milestone acceptance works"
+    subtitle_txt = getattr(model.slide16, "subtitle", None) or "Workflow, review turnarounds, remediation thresholds, and sign-off protocols for the Talent Team."
+    apply_slide_header_formatting(
+        slide,
+        kicker_text=kicker_txt,
+        title_text=title_txt,
+        subtitle_text=subtitle_txt,
+    )
 
     # -------------------------------------------------------------
-    # 5. Upper Zone: 4-Node Visual Flowchart with Remediation Loop
+    # 3. Upper Zone: 4-Node Visual Flowchart with Remediation Loop
     # -------------------------------------------------------------
-    flowchart_top = 1115568  # 1.22 in
-    node_h = 274320         # 0.30 in
+    flowchart_top = 1536192  # 1.68 in (comfortably below canonical 1.35 in + 0.30 in subtitle)
+    node_h = 201168         # 0.22 in
     total_w = 8229600       # 9.00 in
     node_gap = 219456       # 0.24 in
     node_w = (total_w - 3 * node_gap) // 4  # 1892832 EMU (2.07 in)
@@ -431,8 +419,8 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
             arrow.line.color.rgb = RGBColor(0x98, 0xA2, 0xB3)
 
     # Remediation Loop-Back Band (Returns from Step 3 Decision Check back to Step 1/2)
-    loop_top = flowchart_top + node_h + 27432   # 1.55 in
-    loop_h = 164592                            # 0.18 in
+    loop_top = flowchart_top + node_h + 18288   # 1.92 in
+    loop_h = 137160                            # 0.15 in
     loop_left = node_lefts[0] + 73152
     loop_right = node_lefts[2] + node_w - 73152
     loop_w = loop_right - loop_left
@@ -458,27 +446,27 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     r_loop.font.color.rgb = RGBColor(0x34, 0x40, 0x54)
 
     # -------------------------------------------------------------
-    # 6. Lower Zone: 3 Deep-Dive Governance Cards
+    # 4. Lower Zone: 3 Deep-Dive Governance Cards
     # -------------------------------------------------------------
     cards = getattr(model.slide16, "cards", None)
     if not cards:
         narrative_text = model.slide16.narrative or "[CONFIRMATION REQUIRED]"
         cards = _build_acceptance_cards(narrative_text)
 
-    card_top = 1627632   # 1.78 in
-    card_h = 3154680     # 3.45 in  (bottom = 5.23 in <= 5.25 in ceiling)
+    card_top = 1975104   # 2.16 in
+    card_h = 2807208     # 3.07 in  (bottom = 5.23 in <= 5.25 in ceiling)
     gap = 146304         # 0.16 in
     card_w = (total_w - 2 * gap) // 3  # 2645664 EMU (2.893 in)
 
-    badge_h = 201168     # 0.22 in
-    badge_inset = 64008  # 0.07 in
+    badge_h = 173736     # 0.19 in
+    badge_inset = 45720  # 0.05 in
 
-    cat_top = card_top + badge_h + badge_inset + 18288  # +0.02 in
-    cat_h = 164592                                      # 0.18 in
-    tb_top = cat_top + cat_h + 18288                    # +0.02 in
+    cat_top = card_top + badge_h + badge_inset + 9144   # +0.01 in
+    cat_h = 137160                                      # 0.15 in
+    tb_top = cat_top + cat_h + 9144                     # +0.01 in
     tb_h = card_h - (tb_top - card_top) - badge_inset
-    avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.75 in
-    avail_h_pt = tb_h / 12700.0                        # ~206.6 pt
+    avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.79 in
+    avail_h_pt = tb_h / 12700.0                        # ~188 pt
 
     # Pass 1: Compute one shared font size across all 3 cards based on the densest card
     candidate_sizes = [8.5, 8.0, 7.5, 7.0, 6.5, 6.0, 5.5]
@@ -597,65 +585,29 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
 
 
 def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 17 Approach 3-card layout with uniform font fitting and Proxima Nova typography (HTL-72)."""
+    """Populate Slide 17 Approach 3-card layout with uniform font fitting and Proxima Nova typography (HTL-72 / HTL-88)."""
     # 1. Clear any placeholder shapes
     for s in list(slide.shapes):
         slide.shapes._spTree.remove(s._element)
 
-    # 2. Add Kicker
-    kicker_box = slide.shapes.add_textbox(457200, 384048, 6858300, 205800)
-    tf_k = kicker_box.text_frame
-    tf_k.word_wrap = True
-    tf_k.margin_top = 0
-    tf_k.margin_bottom = 0
-    tf_k.margin_left = 0
-    tf_k.margin_right = 0
-    p_k = tf_k.paragraphs[0]
-    p_k.text = model.slide17.kicker or "PROJECT SUCCESS AGREEMENT"
-    for r in p_k.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+    # 2. Add Header (HTL-88)
+    kicker_txt = model.slide17.kicker or "PROJECT SUCCESS AGREEMENT"
+    title_txt = model.slide17.title or "Approach"
+    subtitle_txt = model.slide17.subtitle or "Execution phases, workstream deliverables, and governance model."
+    apply_slide_header_formatting(
+        slide,
+        kicker_text=kicker_txt,
+        title_text=title_txt,
+        subtitle_text=subtitle_txt,
+    )
 
-    # 3. Add Title
-    title_box = slide.shapes.add_textbox(457200, 640080, 8023800, 332400)
-    tf_t = title_box.text_frame
-    tf_t.word_wrap = True
-    tf_t.margin_top = 0
-    tf_t.margin_bottom = 0
-    tf_t.margin_left = 0
-    tf_t.margin_right = 0
-    p_t = tf_t.paragraphs[0]
-    p_t.text = model.slide17.title or "Approach"
-    for r in p_t.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(20)
-        r.font.bold = True
-        r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
-
-    # 4. Add Subtitle
-    sub_box = slide.shapes.add_textbox(457200, 1042416, 8023800, 274200)
-    tf_s = sub_box.text_frame
-    tf_s.word_wrap = True
-    tf_s.margin_top = 0
-    tf_s.margin_bottom = 0
-    tf_s.margin_left = 0
-    tf_s.margin_right = 0
-    p_s = tf_s.paragraphs[0]
-    p_s.text = model.slide17.subtitle or "Execution phases, workstream deliverables, and governance model."
-    for r in p_s.runs:
-        r.font.name = "Proxima Nova"
-        r.font.size = Pt(11)
-        r.font.color.rgb = RGBColor(0x47, 0x54, 0x67)
-
-    # 5. Add 3 Cards (Left, Middle, Right)
+    # 3. Add 3 Cards (Left, Middle, Right)
     # Card geometry matching Governance Slide 5/10 (Inches -> EMUs):
-    # Width: 2.778 in (2,540,092 EMU), Height: 3.250 in (2,971,800 EMU), Top: 1.675 in (1,531,620 EMU)
+    # Width: 2.778 in (2,540,092 EMU), Height: 3.350 in (3,063,240 EMU), Top: 1.75 in (1,600,200 EMU)
     # Left positions: 0.668 in (610,870 EMU), 3.611 in (3,301,898 EMU), 6.554 in (5,992,926 EMU)
     card_w = 2540092
-    card_h = 2971800
-    top_pos = 1531620
+    card_h = 3063240
+    top_pos = 1600200
     left_positions = [610870, 3301898, 5992926]
 
     cards = model.slide17.cards
@@ -665,7 +617,7 @@ def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
     # Pass 1: Compute uniform fitting font size across all cards for bullets
     candidate_sizes = [10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
     avail_w_in = 2.40
-    avail_h_in = 2.05
+    avail_h_in = 2.15
 
     card_best_sizes = []
     for c in cards[:3]:
@@ -687,13 +639,13 @@ def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
         # Card container rectangle
         shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left_pos, top_pos, card_w, card_h)
         shape.fill.solid()
-        shape.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xFA)
+        shape.fill.fore_color.rgb = RGBColor(0xF8, 0xF9, 0xF8)
         shape.line.color.rgb = RGBColor(0xEA, 0xEC, 0xF0)
         shape.line.width = Pt(1)
 
         # Inset text box
-        # Inset: left + 0.18 in (164,592 EMU), top + 0.16 in (146,304 EMU), width - 0.36 in (2,210,908 EMU), height - 0.32 in (2,679,192 EMU)
-        tb = slide.shapes.add_textbox(left_pos + 164592, top_pos + 146304, 2210908, 2679192)
+        # Inset: left + 0.18 in (164,592 EMU), top + 0.16 in (146,304 EMU), width - 0.36 in (2,210,908 EMU), height - 0.32 in (2,770,632 EMU)
+        tb = slide.shapes.add_textbox(left_pos + 164592, top_pos + 146304, 2210908, card_h - 292608)
         tf = tb.text_frame
         tf.word_wrap = True
         tf.margin_top = 0
@@ -909,6 +861,21 @@ def write_governance_deck(
         ),
     )
 
+    # Format canonical slide headers across template and lifted content slides (HTL-88)
+    apply_slide_header_formatting(prs_gov.slides[1], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[3], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[4], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[5], title_text="The PM owns the plan and the day-to-day work", has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[6], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[7], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[8], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[9], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[11], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[12])
+    apply_slide_header_formatting(prs_gov.slides[13], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[16 + total_s15_pages])
+    apply_slide_header_formatting(prs_gov.slides[17 + total_s15_pages])
+
     # Populate slides:
     # Slide 1 (index 0)
     write_slide1(prs_gov.slides[0], model)
@@ -919,7 +886,7 @@ def write_governance_deck(
     # Slide 14 (index 13): What We Deliver (Client Slide 6)
     write_slide6(prs_gov.slides[13], client_deck_adapter)
 
-    # Slide 15 pages (starting at index 14): Acceptance Criteria Table (HTL-72)
+    # Slide 15 pages (starting at index 14): Acceptance Criteria Table (HTL-72 / HTL-88 / HTL-89)
     for c_idx, chunk_rows in enumerate(chunks_s15):
         write_slide15_acceptance_criteria_page(
             prs_gov.slides[14 + c_idx],
@@ -928,10 +895,10 @@ def write_governance_deck(
             total_pages=total_s15_pages,
         )
 
-    # Slide 16: How Milestone Acceptance Works Narrative (HTL-72)
+    # Slide 16: How Milestone Acceptance Works Narrative (HTL-72 / HTL-88)
     write_slide16_acceptance_narrative(prs_gov.slides[14 + total_s15_pages], model)
 
-    # Slide 17: Approach 3-Card Layout (HTL-72)
+    # Slide 17: Approach 3-Card Layout (HTL-72 / HTL-88)
     write_slide17_approach(prs_gov.slides[15 + total_s15_pages], model)
 
     # Slide 18: Initial Risk Register (Client Slide 12)

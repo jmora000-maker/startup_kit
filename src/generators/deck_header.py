@@ -155,9 +155,11 @@ def identify_header_shapes(slide) -> Tuple[Optional[pptx.shapes.base.BaseShape],
             continue
         top_in = sh.top / 914400.0
         left_in = sh.left / 914400.0
+        h_in = sh.height / 914400.0
+        w_in = sh.width / 914400.0
 
-        # Header shapes are located in the upper portion of the slide (top < 1.70 in, left < 1.5 in)
-        if top_in < 1.70 and left_in < 1.5:
+        # Header shapes are located in the upper portion of the slide (top < 1.70 in, left < 1.5 in, height < 1.0 in)
+        if top_in < 1.70 and left_in < 1.5 and h_in < 1.0:
             text = sh.text_frame.text.strip()
             # Check font size or vertical band
             first_run = None
@@ -173,8 +175,8 @@ def identify_header_shapes(slide) -> Tuple[Optional[pptx.shapes.base.BaseShape],
             elif (0.65 <= top_in < 1.25) or (run_sz and run_sz >= 18.0):
                 if title_shape is None:
                     title_shape = sh
-            # 3. Subtitle: top between 1.20 in and 1.65 in and width >= 4.0 in
-            elif 1.20 <= top_in < 1.65 and (sh.width / 914400.0) >= 4.0:
+            # 3. Subtitle: top between 1.20 in and 1.65 in, width >= 4.0 in, and has text
+            elif 1.20 <= top_in < 1.65 and w_in >= 4.0 and len(text) > 0:
                 if subtitle_shape is None:
                     subtitle_shape = sh
 
@@ -199,17 +201,16 @@ def apply_slide_header_formatting(
 
     # 1. Kicker
     if has_kicker:
-        if k_shape is None:
+        if k_shape is None and kicker_text is not None:
             k_shape = slide.shapes.add_textbox(KICKER_LEFT, KICKER_TOP, KICKER_WIDTH, KICKER_HEIGHT)
-        format_kicker_shape(k_shape, kicker_text)
-    elif k_shape is not None and kicker_text is None:
-        # If explicitly no kicker and we have a surplus kicker shape
-        pass
+        if k_shape is not None:
+            format_kicker_shape(k_shape, kicker_text)
 
     # 2. Main Title
-    if t_shape is None:
+    if t_shape is None and title_text is not None:
         t_shape = slide.shapes.add_textbox(TITLE_LEFT, TITLE_TOP, TITLE_WIDTH, TITLE_HEIGHT)
-    format_title_shape(t_shape, title_text, title_sz=title_sz)
+    if t_shape is not None:
+        format_title_shape(t_shape, title_text, title_sz=title_sz)
 
     # 3. Subtitle
     if has_subtitle:
