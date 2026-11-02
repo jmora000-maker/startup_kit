@@ -16,6 +16,7 @@ from src.generators.client_deck.fit import (
     fit_deliverables_for_block,
     select_fitting_font_size,
     truncate_at_clause,
+    wrap_lines,
 )
 from src.generators.client_deck.spec import ClientDeckModel, WorkstreamBlock
 
@@ -184,41 +185,44 @@ def write_slide1(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here) with uniform font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54)."""
-    candidate_sizes = [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0]
+    """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95)."""
+    candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
-    # Card 2 (Problem Statement): max height is 0.40 in (~28.8 pt / max 3 lines at 8.0pt)
+    # Card 2 (Problem Statement): max height is 0.46 in (~33.1 pt / max 2-3 lines at 10.0pt)
     prob_raw = model.slide5.what_problem_are_we_solving
-    if estimate_text_height(prob_raw, width_in=7.75, size_pt=8.0) > 0.40 * 72.0:
+    if estimate_text_height(prob_raw, width_in=7.75, size_pt=10.0) > 0.46 * 72.0:
         prob_raw = truncate_at_clause(prob_raw, max_chars=220, suffix="...")
-        while estimate_text_height(prob_raw, width_in=7.75, size_pt=8.0) > 0.40 * 72.0 and len(prob_raw) > 30:
+        while estimate_text_height(prob_raw, width_in=7.75, size_pt=10.0) > 0.46 * 72.0 and len(prob_raw) > 30:
             prob_raw = truncate_at_clause(prob_raw[:-4], max_chars=len(prob_raw) - 20, suffix="...")
 
-    # Pass 1: Compute fitting font sizes across all three cards (HTL-52 / HTL-54)
+    # Pass 1: Compute fitting font sizes across all three cards (HTL-52 / HTL-54 / HTL-95)
     sz_why, fitted_why = select_fitting_font_size(
         model.slide5.why_are_we_doing_this,
         width_in=7.75,
-        max_height_in=0.40,
+        max_height_in=0.46,
         candidate_sizes=candidate_sizes,
+        min_font_floor=10.0,
     )
     sz_prob, fitted_prob = select_fitting_font_size(
         prob_raw,
         width_in=7.75,
-        max_height_in=0.40,
+        max_height_in=0.46,
         candidate_sizes=candidate_sizes,
+        min_font_floor=10.0,
     )
     sz_succ, fitted_succ = select_fitting_font_size(
         model.slide5.what_does_success_look_like,
         width_in=7.75,
-        max_height_in=0.40,
+        max_height_in=0.74,
         candidate_sizes=candidate_sizes,
+        min_font_floor=10.0,
     )
     uniform_sz = min(sz_why, sz_prob, sz_succ)
 
     # Re-fit texts at uniform_sz if needed to ensure no overflow
-    if estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.40 * 72.0:
+    if estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.46 * 72.0:
         fitted_prob = truncate_at_clause(fitted_prob, max_chars=200, suffix="...")
-        while estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.40 * 72.0 and len(fitted_prob) > 30:
+        while estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.46 * 72.0 and len(fitted_prob) > 30:
             fitted_prob = truncate_at_clause(fitted_prob[:-4], max_chars=len(fitted_prob) - 20, suffix="...")
 
     # Pass 2: Render cards with uniform font size
@@ -357,6 +361,65 @@ def _set_paragraph_bullet_format(p, font_size_pt: float, text: str, is_overflow:
     etree.SubElement(endRPr, f"{{{ns_a}}}latin", {"typeface": "Proxima Nova"})
 
 
+def _set_dark_panel_bullet_format(p, font_size_pt: float, text: str) -> None:
+    """Apply native PPTX bullet point formatting with white font styling for dark right-panel boxes (HTL-96)."""
+    from lxml import etree
+
+    clean_text = text.strip()
+    if clean_text.startswith("•") or clean_text.startswith("●"):
+        clean_text = clean_text[1:].strip()
+
+    p_elem = p._p
+    for child in list(p_elem):
+        p_elem.remove(child)
+
+    sz_val = str(int(font_size_pt * 100))
+
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    pPr = etree.SubElement(p_elem, f"{{{ns_a}}}pPr", {
+        "indent": "-180000",
+        "marL": "240000",
+        "rtl": "0",
+        "algn": "l",
+    })
+
+    lnSpc = etree.SubElement(pPr, f"{{{ns_a}}}lnSpc")
+    etree.SubElement(lnSpc, f"{{{ns_a}}}spcPct", {"val": "110000"})
+
+    spcBef = etree.SubElement(pPr, f"{{{ns_a}}}spcBef")
+    etree.SubElement(spcBef, f"{{{ns_a}}}spcPts", {"val": "100" if font_size_pt < 9.0 else "150"})
+
+    spcAft = etree.SubElement(pPr, f"{{{ns_a}}}spcAft")
+    etree.SubElement(spcAft, f"{{{ns_a}}}spcPts", {"val": "0"})
+
+    buClr = etree.SubElement(pPr, f"{{{ns_a}}}buClr")
+    etree.SubElement(buClr, f"{{{ns_a}}}srgbClr", {"val": "FFFFFF"})
+
+    etree.SubElement(pPr, f"{{{ns_a}}}buSzPts", {"val": sz_val})
+    etree.SubElement(pPr, f"{{{ns_a}}}buFont", {"typeface": "Proxima Nova"})
+    etree.SubElement(pPr, f"{{{ns_a}}}buChar", {"char": "●"})
+
+    r = etree.SubElement(p_elem, f"{{{ns_a}}}r")
+    rPr = etree.SubElement(r, f"{{{ns_a}}}rPr", {
+        "lang": "en",
+        "sz": sz_val,
+    })
+    solidFill = etree.SubElement(rPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", {"val": "FFFFFF"})
+    etree.SubElement(rPr, f"{{{ns_a}}}latin", {"typeface": "Proxima Nova"})
+    etree.SubElement(rPr, f"{{{ns_a}}}ea", {"typeface": "Proxima Nova"})
+    etree.SubElement(rPr, f"{{{ns_a}}}cs", {"typeface": "Proxima Nova"})
+    etree.SubElement(rPr, f"{{{ns_a}}}sym", {"typeface": "Proxima Nova"})
+
+    t = etree.SubElement(r, f"{{{ns_a}}}t")
+    t.text = clean_text
+
+    endRPr = etree.SubElement(p_elem, f"{{{ns_a}}}endParaRPr", {"sz": sz_val})
+    solidFill_end = etree.SubElement(endRPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill_end, f"{{{ns_a}}}srgbClr", {"val": "FFFFFF"})
+    etree.SubElement(endRPr, f"{{{ns_a}}}latin", {"typeface": "Proxima Nova"})
+
+
 def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, overflow_count: int = 0) -> None:
     """Populate bulleted deliverables in a deliverable text box with consistent native PPTX bullets."""
     tf = shape.text_frame
@@ -392,33 +455,60 @@ def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, ov
         _set_paragraph_bullet_format(p, font_pt, item_text, is_overflow=is_ovf)
 
 
+def _fit_out_of_scope_items(items: Sequence[str], inner_w_in: float = 2.58, max_h_pt: float = 120.0) -> List[str]:
+    """Truncate Out of Scope bullet items at natural clause boundaries so they reliably fit within fixed box height (HTL-96)."""
+    if not items:
+        return []
+    fitted = [it.strip() for it in items if it and it.strip()]
+
+    def _calc_h(cand: List[str]) -> float:
+        h = 0.0
+        for it in cand:
+            lines = wrap_lines(it, width_in=inner_w_in, size_pt=10.0, char_width_factor=0.55)
+            h += lines * 10.0 * 1.15 + 1.5
+        return h
+
+    if _calc_h(fitted) <= max_h_pt:
+        return fitted
+
+    n = max(1, len(fitted))
+    target_chars = max(45, int((9.0 / n) * 32))
+    fitted = [truncate_at_clause(it, max_chars=target_chars, suffix="...") for it in fitted]
+
+    while _calc_h(fitted) > max_h_pt:
+        longest_idx = max(range(len(fitted)), key=lambda i: len(fitted[i]))
+        curr = fitted[longest_idx]
+        if len(curr) <= 25:
+            break
+        fitted[longest_idx] = truncate_at_clause(curr[:-4], max_chars=len(curr) - 15, suffix="...")
+
+    return fitted
+
+
 def write_slide6(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 6 and dynamically manipulate XML shape tree for N workstreams (HTL-61)."""
+    """Populate Slide 6 with combined Solution Overview shape, real PPTX bullets for Out of Scope, fixed 14pt headers / 10pt body, and fixed box bounds with clause truncation (HTL-61 / HTL-96)."""
     white_color = RGBColor(255, 255, 255)
 
-    # 1. Solution Overview & Out of Scope: uniform font sizing across both text boxes (HTL-61)
-    candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
-    sz_so, so_text = select_fitting_font_size(
-        model.slide6.solution_overview,
-        width_in=2.84,
-        max_height_in=2.20,
-        candidate_sizes=candidate_sizes,
-    )
-    total_oos_text = "\n".join([f"• {item}" for item in model.slide6.out_of_scope])
-    sz_oos, _ = select_fitting_font_size(
-        total_oos_text,
-        width_in=2.84,
-        max_height_in=0.75,
-        candidate_sizes=candidate_sizes,
-    )
-    uniform_panel_sz = min(sz_so, sz_oos)
-    if uniform_panel_sz < sz_so:
-        _, so_text = select_fitting_font_size(
-            model.slide6.solution_overview,
-            width_in=2.84,
-            max_height_in=2.20,
-            candidate_sizes=[uniform_panel_sz],
-        )
+    # 1. Fixed dimensions and coordinates for right dark panel (HTL-96)
+    so_top = 580000
+    so_left = 6347125
+    so_width = 2600000
+    so_height = 2150000
+
+    oos_top = 2850000
+    oos_left = 6347125
+    oos_width = 2600000
+    oos_height = 1850000
+
+    # 2. Fit Solution Overview text within fixed box (~140pt max body height)
+    so_text = model.slide6.solution_overview
+    if estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0:
+        so_text = truncate_at_clause(so_text, max_chars=420, suffix="...")
+        while estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0 and len(so_text) > 50:
+            so_text = truncate_at_clause(so_text[:-4], max_chars=len(so_text) - 20, suffix="...")
+
+    # 3. Fit Out of Scope items within fixed box (~120pt max items height)
+    oos_items = _fit_out_of_scope_items(model.slide6.out_of_scope, inner_w_in=2.58, max_h_pt=120.0)
 
     for shape in list(slide.shapes):
         if not shape.has_text_frame:
@@ -428,61 +518,75 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
             # Strip placeholder attribute so renderer treats it as a standard top-anchored textbox
             for ph in shape._element.xpath(".//p:ph"):
                 ph.getparent().remove(ph)
-            shape.top = 580000
-            shape.left = 6347125
-            shape.width = 2600000
-            shape.height = 420000
+            shape.top = so_top
+            shape.left = so_left
+            shape.width = so_width
+            shape.height = so_height
             tf = shape.text_frame
+            tf.word_wrap = True
             tf.margin_top = 0
             tf.margin_bottom = 0
             tf.margin_left = 0
             tf.margin_right = 0
-            _replace_shape_text(shape, "Solution Overview", Pt(16), font_color_rgb=white_color)
-            if tf.paragraphs and tf.paragraphs[0].runs:
-                tf.paragraphs[0].runs[0].font.bold = True
-                tf.paragraphs[0].runs[0].font.name = "Proxima Nova"
-                tf.paragraphs[0].runs[0].font.color.rgb = white_color
-        elif shape.shape_id == 194 or "[high level summary of the work" in text:
-            for ph in shape._element.xpath(".//p:ph"):
-                ph.getparent().remove(ph)
-            shape.top = 1150000
-            shape.left = 6347125
-            shape.width = 2600000
-            shape.height = 2500000
-            tf = shape.text_frame
-            tf.margin_top = 0
-            tf.margin_bottom = 0
-            tf.margin_left = 0
-            tf.margin_right = 0
-            _replace_shape_text(shape, so_text, Pt(uniform_panel_sz), font_color_rgb=white_color)
-            if tf.paragraphs and tf.paragraphs[0].runs:
-                tf.paragraphs[0].runs[0].font.color.rgb = white_color
-        elif shape.shape_id == 202 or "Out of Scope:" in text:
-            shape.top = 3800000
-            shape.left = 6347125
-            shape.width = 2600000
-            shape.height = 850000
-            tf = shape.text_frame
-            tf.margin_top = 0
-            tf.margin_bottom = 0
-            tf.margin_left = 0
-            tf.margin_right = 0
+            for bpr in shape._element.xpath(".//a:bodyPr"):
+                bpr.set("anchor", "t")
+
             for p in list(tf.paragraphs[1:]):
                 tf._txBody.remove(p._p)
-            tf.paragraphs[0].text = "Out of Scope:"
-            if tf.paragraphs[0].runs:
-                tf.paragraphs[0].runs[0].font.name = "Proxima Nova"
-                tf.paragraphs[0].runs[0].font.size = Pt(11)
-                tf.paragraphs[0].runs[0].font.bold = True
-                tf.paragraphs[0].runs[0].font.color.rgb = white_color
 
-            for item in model.slide6.out_of_scope:
+            p0 = tf.paragraphs[0]
+            p0.text = "Solution Overview"
+            p0.space_before = Pt(0)
+            p0.space_after = Pt(5)
+            if p0.runs:
+                p0.runs[0].font.name = "Proxima Nova"
+                p0.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
+                p0.runs[0].font.bold = True
+                p0.runs[0].font.color.rgb = white_color
+
+            p1 = tf.add_paragraph()
+            p1.text = so_text
+            p1.space_before = Pt(0)
+            p1.space_after = Pt(0)
+            if p1.runs:
+                p1.runs[0].font.name = "Proxima Nova"
+                p1.runs[0].font.size = Pt(10)  # HTL-96: Fixed 10pt body
+                p1.runs[0].font.bold = False
+                p1.runs[0].font.color.rgb = white_color
+        elif shape.shape_id == 194 or "[high level summary of the work" in text:
+            # HTL-96: Remove separate body shape as it is now combined into Shape 193
+            if shape._element in slide.shapes._spTree:
+                slide.shapes._spTree.remove(shape._element)
+        elif shape.shape_id == 202 or "Out of Scope:" in text:
+            shape.top = oos_top
+            shape.left = oos_left
+            shape.width = oos_width
+            shape.height = oos_height
+            tf = shape.text_frame
+            tf.word_wrap = True
+            tf.margin_top = 0
+            tf.margin_bottom = 0
+            tf.margin_left = 0
+            tf.margin_right = 0
+            for bpr in shape._element.xpath(".//a:bodyPr"):
+                bpr.set("anchor", "t")
+
+            for p in list(tf.paragraphs[1:]):
+                tf._txBody.remove(p._p)
+
+            p0 = tf.paragraphs[0]
+            p0.text = "Out of Scope:"
+            p0.space_before = Pt(0)
+            p0.space_after = Pt(5)  # HTL-96: Fixed 14pt header & 5pt space after (63500 EMU)
+            if p0.runs:
+                p0.runs[0].font.name = "Proxima Nova"
+                p0.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
+                p0.runs[0].font.bold = True
+                p0.runs[0].font.color.rgb = white_color
+
+            for item in oos_items:
                 p = tf.add_paragraph()
-                p.text = f"• {item}"
-                if p.runs:
-                    p.runs[0].font.name = "Proxima Nova"
-                    p.runs[0].font.size = Pt(uniform_panel_sz)
-                    p.runs[0].font.color.rgb = white_color
+                _set_dark_panel_bullet_format(p, 10.0, item)  # HTL-96: Fixed 10pt body
 
     # 2. Dynamic Workstreams
     workstreams = model.slide6.workstreams
