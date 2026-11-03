@@ -473,29 +473,11 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.79 in
     avail_h_pt = tb_h / 12700.0                        # ~188 pt
 
-    # Pass 1: Compute one shared font size across all 3 cards based on the densest card
-    candidate_sizes = [8.5, 8.0, 7.5, 7.0, 6.5, 6.0, 5.5]
-    line_spacing = 1.02
+    body_font_sz = 7.5
+    line_spacing = 1.08
+    space_after_pt = 2.0
 
-    card_best_sizes = []
-    for card in cards[:3]:
-        space_after_pt = 1.0 if len(card.steps) >= 5 else (1.5 if len(card.steps) >= 4 else 2.0)
-        c_sz = candidate_sizes[-1]
-        for sz in candidate_sizes:
-            tot_h = 0.0
-            for label, body in card.steps:
-                clean_lbl = label.rstrip(" :") if label else ""
-                full_line = f"{clean_lbl}: {body}" if clean_lbl else body
-                lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=sz, char_width_factor=0.55)
-                tot_h += lines * sz * line_spacing + space_after_pt
-            if tot_h <= (avail_h_pt - 4.0):
-                c_sz = sz
-                break
-        card_best_sizes.append(c_sz)
-
-    shared_sz = min(card_best_sizes) if card_best_sizes else candidate_sizes[-1]
-
-    # Pass 2: Render all 3 cards with the uniform shared font size
+    # Render all 3 cards with uniform fixed font size (7.5 pt) and uniform text box geometry (HTL-105)
     for c_idx, card in enumerate(cards[:3]):
         c_left = 457200 + c_idx * (card_w + gap)
 
@@ -547,17 +529,8 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r_cat.font.bold = True
         r_cat.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-        # Content Text Box (HTL-97: dynamically sized to fit actual content)
-        space_after_pt = 1.0 if len(card.steps) >= 5 else (1.5 if len(card.steps) >= 4 else 2.0)
-        card_content_h_pt = 0.0
-        for label, body in card.steps:
-            clean_lbl = label.rstrip(" :") if label else ""
-            full_line = f"{clean_lbl}: {body}" if clean_lbl else body
-            lines = wrap_lines(full_line, width_in=avail_w_in, size_pt=shared_sz, char_width_factor=0.55)
-            card_content_h_pt += lines * shared_sz * line_spacing + space_after_pt
-
-        dynamic_tb_h = min(tb_h, max(127000, int((card_content_h_pt + 4.0) * 12700)))
-        body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), dynamic_tb_h)
+        # Content Text Box (HTL-105: uniform fixed height and geometry across all 3 cards)
+        body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
         tf_b.margin_top = 0
@@ -578,21 +551,21 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
                 lead_run = p_elem.add_run()
                 lead_run.text = f"{clean_lbl}: "
                 lead_run.font.name = "Proxima Nova"
-                lead_run.font.size = Pt(shared_sz)
+                lead_run.font.size = Pt(body_font_sz)
                 lead_run.font.bold = True
                 lead_run.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
                 rest_run = p_elem.add_run()
                 rest_run.text = body
                 rest_run.font.name = "Proxima Nova"
-                rest_run.font.size = Pt(shared_sz)
+                rest_run.font.size = Pt(body_font_sz)
                 rest_run.font.bold = False
                 rest_run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
             else:
                 run = p_elem.add_run()
                 run.text = body
                 run.font.name = "Proxima Nova"
-                run.font.size = Pt(shared_sz)
+                run.font.size = Pt(body_font_sz)
                 run.font.bold = False
                 run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 

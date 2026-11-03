@@ -148,7 +148,7 @@ def test_ms_10_standalone_trailing_milestone_not_demoted():
 
 
 def test_arc_application_implementation_checkpoint_regression():
-    """Regression check: arc_application_implementation's CP-01 correctly becomes a checkpoint."""
+    """Regression check: arc_application_implementation's 4 contractual milestones reconcile to 4 primary gates."""
     import json
     from pathlib import Path
     data = json.loads(Path("tests/fixtures/sow/arc_application_implementation/baseline.json").read_text(encoding="utf-8"))
@@ -156,11 +156,9 @@ def test_arc_application_implementation_checkpoint_regression():
     validate_and_repair_baseline(baseline)
 
     assert len(baseline.milestones) == 4
-    assert len(baseline.interim_checkpoints or []) == 1
+    assert len(baseline.interim_checkpoints or []) == 0
     assert [m.id for m in baseline.milestones] == ["M1", "M2", "M3", "M4"]
-    assert baseline.interim_checkpoints[0].id == "CP-01"
-    assert baseline.interim_checkpoints[0].phase == "P1"
-    assert baseline.interim_checkpoints[0].phase_display == "P1"
+    assert [m.phase for m in baseline.milestones] == ["P1", "P2A", "P2B", "P3"]
 
 
 def test_arc_overextracted_checkpoints_regression():

@@ -158,30 +158,35 @@ def test_htl_96_slide6_combined_textbox_and_real_bullets(tmp_path):
         assert total_bottom <= slide_height, f"{name} Out of Scope overflows bottom: {total_bottom} > {slide_height}"
 
 
-def test_htl_97_slide16_dynamic_card_heights(tmp_path):
-    """HTL-97: Verify Slide 16 cards have dynamically sized body text boxes rather than fixed shared heights."""
+def test_htl_105_slide16_uniform_card_geometry_and_font_size(tmp_path):
+    """HTL-105 (overriding HTL-97): Verify Slide 16 cards have uniform text box heights and uniform 7.5pt font size across all 3 cards."""
     # Build baseline with different step counts across cards
     from tests.test_htl_74 import ARC_12_STEP_NARRATIVE
     baseline = load_baseline("arc_application_implementation")
     baseline.sow_interpretation.acceptance_process_narrative = ARC_12_STEP_NARRATIVE
 
     g_model = build_governance_deck_model(baseline)
-    g_out = tmp_path / "gov_deck_s16_htl97.pptx"
+    g_out = tmp_path / "gov_deck_s16_htl105.pptx"
     write_governance_deck(g_model, g_out)
 
     prs = pptx.Presentation(str(g_out))
     slide16 = next(s for s in prs.slides if any(shape.has_text_frame and ("How milestone acceptance works" in shape.text_frame.text or "Acceptance Workflow" in shape.text_frame.text) for shape in s.shapes))
 
     # Find the 3 body text boxes
-    c1_box = next(s for s in slide16.shapes if s.has_text_frame and "Inputs ready" in s.text_frame.text)
-    c2_box = next(s for s in slide16.shapes if s.has_text_frame and "Triage" in s.text_frame.text)
-    c3_box = next(s for s in slide16.shapes if s.has_text_frame and "Deemed accepted" in s.text_frame.text)
+    c1_box = next(s for s in slide16.shapes if s.has_text_frame and "Inputs ready:" in s.text_frame.text)
+    c2_box = next(s for s in slide16.shapes if s.has_text_frame and "Triage:" in s.text_frame.text)
+    c3_box = next(s for s in slide16.shapes if s.has_text_frame and "Deemed accepted:" in s.text_frame.text)
 
-    # Card 1 has 5 steps (tallest), Card 2 has 3 steps (shorter)
-    # The heights should not be identical because each is dynamically sized to its content
+    # All 3 text boxes must share the exact same uniform height and top position (HTL-105)
     h1 = c1_box.height
     h2 = c2_box.height
     h3 = c3_box.height
 
-    assert h1 != h2, f"Expected dynamic height: Card 1 ({h1} EMU) vs Card 2 ({h2} EMU) should differ"
-    assert h1 > h2, f"Card 1 with 5 steps should be taller than Card 2 with 3 steps ({h1} vs {h2})"
+    assert h1 == h2 == h3, f"Expected uniform height across all cards: Card 1 ({h1}), Card 2 ({h2}), Card 3 ({h3})"
+
+    # All 3 cards must share the exact same uniform 7.5pt body font size
+    sz1 = c1_box.text_frame.paragraphs[0].runs[0].font.size.pt
+    sz2 = c2_box.text_frame.paragraphs[0].runs[0].font.size.pt
+    sz3 = c3_box.text_frame.paragraphs[0].runs[0].font.size.pt
+
+    assert sz1 == sz2 == sz3 == 7.5, f"Expected uniform 7.5pt font size, got {sz1}, {sz2}, {sz3}"

@@ -87,7 +87,7 @@
       "DEL-35: Training Materials and User Documentation"
     ],
     "key_milestones_summary": [
-      "M1: Project kickoff and start of the P1 Foundation phase. (2026-10-07)",
+      "M1: Project kickoff and start of the P1 Foundation phase. (2026-10-12)",
       "M2: P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, and the related test and certification outputs are delivered. (2026-11-17)",
       "M3: P2a Services and Data accepted: search and detail endpoints, async processing, OneGWAS direct-write, and data validation outputs are delivered. (2027-01-26)",
       "M4: P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, haplotype endpoints, and nomenclature service are delivered. (2027-03-02)",
@@ -1315,8 +1315,8 @@
     {
       "id": "CP-01",
       "description": "Project kickoff and start of the P1 Foundation phase.",
-      "external_date": "2026-10-07",
-      "internal_buffer_date": "2026-09-30",
+      "external_date": "2026-10-12",
+      "internal_buffer_date": "2026-10-05",
       "owner": "Delivery Manager",
       "key_dependencies": [
         "Client provides design system access, UI/UX designs for Milestone 3 screens, and coding and delivery documentation standards by the start date"
@@ -2953,7 +2953,7 @@
       "approver": "PMO Lead / Director, PMO",
       "due_date": null,
       "status": "Complete",
-      "evidence": "Startup Kit drafted on 2026-10-02 (Project awarded 2026-10-07). SLA Met.",
+      "evidence": "Startup Kit drafted on 2026-10-02 (Project awarded 2026-10-12). SLA Met.",
       "exception_required": false,
       "exception_details": null,
       "approval_status": "Approved"
@@ -2981,7 +2981,7 @@
       "approver": "PMO Lead / Director, PMO",
       "due_date": null,
       "status": "Complete",
-      "evidence": "20 deliverables mapped to acceptance routes and evidence expectations.",
+      "evidence": "35 deliverables mapped to acceptance routes and evidence expectations.",
       "exception_required": false,
       "exception_details": null,
       "approval_status": "Approved"
@@ -4153,7 +4153,8 @@
     "commercial_risk_mitigation": 53.3
   },
   "workflow_state": "Clarification Pending",
-  "sow_awarded_date": "2026-10-07",
+  "sow_awarded_date": "2026-10-12",
+  "original_sow_start_date": "2026-10-12",
   "award_date_source": "stated",
   "sla_verdict_source": null,
   "kit_drafted_date": "2026-10-02",

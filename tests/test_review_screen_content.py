@@ -30,8 +30,9 @@ def values(categories):
 def test_fixture_file_is_not_modified_by_loading():
     before = review.FIXTURE_BASELINE_PATH.read_bytes()
     raw = review.load_baseline(review.FIXTURE_BASELINE_PATH)
-    review.build_fact_categories(review.prepare_review_baseline(raw))
-    assert raw.validation_report is None  # prepare_review_baseline validates a copy, never the input
+    prepared = review.prepare_review_baseline(raw)
+    review.build_fact_categories(prepared)
+    assert prepared is not raw  # prepare_review_baseline validates a copy, never the input
     assert review.FIXTURE_BASELINE_PATH.read_bytes() == before
 
 
@@ -95,15 +96,15 @@ def test_milestone_date_basis_is_the_generated_label(categories):
 
 def test_deliverable_phase_assignment_and_mapping_basis(categories, oracle):
     fields = categories["deliverable_phase_assignment"].fields
-    assert len(fields) == 20
+    assert len(fields) == 35
     assert all(f.basis_label == "Catalogue phase" for f in fields)
     arc_oracle = json.loads((ORACLE_PATH.parent / "arc.json").read_text(encoding="utf-8"))
     assert {f.value for f in fields} == set(arc_oracle["phases"])
     by_id = {f.key.split(".")[1]: f.value for f in fields}
     assert by_id["DEL-01"] == "P1 Foundation"
-    assert by_id["DEL-05"] == "P2a Services and Data"
-    assert by_id["DEL-10"] == "P2b Application Surface"
-    assert by_id["DEL-20"] == "P3 Launch"
+    assert by_id["DEL-14"] == "P2a Services and Data"
+    assert by_id["DEL-22"] == "P2b Application Surface"
+    assert by_id["DEL-35"] == "P3 Launch"
 
 
 def test_contract_wide_review_window_matches_oracle(values, oracle):

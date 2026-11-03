@@ -75,33 +75,41 @@ def test_arc_workbook_has_zero_dollar_figures(tmp_path):
     violations = _scan_workbook_for_financials(wb_path)
     assert not violations, f"Found financial figures in ARC workbook: {violations}"
 
-    # Specific checks for ARC Project Schedule milestone rows (S8, S10, S12, S14)
+    # Specific checks for ARC Project Schedule milestone rows
     wb = openpyxl.load_workbook(str(wb_path), data_only=True)
     sched_sheet = wb["Project Schedule"]
 
-    # MS-01 (Row 8)
-    s8_val = sched_sheet["S8"].value
-    assert "$26,808" not in s8_val
-    assert "Fee is invoiced on acceptance" in s8_val
-    assert "Planned for weeks 1-6 from the start date" in s8_val
+    # Collect Critical Path Assumptions (Column S / 19) for all milestone rows
+    ms_assumptions = {}
+    for r in range(1, sched_sheet.max_row + 1):
+        wbs_code = str(sched_sheet.cell(r, 1).value or "").strip()
+        row_type = str(sched_sheet.cell(r, 2).value or "").strip()
+        if row_type == "Milestone" or wbs_code in ("1.1", "2.1", "3.1", "4.1"):
+            ms_assumptions[wbs_code] = str(sched_sheet.cell(r, 19).value or "")
 
-    # MS-02 (Row 10)
-    s10_val = sched_sheet["S10"].value
-    assert "$60,356" not in s10_val
-    assert "Fee is invoiced on acceptance" in s10_val
-    assert "Planned for weeks 7-16 from the start date" in s10_val
+    # MS-01 (1.1)
+    s1_val = ms_assumptions.get("1.1", "")
+    assert "$26,808" not in s1_val
+    assert "Fee is invoiced on acceptance" in s1_val
+    assert "Planned for weeks 1-6 from the start date" in s1_val
 
-    # MS-03 (Row 12)
-    s12_val = sched_sheet["S12"].value
-    assert "$68,210" not in s12_val
-    assert "Fee is invoiced on acceptance" in s12_val
-    assert "Planned for weeks 17-21 from the start date" in s12_val
+    # MS-02 (2.1)
+    s2_val = ms_assumptions.get("2.1", "")
+    assert "$60,356" not in s2_val
+    assert "Fee is invoiced on acceptance" in s2_val
+    assert "Planned for weeks 7-16 from the start date" in s2_val
 
-    # MS-04 (Row 14)
-    s14_val = sched_sheet["S14"].value
-    assert "$44,991" not in s14_val
-    assert "Fee is invoiced on acceptance" in s14_val
-    assert "Planned for weeks 22-26 from the start date" in s14_val
+    # MS-03 (3.1)
+    s3_val = ms_assumptions.get("3.1", "")
+    assert "$68,210" not in s3_val
+    assert "Fee is invoiced on acceptance" in s3_val
+    assert "Planned for weeks 17-21 from the start date" in s3_val
+
+    # MS-04 (4.1)
+    s4_val = ms_assumptions.get("4.1", "")
+    assert "$44,991" not in s4_val
+    assert "Fee is invoiced on acceptance" in s4_val
+    assert "Planned for weeks 22-26 from the start date" in s4_val
 
 
 def test_legitimate_numeric_content_preserved_in_workbook(tmp_path):

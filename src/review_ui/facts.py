@@ -13,7 +13,7 @@ returned separately and must never be presented as quotes.
 import copy
 import json
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -210,9 +210,15 @@ def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
     )
 
     # 2. Award / start date
+    award_ctx = f"Provenance (VAL-11): {baseline.award_date_source or 'not stated in SOW'}"
+    if baseline.original_sow_start_date and baseline.sow_awarded_date:
+        delta_days = (baseline.sow_awarded_date - baseline.original_sow_start_date).days
+        if delta_days != 0:
+            sign = "+" if delta_days > 0 else ""
+            award_ctx = f"Original SOW date: {_date_str(baseline.original_sow_start_date)} · Shift: {sign}{delta_days} days · {award_ctx}"
     award = (
         FactField("award_date", "Award / start date", _date_str(baseline.sow_awarded_date),
-                  context=f"Provenance (VAL-11): {baseline.award_date_source or 'not stated in SOW'}"),
+                  context=award_ctx),
     )
 
     # 3. Named roles
@@ -229,11 +235,20 @@ def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
 
     # 4. Milestones (gates and VAL-01 checkpoints)
     ms_fields: List[FactField] = []
+    delta_days = 0
+    if baseline.original_sow_start_date and baseline.sow_awarded_date:
+        delta_days = (baseline.sow_awarded_date - baseline.original_sow_start_date).days
+
     for kind, items in (("Gate", baseline.milestones), ("Checkpoint", baseline.interim_checkpoints)):
         for m in items:
             row = schedule_by_ms.get(m.id)
             loc = _location(m.source_reference)
             ctx = f"{kind} (VAL-01): {m.description}"
+            date_ctx = ctx
+            if delta_days != 0 and m.external_date:
+                sign = "+" if delta_days > 0 else ""
+                orig_date = m.external_date - timedelta(days=delta_days)
+                date_ctx = f"Original SOW date: {_date_str(orig_date)} · Shifted by {sign}{delta_days} days · {ctx}"
             basis = row.date_basis if row else None
             parsed = parse_milestone_phase(m)
             phase_label = f"{m.id} phase" if parsed.has_phase_label else f"{m.id} workstream"
@@ -242,7 +257,7 @@ def build_fact_categories(baseline: StartupKitBaseline) -> List[FactCategory]:
                                        source_location=loc, context=ctx))
             ms_fields.append(FactField(f"milestones.{m.id}.external_date", f"{m.id} external date",
                                        _date_str(m.external_date), source_location=loc,
-                                       basis_label=basis, context=ctx))
+                                       basis_label=basis, context=date_ctx))
 
     # 5. Deliverable phase assignment
     del_fields: List[FactField] = []
@@ -337,7 +352,13 @@ def apply_corrections(baseline: StartupKitBaseline, corrections: List[Dict[str, 
     """Return a copy of `baseline` with every correction applied. Raises ValueError for an unparseable date."""
     out = copy.deepcopy(baseline)
     charter, gc = out.charter, out.governance_context
-    for c in corrections:
+
+    # HTL-104: Process award_date first so any baseline-wide start date shift is applied before specific milestone overrides
+    award_corrections = [c for c in corrections if c["field"] == "award_date"]
+    other_corrections = [c for c in corrections if c["field"] != "award_date"]
+    ordered_corrections = award_corrections + other_corrections
+
+    for c in ordered_corrections:
         key, new = c["field"], c["corrected_to"]
         parts = key.split(".")
         if key == "project_identity.project_name":
@@ -363,7 +384,12 @@ def apply_corrections(baseline: StartupKitBaseline, corrections: List[Dict[str, 
                 if obj is not None:
                     setattr(obj, attr, new)
         elif key == "award_date":
-            out.sow_awarded_date = _parse_iso_date(new, key)
+            new_date = _parse_iso_date(new, key)
+            if new_date is not None:
+                from src.core.dates import shift_baseline_dates
+                out = shift_baseline_dates(out, new_date)
+            else:
+                out.sow_awarded_date = None
         elif key == "named_roles.delivery_manager":
             old = c["extracted"]
             for obj in (charter, gc, out.talent_onboarding):

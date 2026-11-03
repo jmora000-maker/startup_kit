@@ -77,9 +77,11 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     assert len(c1.steps) == 5
     c1_labels = [s[0].rstrip(":") for s in c1.steps if s[0]]
     assert c1_labels == ["Inputs ready", "Execution and tracking", "Submission", "Review", "Deliverable-specific rules"]
-    assert "Mike Magwire" in c1.steps[0][1] or "Mike Magwire" in c1.steps[2][1]
-    assert "Saadia Iqbal" in c1.steps[1][1]
-    assert "Satya" in c1.steps[0][1]
+    assert "Mike Magwire" not in c1.steps[0][1] and "Mike Magwire" not in c1.steps[2][1]
+    assert "Saadia Iqbal" not in c1.steps[1][1]
+    assert "Satya" not in c1.steps[0][1]
+    assert "Client Approver" in c1.steps[2][1]
+    assert "Delivery Manager" in c1.steps[1][1]
     assert "HS-4781" in c1.steps[0][1] or "HS-4781" in c1.steps[4][1]
 
     # Card 2: 3 steps
@@ -98,8 +100,9 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     assert len(c3.steps) == 4
     c3_labels = [s[0].rstrip(":") for s in c3.steps if s[0]]
     assert c3_labels == ["Deemed accepted", "Sign-off", "Next gate", "Exceptions"]
-    assert "Mike Magwire" in c3.steps[1][1]
-    assert "Saadia Iqbal" in c3.steps[3][1]
+    assert "Mike Magwire" not in c3.steps[1][1]
+    assert "Saadia Iqbal" not in c3.steps[3][1]
+    assert "Client Approver" in c3.steps[1][1]
 
     # Export presentation and verify shapes and geometric containment
     res = export_governance_deck(baseline, tmp_path / "arc_slide16")
@@ -112,7 +115,7 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
         h_in = s.height / 914400.0
         assert top_in + h_in <= 5.25, f"Shape exceeded bottom boundary: {top_in + h_in} > 5.25 in"
 
-    # Verify all 3 cards share the exact same uniform font size (6.0pt for dense ARC)
+    # Verify all 3 cards share the exact same uniform font size (7.5pt fixed across all cards, HTL-105)
     card1_boxes = [s for s in slide16.shapes if s.has_text_frame and "Inputs ready:" in s.text_frame.text]
     card2_boxes = [s for s in slide16.shapes if s.has_text_frame and "Triage:" in s.text_frame.text]
     card3_boxes = [s for s in slide16.shapes if s.has_text_frame and "Deemed accepted:" in s.text_frame.text]
@@ -121,7 +124,7 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 6.0
+    assert c1_size == c2_size == c3_size == 7.5
 
     # Verify flowchart elements
     texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
@@ -146,7 +149,8 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
     assert len(c1.steps) == 4
     c1_labels = [s[0].rstrip(":") for s in c1.steps if s[0]]
     assert c1_labels == ["Inputs ready", "Execution", "Submission", "Review"]
-    assert "Alicia Cook" in c1.steps[1][1] or "Alicia Cook" in c1.steps[2][1]
+    assert "Alicia Cook" not in c1.steps[1][1] and "Alicia Cook" not in c1.steps[2][1]
+    assert "Client Contact" in c1.steps[1][1] or "Client Contact" in c1.steps[2][1]
 
     # Card 2: 3 steps
     c2 = cards[1]
@@ -221,7 +225,7 @@ def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
     card_shapes = [s for s in slide16.shapes if s.has_text_frame and ("STAGE 01" in s.text_frame.text or "STAGE 03" in s.text_frame.text or "STAGE 04" in s.text_frame.text)]
     assert len(card_shapes) == 3
 
-    # Verify all 3 cards share the exact same uniform font size (8.5pt for lean SOW)
+    # Verify all 3 cards share the exact same uniform font size (7.5pt fixed across all cards, HTL-105)
     card1_boxes = [s for s in slide16.shapes if s.has_text_frame and "Prerequisites:" in s.text_frame.text]
     card2_boxes = [s for s in slide16.shapes if s.has_text_frame and "Defect Notice:" in s.text_frame.text]
     card3_boxes = [s for s in slide16.shapes if s.has_text_frame and "Passive sign-off:" in s.text_frame.text]
@@ -230,7 +234,7 @@ def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 8.5
+    assert c1_size == c2_size == c3_size == 7.5
 
 
 def test_htl_74_dispute_heavy_contract_escalation_classification(tmp_path):

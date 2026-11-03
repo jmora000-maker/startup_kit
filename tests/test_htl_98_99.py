@@ -66,7 +66,8 @@ def test_htl_99_no_contradictory_weekly_status_acceptance_and_no_3_day_fabricati
     assert "confirm acceptance or give feedback on each one" not in all_text
 
     # 3. Proper weekly status progress tracking & contractual 5-day acceptance period preserved
-    assert "Weekly status reports track delivery progress and keep Client Contact Alicia Cook informed." in all_text
+    assert "Weekly status reports track delivery progress and keep Client Contact informed." in all_text
+    assert "Alicia Cook" not in all_text
     assert "The 5-business-day Milestone Acceptance Period starts from the date of that notice" in all_text
     assert "Client has 5 business days from the completion notice to evaluate the Work Output" in all_text
 
@@ -87,7 +88,8 @@ def test_htl_98_99_arc_governance_slide16_cleanliness(tmp_path):
     assert not re.search(r'\b(?:purchase order|P\.O\.)\b', all_text, re.IGNORECASE)
     assert "Client decision turnaround on review items is assumed" not in all_text
     assert "10 business days" in all_text
-    assert "Mike Magwire" in all_text
+    assert "Mike Magwire" not in all_text
+    assert "Client Approver" in all_text
 
 
 def test_htl_98_99_defensive_sanitizer_removes_po_and_slas_from_raw_llm_string():
@@ -112,7 +114,8 @@ def test_htl_98_99_defensive_sanitizer_removes_po_and_slas_from_raw_llm_string()
     assert "confirm acceptance or give feedback on each one" not in cleaned
 
     assert "Inputs ready: Confirm that environment read access is ready." in cleaned
-    assert "Weekly status reports track delivery progress and keep Client Contact Alicia Cook informed." in cleaned
+    assert "Weekly status reports track delivery progress and keep Client Contact informed." in cleaned
+    assert "Alicia Cook" not in cleaned
     assert "Submission: Give formal completion notice." in cleaned
     assert "Review: Review within 5 business days." in cleaned
 

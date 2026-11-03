@@ -278,7 +278,7 @@ def _build_pge_baseline(deliverables=None) -> StartupKitBaseline:
         governance_context=gov_ctx,
         charter=charter,
         sow_interpretation=sow_interp,
-        deliverables=list(deliverables or PGE_DELIVERABLES),
+        deliverables=[d.model_copy(deep=True) for d in (deliverables or PGE_DELIVERABLES)],
         milestones=[
             Milestone(
                 id="MS-01",
@@ -290,9 +290,9 @@ def _build_pge_baseline(deliverables=None) -> StartupKitBaseline:
         ],
         interim_checkpoints=[],
         backlog_seed=[],
-        raid_items=list(PGE_RAID),
-        stakeholders=list(PGE_STAKEHOLDERS),
-        communications_plan=list(PGE_COMMS),
+        raid_items=[r.model_copy(deep=True) for r in PGE_RAID],
+        stakeholders=[s.model_copy(deep=True) for s in PGE_STAKEHOLDERS],
+        communications_plan=[c.model_copy(deep=True) for c in PGE_COMMS],
         author_name="Alex PMO",
         approver_name="Alex PMO",
     )

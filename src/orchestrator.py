@@ -522,6 +522,11 @@ class StartupKitController:
         logger.info("Running extraction validation layer and reconciliation...")
         validation_report = validate_and_repair_baseline(baseline, date_conflict_warning=date_warning)
 
+        # HTL-104: Apply start date shift if user provided a start_date on Generate page or CLI
+        if start_date:
+            from src.core.dates import shift_baseline_dates
+            baseline = shift_baseline_dates(baseline, start_date)
+
         # HTL-02 / HTL-29: Pipeline split point for Pre-Generation Human Review
         if pause_for_review:
             from src.review_storage import get_review_storage
@@ -580,6 +585,11 @@ class StartupKitController:
 
         out_path = Path(output_dir)
         out_path.mkdir(parents=True, exist_ok=True)
+
+        # HTL-104: Apply start date shift if user provided a start_date override
+        if start_date:
+            from src.core.dates import shift_baseline_dates
+            baseline = shift_baseline_dates(baseline, start_date)
 
         kit_path: Optional[Path] = None
         checklist_path: Optional[Path] = None

@@ -778,6 +778,7 @@ class StartupKitBaseline(BaseModel):
     readiness_breakdown: Dict[str, float] = Field(default_factory=dict)
     workflow_state: ReadinessWorkflowState = "Ready for G-01 Gate Review"
     sow_awarded_date: FlexibleDate = None
+    original_sow_start_date: FlexibleDate = None
     award_date_source: Optional[AwardDateSource] = None
     sla_verdict_source: Optional[SlaVerdictSource] = None
     kit_drafted_date: FlexibleDate = None

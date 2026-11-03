@@ -42,14 +42,15 @@ def test_one_edit_tags_only_that_category(reviewed, tmp_path):
     assert set(others.values()) == {review.MACHINE_EXTRACTED_UNCONFIRMED}
     assert on_disk["corrections"] == [{
         "field": "award_date",
-        "extracted": "2026-10-07",
+        "extracted": "2026-10-12",
         "corrected_to": "2026-10-01",
         "reviewer_note": "Forced wrong value for test.",
     }]
 
     corrected = StartupKitBaseline.model_validate(_read(baseline_path))
     assert corrected.sow_awarded_date in (date(2026, 10, 1), "2026-10-01")
-    assert corrected.milestones[0].external_date == baseline.milestones[0].external_date
+    # HTL-104: award_date shift propagates to milestones (-11 days from 2026-11-17 -> 2026-11-06)
+    assert corrected.milestones[0].external_date == date(2026, 11, 6)
     assert baseline.sow_awarded_date != corrected.sow_awarded_date  # the reviewed baseline itself is untouched
 
 

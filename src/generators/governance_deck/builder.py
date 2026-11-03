@@ -125,14 +125,85 @@ def _sanitize_no_dollars(text: str) -> str:
     return cleaned.strip()
 
 
-def _sanitize_acceptance_narrative(text: str) -> str:
+def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None) -> str:
+    """Sanitize individual person names from acceptance narrative, preserving roles only (HTL-105)."""
+    if not text:
+        return text
+
+    cleaned = text
+
+    # 1. Clean SME parentheticals and combinations first
+    # e.g., "SME availability (Mike Magwire, Satya)" -> "SME availability"
+    cleaned = re.sub(r'(?i)(SME(?:s)?\s+availability)\s*\([^)]*?(?:Mike|Magwire|Satya|Alicia|Cook|Saadia|Iqbal)[^)]*?\)', r'\1', cleaned)
+    # e.g., "(Mike Magwire, Satya)" or "(Mike Magwire and Satya)" -> "named SMEs"
+    cleaned = re.sub(r'\((?:Mike\s+Magwire|Satya|Mike)(?:\s*(?:,|and|&)\s*(?:Mike\s+Magwire|Satya|Mike|SME))+\)', 'named SMEs', cleaned)
+    cleaned = re.sub(r'\b(?:Mike\s+Magwire|Satya)(?:\s*(?:,|and|&)\s*(?:Mike\s+Magwire|Satya))+\b', 'named SMEs', cleaned)
+
+    # 2. If preceded by a role, strip the individual name
+    # e.g. "Client Approver Mike Magwire" -> "Client Approver"
+    # "Delivery Manager Saadia Iqbal" -> "Delivery Manager"
+    # "Client Contact Alicia Cook" -> "Client Contact"
+    cleaned = re.sub(r'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+(?:Mike\s+Magwire|Saadia\s+Iqbal|Alicia\s+Cook|Satya|Mike|Magwire|Saadia|Iqbal|Alicia|Cook)\b', r'\1', cleaned)
+
+    # 3. Dynamic replacement based on baseline charter / stakeholder names if provided
+    if baseline:
+        if baseline.charter:
+            for attr, default_title in [
+                ("delivery_manager", "Delivery Manager"),
+                ("talent_pm", "Talent PM"),
+                ("pmo_lead", "PMO Lead"),
+            ]:
+                role_name = getattr(baseline.charter, attr, None)
+                if role_name and isinstance(role_name, str) and role_name.strip() and "[UNASSIGNED" not in role_name.upper():
+                    rn = re.escape(role_name.strip())
+                    cleaned = re.sub(rf'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+{rn}\b', r'\1', cleaned)
+                    cleaned = re.sub(rf'(?i)\b{rn}\b', default_title, cleaned)
+
+        if baseline.stakeholders:
+            for s in baseline.stakeholders:
+                if s.name and isinstance(s.name, str) and s.name.strip() and not s.name.startswith("["):
+                    rn = re.escape(s.name.strip())
+                    raw_role = s.role or ""
+                    if re.search(r'(?i)\bapprover\b', raw_role):
+                        title = "Client Approver"
+                    elif re.search(r'(?i)\bdelivery\s+manager\b', raw_role):
+                        title = "Delivery Manager"
+                    elif re.search(r'(?i)\bcontact\b', raw_role):
+                        title = "Client Contact"
+                    elif re.search(r'(?i)\b(?:talent\s+pm|pm)\b', raw_role):
+                        title = "Talent PM"
+                    elif re.search(r'(?i)\bpmo\b', raw_role):
+                        title = "PMO Lead"
+                    elif re.search(r'(?i)\bsme\b', raw_role):
+                        title = "named SME"
+                    else:
+                        title = "Client Approver" if "client" in raw_role.lower() else "named SME"
+
+                    cleaned = re.sub(rf'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+{rn}\b', r'\1', cleaned)
+                    cleaned = re.sub(rf'(?i)\b{rn}\b', title, cleaned)
+
+    # 4. Standalone specific names fallback
+    cleaned = re.sub(r'(?i)\bMike\s+Magwire\b', 'Client Approver', cleaned)
+    cleaned = re.sub(r'(?i)\bSaadia\s+Iqbal\b', 'Delivery Manager', cleaned)
+    cleaned = re.sub(r'(?i)\bAlicia\s+Cook\b', 'Client Contact', cleaned)
+    cleaned = re.sub(r'(?i)\bSatya\b', 'named SME', cleaned)
+
+    # 5. Clean up duplicate role words (e.g. "Client Approver Client Approver") and spacing
+    cleaned = re.sub(r'(?i)\b(Client\s+Approver|Delivery\s+Manager|Client\s+Contact|named\s+SMEs?)\s+\1\b', r'\1', cleaned)
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+    cleaned = re.sub(r'\s+([,.:;])', r'\1', cleaned)
+    return cleaned.strip()
+
+
+def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBaseline] = None) -> str:
     """Sanitize acceptance narrative: remove financial dollar amounts, administrative/commercial prerequisites
-    (Purchase Orders, NDAs, invoicing setup), fabricated turnaround assumptions, and contradictory weekly status
-    acceptance loops (HTL-74, HTL-98, HTL-99)."""
+    (Purchase Orders, NDAs, invoicing setup), fabricated turnaround assumptions, contradictory weekly status
+    acceptance loops, and individual person names (HTL-74, HTL-98, HTL-99, HTL-105)."""
     if not text:
         return text
 
     cleaned = _sanitize_no_dollars(text)
+    cleaned = _sanitize_no_names(cleaned, baseline=baseline)
     lines = cleaned.split("\n")
     cleaned_lines: List[str] = []
 
@@ -169,7 +240,7 @@ def _sanitize_acceptance_narrative(text: str) -> str:
             # 3. Transform contradictory weekly status acceptance loops into standard progress tracking (HTL-99)
             s_mod = re.sub(
                 r'(?i)Send the weekly status report and ask (?:Client Contact\s+)?([A-Za-z0-9 ]+?)\s+to confirm acceptance or give feedback on each one\.?',
-                r'Weekly status reports track delivery progress and keep Client Contact \1 informed.',
+                r'Weekly status reports track delivery progress and keep Client Contact informed.',
                 s,
             )
             s_mod = re.sub(
@@ -198,7 +269,7 @@ def _sanitize_acceptance_narrative(text: str) -> str:
 CARD_1_LABELS = {
     "inputs ready", "prerequisites", "execution", "execution and tracking",
     "delivery", "submission", "formal submission", "review", "client review",
-    "review period", "review and slas", "deliverable-specific rules", "acceptance period", "evaluation"
+    "review period", "review and slas", "deliverable-specific rules", "deliverable rules", "acceptance period", "evaluation"
 }
 
 CARD_2_LABELS = {
@@ -304,7 +375,7 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
     sow = baseline.sow_interpretation
     # Tier 1: LLM synthesized acceptance process narrative
     if sow and sow.acceptance_process_narrative and sow.acceptance_process_narrative.strip():
-        narrative = _sanitize_acceptance_narrative(sow.acceptance_process_narrative.strip())
+        narrative = _sanitize_acceptance_narrative(sow.acceptance_process_narrative.strip(), baseline=baseline)
         cards = _build_acceptance_cards(narrative)
         return Slide16AcceptanceNarrativeModel(
             narrative=narrative,
@@ -371,7 +442,7 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
     steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
 
     narrative = "\n".join(steps)
-    clean_narrative = _sanitize_acceptance_narrative(narrative)
+    clean_narrative = _sanitize_acceptance_narrative(narrative, baseline=baseline)
     cards = _build_acceptance_cards(clean_narrative)
     return Slide16AcceptanceNarrativeModel(
         narrative=clean_narrative,
