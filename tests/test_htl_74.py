@@ -198,6 +198,7 @@ def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
     )
     baseline = _build_pge_baseline()
     baseline.sow_interpretation.acceptance_process_narrative = lean_narrative
+    baseline.sow_interpretation.approval_expectations = "Client delivers interview list within 3 business days; review within 5 business days."
 
     gov_model = build_governance_deck_model(baseline)
     cards = gov_model.slide16.cards
@@ -251,6 +252,7 @@ def test_htl_74_dispute_heavy_contract_escalation_classification(tmp_path):
     )
     baseline = _build_pge_baseline()
     baseline.sow_interpretation.acceptance_process_narrative = dispute_narrative
+    baseline.sow_interpretation.approval_expectations = "Acceptance testing within 10 business days; cure within 5-10 business days; arbitration level 2 within 10 days."
 
     gov_model = build_governance_deck_model(baseline)
     cards = gov_model.slide16.cards

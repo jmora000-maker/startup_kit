@@ -536,7 +536,7 @@ def test_htl_72_slide16_tier2_fallback_and_dynamic_trace(tmp_path):
 
 def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
     """HTL-72 / HTL-74: Verify Slide 16 scales naturally to complex multi-step acceptance narrative (ARC Genomics) with full typography fit."""
-    baseline = _build_pge_baseline()
+    baseline = load_baseline("arc_application_implementation")
     arc_narrative = (
         "**Inputs ready:** Client must provide environment access, Snowflake schema deployment (HS-4781), upstream systems access (MTA, 1GWAS, GATS-B, GWAS Atlas), and design system tokens/components before dependent work proceeds. Client SME availability (Mike Magwire and Satya) is required for scheduled walkthroughs.\n"
         "**Execution and tracking:** Work is organized across 5 delivery phases: P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch, and Hypercare Support. Weekly status reports track progress against user stories (HS-####) and milestone acceptance criteria, managed by Toptal Delivery Manager Saadia Iqbal.\n"
@@ -555,7 +555,7 @@ def test_htl_72_slide16_arc_genomics_multi_step_narrative_scaling(tmp_path):
 
     res = export_governance_deck(baseline, tmp_path / "slide16_arc")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = next(s for s in prs.slides if any(shape.has_text_frame and ("How milestone acceptance works" in shape.text_frame.text or "Acceptance Workflow" in shape.text_frame.text) for shape in s.shapes))
 
     body_shapes = [s for s in slide16.shapes if s.has_text_frame and ("Inputs ready:" in s.text_frame.text or "Triage:" in s.text_frame.text or "Deemed accepted:" in s.text_frame.text)]
     assert len(body_shapes) == 3

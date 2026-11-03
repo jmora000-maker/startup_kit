@@ -94,7 +94,7 @@
         ],
         [
           "Approval & Acceptance Expectations",
-          "Each milestone is an acceptance gate with its own sign-off. The client has 5 business days from notice of completion to review and give written notice of failure, otherwise the milestone is deemed accepted (also if used in production). The client signs a milestone acceptance certification through its designated approvers (Mike Magwire and Satya). Failed items get written non-conformance details and up to three rework attempts. Weekly status reports require written confirmation or feedback, and a Milestone Acceptance Review is held at the end of each milestone."
+          "Each milestone is an acceptance gate with its own sign-off. The client has 10 business days from notice of completion to evaluate, review, and test the Work Output (the 'Milestone Acceptance Period'), otherwise the milestone is deemed accepted (also if used in production). The client signs a milestone acceptance certification through its designated approvers (Mike Magwire and Satya). Failed items get written non-conformance details and up to three repeated remediation attempts. Dispute escalation follows Level 1 (5 business days), Level 2 (additional 5 business days), and Level 3 protocols. Hypercare includes a 30-day operational stability and warranty support period."
         ],
         [
           "Ambiguities & Clarification Notes",
@@ -504,7 +504,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4762",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-02",
@@ -514,7 +514,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4763",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-03",
@@ -524,7 +524,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4765",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-04",
@@ -534,7 +534,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4770",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-05",
@@ -544,7 +544,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4938",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-06",
@@ -554,7 +554,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4782",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-07",
@@ -564,7 +564,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4941",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-08",
@@ -574,7 +574,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4777",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-09",
@@ -584,7 +584,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4778",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-10",
@@ -594,7 +594,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4779",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-11",
@@ -604,7 +604,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4942",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-12",
@@ -614,7 +614,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4803",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-13",
@@ -624,7 +624,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4804",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-14",
@@ -634,7 +634,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4797",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-15",
@@ -644,7 +644,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4785",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-16",
@@ -654,7 +654,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4807",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-17",
@@ -664,7 +664,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4801",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-18",
@@ -674,7 +674,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4791",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-19",
@@ -684,7 +684,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4772",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-20",
@@ -694,7 +694,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4773",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-21",
@@ -704,7 +704,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4775",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-22",
@@ -714,7 +714,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4809",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-23",
@@ -724,7 +724,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4810",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-24",
@@ -734,7 +734,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4813",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-25",
@@ -744,7 +744,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4815",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-26",
@@ -754,7 +754,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4793",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-27",
@@ -764,7 +764,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4794",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-28",
@@ -774,7 +774,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4811",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-29",
@@ -784,7 +784,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4825",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-30",
@@ -794,7 +794,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4826",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-31",
@@ -804,7 +804,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4828",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-32",
@@ -814,7 +814,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4943",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-33",
@@ -824,7 +824,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4832",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-34",
@@ -834,7 +834,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4788",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ],
         [
           "DEL-35",
@@ -844,7 +844,7 @@
           "Mike Magwire and Satya",
           "Toptal",
           "HS-4829",
-          "5 business days from notice of milestone completion"
+          "10 business days from notice of milestone completion"
         ]
       ]
     },
@@ -11156,7 +11156,7 @@
           "Triage and address client review feedback",
           "Obtain formal milestone acceptance and sign-off",
           "Update schedule and RAID Log after acceptance",
-          "Review window: 5 business days from notice of milestone completion",
+          "Review window: 10 business days from notice of milestone completion",
           "Client approver: Mike Magwire and Satya"
         ]
       ],
@@ -11239,7 +11239,7 @@
           ]
         ]
       ],
-      "notes": "TALKING POINTS:\n• Acceptance is milestone-level; the M1 acceptance package has 6 steps, starting with: Prepare milestone acceptance package and evidence.\n• Review window: 5 business days from notice of milestone completion; client approver: Mike Magwire and Satya.\n• Evidence expected for DEL-01: Working software in target environment, automated test execution records, and signed milestone acceptance certification.\n\nSOURCES: Startup Kit · SOW Interpretation Summary, Deliverables and Acceptance Matrix; Project Delivery Workbook · WBS"
+      "notes": "TALKING POINTS:\n• Acceptance is milestone-level; the M1 acceptance package has 6 steps, starting with: Prepare milestone acceptance package and evidence.\n• Review window: 10 business days from notice of milestone completion; client approver: Mike Magwire and Satya.\n• Evidence expected for DEL-01: Working software in target environment, automated test execution records, and signed milestone acceptance certification.\n\nSOURCES: Startup Kit · SOW Interpretation Summary, Deliverables and Acceptance Matrix; Project Delivery Workbook · WBS"
     },
     {
       "slide_index": 5,

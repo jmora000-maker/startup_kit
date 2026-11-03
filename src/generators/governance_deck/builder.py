@@ -1,5 +1,6 @@
 """Pure builder module transforming StartupKitBaseline into GovernanceDeckModel (HTL-72)."""
 
+import logging
 import re
 from typing import Dict, List, Optional, Tuple
 from src.config import sanitize_financial_text
@@ -195,10 +196,179 @@ def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None)
     return cleaned.strip()
 
 
+def _extract_allowed_numeric_facts(baseline: Optional[StartupKitBaseline]) -> Dict[str, Set[int]]:
+    """Extract valid numeric facts (Milestone Acceptance Period, rework attempts, dispute escalation, warranty)
+    strictly from structured baseline data (HTL-106).
+    
+    Specifically isolates the Milestone Acceptance Period from other day-count figures such as dispute
+    escalation sub-steps or operational warranty durations.
+    """
+    if not baseline:
+        return {
+            "milestone_acceptance_period_days": set(),
+            "dispute_escalation_days": set(),
+            "operational_warranty_days": set(),
+            "day_counts": set(),
+            "attempt_counts": set(),
+        }
+
+    milestone_acceptance_period_days: Set[int] = set()
+    dispute_escalation_days: Set[int] = set()
+    operational_warranty_days: Set[int] = set()
+    attempt_counts: Set[int] = set()
+    other_day_counts: Set[int] = set()
+
+    # 1. Deliverables (review windows, rework paths, criteria, descriptions)
+    if baseline.deliverables:
+        for d in baseline.deliverables:
+            rw = d.review_window or ""
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?\b', rw, re.IGNORECASE):
+                milestone_acceptance_period_days.add(int(m.group(1)))
+
+            rp = d.rejection_rework_path or ""
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:repeated\s+)?(?:remediation\s+|rework\s+)?attempts?\b', rp, re.IGNORECASE):
+                attempt_counts.add(int(m.group(1)))
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?\b', rp, re.IGNORECASE):
+                other_day_counts.add(int(m.group(1)))
+
+    # 2. SOW Interpretation (approval expectations, constraints, ambiguity notes)
+    if baseline.sow_interpretation:
+        s = baseline.sow_interpretation
+        appr = s.approval_expectations or ""
+
+        # Milestone Acceptance Period patterns in approval expectations:
+        for m in re.finditer(r'(?:milestone\s+acceptance\s+period|acceptance\s+period|review\s+(?:window|period)|acceptance\s+window)\s*(?:is|of|for|=|:)?\s*(?:an?\s+)?(?:additional\s+)?(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?', appr, re.IGNORECASE):
+            milestone_acceptance_period_days.add(int(m.group(1)))
+        for m in re.finditer(r'(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?\s*(?:from\s+(?:the\s+date\s+of\s+)?notice|\(the\s+[\'\"“]Milestone\s+Acceptance\s+Period[\'\"”]\)|\s*to\s+(?:evaluate|review|test|accept)|of\s+Milestone)', appr, re.IGNORECASE):
+            milestone_acceptance_period_days.add(int(m.group(1)))
+        for m in re.finditer(r'evaluate(?:,\s*review)?\s+and(?:/or)?\s+test\s+(?:the\s+work\s+output\s+)?(?:within\s+)?(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?', appr, re.IGNORECASE):
+            milestone_acceptance_period_days.add(int(m.group(1)))
+
+        # Dispute escalation sub-steps in approval expectations:
+        for m in re.finditer(r'(?:level\s+(?:one|two|three|1|2|3)|dispute\s+escalation|dispute\s+resolution|dispute\s+protocol).*?(\d+)\s*(?:business|calendar|working)?\s*days?', appr, re.IGNORECASE):
+            dispute_escalation_days.add(int(m.group(1)))
+
+        # Rework attempt limits:
+        for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:repeated\s+)?(?:remediation\s+|rework\s+)?attempts?\b', appr, re.IGNORECASE):
+            attempt_counts.add(int(m.group(1)))
+
+        # Operational stability / warranty:
+        for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?days?\s*(?:operational\s+stability|warranty|defect\s+watch|hypercare|cure\s+period)\b', appr, re.IGNORECASE):
+            operational_warranty_days.add(int(m.group(1)))
+        for m in re.finditer(r'(?:operational\s+stability|warranty|defect\s+watch|hypercare|cure\s+period).*?(\d+)\s*(?:[-/]\s*)?days?\b', appr, re.IGNORECASE):
+            operational_warranty_days.add(int(m.group(1)))
+
+        # Stated general day counts from approval expectations, constraints, and ambiguity notes:
+        for text in [appr, *(s.constraints or []), *(s.ambiguity_notes or [])]:
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?\b', text, re.IGNORECASE):
+                other_day_counts.add(int(m.group(1)))
+
+    # 3. Contract Ambiguities
+    if baseline.contract_ambiguities:
+        for a in baseline.contract_ambiguities:
+            combined_amb = f"{a.conflicting_clauses or ''} {a.recommended_clarification or ''}"
+            for m in re.finditer(r'(?:level\s+(?:one|two|three|1|2|3)|dispute\s+escalation|dispute\s+resolution|dispute\s+protocol).*?(\d+)\s*(?:business|calendar|working)?\s*days?', combined_amb, re.IGNORECASE):
+                dispute_escalation_days.add(int(m.group(1)))
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?days?\s*(?:operational\s+stability|warranty|defect\s+watch|hypercare)\b', combined_amb, re.IGNORECASE):
+                operational_warranty_days.add(int(m.group(1)))
+            for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?(?:repeated\s+)?(?:remediation\s+|rework\s+)?attempts?\b', combined_amb, re.IGNORECASE):
+                attempt_counts.add(int(m.group(1)))
+
+    # 4. Charter
+    if baseline.charter:
+        c = baseline.charter
+        charter_text = " ".join([
+            *(c.exclusions or []),
+            *(c.success_criteria or []),
+            *(c.key_milestones_summary or []),
+            *(c.delivery_objectives or []),
+            *(c.high_level_scope or []),
+            c.solution_overview or "",
+        ])
+        for m in re.finditer(r'\b(\d+)\s*(?:[-/]\s*)?days?\s*(?:operational\s+stability|warranty|defect\s+watch|hypercare)\b', charter_text, re.IGNORECASE):
+            operational_warranty_days.add(int(m.group(1)))
+
+    all_day_counts = (
+        milestone_acceptance_period_days
+        | dispute_escalation_days
+        | operational_warranty_days
+        | other_day_counts
+    )
+
+    return {
+        "milestone_acceptance_period_days": milestone_acceptance_period_days,
+        "dispute_escalation_days": dispute_escalation_days,
+        "operational_warranty_days": operational_warranty_days,
+        "day_counts": all_day_counts,
+        "attempt_counts": attempt_counts,
+    }
+
+
+logger = logging.getLogger(__name__)
+
+
+def _determine_step_day_category(label: Optional[str], sentence: str) -> str:
+    """Determine the numeric fact category for a given step label and sentence (HTL-106).
+    
+    Returns one of:
+      - 'milestone_acceptance_period': for core milestone review, submission, deemed acceptance, sign-off, or decision rules
+      - 'dispute_escalation': for dispute protocols, escalation levels, or dispute sub-steps
+      - 'operational_warranty': for warranty, hypercare, operational stability, or defect watch
+      - 'rework_remediation': for defect triage, remediation, rework, or cure periods
+      - 'ambiguous': fallback when category cannot be definitively determined
+    """
+    clean_lbl = label.lower().strip(" :*#_-") if label else ""
+    full_text = f"{clean_lbl} {sentence}".lower()
+
+    # 1. Dispute / escalation checks
+    if clean_lbl in {"exceptions", "escalation", "dispute", "dispute protocols", "dispute resolution"}:
+        return "dispute_escalation"
+    if re.search(r'\b(?:dispute\s+escalation|dispute\s+protocol|dispute\s+resolution|dispute|escalat(?:ion|e)|level\s+(?:one|two|three|1|2|3))\b', full_text):
+        return "dispute_escalation"
+
+    # 2. Operational warranty / hypercare checks
+    if clean_lbl in {"warranty", "hypercare", "operational stability", "defect watch"}:
+        return "operational_warranty"
+    if re.search(r'\b(?:operational\s+stability|warranty|hypercare|defect\s+watch)\b', full_text):
+        return "operational_warranty"
+
+    # 3. Core Milestone Acceptance Period checks (Card 1 and Card 3 core acceptance mechanics)
+    if clean_lbl in {
+        "review", "client review", "review period", "review and slas", "acceptance period", "evaluation",
+        "submission", "formal submission", "milestone submission", "decisions", "decision",
+        "deemed accepted", "deemed acceptance", "passive acceptance", "passive sign-off",
+        "sign-off", "sign-off and invoicing", "certification", "acceptance certification",
+        "next gate", "billing gate", "invoicing"
+    }:
+        return "milestone_acceptance_period"
+
+    if re.search(r'\b(?:milestone\s+acceptance\s+period|acceptance\s+(?:period|window|clock)|evaluate(?:,\s*review)?(?:\s+and\s+test)?|review\s+(?:window|period|deliverables)|deemed\s+accept|passive\s+accept|passive\s+sign-off|notice\s+of\s+(?:failure|completion)|decision\s+request)\b', full_text):
+        return "milestone_acceptance_period"
+
+    # 4. Defect triage / rework / remediation / cure
+    if clean_lbl in {
+        "triage", "defect triage", "non-conformance", "deficiency", "defect notice",
+        "remediation", "remedy", "rework", "rework limit", "repeated attempts",
+        "cure period", "cure", "rejection", "rejection path"
+    }:
+        return "rework_remediation"
+    if re.search(r'\b(?:defect|non-conformance|deficiency|remediation|rework|cure\s+period|rejection)\b', full_text):
+        return "rework_remediation"
+
+    # 5. Technical prerequisites / inputs / execution steps
+    if clean_lbl in {
+        "inputs ready", "prerequisites", "prerequisite", "execution", "execution and tracking",
+        "delivery", "milestone delivery", "deliverable-specific rules", "deliverable rules"
+    }:
+        return "prerequisites_and_execution"
+
+    return "ambiguous"
+
+
 def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBaseline] = None) -> str:
     """Sanitize acceptance narrative: remove financial dollar amounts, administrative/commercial prerequisites
     (Purchase Orders, NDAs, invoicing setup), fabricated turnaround assumptions, contradictory weekly status
-    acceptance loops, and individual person names (HTL-74, HTL-98, HTL-99, HTL-105)."""
+    acceptance loops, individual person names, and ungrounded numeric timeframes (HTL-74, HTL-98, HTL-99, HTL-105, HTL-106)."""
     if not text:
         return text
 
@@ -206,6 +376,9 @@ def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBasel
     cleaned = _sanitize_no_names(cleaned, baseline=baseline)
     lines = cleaned.split("\n")
     cleaned_lines: List[str] = []
+
+    facts = _extract_allowed_numeric_facts(baseline)
+    has_baseline = baseline is not None
 
     for line in lines:
         if not line.strip():
@@ -226,7 +399,7 @@ def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBasel
             step_body,
         )
 
-        # 2. Split into sentences and filter out administrative prerequisites & fabricated turnaround assumptions
+        # 2. Split into sentences and filter out administrative prerequisites, fabricated turnaround assumptions, & ungrounded numbers
         sentences = re.split(r'(?<=[.!?])\s+', step_body)
         kept_sentences: List[str] = []
         for s in sentences:
@@ -249,6 +422,36 @@ def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBasel
                 s_mod,
             )
             s_mod = re.sub(r'(?i)Client Contact Client Contact', 'Client Contact', s_mod)
+
+            # 4. Category-aware numeric fact verification: validate day counts against specific baseline category (HTL-106)
+            if has_baseline:
+                day_mentions = [
+                    int(m) for m in re.findall(
+                        r'\b(\d+)\s*(?:[-/]\s*)?(?:(?:business|calendar|working)\s*[-/]?\s*)?days?\b',
+                        s_mod,
+                        re.IGNORECASE,
+                    )
+                ]
+                if day_mentions:
+                    category = _determine_step_day_category(label, s_mod)
+                    if category == "milestone_acceptance_period":
+                        allowed_cat_days = facts.get("milestone_acceptance_period_days", set())
+                    elif category == "dispute_escalation":
+                        allowed_cat_days = facts.get("dispute_escalation_days", set())
+                    elif category == "operational_warranty":
+                        allowed_cat_days = facts.get("operational_warranty_days", set())
+                    elif category in {"rework_remediation", "prerequisites_and_execution"}:
+                        allowed_cat_days = facts.get("day_counts", set())
+                    else:
+                        logger.warning(
+                            "Acceptance narrative day-count validation fell back to flattened union for ambiguous step [label=%s]: '%s'",
+                            label,
+                            s_mod,
+                        )
+                        allowed_cat_days = facts.get("day_counts", set())
+
+                    if any(d not in allowed_cat_days for d in day_mentions):
+                        continue
 
             if s_mod.strip():
                 kept_sentences.append(s_mod.strip())
