@@ -485,11 +485,162 @@ def _fit_out_of_scope_items(items: Sequence[str], inner_w_in: float = 2.58, max_
     return fitted
 
 
-def write_slide6(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 6 with combined Solution Overview shape, real PPTX bullets for Out of Scope, fixed 14pt headers / 10pt body, and fixed box bounds with clause truncation (HTL-61 / HTL-96)."""
-    white_color = RGBColor(255, 255, 255)
+def chunk_workstreams_for_deliverables_table(
+    workstreams: Sequence[WorkstreamBlock],
+    max_delivs_per_page: int = 6,
+    single_page_threshold: int = 7,
+) -> List[List[WorkstreamBlock]]:
+    """Chunk workstream blocks into slide pages (HTL-100)."""
+    if not workstreams:
+        return [[]]
+    total_delivs = sum(len(ws.deliverables) for ws in workstreams)
+    if total_delivs <= single_page_threshold:
+        return [list(workstreams)]
 
-    # 1. Fixed dimensions and coordinates for right dark panel (HTL-96)
+    chunks: List[List[WorkstreamBlock]] = []
+    current_chunk: List[WorkstreamBlock] = []
+    current_count = 0
+
+    for ws in workstreams:
+        ws_count = len(ws.deliverables)
+        if current_chunk and (current_count + ws_count > max_delivs_per_page):
+            chunks.append(current_chunk)
+            current_chunk = [ws]
+            current_count = ws_count
+        else:
+            current_chunk.append(ws)
+            current_count += ws_count
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks if chunks else [[]]
+
+
+def _format_table_header_cell(
+    cell,
+    text: str,
+    font_size_pt: float = 9.5,
+    bold: bool = True,
+    border_hex: str = "D3DCEC",
+    fill_hex: str = "041133",
+) -> None:
+    """Format table header cell with dark navy background, white bold text, and D3DCEC borders (HTL-89 / HTL-100)."""
+    cell.text = text
+    tf = cell.text_frame
+    tf.word_wrap = True
+    tf.margin_top = 0
+    tf.margin_bottom = 0
+    tf.margin_left = 0
+    tf.margin_right = 0
+
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcPr.set("anchor", "t")
+    tcPr.set("marT", "18288")
+    tcPr.set("marB", "18288")
+    tcPr.set("marL", "36576")
+    tcPr.set("marR", "36576")
+
+    for child in list(tcPr):
+        if child.tag.endswith("solidFill") or child.tag.endswith(("lnL", "lnR", "lnT", "lnB")):
+            tcPr.remove(child)
+
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    for side in ["lnL", "lnR", "lnT", "lnB"]:
+        ln = etree.SubElement(tcPr, f"{{{ns_a}}}{side}", w="12700", cap="flat", cmpd="sng")
+        sfill = etree.SubElement(ln, f"{{{ns_a}}}solidFill")
+        etree.SubElement(sfill, f"{{{ns_a}}}srgbClr", val=border_hex)
+
+    solidFill = etree.SubElement(tcPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", val=fill_hex)
+
+    for p in tf.paragraphs:
+        for run in p.runs:
+            run.font.name = "Proxima Nova"
+            run.font.size = Pt(font_size_pt)
+            run.font.bold = bold
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+
+def _format_table_data_cell_styling(
+    cell,
+    border_hex: str = "D3DCEC",
+    fill_hex: str = "FFFFFF",
+) -> None:
+    """Apply solid white fill, subtle gray-blue borders, and standard margins to table data cell (HTL-89 / HTL-100)."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcPr.set("anchor", "t")
+    tcPr.set("marT", "18288")
+    tcPr.set("marB", "18288")
+    tcPr.set("marL", "36576")
+    tcPr.set("marR", "36576")
+
+    for child in list(tcPr):
+        if child.tag.endswith("solidFill") or child.tag.endswith(("lnL", "lnR", "lnT", "lnB")):
+            tcPr.remove(child)
+
+    ns_a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    for side in ["lnL", "lnR", "lnT", "lnB"]:
+        ln = etree.SubElement(tcPr, f"{{{ns_a}}}{side}", w="12700", cap="flat", cmpd="sng")
+        sfill = etree.SubElement(ln, f"{{{ns_a}}}solidFill")
+        etree.SubElement(sfill, f"{{{ns_a}}}srgbClr", val=border_hex)
+
+    solidFill = etree.SubElement(tcPr, f"{{{ns_a}}}solidFill")
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", val=fill_hex)
+
+
+def write_slide6_deliverables_page(
+    slide,
+    workstreams: List[WorkstreamBlock],
+    model: ClientDeckModel,
+    page_num: int = 1,
+    total_pages: int = 1,
+) -> None:
+    """Populate one Slide 6 'What we will deliver' page with 2-column navy-header deliverables table on left and dark panel on right (HTL-100)."""
+    # 1. Slide Header
+    if total_pages > 1:
+        sub_text = f"Contracted project deliverables and workstream outcomes mapped to delivery phases (Part {page_num} of {total_pages})."
+    else:
+        sub_text = "Contracted project deliverables and workstream outcomes mapped to delivery phases."
+    k_shape, t_shape, s_shape = apply_slide_header_formatting(
+        slide,
+        kicker_text="PROJECT SUCCESS AGREEMENT",
+        title_text="What we will deliver",
+        subtitle_text=sub_text,
+    )
+    if s_shape is not None:
+        s_shape.width = 5240000
+
+    # 2. Identify right dark panel shapes (Solution Overview and Out of Scope) across Client and Governance templates
+    so_shape = None
+    oos_shape = None
+
+    for shp in slide.shapes:
+        if shp._element in (
+            k_shape._element if k_shape else None,
+            t_shape._element if t_shape else None,
+            s_shape._element if s_shape else None,
+        ):
+            continue
+        if shp.has_text_frame:
+            txt = shp.text_frame.text
+            if ("Solution Overview" in txt or shp.shape_id in (193, 395)) and so_shape is None:
+                so_shape = shp
+            elif ("Out of Scope" in txt or shp.shape_id in (202, 399)) and oos_shape is None:
+                oos_shape = shp
+
+    # 3. Clean up ALL other surplus shapes (legacy divider lines, legacy workstream boxes, template tables, old Rimage/JD Edwards body shape 396, etc.)
+    preserved_elements = {
+        shp._element
+        for shp in (k_shape, t_shape, s_shape, so_shape, oos_shape)
+        if shp is not None
+    }
+    for shp in list(slide.shapes):
+        if shp._element not in preserved_elements:
+            slide.shapes._spTree.remove(shp._element)
+
+    # 4. Populate Right Dark Panel (Solution Overview & Out of Scope - HTL-96)
+    white_color = RGBColor(255, 255, 255)
     so_top = 580000
     so_left = 6347125
     so_width = 2600000
@@ -500,296 +651,194 @@ def write_slide6(slide, model: ClientDeckModel) -> None:
     oos_width = 2600000
     oos_height = 1850000
 
-    # 2. Fit Solution Overview text within fixed box (~140pt max body height)
     so_text = model.slide6.solution_overview
     if estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0:
         so_text = truncate_at_clause(so_text, max_chars=420, suffix="...")
         while estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0 and len(so_text) > 50:
             so_text = truncate_at_clause(so_text[:-4], max_chars=len(so_text) - 20, suffix="...")
 
-    # 3. Fit Out of Scope items within fixed box (~120pt max items height)
     oos_items = _fit_out_of_scope_items(model.slide6.out_of_scope, inner_w_in=2.58, max_h_pt=120.0)
 
-    for shape in list(slide.shapes):
-        if not shape.has_text_frame:
-            continue
-        text = shape.text_frame.text
-        if shape.shape_id == 193 or (shape.has_text_frame and "Solution Overview" in text):
-            # Strip placeholder attribute so renderer treats it as a standard top-anchored textbox
-            for ph in shape._element.xpath(".//p:ph"):
-                ph.getparent().remove(ph)
-            shape.top = so_top
-            shape.left = so_left
-            shape.width = so_width
-            shape.height = so_height
-            tf = shape.text_frame
-            tf.word_wrap = True
-            tf.margin_top = 0
-            tf.margin_bottom = 0
-            tf.margin_left = 0
-            tf.margin_right = 0
-            for bpr in shape._element.xpath(".//a:bodyPr"):
-                bpr.set("anchor", "t")
+    # Populate Solution Overview
+    if so_shape is None:
+        so_shape = slide.shapes.add_textbox(so_left, so_top, so_width, so_height)
+    for ph in so_shape._element.xpath(".//p:ph"):
+        ph.getparent().remove(ph)
+    so_shape.top = so_top
+    so_shape.left = so_left
+    so_shape.width = so_width
+    so_shape.height = so_height
+    tf_so = so_shape.text_frame
+    tf_so.word_wrap = True
+    tf_so.margin_top = 0
+    tf_so.margin_bottom = 0
+    tf_so.margin_left = 0
+    tf_so.margin_right = 0
+    for bpr in so_shape._element.xpath(".//a:bodyPr"):
+        bpr.set("anchor", "t")
 
-            for p in list(tf.paragraphs[1:]):
-                tf._txBody.remove(p._p)
+    for p in list(tf_so.paragraphs[1:]):
+        tf_so._txBody.remove(p._p)
 
-            p0 = tf.paragraphs[0]
-            p0.text = "Solution Overview"
-            p0.space_before = Pt(0)
-            p0.space_after = Pt(5)
-            if p0.runs:
-                p0.runs[0].font.name = "Proxima Nova"
-                p0.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
-                p0.runs[0].font.bold = True
-                p0.runs[0].font.color.rgb = white_color
+    p0 = tf_so.paragraphs[0]
+    p0.text = "Solution Overview"
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(5)
+    if p0.runs:
+        p0.runs[0].font.name = "Proxima Nova"
+        p0.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
+        p0.runs[0].font.bold = True
+        p0.runs[0].font.color.rgb = white_color
 
-            p1 = tf.add_paragraph()
-            p1.text = so_text
-            p1.space_before = Pt(0)
-            p1.space_after = Pt(0)
-            if p1.runs:
-                p1.runs[0].font.name = "Proxima Nova"
-                p1.runs[0].font.size = Pt(10)  # HTL-96: Fixed 10pt body
-                p1.runs[0].font.bold = False
-                p1.runs[0].font.color.rgb = white_color
-        elif shape.shape_id == 194 or "[high level summary of the work" in text:
-            # HTL-96: Remove separate body shape as it is now combined into Shape 193
-            if shape._element in slide.shapes._spTree:
-                slide.shapes._spTree.remove(shape._element)
-        elif shape.shape_id == 202 or "Out of Scope:" in text:
-            shape.top = oos_top
-            shape.left = oos_left
-            shape.width = oos_width
-            shape.height = oos_height
-            tf = shape.text_frame
-            tf.word_wrap = True
-            tf.margin_top = 0
-            tf.margin_bottom = 0
-            tf.margin_left = 0
-            tf.margin_right = 0
-            for bpr in shape._element.xpath(".//a:bodyPr"):
-                bpr.set("anchor", "t")
+    p1 = tf_so.add_paragraph()
+    p1.text = so_text
+    p1.space_before = Pt(0)
+    p1.space_after = Pt(0)
+    if p1.runs:
+        p1.runs[0].font.name = "Proxima Nova"
+        p1.runs[0].font.size = Pt(10)  # HTL-96: Fixed 10pt body
+        p1.runs[0].font.bold = False
+        p1.runs[0].font.color.rgb = white_color
 
-            for p in list(tf.paragraphs[1:]):
-                tf._txBody.remove(p._p)
+    # Populate Out of Scope
+    if oos_shape is None:
+        oos_shape = slide.shapes.add_textbox(oos_left, oos_top, oos_width, oos_height)
+    for ph in oos_shape._element.xpath(".//p:ph"):
+        ph.getparent().remove(ph)
+    oos_shape.top = oos_top
+    oos_shape.left = oos_left
+    oos_shape.width = oos_width
+    oos_shape.height = oos_height
+    tf_oos = oos_shape.text_frame
+    tf_oos.word_wrap = True
+    tf_oos.margin_top = 0
+    tf_oos.margin_bottom = 0
+    tf_oos.margin_left = 0
+    tf_oos.margin_right = 0
+    for bpr in oos_shape._element.xpath(".//a:bodyPr"):
+        bpr.set("anchor", "t")
 
-            p0 = tf.paragraphs[0]
-            p0.text = "Out of Scope:"
-            p0.space_before = Pt(0)
-            p0.space_after = Pt(5)  # HTL-96: Fixed 14pt header & 5pt space after (63500 EMU)
-            if p0.runs:
-                p0.runs[0].font.name = "Proxima Nova"
-                p0.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
-                p0.runs[0].font.bold = True
-                p0.runs[0].font.color.rgb = white_color
+    for p in list(tf_oos.paragraphs[1:]):
+        tf_oos._txBody.remove(p._p)
 
-            for item in oos_items:
-                p = tf.add_paragraph()
-                _set_dark_panel_bullet_format(p, 10.0, item)  # HTL-96: Fixed 10pt body
+    p0_oos = tf_oos.paragraphs[0]
+    p0_oos.text = "Out of Scope:"
+    p0_oos.space_before = Pt(0)
+    p0_oos.space_after = Pt(5)  # HTL-96: Fixed 14pt header & 5pt space after (63500 EMU)
+    if p0_oos.runs:
+        p0_oos.runs[0].font.name = "Proxima Nova"
+        p0_oos.runs[0].font.size = Pt(14)  # HTL-96: Fixed 14pt header
+        p0_oos.runs[0].font.bold = True
+        p0_oos.runs[0].font.color.rgb = white_color
 
-    # 2. Dynamic Workstreams
-    workstreams = model.slide6.workstreams
-    n_ws = max(1, len(workstreams))
+    for item in oos_items:
+        p = tf_oos.add_paragraph()
+        _set_dark_panel_bullet_format(p, 10.0, item)  # HTL-96: Fixed 10pt body
 
-    # Pre-identified template shapes
-    header_ids = [217, 207, 209, 211]
-    deliv_ids = [205, 206, 208, 210]
-    line_ids = [196, 195, 197, 198, 199]
+    # 5. Add 2-Column Deliverables Table on Left
+    num_rows = len(workstreams)
+    table_rows = max(2, num_rows + 1)
+    table_left = 480073
+    table_top = 1600200
+    table_width = 5240000  # Total table width bounded to left column space (~5.73 in)
+    table_height = 1828800
+    table_shape = slide.shapes.add_table(table_rows, 2, table_left, table_top, table_width, table_height)
+    table = table_shape.table
 
-    # Map shape IDs to shapes
-    shapes_by_id = {s.shape_id: s for s in slide.shapes}
+    table.columns[0].width = 2150000  # Workstream / Feature Set: ~2.35 in
+    table.columns[1].width = 3090000  # Outcomes / Deliverables: ~3.38 in (2150000 + 3090000 = 5240000)
 
-    template_headers = [shapes_by_id.get(hid) for hid in header_ids if hid in shapes_by_id]
-    template_delivs = [shapes_by_id.get(did) for did in deliv_ids if did in shapes_by_id]
-    template_lines = [shapes_by_id.get(lid) for lid in line_ids if lid in shapes_by_id]
+    # Header Row
+    table.rows[0].height = Pt(22)
+    _format_table_header_cell(table.cell(0, 0), "Workstream / Feature Set", font_size_pt=9.5, bold=True)
+    _format_table_header_cell(table.cell(0, 1), "Outcomes / Deliverables", font_size_pt=9.5, bold=True)
 
-    # Clean duplicate redundant lines (IDs 212-216)
-    for dup_lid in [212, 213, 214, 215, 216]:
-        dup_s = shapes_by_id.get(dup_lid)
-        if dup_s is not None and dup_s._element in slide.shapes._spTree:
-            slide.shapes._spTree.remove(dup_s._element)
+    if not workstreams:
+        cell0 = table.rows[1].cells[0]
+        table.rows[1].height = Pt(20)
+        _format_table_data_cell_styling(cell0)
+        _format_table_data_cell_styling(table.rows[1].cells[1])
+        _format_table_cell(cell0, "[CONFIRMATION REQUIRED]", font_size_pt=8.0)
+        return
 
-    # Bounds
-    y_start = 1534864
-    y_end = 4873114
-    total_h = y_end - y_start
-    slot_h = int(total_h / n_ws)
+    # Data Rows
+    for r_idx, ws in enumerate(workstreams):
+        row = table.rows[r_idx + 1]
+        row.height = Pt(20)
 
-    # Geometry & Typography according to workstream count N
-    if n_ws <= 2:
-        h_font_size = Pt(11.0)
-        d_font_size = Pt(10.5)
-        top_offset = int(slot_h * 0.08)
-        bottom_margin = int(slot_h * 0.10)
-    elif n_ws == 3:
-        h_font_size = Pt(10.5)
-        d_font_size = Pt(10.0)
-        top_offset = int(slot_h * 0.06)
-        bottom_margin = int(slot_h * 0.09)
-    elif n_ws == 4:
-        h_font_size = Pt(10.0)
-        d_font_size = Pt(9.5)
-        top_offset = int(slot_h * 0.05)
-        bottom_margin = int(slot_h * 0.08)
-    elif n_ws == 5:
-        h_font_size = Pt(9.0)
-        d_font_size = Pt(8.5)
-        top_offset = int(slot_h * 0.04)
-        bottom_margin = int(slot_h * 0.07)
-    else:  # n_ws >= 6
-        h_font_size = Pt(8.0)
-        d_font_size = Pt(7.5)
-        top_offset = int(slot_h * 0.03)
-        bottom_margin = int(slot_h * 0.06)
+        # Col 0: Workstream / Feature Set
+        cell0 = row.cells[0]
+        _format_table_data_cell_styling(cell0)
+        cell0.text = ""
+        tf0 = cell0.text_frame
+        tf0.word_wrap = True
+        tf0.margin_top = 0
+        tf0.margin_bottom = 0
+        tf0.margin_left = 0
+        tf0.margin_right = 0
 
-    # Get max current shape ID in tree
-    max_sp_id = max([int(el.get("id", "0")) for el in slide.shapes._spTree.xpath(".//p:cNvPr")] + [500])
+        p0 = tf0.paragraphs[0]
+        p0.text = ws.title
+        if p0.runs:
+            p0.runs[0].font.name = "Proxima Nova"
+            p0.runs[0].font.size = Pt(8.0)
+            p0.runs[0].font.bold = True
+            p0.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-    item_height = max(100000, slot_h - top_offset - bottom_margin)
-    deliv_max_h = item_height / 914400.0
-    header_max_h = min(0.45 * slot_h / 914400.0, deliv_max_h)
+        # Col 1: Outcomes / Deliverables
+        cell1 = row.cells[1]
+        _format_table_data_cell_styling(cell1)
+        cell1.text = ""
+        tf1 = cell1.text_frame
+        tf1.word_wrap = True
+        tf1.margin_top = 0
+        tf1.margin_bottom = 0
+        tf1.margin_left = 0
+        tf1.margin_right = 0
 
-    h_candidate_sizes = [s for s in [11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0] if s <= float(h_font_size.pt)]
-    if not h_candidate_sizes:
-        h_candidate_sizes = [float(h_font_size.pt)]
+        delivs = ws.deliverables or ["[No deliverables listed]"]
+        for d_idx, deliv_str in enumerate(delivs):
+            p = tf1.paragraphs[0] if d_idx == 0 else tf1.add_paragraph()
+            p.space_before = Pt(0)
+            p.space_after = Pt(2)
+            p.line_spacing = 1.05
 
-    d_candidate_sizes = [s for s in [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5] if s <= float(d_font_size.pt)]
-    if not d_candidate_sizes:
-        d_candidate_sizes = [float(d_font_size.pt)]
+            m_del = re.match(r"^(DEL-\d{2}[:\s]?)(.*)$", deliv_str.strip())
+            if m_del:
+                del_id = m_del.group(1).rstrip(": ") + ": "
+                del_desc = m_del.group(2).strip()
 
-    # Pass 1: Compute uniform column font sizes across all blocks (HTL-49 / HTL-50)
-    header_sizes = []
-    processed_titles = []
+                r_bullet = p.add_run()
+                r_bullet.text = "• "
+                r_bullet.font.name = "Proxima Nova"
+                r_bullet.font.size = Pt(7.5)
+                r_bullet.font.bold = False
+                r_bullet.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
-    for ws in workstreams:
-        ws_title_raw = ws.title
-        if estimate_text_height(ws_title_raw, width_in=2.15, size_pt=8.0) > header_max_h * 72.0:
-            ws_title_raw = truncate_at_clause(ws_title_raw, max_chars=80, suffix="...")
-        processed_titles.append(ws_title_raw)
-        h_pt, _ = select_fitting_font_size(ws_title_raw, width_in=2.15, max_height_in=header_max_h, candidate_sizes=h_candidate_sizes)
-        header_sizes.append(h_pt)
+                r_id = p.add_run()
+                r_id.text = del_id
+                r_id.font.name = "Proxima Nova"
+                r_id.font.size = Pt(8.0)
+                r_id.font.bold = True
+                r_id.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
 
-    # Deliverables column font size: check candidate sizes from highest to lowest (10.5 down to 8.0)
-    col_deliv_font_pt = d_candidate_sizes[-1]
-    for sz in d_candidate_sizes:
-        all_blocks_fit = True
-        for ws in workstreams:
-            if ws.deliverables:
-                cand_items, ovf = fit_deliverables_for_block(ws.deliverables, width_in=3.00, max_height_in=deliv_max_h, font_size_pt=sz)
-                if ovf > 0 or len(cand_items) != len([d for d in ws.deliverables if d and d.strip()]):
-                    all_blocks_fit = False
-                    break
-        if all_blocks_fit:
-            col_deliv_font_pt = sz
-            break
+                r_desc = p.add_run()
+                r_desc.text = del_desc
+                r_desc.font.name = "Proxima Nova"
+                r_desc.font.size = Pt(7.5)
+                r_desc.font.bold = False
+                r_desc.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+            else:
+                p.text = f"• {deliv_str}" if len(delivs) > 1 and not deliv_str.startswith("•") else deliv_str
+                for r in p.runs:
+                    r.font.name = "Proxima Nova"
+                    r.font.size = Pt(7.5)
+                    r.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
-    col_header_font_pt = min(header_sizes) if header_sizes else float(h_font_size.pt)
 
-    # Pass 2: Render workstream blocks using uniform column font sizes
-    for i in range(n_ws):
-        if i < len(template_headers):
-            h_shape = template_headers[i]
-            d_shape = template_delivs[i]
-        else:
-            # Clone from Block 1
-            max_sp_id += 1
-            h_elem = copy.deepcopy(template_headers[0]._element)
-            h_elem.xpath(".//p:cNvPr")[0].set("id", str(max_sp_id))
-            h_elem.xpath(".//p:cNvPr")[0].set("name", f"Google Shape;{max_sp_id};p25")
-            slide.shapes._spTree.append(h_elem)
-            h_shape = slide.shapes[-1]
-
-            max_sp_id += 1
-            d_elem = copy.deepcopy(template_delivs[0]._element)
-            d_elem.xpath(".//p:cNvPr")[0].set("id", str(max_sp_id))
-            d_elem.xpath(".//p:cNvPr")[0].set("name", f"Google Shape;{max_sp_id};p25")
-            slide.shapes._spTree.append(d_elem)
-            d_shape = slide.shapes[-1]
-
-        slot_top = y_start + i * slot_h
-        item_top = slot_top + top_offset
-
-        # Position Header (Column 1 - Left)
-        h_shape.left = 502750
-        h_shape.width = 2150000
-        h_shape.top = item_top
-        h_shape.height = item_height
-
-        for bpr in h_shape._element.xpath(".//a:bodyPr"):
-            bpr.set("anchor", "t")
-
-        tf_h = h_shape.text_frame
-        tf_h.word_wrap = True
-        tf_h.margin_top = 0
-        tf_h.margin_bottom = 0
-        tf_h.margin_left = 0
-        tf_h.margin_right = 0
-
-        for p in list(tf_h.paragraphs[1:]):
-            tf_h._txBody.remove(p._p)
-
-        ws = workstreams[i]
-        ws_title_final = processed_titles[i] if i < len(processed_titles) else ws.title
-        _set_header_paragraph_format(tf_h.paragraphs[0], col_header_font_pt, ws_title_final)
-
-        # Position Deliverables (Column 2 - Right)
-        d_shape.left = 2726700
-        d_shape.width = 3000000
-        d_shape.top = item_top
-        d_shape.height = item_height
-
-        for bpr in d_shape._element.xpath(".//a:bodyPr"):
-            bpr.set("anchor", "t")
-
-        fitted_delivs, ovf_count = fit_deliverables_for_block(
-            ws.deliverables,
-            width_in=3.00,
-            max_height_in=deliv_max_h,
-            font_size_pt=col_deliv_font_pt,
-        )
-
-        _populate_deliverables_box(
-            d_shape,
-            fitted_delivs,
-            Pt(col_deliv_font_pt),
-            overflow_count=ovf_count,
-        )
-
-    # Remove surplus template shapes if N < 4
-    if n_ws < len(template_headers):
-        for surplus_h in template_headers[n_ws:]:
-            if surplus_h and surplus_h._element in slide.shapes._spTree:
-                slide.shapes._spTree.remove(surplus_h._element)
-        for surplus_d in template_delivs[n_ws:]:
-            if surplus_d and surplus_d._element in slide.shapes._spTree:
-                slide.shapes._spTree.remove(surplus_d._element)
-
-    # Position divider lines
-    for i in range(n_ws + 1):
-        line_y = y_start + i * slot_h
-        if i < len(template_lines):
-            line_shape = template_lines[i]
-            line_shape.left = 503325
-            line_shape.width = 5218500
-            line_shape.top = line_y
-        else:
-            # Clone line
-            max_sp_id += 1
-            line_elem = copy.deepcopy(template_lines[0]._element)
-            line_elem.xpath(".//p:cNvPr")[0].set("id", str(max_sp_id))
-            line_elem.xpath(".//p:cNvPr")[0].set("name", f"Google Shape;{max_sp_id};p25")
-            slide.shapes._spTree.append(line_elem)
-            line_shape = slide.shapes[-1]
-            line_shape.left = 503325
-            line_shape.width = 5218500
-            line_shape.top = line_y
-
-    # Remove surplus lines if n_ws + 1 < len(template_lines)
-    if n_ws + 1 < len(template_lines):
-        for surplus_l in template_lines[n_ws + 1 :]:
-            if surplus_l and surplus_l._element in slide.shapes._spTree:
-                slide.shapes._spTree.remove(surplus_l._element)
+def write_slide6(slide, model: ClientDeckModel) -> None:
+    """Populate Slide 6 (What we will deliver) single page (HTL-100)."""
+    write_slide6_deliverables_page(slide, model.slide6.workstreams, model, page_num=1, total_pages=1)
 
 
 def write_slide12(slide, model: ClientDeckModel) -> None:
@@ -935,32 +984,75 @@ def write_client_deck(
     target_path: Path,
     template_path: Optional[Path] = None,
 ) -> Path:
-    """Load template presentation, populate slides, and save output file."""
+    """Load template presentation, populate slides, and save output file (OUT-14 / HTL-100)."""
     src_template = template_path or CLIENT_DECK_TEMPLATE_PATH
     if not src_template.exists():
         raise FileNotFoundError(f"Client Deck template not found at {src_template}")
 
     prs = pptx.Presentation(str(src_template))
 
+    chunks_s6 = chunk_workstreams_for_deliverables_table(model.slide6.workstreams)
+    total_s6_pages = len(chunks_s6)
+
+    # Extra slides for Slide 6 continuation pages
+    layout_default = prs.slides[5].slide_layout
+    extra_s6_indices = []
+    if total_s6_pages > 1:
+        for _ in range(total_s6_pages - 1):
+            s_extra = prs.slides.add_slide(layout_default)
+            # Remove default shapes on new slide
+            for s in list(s_extra.shapes):
+                s_extra.shapes._spTree.remove(s._element)
+            for s in prs.slides[5].shapes:
+                s_extra.shapes._spTree.append(copy.deepcopy(s._element))
+            extra_s6_indices.append(len(prs.slides) - 1)
+
+    s6_indices = [5] + extra_s6_indices
+    # Desired order for client deck:
+    # 0, 1, 2, 3, 4 (Slides 1..5)
+    # s6_indices (Slide 6 pages)
+    # 6, 7, 8, 9, 10 (Slides 7..11)
+    # 11 (Slide 12 - Risk Register)
+    # 12, 13 (Slides 13, 14)
+    # 14 (Slide 15 - Next Steps)
+    desired_indices = [0, 1, 2, 3, 4] + s6_indices + [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    sldIdLst = prs.slides._sldIdLst
+    all_sld_ids = list(sldIdLst)
+    for child in list(sldIdLst):
+        sldIdLst.remove(child)
+    for idx in desired_indices:
+        sldIdLst.append(all_sld_ids[idx])
+
     # Format canonical slide headers across all content slides (HTL-88)
     apply_slide_header_formatting(prs.slides[1], has_subtitle=False)
     apply_slide_header_formatting(prs.slides[2], has_subtitle=False)
     apply_slide_header_formatting(prs.slides[4])
-    apply_slide_header_formatting(prs.slides[5], has_subtitle=False)
-    apply_slide_header_formatting(prs.slides[7])
-    apply_slide_header_formatting(prs.slides[8])
-    apply_slide_header_formatting(prs.slides[9])
-    apply_slide_header_formatting(prs.slides[10])
-    apply_slide_header_formatting(prs.slides[11])
-    apply_slide_header_formatting(prs.slides[12])
-    apply_slide_header_formatting(prs.slides[14])
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 2])  # Slide 8
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 3])  # Slide 9
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 4])  # Slide 10
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 5])  # Slide 11
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 6])  # Slide 12
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 7])  # Slide 13
+    apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 9])  # Slide 15
 
-    # Populate slides 1, 5, 6, 12, 15 (0-indexed: 0, 4, 5, 11, 14)
+    # Populate slides
     write_slide1(prs.slides[0], model)
     write_slide5(prs.slides[4], model)
-    write_slide6(prs.slides[5], model)
-    write_slide12(prs.slides[11], model)
-    write_slide15(prs.slides[14], model)
+
+    for c_idx, chunk_ws in enumerate(chunks_s6):
+        write_slide6_deliverables_page(
+            prs.slides[5 + c_idx],
+            chunk_ws,
+            model,
+            page_num=c_idx + 1,
+            total_pages=total_s6_pages,
+        )
+
+    # Slide 12 (Initial Risk Register): index is 10 + total_s6_pages
+    write_slide12(prs.slides[10 + total_s6_pages], model)
+
+    # Slide 15 (Next Steps): index is 13 + total_s6_pages
+    write_slide15(prs.slides[13 + total_s6_pages], model)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(target_path))

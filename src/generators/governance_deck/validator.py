@@ -23,11 +23,14 @@ def check_governance_deck_traceability(
         return [f"Failed to open presentation: {e}"]
 
     # 1. Slide Count
+    from src.generators.client_deck.writer import chunk_workstreams_for_deliverables_table
+    chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
+    total_s14_pages = len(chunks_s14)
     rows_s15 = model.slide15.rows
     max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
     total_s15_pages = len(chunks_s15)
-    expected_slides = 18 + total_s15_pages
+    expected_slides = 17 + total_s14_pages + total_s15_pages
 
     if len(prs.slides) != expected_slides:
         errors.append(f"Expected exactly {expected_slides} slides in Governance Deck, found {len(prs.slides)}")
@@ -60,15 +63,17 @@ def check_governance_deck_traceability(
             errors.append("Slide 13 contains unreplaced '[Pre-filled:' placeholders")
 
     # 4. Slide 14 (What We Deliver) Validation
-    if len(prs.slides) >= 14:
-        s14 = prs.slides[13]
-        s14_text = " ".join([s.text_frame.text for s in s14.shapes if s.has_text_frame])
-        if "[high level summary" in s14_text or "[Workstream or Feature" in s14_text:
-            errors.append("Slide 14 contains unreplaced placeholder text")
+    for p_idx in range(total_s14_pages):
+        s14_idx = 13 + p_idx
+        if len(prs.slides) > s14_idx:
+            s14 = prs.slides[s14_idx]
+            s14_text = " ".join([s.text_frame.text for s in s14.shapes if s.has_text_frame])
+            if "[high level summary" in s14_text or "[Workstream or Feature" in s14_text:
+                errors.append(f"Slide {s14_idx + 1} contains unreplaced placeholder text")
 
     # 5. Slide 15 (Acceptance Criteria) Validation
     for p_idx in range(total_s15_pages):
-        s15_idx = 14 + p_idx
+        s15_idx = 13 + total_s14_pages + p_idx
         if len(prs.slides) > s15_idx:
             s15 = prs.slides[s15_idx]
             table_found = any(s.has_table for s in s15.shapes)
@@ -79,7 +84,7 @@ def check_governance_deck_traceability(
                 errors.append(f"Slide {s15_idx + 1} is missing title 'Deliverable acceptance criteria'")
 
     # 6. Slide 16 (How Milestone Acceptance Works) Validation
-    s16_idx = 14 + total_s15_pages
+    s16_idx = 13 + total_s14_pages + total_s15_pages
     if len(prs.slides) > s16_idx:
         s16 = prs.slides[s16_idx]
         s16_text = " ".join([s.text_frame.text for s in s16.shapes if s.has_text_frame])
@@ -89,7 +94,7 @@ def check_governance_deck_traceability(
             errors.append("Slide 16 contains unreplaced placeholder text")
 
     # 7. Slide 17 (Approach) Validation
-    s17_idx = 15 + total_s15_pages
+    s17_idx = 14 + total_s14_pages + total_s15_pages
     if len(prs.slides) > s17_idx:
         s17 = prs.slides[s17_idx]
         s17_text = " ".join([s.text_frame.text for s in s17.shapes if s.has_text_frame])
@@ -99,7 +104,7 @@ def check_governance_deck_traceability(
             errors.append("Slide 17 contains unreplaced placeholder text")
 
     # 8. Slide 18 (Risk Register) Validation
-    s18_idx = 16 + total_s15_pages
+    s18_idx = 15 + total_s14_pages + total_s15_pages
     if len(prs.slides) > s18_idx:
         s18 = prs.slides[s18_idx]
         table_found = any(s.has_table for s in s18.shapes)
@@ -107,7 +112,7 @@ def check_governance_deck_traceability(
             errors.append("Slide 18 is missing Initial Risk Register table")
 
     # 9. Slide 19 (Next Steps) Validation
-    s19_idx = 17 + total_s15_pages
+    s19_idx = 16 + total_s14_pages + total_s15_pages
     if len(prs.slides) > s19_idx:
         s19 = prs.slides[s19_idx]
         table_found = any(s.has_table for s in s19.shapes)

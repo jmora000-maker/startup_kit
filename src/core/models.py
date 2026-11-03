@@ -247,7 +247,7 @@ class Deliverable(BaseModel):
     client_approver: str = "[UNASSIGNED - TO BE CONFIRMED]"
     submission_target_date: FlexibleDate = None
     review_window: str = "5 business days"
-    rejection_rework_path: str = "Talent PM / Team rework within 3 business days of notice"
+    rejection_rework_path: str = "Talent PM / Team rework upon notice of non-conformance"
     unresolved_acceptance_clarifications: List[str] = Field(default_factory=list)
     linked_action_id: Optional[str] = Field(
         default=None,

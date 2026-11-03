@@ -6,6 +6,7 @@ from typing import Optional
 
 from src.core.models import StartupKitBaseline
 from src.generators.formatting import sanitize_filename
+from src.generators.client_deck.writer import chunk_workstreams_for_deliverables_table
 from src.generators.governance_deck.builder import build_governance_deck_model
 from src.generators.governance_deck.spec import GovernanceDeckModel
 from src.generators.governance_deck.trace import GovernanceDeckTraceManifest, TraceRef
@@ -29,7 +30,7 @@ def export_governance_deck(
     template_path: Optional[Path] = None,
     client_template_path: Optional[Path] = None,
 ) -> GovernanceDeckResult:
-    """Build and save {Project_Name}_PS_Governance_Kickoff.pptx and trace manifest into output_dir (HTL-72)."""
+    """Build and save {Project_Name}_PS_Governance_Kickoff.pptx and trace manifest into output_dir (HTL-72 / HTL-100)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_name = sanitize_filename(baseline.project_name)
     target_path = output_dir / f"{clean_name}_PS_Governance_Kickoff.pptx"
@@ -43,10 +44,13 @@ def export_governance_deck(
     )
     manifest_path = target_path.with_name(f"{clean_name}_PS_Governance_Kickoff.trace.json")
 
+    chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
+    total_s14_pages = len(chunks_s14)
     rows_s15 = model.slide15.rows
     max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
-    total_slides = 18 + len(chunks_s15)
+    total_s15_pages = len(chunks_s15)
+    total_slides = 17 + total_s14_pages + total_s15_pages
 
     return GovernanceDeckResult(
         file_path=saved_path,

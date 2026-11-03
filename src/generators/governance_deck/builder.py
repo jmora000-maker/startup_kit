@@ -125,6 +125,75 @@ def _sanitize_no_dollars(text: str) -> str:
     return cleaned.strip()
 
 
+def _sanitize_acceptance_narrative(text: str) -> str:
+    """Sanitize acceptance narrative: remove financial dollar amounts, administrative/commercial prerequisites
+    (Purchase Orders, NDAs, invoicing setup), fabricated turnaround assumptions, and contradictory weekly status
+    acceptance loops (HTL-74, HTL-98, HTL-99)."""
+    if not text:
+        return text
+
+    cleaned = _sanitize_no_dollars(text)
+    lines = cleaned.split("\n")
+    cleaned_lines: List[str] = []
+
+    for line in lines:
+        if not line.strip():
+            continue
+
+        label, body = parse_step_line(line)
+        step_body = body
+
+        # 1. Purchase Order and administrative prerequisite exclusions (HTL-98)
+        step_body = re.sub(
+            r'(?i)\bConfirm\s+Client\s+has\s+issued\s+the\s+Purchase\s+Order\s+before\s+work\s+starts,\s*and\s+that\b',
+            'Confirm that',
+            step_body,
+        )
+        step_body = re.sub(
+            r'(?i)\bWork\s+starts\s+only\s+after\s+(?:the\s+)?client\s+issues\s+a\s+Purchase\s+Order\.?\s*',
+            '',
+            step_body,
+        )
+
+        # 2. Split into sentences and filter out administrative prerequisites & fabricated turnaround assumptions
+        sentences = re.split(r'(?<=[.!?])\s+', step_body)
+        kept_sentences: List[str] = []
+        for s in sentences:
+            if not s.strip():
+                continue
+            if re.search(r'(?i)\b(?:purchase\s+order|P\.O\.|NDA\b|non-disclosure\s+agreement|invoicing\s+setup|master\s+services\s+agreement)\b', s):
+                continue
+            if re.search(r'(?i)\b(?:client\s+)?decision\s+turnaround\s+on\s+review\s+items\s+is\s+assumed\b', s):
+                continue
+
+            # 3. Transform contradictory weekly status acceptance loops into standard progress tracking (HTL-99)
+            s_mod = re.sub(
+                r'(?i)Send the weekly status report and ask (?:Client Contact\s+)?([A-Za-z0-9 ]+?)\s+to confirm acceptance or give feedback on each one\.?',
+                r'Weekly status reports track delivery progress and keep Client Contact \1 informed.',
+                s,
+            )
+            s_mod = re.sub(
+                r'(?i)Send the weekly status report and ask to confirm acceptance or give feedback on each one\.?',
+                r'Weekly status reports track delivery progress.',
+                s_mod,
+            )
+            s_mod = re.sub(r'(?i)Client Contact Client Contact', 'Client Contact', s_mod)
+
+            if s_mod.strip():
+                kept_sentences.append(s_mod.strip())
+
+        step_body = " ".join(kept_sentences).strip()
+        step_body = re.sub(r'\s{2,}', ' ', step_body).strip()
+
+        if step_body:
+            if label:
+                cleaned_lines.append(f"{label} {step_body}")
+            else:
+                cleaned_lines.append(step_body)
+
+    return "\n".join(cleaned_lines)
+
+
 # Classification Taxonomy Constants (HTL-74 Option C)
 CARD_1_LABELS = {
     "inputs ready", "prerequisites", "execution", "execution and tracking",
@@ -231,11 +300,11 @@ def _build_acceptance_cards(narrative_text: str) -> List[AcceptanceCardData]:
 
 
 def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrativeModel:
-    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis and 3-card classification (HTL-72 / HTL-74)."""
+    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis and 3-card classification (HTL-72 / HTL-74 / HTL-98 / HTL-99)."""
     sow = baseline.sow_interpretation
     # Tier 1: LLM synthesized acceptance process narrative
     if sow and sow.acceptance_process_narrative and sow.acceptance_process_narrative.strip():
-        narrative = _sanitize_no_dollars(sow.acceptance_process_narrative.strip())
+        narrative = _sanitize_acceptance_narrative(sow.acceptance_process_narrative.strip())
         cards = _build_acceptance_cards(narrative)
         return Slide16AcceptanceNarrativeModel(
             narrative=narrative,
@@ -302,7 +371,7 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
     steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
 
     narrative = "\n".join(steps)
-    clean_narrative = _sanitize_no_dollars(narrative)
+    clean_narrative = _sanitize_acceptance_narrative(narrative)
     cards = _build_acceptance_cards(clean_narrative)
     return Slide16AcceptanceNarrativeModel(
         narrative=clean_narrative,

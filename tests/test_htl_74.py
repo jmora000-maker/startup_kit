@@ -48,8 +48,8 @@ ARC_12_STEP_NARRATIVE = (
 )
 
 PGE_10_STEP_NARRATIVE = (
-    "Inputs ready: Confirm Client has issued the Purchase Order before work starts, and that environment read access, discovery tooling access, spend data and SME availability are in place before Day 1. Client decision turnaround on review items is assumed to be within 3 business days.\n"
-    "Execution: Deliver all six Work Output items (Portfolio Inventory, Dependency Map, Workload Disposition Register, Target Architecture Recommendation, Business Case & TCO Model, Migration Wave Plan & Roadmap) as Milestone 1, targeting November 18, 2026. Send the weekly status report and ask Client Contact Alicia Cook to confirm acceptance or give feedback on each one.\n"
+    "Inputs ready: Confirm that environment read access, discovery tooling access, spend data and SME availability are in place before Day 1.\n"
+    "Execution: Deliver all six Work Output items (Portfolio Inventory, Dependency Map, Workload Disposition Register, Target Architecture Recommendation, Business Case & TCO Model, Migration Wave Plan & Roadmap) as Milestone 1, targeting November 18, 2026. Weekly status reports track delivery progress and keep Client Contact Alicia Cook informed.\n"
     "Submission: Give Alicia Cook formal notice that Milestone 1 is complete. The 5-business-day Milestone Acceptance Period starts from the date of that notice, so record the date.\n"
     "Review: Client has 5 business days from the completion notice to evaluate the Work Output against its specifications and Acceptance Criteria in all material respects. Milestone review sessions with the Client Contact (and Client SMEs as needed) cover the Work Output against the criteria.\n"
     "Deemed accepted: If Client gives no written notice of failure within the 5 business days, or starts using the Work Output commercially or in production, Milestone 1 is deemed accepted. Client is still expected to sign and deliver a certification of Milestone acceptance.\n"
@@ -171,7 +171,7 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
         h_in = s.height / 914400.0
         assert top_in + h_in <= 5.25
 
-    # Verify all 3 cards share the exact same uniform font size (7.0pt for PGE)
+    # Verify all 3 cards share the exact same uniform font size (7.5pt for clean PGE)
     card1_boxes = [s for s in slide16.shapes if s.has_text_frame and "Inputs ready:" in s.text_frame.text]
     card2_boxes = [s for s in slide16.shapes if s.has_text_frame and "Triage:" in s.text_frame.text]
     card3_boxes = [s for s in slide16.shapes if s.has_text_frame and "Deemed accepted:" in s.text_frame.text]
@@ -180,7 +180,7 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 7.0
+    assert c1_size == c2_size == c3_size == 7.5
 
 
 def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):

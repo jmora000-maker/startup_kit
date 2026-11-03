@@ -150,11 +150,10 @@ from src.llm.validation import validate_and_repair_baseline
 
 
 PGE_ACCEPTANCE_PROCESS_NARRATIVE = (
-    "Inputs ready: Confirm Client has issued the Purchase Order before work starts, and that environment read access, "
-    "discovery tooling access, spend data and SME availability are in place before Day 1. Client decision turnaround on review items is assumed to be within 3 business days.\n"
+    "Inputs ready: Confirm that environment read access, discovery tooling access, spend data and SME availability are in place before Day 1.\n"
     "Execution: Deliver all six Work Output items (Portfolio Inventory, Dependency Map, Workload Disposition Register, "
     "Target Architecture Recommendation, Business Case & TCO Model, Migration Wave Plan & Roadmap) as Milestone 1, targeting November 18, 2026. "
-    "Send the weekly status report and ask Client Contact Alicia Cook to confirm acceptance or give feedback on each one.\n"
+    "Weekly status reports track delivery progress and keep Client Contact Alicia Cook informed.\n"
     "Submission: Give Alicia Cook formal notice that Milestone 1 is complete. The 5-business-day Milestone Acceptance Period starts from the date of that notice, so record the date.\n"
     "Review: Client has 5 business days from the completion notice to evaluate the Work Output against its specifications and Acceptance Criteria in all material respects. "
     "Milestone review sessions with the Client Contact (and Client SMEs as needed) cover the Work Output against the criteria.\n"

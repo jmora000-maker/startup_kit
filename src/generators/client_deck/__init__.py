@@ -9,7 +9,10 @@ from src.generators.formatting import sanitize_filename
 from src.generators.client_deck.builder import build_client_deck_model
 from src.generators.client_deck.spec import ClientDeckModel
 from src.generators.client_deck.trace import ClientDeckTraceManifest, TraceRef
-from src.generators.client_deck.writer import write_client_deck
+from src.generators.client_deck.writer import (
+    chunk_workstreams_for_deliverables_table,
+    write_client_deck,
+)
 from src.generators.client_deck.validator import check_client_deck_traceability
 
 
@@ -28,7 +31,7 @@ def export_client_deck(
     output_dir: Path,
     template_path: Optional[Path] = None,
 ) -> ClientDeckResult:
-    """Build and save {Project_Name}_Client_Kickoff_Deck.pptx and trace manifest into output_dir (OUT-14)."""
+    """Build and save {Project_Name}_Client_Kickoff_Deck.pptx and trace manifest into output_dir (OUT-14 / HTL-100)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_name = sanitize_filename(baseline.project_name)
     target_path = output_dir / f"{clean_name}_Client_Kickoff_Deck.pptx"
@@ -37,10 +40,13 @@ def export_client_deck(
     saved_path = write_client_deck(model, target_path, template_path=template_path)
     manifest_path = target_path.with_name(f"{clean_name}_Client_Kickoff_Deck.trace.json")
 
+    chunks_s6 = chunk_workstreams_for_deliverables_table(model.slide6.workstreams)
+    total_slides = 15 + len(chunks_s6)
+
     return ClientDeckResult(
         file_path=saved_path,
         manifest_path=manifest_path,
-        slides_count=16,
+        slides_count=total_slides,
         trace_entries_count=len(model.manifest.entries),
         project_name=baseline.project_name,
     )

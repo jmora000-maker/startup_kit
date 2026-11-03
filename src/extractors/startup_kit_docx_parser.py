@@ -1126,7 +1126,7 @@ class StartupKitDocxParser(IStartupKitDocxParser):
                 client_approver=app_str,
                 sow_reference=sow_ref,
                 review_window=signoff_str,
-                rejection_rework_path="Talent PM / Team rework within 3 business days of notice"
+                rejection_rework_path="Talent PM / Team rework upon notice of non-conformance"
             ))
 
         return deliverables

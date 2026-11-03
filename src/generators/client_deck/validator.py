@@ -41,17 +41,22 @@ def check_boilerplate_slides_unchanged(
     tmpl_prs = pptx.Presentation(str(src_tmpl))
     errors: List[str] = []
 
-    for s_idx in BOILERPLATE_SLIDE_INDICES:
-        if s_idx >= len(generated_prs.slides) or s_idx >= len(tmpl_prs.slides):
-            errors.append(f"Slide index {s_idx+1} out of bounds")
+    offset = max(0, len(generated_prs.slides) - len(tmpl_prs.slides))
+
+    for tmpl_idx in BOILERPLATE_SLIDE_INDICES:
+        if tmpl_idx >= len(tmpl_prs.slides):
+            continue
+        gen_idx = tmpl_idx if tmpl_idx <= 4 else tmpl_idx + offset
+        if gen_idx >= len(generated_prs.slides):
+            errors.append(f"Slide index {gen_idx+1} out of bounds")
             continue
 
-        gen_texts = _extract_slide_text(generated_prs.slides[s_idx])
-        tmpl_texts = _extract_slide_text(tmpl_prs.slides[s_idx])
+        gen_texts = _extract_slide_text(generated_prs.slides[gen_idx])
+        tmpl_texts = _extract_slide_text(tmpl_prs.slides[tmpl_idx])
 
         if gen_texts != tmpl_texts:
             errors.append(
-                f"Boilerplate Slide {s_idx+1} modified: generated text does not match template. "
+                f"Boilerplate Slide {gen_idx+1} modified: generated text does not match template. "
                 f"Generated: {gen_texts[:2]}... vs Template: {tmpl_texts[:2]}..."
             )
 
@@ -70,10 +75,9 @@ def check_client_deck_traceability(
     if not deck_path.exists():
         findings.append(
             ValidationFinding(
-                severity="Error",
-                rule_id="DECK-MISSING",
+                invariant_id="INV-29",
+                severity="error",
                 message=f"Client Kickoff Deck file not found at {deck_path}",
-                remediation="Ensure export_client_deck completes successfully.",
             )
         )
         return findings
@@ -85,10 +89,9 @@ def check_client_deck_traceability(
     for err in bp_errors:
         findings.append(
             ValidationFinding(
-                severity="Error",
-                rule_id="OUT-14-BOILERPLATE",
+                invariant_id="INV-29",
+                severity="error",
                 message=err,
-                remediation="Do not modify boilerplate slides 2, 3, 4, 7, 8, 9, 10, 11, 13, 14, 16.",
             )
         )
 
@@ -97,10 +100,9 @@ def check_client_deck_traceability(
     if not mf_path.exists():
         findings.append(
             ValidationFinding(
-                severity="Error",
-                rule_id="OUT-14-MANIFEST-MISSING",
+                invariant_id="INV-26",
+                severity="error",
                 message=f"Companion trace manifest missing at {mf_path}",
-                remediation="Write trace manifest JSON alongside presentation.",
             )
         )
 

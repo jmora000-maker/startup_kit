@@ -128,17 +128,9 @@ def _create_deck_with_n_workstreams(n_ws: int) -> ClientDeckModel:
     )
 
 
-@pytest.mark.parametrize("n_ws,expected_h_sz,expected_d_sz", [
-    (1, 11.0, 10.5),
-    (2, 11.0, 10.5),
-    (3, 10.5, 10.0),
-    (4, 10.0, 9.5),
-    (5, 9.0, 8.5),
-    (6, 8.0, 7.5),
-    (7, 8.0, 7.5),
-])
-def test_client_deck_workstream_layout_thresholds(n_ws, expected_h_sz, expected_d_sz, tmp_path):
-    """HTL-79 (Gap 2): Workstream count thresholds (1-3, 4-5, 6+) select correct font sizes and do not overflow."""
+@pytest.mark.parametrize("n_ws", [1, 2, 3, 4, 5, 6, 7])
+def test_client_deck_workstream_layout_thresholds(n_ws, tmp_path):
+    """HTL-79 / HTL-100: Workstream count rendering (1..7) creates a clean 2-column deliverables table without overflow."""
     model = _create_deck_with_n_workstreams(n_ws)
 
     # Use client deck template
@@ -147,28 +139,25 @@ def test_client_deck_workstream_layout_thresholds(n_ws, expected_h_sz, expected_
 
     write_slide6(slide6, model)
 
-    # Inspect rendered shapes on slide 6
-    # Headers are on left (left ~502750), deliverables on right (left ~2726700), below column header (top >= 1500000)
-    h_shapes = [s for s in slide6.shapes if s.has_text_frame and abs(s.left - 502750) < 50000 and s.top >= 1500000 and "Workstream" in s.text_frame.text]
-    d_shapes = [s for s in slide6.shapes if s.has_text_frame and abs(s.left - 2726700) < 50000 and s.top >= 1500000 and "DEL-" in s.text_frame.text]
+    # Inspect rendered table on slide 6
+    tbl_shape = next((s for s in slide6.shapes if s.has_table), None)
+    assert tbl_shape is not None, "Expected table shape on Slide 6"
+    assert tbl_shape.width == 5240000
+    table = tbl_shape.table
+    assert len(table.rows) == max(2, n_ws + 1)
+    assert len(table.columns) == 2
 
-    assert len(h_shapes) == n_ws, f"Expected {n_ws} header shapes, found {len(h_shapes)}"
-    assert len(d_shapes) == n_ws, f"Expected {n_ws} deliverable shapes, found {len(d_shapes)}"
+    # Verify all workstreams are present in Col 0 and deliverables in Col 1
+    for i in range(n_ws):
+        row_cell0 = table.cell(i + 1, 0)
+        row_cell1 = table.cell(i + 1, 1)
+        assert f"Workstream {i+1} Core" in row_cell0.text
+        assert f"DEL-{i+1:02d}" in row_cell1.text
+        assert "Feature A" in row_cell1.text
+        assert "Feature B" in row_cell1.text
 
-    # Verify font sizes
-    for h in h_shapes:
-        font_sz = h.text_frame.paragraphs[0].runs[0].font.size.pt
-        assert font_sz == expected_h_sz, f"At n_ws={n_ws}, expected header font {expected_h_sz}, got {font_sz}"
-
-    for d in d_shapes:
-        font_sz = d.text_frame.paragraphs[0].runs[0].font.size.pt
-        assert font_sz == expected_d_sz, f"At n_ws={n_ws}, expected deliv font {expected_d_sz}, got {font_sz}"
-
-    # Verify geometry bounding box: bottom of all shapes must not exceed y_end (4873114)
-    y_end = 4873114
-    for s in h_shapes + d_shapes:
-        bottom = s.top + s.height
-        assert bottom <= y_end + 10000, f"Shape {s.shape_id} overflowed bottom: {bottom} > {y_end}"
+    # Verify no stray lines or legacy shapes remain
+    assert not any(s.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.LINE for s in slide6.shapes)
 
 
 # =========================================================================

@@ -38,8 +38,10 @@ from src.generators.client_deck.writer import (
     _set_header_paragraph_format,
     _set_paragraph_bullet_format,
     _populate_deliverables_box,
+    chunk_workstreams_for_deliverables_table,
     write_slide5,
     write_slide6,
+    write_slide6_deliverables_page,
     write_slide12,
     write_slide15,
 )
@@ -164,10 +166,10 @@ def _format_table_header_cell(
 
     tcPr = cell._tc.get_or_add_tcPr()
     tcPr.set("anchor", "t")
-    tcPr.set("marT", "34300")
-    tcPr.set("marB", "34300")
-    tcPr.set("marL", "68600")
-    tcPr.set("marR", "68600")
+    tcPr.set("marT", "18288")
+    tcPr.set("marB", "18288")
+    tcPr.set("marL", "36576")
+    tcPr.set("marR", "36576")
 
     for child in list(tcPr):
         if child.tag.endswith("solidFill") or child.tag.endswith(("lnL", "lnR", "lnT", "lnB")):
@@ -252,12 +254,14 @@ def write_slide15_acceptance_criteria_page(
     table.columns[2].width = 1188720
 
     # Header Row (Row 0)
+    table.rows[0].height = Pt(22)
     _format_table_header_cell(table.cell(0, 0), "Deliverable", font_size_pt=9.5, bold=True)
     _format_table_header_cell(table.cell(0, 1), "Acceptance Criteria", font_size_pt=9.5, bold=True)
     _format_table_header_cell(table.cell(0, 2), "Milestone Gate", font_size_pt=9.5, bold=True)
 
     if not rows:
         cell0 = table.rows[1].cells[0]
+        table.rows[1].height = Pt(20)
         _format_table_data_cell_styling(cell0)
         _format_table_data_cell_styling(table.rows[1].cells[1])
         _format_table_data_cell_styling(table.rows[1].cells[2])
@@ -267,6 +271,7 @@ def write_slide15_acceptance_criteria_page(
     # Pass 2: Populate Data Rows
     for r_idx, row_data in enumerate(rows):
         row = table.rows[r_idx + 1]
+        row.height = Pt(20)
 
         # Col 0: Deliverable (ID bold + Name)
         cell0 = row.cells[0]
@@ -783,12 +788,21 @@ def write_governance_deck(
     for s in prs_client.slides[4].shapes:
         s_gov_13.shapes._spTree.append(copy.deepcopy(s._element))
 
-    # Copy Slide 6 shapes (What We Will Deliver) from Client Deck onto Gov Slide 14 (index 13)
-    s_gov_14 = prs_gov.slides[13]
-    for s in list(s_gov_14.shapes):
-        s_gov_14.shapes._spTree.remove(s._element)
-    for s in prs_client.slides[5].shapes:
-        s_gov_14.shapes._spTree.append(copy.deepcopy(s._element))
+    # Calculate Slide 14 chunks (max 7 deliverables on a single page if <= 7 total, otherwise chunked)
+    chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
+    total_s14_pages = len(chunks_s14)
+
+    # Extra slides for Slide 14 continuation pages
+    layout_deliver = prs_gov.slides[13].slide_layout
+    extra_deliver_indices = []
+    if total_s14_pages > 1:
+        for _ in range(total_s14_pages - 1):
+            s_extra = prs_gov.slides.add_slide(layout_deliver)
+            for s in list(s_extra.shapes):
+                s_extra.shapes._spTree.remove(s._element)
+            for s in prs_gov.slides[13].shapes:
+                s_extra.shapes._spTree.append(copy.deepcopy(s._element))
+            extra_deliver_indices.append(len(prs_gov.slides) - 1)
 
     # Calculate Slide 15 chunks (max 7 deliverables on a single page if <= 7 total, otherwise max 4 per slide page)
     rows_s15 = model.slide15.rows
@@ -796,24 +810,28 @@ def write_governance_deck(
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
     total_s15_pages = len(chunks_s15)
 
-    # Extra slides for Slide 15 continuation pages
+    # Extra slides for Slide 15 continuation pages (clean layout without Slide 14 dark panel)
+    layout_clean = prs_gov.slide_layouts[14]
     extra_crit_indices = []
     for _ in range(total_s15_pages - 1):
-        s_extra = prs_gov.slides.add_slide(layout_default)
+        s_extra = prs_gov.slides.add_slide(layout_clean)
+        for s in list(s_extra.shapes):
+            s_extra.shapes._spTree.remove(s._element)
         extra_crit_indices.append(len(prs_gov.slides) - 1)
 
     # Reorder slides into exact sequence:
     # 0..10: Slides 1..11
     # 11: Slide 12 (Team Roster - index 11)
     # 12: Slide 13 (Why We're Here - index 12)
-    # 13: Slide 14 (What We Deliver - index 13)
-    # 14..14+total_s15_pages-1: Slide 15 pages (Acceptance Criteria - index 17 + extra_crit_indices)
-    # 14+total_s15_pages: Slide 16 (How Acceptance Works - index 18)
-    # 15+total_s15_pages: Slide 17 (Approach - index 14)
-    # 16+total_s15_pages: Slide 18 (Initial Risk Register - index 19)
-    # 17+total_s15_pages: Slide 19 (Next Steps - index 15)
+    # deliver_indices: Slide 14 pages (What We Deliver - index 13 + extra_deliver_indices)
+    # crit_indices: Slide 15 pages (Acceptance Criteria - index 17 + extra_crit_indices)
+    # 18: Slide 16 (How Acceptance Works - index 18)
+    # 14: Slide 17 (Approach - index 14)
+    # 19: Slide 18 (Initial Risk Register - index 19)
+    # 15: Slide 19 (Next Steps - index 15)
+    deliver_indices = [13] + extra_deliver_indices
     crit_indices = [17] + extra_crit_indices
-    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] + crit_indices + [18, 14, 19, 15]
+    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] + deliver_indices + crit_indices + [18, 14, 19, 15]
     sldIdLst = prs_gov.slides._sldIdLst
     all_sld_ids = list(sldIdLst)
 
@@ -880,9 +898,9 @@ def write_governance_deck(
     apply_slide_header_formatting(prs_gov.slides[9], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[11], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[12])
-    apply_slide_header_formatting(prs_gov.slides[13], has_subtitle=False)
-    apply_slide_header_formatting(prs_gov.slides[16 + total_s15_pages])
-    apply_slide_header_formatting(prs_gov.slides[17 + total_s15_pages])
+    apply_slide_header_formatting(prs_gov.slides[14 + total_s14_pages + total_s15_pages])  # Slide 17 Approach
+    apply_slide_header_formatting(prs_gov.slides[15 + total_s14_pages + total_s15_pages])  # Slide 18 Risk Register
+    apply_slide_header_formatting(prs_gov.slides[16 + total_s14_pages + total_s15_pages])  # Slide 19 Next Steps
 
     # Populate slides:
     # Slide 1 (index 0)
@@ -891,29 +909,36 @@ def write_governance_deck(
     # Slide 13 (index 12): Why We're Here (Client Slide 5)
     write_slide5(prs_gov.slides[12], client_deck_adapter)
 
-    # Slide 14 (index 13): What We Deliver (Client Slide 6)
-    write_slide6(prs_gov.slides[13], client_deck_adapter)
+    # Slide 14 pages (starting at index 13): What We Deliver (HTL-100)
+    for c_idx, chunk_ws in enumerate(chunks_s14):
+        write_slide6_deliverables_page(
+            prs_gov.slides[13 + c_idx],
+            chunk_ws,
+            client_deck_adapter,
+            page_num=c_idx + 1,
+            total_pages=total_s14_pages,
+        )
 
-    # Slide 15 pages (starting at index 14): Acceptance Criteria Table (HTL-72 / HTL-88 / HTL-89)
+    # Slide 15 pages (starting at index 13 + total_s14_pages): Acceptance Criteria Table (HTL-72 / HTL-88 / HTL-89)
     for c_idx, chunk_rows in enumerate(chunks_s15):
         write_slide15_acceptance_criteria_page(
-            prs_gov.slides[14 + c_idx],
+            prs_gov.slides[13 + total_s14_pages + c_idx],
             chunk_rows,
             page_num=c_idx + 1,
             total_pages=total_s15_pages,
         )
 
     # Slide 16: How Milestone Acceptance Works Narrative (HTL-72 / HTL-88)
-    write_slide16_acceptance_narrative(prs_gov.slides[14 + total_s15_pages], model)
+    write_slide16_acceptance_narrative(prs_gov.slides[13 + total_s14_pages + total_s15_pages], model)
 
     # Slide 17: Approach 3-Card Layout (HTL-72 / HTL-88)
-    write_slide17_approach(prs_gov.slides[15 + total_s15_pages], model)
+    write_slide17_approach(prs_gov.slides[14 + total_s14_pages + total_s15_pages], model)
 
     # Slide 18: Initial Risk Register (Client Slide 12)
-    write_slide12(prs_gov.slides[16 + total_s15_pages], client_deck_adapter)
+    write_slide12(prs_gov.slides[15 + total_s14_pages + total_s15_pages], client_deck_adapter)
 
     # Slide 19: Next Steps (Client Slide 15)
-    write_slide15(prs_gov.slides[17 + total_s15_pages], client_deck_adapter)
+    write_slide15(prs_gov.slides[16 + total_s14_pages + total_s15_pages], client_deck_adapter)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     prs_gov.save(str(target_path))

@@ -18,6 +18,7 @@
     "project_name": "ARC Application Implementation",
     "client_name": "Syngenta Crop Protection, LLC",
     "project_purpose": "Build the scientist-facing ARC application within the Client's larger genomics platform and provide automated QA coverage across the full ARC program.",
+    "problem_statement": "[CONFIRMATION REQUIRED]",
     "solution_overview": "The engagement delivers the scientist-facing ARC genomics application and automated QA test suites across four sequential milestones. Workstreams establish the micro-frontend shell and authentication, develop FastAPI search and direct-write services on Snowflake, build the interactive frontend with haplotype visualization, and execute comprehensive integration, performance, and UAT validation cycles.",
     "success_criteria_summary": "Project success is defined by formal milestone sign-offs across all four delivery phases, sub-second search and detail API response times, and 100% passing production smoke tests with a clean 48-hour defect watch. The client receives fully tested micro-frontend and backend services integrated with Snowflake and confirmed MTA Store feature parity.",
     "delivery_objectives": [
@@ -52,23 +53,38 @@
       "DEL-01: Micro-Frontend Shell",
       "DEL-02: Azure AD / MSAL Authentication Integration",
       "DEL-03: Shell and Authentication E2E Test Harness",
-      "DEL-04: Foundation Pipeline, Security and Data Validation Suites",
-      "DEL-05: Faceted Search and Detail API Endpoints",
-      "DEL-06: Asynchronous Long-Running Query Processing",
-      "DEL-07: Backend Integration, Load Tests and Performance Spike",
-      "DEL-08: OneGWAS Direct-Write Integration and Tests",
-      "DEL-09: Data Ingestion and Migration Validation Suites",
-      "DEL-10: ARC Faceted Search and Results Table",
-      "DEL-11: Result Detail View and Interval Visualization",
-      "DEL-12: Haplotype Filtering, Comparison and Backend Support",
-      "DEL-13: Nomenclature Service",
-      "DEL-14: Frontend and Haplotype Test Suites",
-      "DEL-15: Integration, Performance, Security and Cross-Browser Test Suites",
-      "DEL-16: UAT Execution Records and Defect Log",
-      "DEL-17: Pre-Launch Hardening Iteration",
-      "DEL-18: Production Smoke Test Results and 48-Hour Defect Watch",
-      "DEL-19: MTA Store Parity and Usage-Zero Confirmation Report",
-      "DEL-20: Training Materials and User Documentation"
+      "DEL-04: Pipeline Quality Gates and Deployment Smoke Checks",
+      "DEL-05: Authentication Negative Test Suite and Security Scan",
+      "DEL-06: Data Model Validation Scripts and Results",
+      "DEL-07: Data Governance Validation and Audit Results",
+      "DEL-08: Faceted Search and Detail API Endpoints",
+      "DEL-09: Asynchronous Long-Running Query Processing",
+      "DEL-10: Backend Integration and Load Test Suites",
+      "DEL-11: Performance Engineering Spike Output",
+      "DEL-12: OneGWAS Direct-Write Integration",
+      "DEL-13: OneGWAS E2E and Failure/Retry Test Suite",
+      "DEL-14: GWAS Atlas ETL Validation and Defect Report",
+      "DEL-15: MTA Store Migration Validation and Sign-off Support",
+      "DEL-16: PHG/GATSBY Ingestion Validation and Defect Report",
+      "DEL-17: PubMed/Literature Extraction Validation and Defect Report",
+      "DEL-18: Trait Taxonomy Validation and Defect Report",
+      "DEL-19: ARC Faceted Search and Results Table",
+      "DEL-20: Result Detail View and Interval Visualization",
+      "DEL-21: Frontend Unit, Integration, Accessibility and Performance Tests",
+      "DEL-22: Haplotype Filter, Indicator and Comparison UI",
+      "DEL-23: Haplotype Search/Filter Endpoints",
+      "DEL-24: Haplotype API and Data Access Layer",
+      "DEL-25: Haplotype Endpoint Integration Tests",
+      "DEL-26: Nomenclature Service",
+      "DEL-27: Nomenclature Test Suite and Results",
+      "DEL-28: Haplotype Search and Visualization Tests",
+      "DEL-29: Integration, Performance, Security and Cross-Browser Test Suites",
+      "DEL-30: Test Data and Fixtures",
+      "DEL-31: UAT Execution Records and Defect Log",
+      "DEL-32: Hardening Iteration Results and Regression Run",
+      "DEL-33: Production Smoke Test Results and 48-Hour Defect Watch Report",
+      "DEL-34: MTA Store Parity and Usage-Zero Confirmation Report",
+      "DEL-35: Training Materials and User Documentation"
     ],
     "key_milestones_summary": [
       "M1: Project kickoff and start of the P1 Foundation phase. (2026-10-07)",
@@ -415,54 +431,55 @@
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s.",
+      "acceptance_criteria": [
+        "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s."
+      ],
       "sow_reference": "HS-4762",
-      "evidence_required": "Working shell in the target environment, performance test results against the stated targets, and signed milestone acceptance certification.",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Who covers design work is still open.",
-        "Client design system access must be provided by the start date."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-02",
       "name": "Azure AD / MSAL Authentication Integration",
-      "description": "Azure AD / MSAL authentication flow integrated into the shell and propagated to remotes.",
+      "description": "Azure AD / MSAL authentication integration in the shell, session handling and token propagation to remotes.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4763)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works.",
+      "acceptance_criteria": [
+        "Auth flow succeeds 100% of runs; session propagated to remotes; refresh works."
+      ],
       "sow_reference": "HS-4763",
-      "evidence_required": "Authentication test results against the stated targets and signed milestone acceptance certification.",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Depends on availability of the Client's identity provider team."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-03",
       "name": "Shell and Authentication E2E Test Harness",
-      "description": "End-to-end automated test harness covering shell composition, navigation and authentication flows.",
+      "description": "Automated end-to-end test harness for micro-frontend shell composition, navigation, and authentication flows.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4765)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "E2E coverage of composition, navigation and authentication; 100% critical-path pass. Acceptance requires delivery of scripts, execution in the target environment and a results report.",
+      "acceptance_criteria": [
+        "E2E test harness passes; composition, navigation, and auth flows validated."
+      ],
       "sow_reference": "HS-4765",
-      "evidence_required": "Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
@@ -472,85 +489,87 @@
     },
     {
       "id": "DEL-04",
-      "name": "Foundation Pipeline, Security and Data Validation Suites",
-      "description": "Test automation and reports for pipeline quality gates and smoke checks, authentication negative and security scanning, Snowflake data model validation, and data governance validation.",
+      "name": "Pipeline Quality Gates and Deployment Smoke Checks",
+      "description": "Pipeline quality-gate and deployment smoke-check test automation.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4770, HS-4938, HS-4782, HS-4941)",
-        "confidence_score": 0.9
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4770)",
+        "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Negative tests pass and scan is clean, with Toptal-built findings remediated. For Client-built components (pipelines, data model, governance), acceptance requires delivered and executed scripts plus a defect report; the targets themselves are Client's to achieve.",
-      "sow_reference": "HS-4770, HS-4938, HS-4782, HS-4941",
-      "evidence_required": "Test scripts, execution results in the target environment, defect reports and gap log, and signed milestone acceptance certification. (Shared evidence item covering HS-4765, HS-4770, HS-4782, HS-4938, HS-4941)",
+      "acceptance_criteria": [
+        "Quality gates operational in CI; smoke suite passes on merge and deploy."
+      ],
+      "sow_reference": "HS-4770",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Remediation path for failures in Client-built components has not been written down."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-05",
-      "name": "Faceted Search and Detail API Endpoints",
-      "description": "FastAPI faceted search, filter and detail endpoints over the Snowflake ARC tables.",
+      "name": "Authentication Negative Test Suite and Security Scan",
+      "description": "Authentication negative-test suite and security scanning execution results.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4777)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4938)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms. Misses attributable to Client-owned platform components are treated as met and logged for Client remediation.",
-      "sow_reference": "HS-4777",
-      "evidence_required": "Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
+      "acceptance_criteria": [
+        "Zero high/critical security scan findings; negative auth paths pass."
+      ],
+      "sow_reference": "HS-4938",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-01-26",
+      "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Work cannot start until the Client's Snowflake schema (HS-4781) is deployed."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-06",
-      "name": "Asynchronous Long-Running Query Processing",
-      "description": "Task queue (Celery/RQ) that offloads long-running queries, with health checks.",
+      "name": "Data Model Validation Scripts and Results",
+      "description": "Data model validation scripts, results, and defect report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4778)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4782)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green.",
-      "sow_reference": "HS-4778",
-      "evidence_required": "Load test and telemetry results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4777, HS-4778)",
+      "acceptance_criteria": [
+        "All target tables, keys, and constraints validated; defect report delivered."
+      ],
+      "sow_reference": "HS-4782",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-01-26",
+      "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "What requires the async task queue on a sub-second search platform is still an open question."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-07",
-      "name": "Backend Integration, Load Tests and Performance Spike",
-      "description": "Backend integration and load test suites against Snowflake dev, plus a performance engineering spike delivering benchmarks, query observability, p95 definitions and a tuning backlog.",
+      "name": "Data Governance Validation and Audit Results",
+      "description": "Data governance validation scripts, audit results, and gap log.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4779, HS-4942)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 1 (HS-4941)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Search P95 < 1s under load; p95 targets defined, query instrumentation implemented and tuning backlog triaged.",
-      "sow_reference": "HS-4779, HS-4942",
-      "evidence_required": "Benchmark and observability outputs, test scripts, execution results report, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Governance rules checked; audit report and gap log delivered."
+      ],
+      "sow_reference": "HS-4941",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-01-26",
+      "submission_target_date": "2026-11-17",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
       "unresolved_acceptance_clarifications": [],
@@ -558,152 +577,153 @@
     },
     {
       "id": "DEL-08",
-      "name": "OneGWAS Direct-Write Integration and Tests",
-      "description": "Integration that writes completed OneGWAS results (variant and PHG/GATSBY) to Snowflake ARC with retryable error handling, plus E2E and failure/retry test suite.",
+      "name": "Faceted Search and Detail API Endpoints",
+      "description": "FastAPI faceted search and detail endpoints over Snowflake data tier.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4803, HS-4804)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4777)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "100% of completed runs written; retryable errors recovered; write P95 < 60s; completion-to-searchable P95 < 5 min; failure/retry validated.",
-      "sow_reference": "HS-4803, HS-4804",
-      "evidence_required": "Integration test scripts, execution results against the targets, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Search P95 < 1s, detail P95 < 500ms; results match fixture data."
+      ],
+      "sow_reference": "HS-4777",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Depends on the Client-agreed OneGWAS output contract."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-09",
-      "name": "Data Ingestion and Migration Validation Suites",
-      "description": "Validation scripts, results and defect reports for GWAS Atlas ETL, MTA Store migration, PHG/GATSBY ingestion, PubMed/literature extraction and trait taxonomy.",
+      "name": "Asynchronous Long-Running Query Processing",
+      "description": "Asynchronous query processing with task queue, status polling, and health checks.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4797, HS-4785, HS-4807, HS-4801, HS-4791)",
-        "confidence_score": 0.9
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4778)",
+        "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Scripts delivered and executed with defect reports against targets: GWAS Atlas import coverage \u226590%, MTA domain-user comparison sign-off, PHG/GATSBY 100% sampled keys match, PubMed precision \u226585%, taxonomy coverage \u226580%. Achieving the targets is the Client's responsibility.",
-      "sow_reference": "HS-4797, HS-4785, HS-4807, HS-4801, HS-4791",
-      "evidence_required": "[CONFIRMATION REQUIRED]",
+      "acceptance_criteria": [
+        "Long queries execute asynchronously; status polling and cancellation work."
+      ],
+      "sow_reference": "HS-4778",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-01-26",
-      "review_window": "Each milestone is an acceptance gate with its own sign-off.",
+      "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Remediation path for failures in Client-built pipelines has not been written down.",
-        "Availability of domain users and taxonomy experts is required."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-10",
-      "name": "ARC Faceted Search and Results Table",
-      "description": "ARC micro-frontend faceted search (crop, trait, marker, significance, source, haplotype type) with a paginated, sortable results table.",
+      "name": "Backend Integration and Load Test Suites",
+      "description": "Backend integration and load test suites and execution results.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4772)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4779)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excluding network).",
-      "sow_reference": "HS-4772",
-      "evidence_required": "Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
+      "acceptance_criteria": [
+        "Load test passes target concurrency; no memory leaks; latency targets met."
+      ],
+      "sow_reference": "HS-4779",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-03-02",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Client must provide UI/UX designs for Milestone 3 screens by the start date."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-11",
-      "name": "Result Detail View and Interval Visualization",
-      "description": "Result detail view (markers, trials, haplotypes, study) with PHG/GATSBY interval-based visualization.",
+      "name": "Performance Engineering Spike Output",
+      "description": "Performance spike output: benchmarks, query observability, p95 definitions, and query tuning backlog.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4773)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4942)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Detail view P90 < 1s; interval visualization render P95 < 1.5s.",
-      "sow_reference": "HS-4773",
-      "evidence_required": "Browser performance test results against the targets, and signed milestone acceptance certification. (Shared evidence item covering HS-4772, HS-4773)",
+      "acceptance_criteria": [
+        "Observability in place; p95 definitions agreed; tuning backlog delivered."
+      ],
+      "sow_reference": "HS-4942",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-03-02",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Number of ARC-specific design components covered by the estimate is still a placeholder."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-12",
-      "name": "Haplotype Filtering, Comparison and Backend Support",
-      "description": "Haplotype-type filter, result indicator, interval detail and variant-versus-pangenome comparison, with supporting search/filter endpoints and haplotype association API and data access.",
+      "name": "OneGWAS Direct-Write Integration",
+      "description": "OneGWAS direct-write integration with retryable error handling.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4809, HS-4810, HS-4813)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4803)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works; filter and haplotype endpoints P95 < 1s with correct results against fixtures.",
-      "sow_reference": "HS-4809, HS-4810, HS-4813",
-      "evidence_required": "Performance and fixture test results, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Direct write succeeds; retryable error handling verified; write P95 < 60s."
+      ],
+      "sow_reference": "HS-4803",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-03-02",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Depends on Client-built haplotype ingestion and schema extensions."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-13",
-      "name": "Nomenclature Service",
-      "description": "Nomenclature service for trait resolution, synonym lookup and unmapped-term handling, integrated with the ARC backend, with its test suite and results.",
+      "name": "OneGWAS E2E and Failure/Retry Test Suite",
+      "description": "OneGWAS E2E and failure/retry test suite and results.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4793, HS-4794)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4804)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Resolution correct for all mapped traits (100% in tests); lookup P95 < 200ms.",
-      "sow_reference": "HS-4793, HS-4794",
-      "evidence_required": "Test scripts, execution results against the targets, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Direct write succeeds; retryable error handling verified; write P95 < 60s; completion to ARC searchable P95 < 5 min."
+      ],
+      "sow_reference": "HS-4804",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-03-02",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Depends on the Client-built canonical trait list and synonyms."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-14",
-      "name": "Frontend and Haplotype Test Suites",
-      "description": "Frontend unit, integration, accessibility and performance test suites, backend haplotype endpoint integration tests, and haplotype search and visualization tests, with results.",
+      "name": "GWAS Atlas ETL Validation and Defect Report",
+      "description": "GWAS Atlas ETL validation scripts, results, and defect report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4775, HS-4815, HS-4811)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4797)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Unit coverage \u226580%; key-flow integration green; search < 1s; haplotype integration tests green (100% of critical paths); filters, comparison and rendering validated across haplotype types.",
-      "sow_reference": "HS-4775, HS-4815, HS-4811",
-      "evidence_required": "Test scripts, execution results report, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Validation scripts run against target; results logged; defects triaged."
+      ],
+      "sow_reference": "HS-4797",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-03-02",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
       "unresolved_acceptance_clarifications": [],
@@ -711,62 +731,327 @@
     },
     {
       "id": "DEL-15",
-      "name": "Integration, Performance, Security and Cross-Browser Test Suites",
-      "description": "Test suites covering all data flows and UI/API critical paths in staging at production-like volume, including Chrome and Edge, with test data, fixtures and environment support.",
+      "name": "MTA Store Migration Validation and Sign-off Support",
+      "description": "MTA Store migration validation, data-quality issue log, and sign-off support.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4825, HS-4826)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4785)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report. Test data and fixtures cover all integration scenarios.",
-      "sow_reference": "HS-4825, HS-4826",
-      "evidence_required": "Test scripts, execution results report, defect report, and signed milestone acceptance certification.",
+      "acceptance_criteria": [
+        "Validation scripts run against target; results logged; defects triaged."
+      ],
+      "sow_reference": "HS-4785",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-04-06",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Integration test plan is Client-owned and must be available."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-16",
-      "name": "UAT Execution Records and Defect Log",
-      "description": "UAT cycles run with Client's scientist groups, with defects triaged and tracked.",
+      "name": "PHG/GATSBY Ingestion Validation and Defect Report",
+      "description": "PHG/GATSBY ingestion validation scripts, results, and defect report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4828)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4807)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built work at exit.",
-      "sow_reference": "HS-4828",
-      "evidence_required": "UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
+      "acceptance_criteria": [
+        "Validation scripts run against target; results logged; defects triaged."
+      ],
+      "sow_reference": "HS-4807",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
-      "submission_target_date": "2027-04-06",
+      "submission_target_date": "2027-01-26",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "UAT is limited to two runs per milestone; additional runs require a Change Order.",
-        "UAT scope boundaries and change-order triggers are not yet written."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
       "id": "DEL-17",
-      "name": "Pre-Launch Hardening Iteration",
-      "description": "Hardening and stabilization iteration after integration testing and UAT to close critical and high defects before cutover, including a full regression run.",
+      "name": "PubMed/Literature Extraction Validation and Defect Report",
+      "description": "PubMed/literature extraction validation scripts, results, and defect report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4943)",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4801)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "All critical and high defects in Toptal-built work closed; full regression green before cutover.",
-      "sow_reference": "HS-4943",
-      "evidence_required": "UAT execution records, defect log, hardening results and full regression report. (Shared evidence item covering HS-4828, HS-4943)",
+      "acceptance_criteria": [
+        "Validation scripts run against target; results logged; defects triaged."
+      ],
+      "sow_reference": "HS-4801",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-01-26",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-18",
+      "name": "Trait Taxonomy Validation and Defect Report",
+      "description": "Trait taxonomy validation scripts, results, and defect report.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 2 (HS-4791)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Validation scripts run against target; results logged; defects triaged."
+      ],
+      "sow_reference": "HS-4791",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-01-26",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-19",
+      "name": "ARC Faceted Search and Results Table",
+      "description": "ARC micro-frontend faceted search, filters, and dynamic results table.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4772)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excl. network)."
+      ],
+      "sow_reference": "HS-4772",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-20",
+      "name": "Result Detail View and Interval Visualization",
+      "description": "Result detail view and interactive interval-based visualization component.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4773)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Detail view P90 < 1s; interval visualization render P95 < 1.5s."
+      ],
+      "sow_reference": "HS-4773",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-21",
+      "name": "Frontend Unit, Integration, Accessibility and Performance Tests",
+      "description": "Frontend unit, integration, accessibility, and performance test suites.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4775)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Unit coverage >= 80%; key-flow integration green; search < 1s."
+      ],
+      "sow_reference": "HS-4775",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-22",
+      "name": "Haplotype Filter, Indicator and Comparison UI",
+      "description": "Haplotype filter, indicator, interval visualization, and variant-versus-pangenome comparison.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4809)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works."
+      ],
+      "sow_reference": "HS-4809",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-23",
+      "name": "Haplotype Search/Filter Endpoints",
+      "description": "Haplotype search/filter backend API endpoints.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4810)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Filter endpoint P95 < 1s."
+      ],
+      "sow_reference": "HS-4810",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-24",
+      "name": "Haplotype API and Data Access Layer",
+      "description": "Haplotype API endpoints, data access layer, and Snowflake query integration.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4813)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Endpoints P95 < 1s; correct results against fixtures."
+      ],
+      "sow_reference": "HS-4813",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-25",
+      "name": "Haplotype Endpoint Integration Tests",
+      "description": "Haplotype endpoint integration tests and execution results.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4815)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Integration tests green (100% of critical paths)."
+      ],
+      "sow_reference": "HS-4815",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-26",
+      "name": "Nomenclature Service",
+      "description": "Trait and nomenclature resolution and mapping service.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4793)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Resolution correct for all mapped traits; lookup P95 < 200ms."
+      ],
+      "sow_reference": "HS-4793",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-27",
+      "name": "Nomenclature Test Suite and Results",
+      "description": "Nomenclature test suite, validation scripts, and results.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4794)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "100% mapped-trait resolution correct; lookup P95 < 200ms."
+      ],
+      "sow_reference": "HS-4794",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-28",
+      "name": "Haplotype Search and Visualization Tests",
+      "description": "Haplotype search and visualization tests and results.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 3 (HS-4811)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Filters, comparison, and rendering validated across haplotype types."
+      ],
+      "sow_reference": "HS-4811",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-03-02",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-29",
+      "name": "Integration, Performance, Security and Cross-Browser Test Suites",
+      "description": "Integration, performance, security, and cross-browser (Chrome and Edge) test suites and results.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4825)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; failures in Client-built components recorded in the defect report."
+      ],
+      "sow_reference": "HS-4825",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-04-06",
       "review_window": "5 business days from notice of milestone completion",
@@ -775,62 +1060,130 @@
       "linked_action_id": null
     },
     {
-      "id": "DEL-18",
-      "name": "Production Smoke Test Results and 48-Hour Defect Watch",
-      "description": "Production smoke tests and post-deployment validation, including a 48-hour defect watch report.",
+      "id": "DEL-30",
+      "name": "Test Data and Fixtures",
+      "description": "Test data and fixtures covering all integration scenarios.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4826)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "Test data and fixtures cover all integration scenarios; environments supported."
+      ],
+      "sow_reference": "HS-4826",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-31, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-04-06",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-31",
+      "name": "UAT Execution Records and Defect Log",
+      "description": "UAT execution records and defect log.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4828)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built Work at exit."
+      ],
+      "sow_reference": "HS-4828",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-32, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-04-06",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-32",
+      "name": "Hardening Iteration Results and Regression Run",
+      "description": "Hardening iteration results, including full regression run.",
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4943)",
+        "confidence_score": 0.95
+      },
+      "owner": "Toptal",
+      "acceptance_criteria": [
+        "All critical and high defects in Toptal-built Work closed; full regression green before cutover."
+      ],
+      "sow_reference": "HS-4943",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-33, DEL-34, DEL-35).",
+      "client_approver": "Mike Magwire and Satya",
+      "submission_target_date": "2027-04-06",
+      "review_window": "5 business days from notice of milestone completion",
+      "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
+      "unresolved_acceptance_clarifications": [],
+      "linked_action_id": null
+    },
+    {
+      "id": "DEL-33",
+      "name": "Production Smoke Test Results and 48-Hour Defect Watch Report",
+      "description": "Production smoke test results and 48-hour defect watch report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4832)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Production smoke 100% pass; 48-hour defect watch clean.",
+      "acceptance_criteria": [
+        "Production smoke 100% pass; 48-hour defect watch clean."
+      ],
       "sow_reference": "HS-4832",
-      "evidence_required": "Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-34, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-04-06",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Production deployment is Client-owned; hypercare beyond the 48-hour watch is out of scope."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
-      "id": "DEL-19",
+      "id": "DEL-34",
       "name": "MTA Store Parity and Usage-Zero Confirmation Report",
-      "description": "Report confirming MTA Store feature parity and zero legacy traffic before decommission.",
+      "description": "MTA Store parity and usage-zero confirmation report.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4788)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Scripts executed and report issued against the target: parity confirmed; legacy traffic = 0 over the watch window before decommission. Achieving the target is the Client's responsibility.",
+      "acceptance_criteria": [
+        "Executed against target: parity confirmed; legacy traffic = 0 over watch window before decommission."
+      ],
       "sow_reference": "HS-4788",
-      "evidence_required": "Production smoke test results, 48-hour defect watch report, and MTA parity and usage-zero confirmation report. (Shared evidence item covering HS-4788, HS-4832)",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-35).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-04-06",
       "review_window": "5 business days from notice of milestone completion",
       "rejection_rework_path": "Talent PM / Team rework within 3 business days of notice",
-      "unresolved_acceptance_clarifications": [
-        "Remediation path if parity or usage-zero fails has not been written down."
-      ],
+      "unresolved_acceptance_clarifications": [],
       "linked_action_id": null
     },
     {
-      "id": "DEL-20",
+      "id": "DEL-35",
       "name": "Training Materials and User Documentation",
-      "description": "Training materials and user documentation for the ARC application.",
+      "description": "Training materials and user documentation.",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 - Milestone 4 (HS-4829)",
         "confidence_score": 0.95
       },
       "owner": "Toptal",
-      "acceptance_criteria": "Training materials and user documentation delivered and reviewed.",
+      "acceptance_criteria": [
+        "Training materials and user documentation delivered and reviewed."
+      ],
       "sow_reference": "HS-4829",
-      "evidence_required": "Delivered training materials and user documentation, and signed milestone acceptance certification.",
+      "evidence_required": "Working software in target environment, automated test execution records, and signed milestone acceptance certification. (Shared evidence item with DEL-01, DEL-02, DEL-03, DEL-04, DEL-05, DEL-06, DEL-07, DEL-08, DEL-09, DEL-10, DEL-11, DEL-12, DEL-13, DEL-14, DEL-15, DEL-16, DEL-17, DEL-18, DEL-19, DEL-20, DEL-21, DEL-22, DEL-23, DEL-24, DEL-25, DEL-26, DEL-27, DEL-28, DEL-29, DEL-30, DEL-31, DEL-32, DEL-33, DEL-34).",
       "client_approver": "Mike Magwire and Satya",
       "submission_target_date": "2027-04-06",
       "review_window": "5 business days from notice of milestone completion",
@@ -842,30 +1195,6 @@
   "milestones": [
     {
       "id": "M1",
-      "description": "Project kickoff and start of the P1 Foundation phase.",
-      "external_date": "2026-10-07",
-      "internal_buffer_date": "2026-09-30",
-      "owner": "Delivery Manager",
-      "key_dependencies": [
-        "Client provides design system access, UI/UX designs for Milestone 3 screens, and coding and delivery documentation standards by the start date"
-      ],
-      "critical_path_assumptions": [
-        "Start date is not yet agreed with the client; all later dates shift if it changes"
-      ],
-      "source_reference": {
-        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
-        "clause_or_slide": "Section 3.A; Exhibit A Sections 5.1 and 6",
-        "confidence_score": 0.85
-      },
-      "linked_action_id": null,
-      "merged_milestone_ids": [],
-      "extracted_ids": [
-        "M1"
-      ],
-      "phase": "P1"
-    },
-    {
-      "id": "M2",
       "description": "P1 Foundation accepted: micro-frontend shell, Azure AD/MSAL authentication, and the related test and certification outputs are delivered.",
       "external_date": "2026-11-17",
       "internal_buffer_date": "2026-11-10",
@@ -890,10 +1219,11 @@
       "extracted_ids": [
         "M2"
       ],
-      "phase": "P1"
+      "phase": "P1",
+      "phase_display": "P1"
     },
     {
-      "id": "M3",
+      "id": "M2",
       "description": "P2a Services and Data accepted: search and detail endpoints, async processing, OneGWAS direct-write, and data validation outputs are delivered.",
       "external_date": "2027-01-26",
       "internal_buffer_date": "2027-01-19",
@@ -919,10 +1249,11 @@
       "extracted_ids": [
         "M3"
       ],
-      "phase": "P2a"
+      "phase": "P2A",
+      "phase_display": "P2a"
     },
     {
-      "id": "M4",
+      "id": "M3",
       "description": "P2b Application Surface accepted: ARC faceted search, result detail and haplotype visualization, haplotype endpoints, and nomenclature service are delivered.",
       "external_date": "2027-03-02",
       "internal_buffer_date": "2027-02-23",
@@ -947,10 +1278,11 @@
       "extracted_ids": [
         "M4"
       ],
-      "phase": "P2b"
+      "phase": "P2B",
+      "phase_display": "P2b"
     },
     {
-      "id": "M5",
+      "id": "M4",
       "description": "P3 Launch accepted: integration testing, UAT, hardening, production smoke tests with 48-hour defect watch, MTA Store parity confirmation, and training materials are completed.",
       "external_date": "2027-04-06",
       "internal_buffer_date": "2027-03-30",
@@ -975,30 +1307,51 @@
       "extracted_ids": [
         "M5"
       ],
-      "phase": "P3"
+      "phase": "P3",
+      "phase_display": "P3"
     }
   ],
-  "interim_checkpoints": [],
+  "interim_checkpoints": [
+    {
+      "id": "CP-01",
+      "description": "Project kickoff and start of the P1 Foundation phase.",
+      "external_date": "2026-10-07",
+      "internal_buffer_date": "2026-09-30",
+      "owner": "Delivery Manager",
+      "key_dependencies": [
+        "Client provides design system access, UI/UX designs for Milestone 3 screens, and coding and delivery documentation standards by the start date"
+      ],
+      "critical_path_assumptions": [
+        "Start date is not yet agreed with the client; all later dates shift if it changes"
+      ],
+      "source_reference": {
+        "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
+        "clause_or_slide": "Section 3.A; Exhibit A Sections 5.1 and 6",
+        "confidence_score": 0.85
+      },
+      "linked_action_id": null,
+      "merged_milestone_ids": [],
+      "extracted_ids": [
+        "M1"
+      ],
+      "phase": "P1",
+      "phase_display": "P1"
+    }
+  ],
   "backlog_seed": [
     {
       "id": "WP-01",
       "parent_deliverable_id": "DEL-01",
-      "title": "HS-4762: Micro-frontend shell",
-      "description": "Build the micro-frontend shell with global navigation, routing and remote mounting, using the Client's design system and making it available to remotes.",
+      "title": "HS-4762: Micro-frontend shell with global navigation, routing, built with Client's design system and sharing it with remotes",
+      "description": "Delivery and validation for HS-4762.",
       "preliminary_sequence": 1,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client access to design system (code library, tokens, design files, guidelines, named contact)",
-        "Client coding and delivery documentation standards",
-        "Estimated project start date (not yet agreed)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Shell load P50 < 1.5s, P90 < 2.5s, P95 < 3s; remote mount P95 < 1s"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4762",
       "status": "Draft",
       "linked_action_id": null
@@ -1006,20 +1359,15 @@
     {
       "id": "WP-02",
       "parent_deliverable_id": "DEL-02",
-      "title": "HS-4763: Azure AD / MSAL authentication integration",
-      "description": "Integrate the Azure AD / MSAL authentication flow into the shell and propagate it to remotes.",
+      "title": "HS-4763: Azure AD / MSAL authentication integration, propagated to remotes",
+      "description": "Delivery and validation for HS-4763.",
       "preliminary_sequence": 2,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-01",
-        "Client identity provider (IdP) team availability"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Authentication success 100%; token acquisition P95 < 800ms; silent token refresh works"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4763",
       "status": "Draft",
@@ -1029,19 +1377,14 @@
       "id": "WP-03",
       "parent_deliverable_id": "DEL-03",
       "title": "HS-4765: Shell and authentication-flow E2E test harness",
-      "description": "Build and execute an end-to-end test harness covering shell composition, navigation and authentication flows.",
+      "description": "Delivery and validation for HS-4765.",
       "preliminary_sequence": 3,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-01",
-        "WP-02"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "E2E coverage of composition, navigation and authentication; 100% critical-path pass"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4765",
       "status": "Draft",
@@ -1051,39 +1394,31 @@
       "id": "WP-04",
       "parent_deliverable_id": "DEL-04",
       "title": "HS-4770: Pipeline quality-gate and deployment smoke-check automation",
-      "description": "Build and run automated pipeline quality gates and deployment smoke checks against the Client-built pipelines and report defects.",
+      "description": "Delivery and validation for HS-4770.",
       "preliminary_sequence": 4,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built CI/CD pipelines (HS-4768)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Certification: quality gates block on fail; deploy smoke 100% pass before promote"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4770",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-05",
-      "parent_deliverable_id": "DEL-04",
-      "title": "HS-4938: Authentication negative-test suite and security scan",
-      "description": "Perform negative and abuse-case authentication testing and security scanning; remediate Toptal-built findings and report Client-built findings.",
+      "parent_deliverable_id": "DEL-05",
+      "title": "HS-4938: Authentication negative-test suite and security scan results",
+      "description": "Delivery and validation for HS-4938.",
       "preliminary_sequence": 5,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-02"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Negative tests pass; scan clean; Toptal-built findings remediated, Client-built findings reported to Client"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4938",
       "status": "Draft",
@@ -1091,63 +1426,50 @@
     },
     {
       "id": "WP-06",
-      "parent_deliverable_id": "DEL-04",
-      "title": "HS-4782: Data model validation scripts, results and defect report",
-      "description": "Validate referential integrity and query patterns of the Client-built Snowflake data model and report defects.",
+      "parent_deliverable_id": "DEL-06",
+      "title": "HS-4782: Data model validation scripts, results, and defect report",
+      "description": "Delivery and validation for HS-4782.",
       "preliminary_sequence": 6,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built Snowflake schema deployed (HS-4780, HS-4781)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Certification: referential integrity 100%; representative query patterns validated"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4782",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-07",
-      "parent_deliverable_id": "DEL-04",
-      "title": "HS-4941: Data governance validation scripts, audit results and gap log",
-      "description": "Validate Client-built data governance controls and audit classification coverage, logging any gaps.",
+      "parent_deliverable_id": "DEL-07",
+      "title": "HS-4941: Data governance validation scripts, audit results, and gap log",
+      "description": "Delivery and validation for HS-4941.",
       "preliminary_sequence": 7,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client data governance controls implemented (HS-4939, HS-4940)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M1"
       ],
-      "linked_acceptance_items": [
-        "Certification: controls audited; classification coverage validated; gaps logged"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4941",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-08",
-      "parent_deliverable_id": "DEL-05",
+      "parent_deliverable_id": "DEL-08",
       "title": "HS-4777: Faceted search and detail endpoints",
-      "description": "Implement FastAPI faceted search, filter and detail endpoints over the Snowflake ARC tables.",
+      "description": "Delivery and validation for HS-4777.",
       "preliminary_sequence": 8,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client Snowflake schema DDL (HS-4781)",
-        "Milestone 1 acceptance"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Search P50 < 300ms, P90 < 700ms, P95 < 1s; detail P95 < 500ms"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4777",
       "status": "Draft",
@@ -1155,43 +1477,33 @@
     },
     {
       "id": "WP-09",
-      "parent_deliverable_id": "DEL-06",
-      "title": "HS-4778: Asynchronous long-running query processing",
-      "description": "Implement asynchronous processing for long-running queries with a task queue (Celery/RQ) and health checks.",
+      "parent_deliverable_id": "DEL-09",
+      "title": "HS-4778: Asynchronous long-running query processing with health checks",
+      "description": "Delivery and validation for HS-4778.",
       "preliminary_sequence": 9,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Long queries offloaded; status poll P95 < 200ms; queue drains; health checks green"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4778",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-10",
-      "parent_deliverable_id": "DEL-07",
-      "title": "HS-4779: Backend integration and load test suites",
-      "description": "Run backend integration tests against the Snowflake development environment and load tests against the sub-second search target.",
+      "parent_deliverable_id": "DEL-10",
+      "title": "HS-4779: Backend integration and load test suites and results",
+      "description": "Delivery and validation for HS-4779.",
       "preliminary_sequence": 10,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08",
-        "WP-09",
-        "Client-maintained Snowflake development environment"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Search P95 < 1s"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4779",
       "status": "Draft",
@@ -1199,20 +1511,16 @@
     },
     {
       "id": "WP-11",
-      "parent_deliverable_id": "DEL-07",
-      "title": "HS-4942: Performance engineering spike",
-      "description": "Deliver benchmarks, query observability, p95 latency definitions and a triaged tuning backlog.",
+      "parent_deliverable_id": "DEL-11",
+      "title": "HS-4942: Performance spike output: benchmarks, query observability, p95 definitions, and tuning backlog",
+      "description": "Delivery and validation for HS-4942.",
       "preliminary_sequence": 11,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client Snowflake schema DDL (HS-4781)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "p95 targets defined; query instrumentation implemented; tuning backlog triaged"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4942",
       "status": "Draft",
@@ -1220,21 +1528,16 @@
     },
     {
       "id": "WP-12",
-      "parent_deliverable_id": "DEL-08",
-      "title": "HS-4803: OneGWAS direct-write integration",
-      "description": "Build the integration that writes completed OneGWAS results (variant and PHG/GATSBY) to Snowflake ARC with retryable error handling.",
+      "parent_deliverable_id": "DEL-12",
+      "title": "HS-4803: OneGWAS direct-write integration with retryable error handling",
+      "description": "Delivery and validation for HS-4803.",
       "preliminary_sequence": 12,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client Snowflake schema DDL (HS-4781)",
-        "Agreed OneGWAS output contract (HS-4802, Client)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "100% of completed runs written; retryable errors recovered; write P95 < 60s"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4803",
       "status": "Draft",
@@ -1242,20 +1545,16 @@
     },
     {
       "id": "WP-13",
-      "parent_deliverable_id": "DEL-08",
-      "title": "HS-4804: OneGWAS E2E and failure/retry test suite",
-      "description": "Execute end-to-end and failure/retry tests from OneGWAS completion to ARC searchability.",
+      "parent_deliverable_id": "DEL-13",
+      "title": "HS-4804: OneGWAS E2E and failure/retry test suite and results",
+      "description": "Delivery and validation for HS-4804.",
       "preliminary_sequence": 13,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-12"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Completion to ARC searchable P95 < 5 min; failure/retry validated"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4804",
       "status": "Draft",
@@ -1263,309 +1562,237 @@
     },
     {
       "id": "WP-14",
-      "parent_deliverable_id": "DEL-09",
-      "title": "HS-4797: GWAS Atlas ETL validation",
-      "description": "Validate import coverage and schema-change handling of the Client-built GWAS Atlas ETL and report defects.",
+      "parent_deliverable_id": "DEL-14",
+      "title": "HS-4797: GWAS Atlas ETL validation scripts, results, and defect report",
+      "description": "Delivery and validation for HS-4797.",
       "preliminary_sequence": 14,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built GWAS Atlas ETL pipeline (HS-4796)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Certification: >=90% import coverage; schema-change handling verified"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4797",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-15",
-      "parent_deliverable_id": "DEL-09",
-      "title": "HS-4785: MTA Store migration validation",
-      "description": "Validate MTA Store migration data quality including domain-user comparison, maintain a data-quality issue log and support sign-off.",
+      "parent_deliverable_id": "DEL-15",
+      "title": "HS-4785: MTA Store migration validation, data-quality issue log, and sign-off support",
+      "description": "Delivery and validation for HS-4785.",
       "preliminary_sequence": 15,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built migration scripts and reconciliation (HS-4784)",
-        "Client domain user availability"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Certification: domain-user comparison sign-off; data-quality issue log triaged/closed"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4785",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-16",
-      "parent_deliverable_id": "DEL-09",
-      "title": "HS-4807: PHG/GATSBY ingestion validation",
-      "description": "Validate linkage and completeness of the Client-built PHG/GATSBY haplotype ingestion and report defects.",
+      "parent_deliverable_id": "DEL-16",
+      "title": "HS-4807: PHG/GATSBY ingestion validation scripts, results, and defect report",
+      "description": "Delivery and validation for HS-4807.",
       "preliminary_sequence": 16,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built haplotype ingestion pipeline (HS-4806)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Certification: linkage and completeness validated (100% sampled keys match)"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4807",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-17",
-      "parent_deliverable_id": "DEL-09",
-      "title": "HS-4801: PubMed/literature extraction validation",
-      "description": "Validate extraction accuracy on key fields with an end-to-end run of the Client-built literature pipeline and report defects.",
+      "parent_deliverable_id": "DEL-17",
+      "title": "HS-4801: PubMed/literature extraction validation scripts, results, and defect report",
+      "description": "Delivery and validation for HS-4801.",
       "preliminary_sequence": 17,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client-built literature ETL and dedup pipeline (HS-4799)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Certification: >=85% precision on key fields; E2E run green"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4801",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-18",
-      "parent_deliverable_id": "DEL-09",
-      "title": "HS-4791: Trait taxonomy validation",
-      "description": "Validate trait taxonomy coverage and capture approvals, reporting defects.",
+      "parent_deliverable_id": "DEL-18",
+      "title": "HS-4791: Trait taxonomy validation scripts, results, and defect report",
+      "description": "Delivery and validation for HS-4791.",
       "preliminary_sequence": 18,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client canonical trait list, ontology map and synonyms (HS-4790)",
-        "Client domain experts for trait taxonomy"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M2"
       ],
-      "linked_acceptance_items": [
-        "Certification: coverage >=80%; approvals captured"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4791",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-19",
-      "parent_deliverable_id": "DEL-10",
+      "parent_deliverable_id": "DEL-19",
       "title": "HS-4772: Faceted search and results table",
-      "description": "Build the ARC micro-frontend faceted search (crop, trait, marker, significance, source, haplotype type) with a paginated, sortable results table.",
+      "description": "Delivery and validation for HS-4772.",
       "preliminary_sequence": 19,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08",
-        "Milestone 2 acceptance",
-        "Client UI/UX designs for Milestone 3 screens",
-        "Client design system access"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "Results render P50 < 400ms, P90 < 800ms, P95 < 1s (excl. network)"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4772",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-20",
-      "parent_deliverable_id": "DEL-11",
+      "parent_deliverable_id": "DEL-20",
       "title": "HS-4773: Result detail view and interval-based visualization",
-      "description": "Build the result detail view (markers, trials, haplotypes, study) and PHG/GATSBY interval-based visualization.",
+      "description": "Delivery and validation for HS-4773.",
       "preliminary_sequence": 20,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08",
-        "Milestone 2 acceptance",
-        "Client UI/UX designs for Milestone 3 screens"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "Detail view P90 < 1s; interval visualization render P95 < 1.5s"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4773",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-21",
-      "parent_deliverable_id": "DEL-12",
-      "title": "HS-4810: Haplotype search/filter endpoints",
-      "description": "Implement backend endpoints supporting haplotype-type filtering and comparison data.",
+      "parent_deliverable_id": "DEL-21",
+      "title": "HS-4775: Frontend unit, integration, accessibility, and performance test suites",
+      "description": "Delivery and validation for HS-4775.",
       "preliminary_sequence": 21,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08",
-        "Client haplotype ingestion pipeline (HS-4806)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "Filter endpoint P95 < 1s"
-      ],
-      "uncertain_scope": false,
-      "sow_reference": "HS-4810",
-      "status": "Draft",
-      "linked_action_id": null
-    },
-    {
-      "id": "WP-22",
-      "parent_deliverable_id": "DEL-12",
-      "title": "HS-4813: Haplotype API and data access",
-      "description": "Implement backend endpoints and data access for haplotype association results.",
-      "preliminary_sequence": 22,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client haplotype schema extensions (HS-4814)",
-        "Client backend haplotype support design (HS-4812)"
-      ],
-      "linked_milestones": [
-        "M3"
-      ],
-      "linked_acceptance_items": [
-        "Endpoints P95 < 1s; correct results against fixtures"
-      ],
-      "uncertain_scope": false,
-      "sow_reference": "HS-4813",
-      "status": "Draft",
-      "linked_action_id": null
-    },
-    {
-      "id": "WP-23",
-      "parent_deliverable_id": "DEL-12",
-      "title": "HS-4809: Haplotype filter, indicator, interval visualization and comparison",
-      "description": "Build the haplotype-type filter, result indicator, interval-based detail and variant-versus-pangenome comparison.",
-      "preliminary_sequence": 23,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-19",
-        "WP-20",
-        "WP-21",
-        "Client haplotype search/visualization design (HS-4808)"
-      ],
-      "linked_milestones": [
-        "M3"
-      ],
-      "linked_acceptance_items": [
-        "Filtered results P90 < 1s; interval visualization P95 < 1.5s; comparison works"
-      ],
-      "uncertain_scope": false,
-      "sow_reference": "HS-4809",
-      "status": "Draft",
-      "linked_action_id": null
-    },
-    {
-      "id": "WP-24",
-      "parent_deliverable_id": "DEL-13",
-      "title": "HS-4793: Nomenclature service",
-      "description": "Implement the nomenclature service covering trait resolution, synonym lookup, unmapped-term handling and ARC backend integration.",
-      "preliminary_sequence": 24,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-08",
-        "Client canonical trait list, ontology map and synonyms (HS-4790)",
-        "Client service interface design (HS-4792)"
-      ],
-      "linked_milestones": [
-        "M3"
-      ],
-      "linked_acceptance_items": [
-        "Resolution correct for all mapped traits; lookup P95 < 200ms"
-      ],
-      "uncertain_scope": false,
-      "sow_reference": "HS-4793",
-      "status": "Draft",
-      "linked_action_id": null
-    },
-    {
-      "id": "WP-25",
-      "parent_deliverable_id": "DEL-14",
-      "title": "HS-4775: Frontend unit, integration, accessibility and performance tests",
-      "description": "Build and execute frontend unit, integration, accessibility and performance test suites.",
-      "preliminary_sequence": 25,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-19",
-        "WP-20"
-      ],
-      "linked_milestones": [
-        "M3"
-      ],
-      "linked_acceptance_items": [
-        "Unit coverage >=80%; key-flow integration green; search < 1s"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4775",
       "status": "Draft",
       "linked_action_id": null
     },
     {
-      "id": "WP-26",
-      "parent_deliverable_id": "DEL-14",
-      "title": "HS-4815: Haplotype endpoint integration tests",
-      "description": "Build and execute backend integration tests for the haplotype endpoints.",
-      "preliminary_sequence": 26,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-21",
-        "WP-22"
-      ],
+      "id": "WP-22",
+      "parent_deliverable_id": "DEL-22",
+      "title": "HS-4809: Haplotype filter, indicator, interval visualization, and variant-versus-pangenome comparison",
+      "description": "Delivery and validation for HS-4809.",
+      "preliminary_sequence": 22,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "Integration tests green (100% of critical paths)"
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": "HS-4809",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-23",
+      "parent_deliverable_id": "DEL-23",
+      "title": "HS-4810: Haplotype search/filter endpoints",
+      "description": "Delivery and validation for HS-4810.",
+      "preliminary_sequence": 23,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
+      "linked_milestones": [
+        "M3"
       ],
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": "HS-4810",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-24",
+      "parent_deliverable_id": "DEL-24",
+      "title": "HS-4813: Haplotype API and data access",
+      "description": "Delivery and validation for HS-4813.",
+      "preliminary_sequence": 24,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
+      "linked_milestones": [
+        "M3"
+      ],
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": "HS-4813",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-25",
+      "parent_deliverable_id": "DEL-25",
+      "title": "HS-4815: Haplotype endpoint integration tests and results",
+      "description": "Delivery and validation for HS-4815.",
+      "preliminary_sequence": 25,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
+      "linked_milestones": [
+        "M3"
+      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4815",
       "status": "Draft",
       "linked_action_id": null
     },
     {
-      "id": "WP-27",
-      "parent_deliverable_id": "DEL-14",
-      "title": "HS-4794: Nomenclature test suite",
-      "description": "Build and execute nomenclature service tests for resolution correctness and lookup latency.",
-      "preliminary_sequence": 27,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-24"
-      ],
+      "id": "WP-26",
+      "parent_deliverable_id": "DEL-26",
+      "title": "HS-4793: Nomenclature service",
+      "description": "Delivery and validation for HS-4793.",
+      "preliminary_sequence": 26,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "100% mapped-trait resolution correct; lookup P95 < 200ms"
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": "HS-4793",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-27",
+      "parent_deliverable_id": "DEL-27",
+      "title": "HS-4794: Nomenclature test suite and results",
+      "description": "Delivery and validation for HS-4794.",
+      "preliminary_sequence": 27,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
+      "linked_milestones": [
+        "M3"
       ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4794",
       "status": "Draft",
@@ -1573,21 +1800,16 @@
     },
     {
       "id": "WP-28",
-      "parent_deliverable_id": "DEL-14",
-      "title": "HS-4811: Haplotype search and visualization tests",
-      "description": "Build and execute tests validating haplotype filters, comparison and rendering.",
+      "parent_deliverable_id": "DEL-28",
+      "title": "HS-4811: Haplotype search and visualization tests and results",
+      "description": "Delivery and validation for HS-4811.",
       "preliminary_sequence": 28,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-23",
-        "WP-21"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M3"
       ],
-      "linked_acceptance_items": [
-        "Filters, comparison and rendering validated across haplotype types"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4811",
       "status": "Draft",
@@ -1595,90 +1817,67 @@
     },
     {
       "id": "WP-29",
-      "parent_deliverable_id": "DEL-15",
-      "title": "HS-4826: Test data and fixtures",
-      "description": "Provide test data, fixtures and environment support covering all integration scenarios.",
+      "parent_deliverable_id": "DEL-29",
+      "title": "HS-4825: Integration, performance, security, and cross-browser test suites and results",
+      "description": "Delivery and validation for HS-4825.",
       "preliminary_sequence": 29,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client Snowflake schema DDL (HS-4781)",
-        "Milestone 3 acceptance",
-        "Client-maintained staging environment"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "Test data and fixtures cover all integration scenarios; environments supported"
-      ],
-      "uncertain_scope": false,
-      "sow_reference": "HS-4826",
-      "status": "Draft",
-      "linked_action_id": null
-    },
-    {
-      "id": "WP-30",
-      "parent_deliverable_id": "DEL-15",
-      "title": "HS-4825: Integration, performance, security and cross-browser test suites",
-      "description": "Build and execute test suites covering all data flows and UI/API critical paths in staging at production-like volume on Chrome and Edge.",
-      "preliminary_sequence": 30,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-29",
-        "Client integration test plan (HS-4824)",
-        "Milestone 3 acceptance"
-      ],
-      "linked_milestones": [
-        "M4"
-      ],
-      "linked_acceptance_items": [
-        "All flows executed at production-like volume; search P95 < 1s; authentication/security pass; Chrome and Edge validated; Client-built failures recorded in defect report"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4825",
       "status": "Draft",
       "linked_action_id": null
     },
     {
-      "id": "WP-31",
-      "parent_deliverable_id": "DEL-16",
-      "title": "HS-4828: UAT execution records and defect log",
-      "description": "Execute UAT cycles with Client scientist groups and triage and track defects.",
-      "preliminary_sequence": 31,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-30",
-        "Client UAT coordination (HS-4827)",
-        "Client scientist UAT group availability"
-      ],
+      "id": "WP-30",
+      "parent_deliverable_id": "DEL-30",
+      "title": "HS-4826: Test data and fixtures",
+      "description": "Delivery and validation for HS-4826.",
+      "preliminary_sequence": 30,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "UAT cycles run; defects triaged and tracked; no open critical defects in Toptal-built Work at exit"
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
+      "sow_reference": "HS-4826",
+      "status": "Draft",
+      "linked_action_id": null
+    },
+    {
+      "id": "WP-31",
+      "parent_deliverable_id": "DEL-31",
+      "title": "HS-4828: UAT execution records and defect log",
+      "description": "Delivery and validation for HS-4828.",
+      "preliminary_sequence": 31,
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
+      "linked_milestones": [
+        "M4"
       ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4828",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-32",
-      "parent_deliverable_id": "DEL-17",
-      "title": "HS-4943: Pre-launch hardening iteration",
-      "description": "Run a hardening and stabilization iteration after integration testing and UAT to close critical and high defects, including a full regression run.",
+      "parent_deliverable_id": "DEL-32",
+      "title": "HS-4943: Hardening iteration results, including full regression run",
+      "description": "Delivery and validation for HS-4943.",
       "preliminary_sequence": 32,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-30",
-        "WP-31"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "All critical and high defects in Toptal-built Work closed; full regression green before cutover"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4943",
       "status": "Draft",
@@ -1686,21 +1885,16 @@
     },
     {
       "id": "WP-33",
-      "parent_deliverable_id": "DEL-18",
-      "title": "HS-4832: Production smoke tests and 48-hour defect watch",
-      "description": "Execute production smoke tests and post-deployment validation, including a 48-hour defect watch report.",
+      "parent_deliverable_id": "DEL-33",
+      "title": "HS-4832: Production smoke test results and 48-hour defect watch report",
+      "description": "Delivery and validation for HS-4832.",
       "preliminary_sequence": 33,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "WP-32",
-        "Client production deployment (HS-4831)"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "Production smoke 100% pass; 48-hour defect watch clean"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4832",
       "status": "Draft",
@@ -1708,44 +1902,33 @@
     },
     {
       "id": "WP-34",
-      "parent_deliverable_id": "DEL-19",
-      "title": "HS-4788: MTA Store parity and usage-zero confirmation",
-      "description": "Confirm MTA Store feature parity and zero legacy traffic over the watch window before decommission, and report the results.",
+      "parent_deliverable_id": "DEL-34",
+      "title": "HS-4788: MTA Store parity and usage-zero confirmation report",
+      "description": "Delivery and validation for HS-4788.",
       "preliminary_sequence": 34,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Client decommission plan (HS-4786)",
-        "Client production deployment (HS-4831)",
-        "WP-33"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "Certification: parity confirmed; legacy traffic = 0 over watch window before decommission"
-      ],
-      "uncertain_scope": true,
+      "linked_acceptance_items": [],
+      "uncertain_scope": false,
       "sow_reference": "HS-4788",
       "status": "Draft",
       "linked_action_id": null
     },
     {
       "id": "WP-35",
-      "parent_deliverable_id": "DEL-20",
+      "parent_deliverable_id": "DEL-35",
       "title": "HS-4829: Training materials and user documentation",
-      "description": "Produce training materials and user documentation for ARC and have them reviewed by the Client.",
+      "description": "Delivery and validation for HS-4829.",
       "preliminary_sequence": 35,
-      "owner": "[UNASSIGNED - TO BE CONFIRMED]",
-      "dependency_references": [
-        "Milestone 3 acceptance",
-        "Client review of materials"
-      ],
+      "owner": "Toptal Delivery Team",
+      "dependency_references": [],
       "linked_milestones": [
         "M4"
       ],
-      "linked_acceptance_items": [
-        "Training materials and user documentation delivered and reviewed"
-      ],
+      "linked_acceptance_items": [],
       "uncertain_scope": false,
       "sow_reference": "HS-4829",
       "status": "Draft",
@@ -2178,7 +2361,7 @@
     {
       "id": "DEC-01",
       "decision_text": "The engagement is Fixed Fee with milestone billing, totaling $200,365 across four milestones, each invoiced on completion.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "Syngenta accepted the fixed-price four-phase model. Milestone fees: $26,808 (P1), $60,356 (P2a), $68,210 (P2b), $44,991 (P3).",
       "linked_raid_item": null,
@@ -2194,7 +2377,7 @@
     {
       "id": "DEC-02",
       "decision_text": "Delivery runs in four sequential phases (P1 Foundation, P2a Services and Data, P2b Application Surface, P3 Launch). Each phase is an acceptance gate with its own deliverables, acceptance criteria and sign-off, and UAT runs after each.",
-      "decision_owner": "Mike Magwire (Client Contact)",
+      "decision_owner": "Client",
       "decision_date": null,
       "rationale": "The phases follow Syngenta's own plan, with P2 split on a real technical dependency boundary. Sign-off comes from Mike Magwire and Satya.",
       "linked_raid_item": null,
@@ -2210,7 +2393,7 @@
     {
       "id": "DEC-03",
       "decision_text": "Syngenta owns the platform layer (Terraform, infrastructure) and the data tier (ingestion pipelines, Snowflake data model). Toptal owns ARC application development: the micro-frontend shell, ARC micro-frontend, FastAPI services and nomenclature service.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "This ownership split was stated by Syngenta's technical lead and defines who builds, and who remediates defects in, each component.",
       "linked_raid_item": null,
@@ -2226,7 +2409,7 @@
     {
       "id": "DEC-04",
       "decision_text": "Toptal delivers automated QA test scripts, their execution and defect reports for both Toptal-built and Syngenta-built components, rather than manual QA. Testing is against the full platform, with SSO and external integrations in test scope.",
-      "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "This is the position Syngenta stated. Automated scripts make test coverage durable rather than a one-off pass.",
       "linked_raid_item": null,
@@ -2242,7 +2425,7 @@
     {
       "id": "DEC-05",
       "decision_text": "Toptal tests and certifies Syngenta-built components, but Syngenta remediates failures. Numeric targets on Syngenta-built work (e.g., PubMed precision, GWAS Atlas coverage, taxonomy coverage, referential integrity) are Syngenta's to achieve and are not a condition of accepting Toptal's work.",
-      "decision_owner": "Mike Magwire (Client Contact)",
+      "decision_owner": "Client",
       "decision_date": null,
       "rationale": "Writing a test for a component is not a guarantee that the component meets its target. Toptal re-runs scripts after remediation, and additional re-runs go through Change Order.",
       "linked_raid_item": null,
@@ -2258,7 +2441,7 @@
     {
       "id": "DEC-06",
       "decision_text": "A missed latency or render-time target is treated as met for Toptal's work if telemetry shows the cause is a Client-owned platform component, Client-provided third-party item, data volume or environment. The finding is logged in the defect report for Client remediation.",
-      "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "Toptal-built components run on Syngenta-owned Snowflake, Azure AD, CloudFront and upstream systems that Toptal does not control.",
       "linked_raid_item": null,
@@ -2274,7 +2457,7 @@
     {
       "id": "DEC-07",
       "decision_text": "UAT is included in the fixed price and limited to two runs per milestone, covering all UAT and not only Toptal-built work. Additional runs are handled by Change Order.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "Agreed on the client call to bound UAT effort within the fixed price.",
       "linked_raid_item": null,
@@ -2290,7 +2473,7 @@
     {
       "id": "DEC-08",
       "decision_text": "Changes outside Toptal's control that force extra UAT or test cycles or test-script rework are handled by Change Order. Examples are upstream Snowflake schema changes, API taxonomy shifts, and Cogen availability below about 95%.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "This protects the fixed price from rework caused by Syngenta-controlled or external changes.",
       "linked_raid_item": null,
@@ -2306,7 +2489,7 @@
     {
       "id": "DEC-09",
       "decision_text": "Toptal will use Syngenta's existing design system for all user-facing screens. Creating, extending or maintaining the design system is excluded, and additional components or design-system changes go through Change Order.",
-      "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "Estimates cover only integrating the design system and building a limited set of ARC-specific components. Syngenta must provide design system access and Milestone 3 UI/UX designs by the start date.",
       "linked_raid_item": null,
@@ -2322,7 +2505,7 @@
     {
       "id": "DEC-10",
       "decision_text": "Test script maintenance means in-flight upkeep during development only. There is no post-launch maintenance phase, and hypercare beyond the 48-hour post-deployment defect watch is out of scope.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "This was settled and is not to be reopened, so post-launch support does not creep into the fixed price.",
       "linked_raid_item": null,
@@ -2338,7 +2521,7 @@
     {
       "id": "DEC-11",
       "decision_text": "Each milestone has a 5-business-day acceptance period. Silence or commercial use counts as acceptance, and after three failed remediation attempts Syngenta may terminate project baseline and pay for work completed.",
-      "decision_owner": "Mike Magwire (Client Contact)",
+      "decision_owner": "Client",
       "decision_date": null,
       "rationale": "A defined acceptance window and remediation limit give a predictable path to milestone sign-off and billing.",
       "linked_raid_item": null,
@@ -2354,7 +2537,7 @@
     {
       "id": "DEC-12",
       "decision_text": "Governance cadence: Day-1 kickoff, biweekly sprint demos, joining Syngenta's daily standups, ad-hoc working sessions, a milestone acceptance review at each milestone end, and a Weekly Status Report from the Delivery Manager.",
-      "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "This keeps milestone status, risks, blockers and Client decisions visible, and Syngenta is asked to confirm each weekly report.",
       "linked_raid_item": null,
@@ -2370,7 +2553,7 @@
     {
       "id": "DEC-13",
       "decision_text": "Delivery uses SAFe-aligned methodology and terminology. Terms such as epic, feature, user story, MVP and backlog follow SAFe definitions unless defined otherwise.",
-      "decision_owner": "Saadia Iqbal (Toptal Delivery Manager)",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "A common vocabulary avoids ambiguity in scope, estimation and reporting.",
       "linked_raid_item": null,
@@ -2386,7 +2569,7 @@
     {
       "id": "DEC-14",
       "decision_text": "The estimated schedule is 26 weeks from an estimated start of October 7, 2026 to April 6, 2027 (P1 weeks 1\u20136, P2a 7\u201316, P2b 17\u201321, P3 22\u201326). If the start date moves by mutual agreement, the end date shifts equally without a Change Order.",
-      "decision_owner": "Toptal and Syngenta",
+      "decision_owner": "Toptal",
       "decision_date": null,
       "rationale": "Keeping the performance period constant protects the plan if the start moves. The schedule assumes no holiday stoppages.",
       "linked_raid_item": null,
@@ -2402,7 +2585,7 @@
     {
       "id": "DEC-15",
       "decision_text": "Syngenta is responsible for infrastructure and DevOps, security design, architecture and design stories, Snowflake data model design, data ingestion and migration builds, UAT coordination, and go-live and decommission work. Toptal's dependent work starts only after the related Syngenta-owned work is complete.",
-      "decision_owner": "Mike Magwire (Client Contact)",
+      "decision_owner": "Client",
       "decision_date": null,
       "rationale": "These items sit outside Toptal's scope, and the fixed schedule and fees depend on Syngenta completing them before the dependent Toptal work is due to begin.",
       "linked_raid_item": null,
@@ -2677,19 +2860,19 @@
     }
   ],
   "commercial_guardrails": {
-    "contract_type_implication": "Fixed Fee with milestone billing (total $200,365), so Toptal absorbs any effort overrun on in-scope work. Any change to scope, timing, client responsibilities or assumptions must go through a Change Order.",
-    "billing_consumption_assumption": "Fees are invoiced on completion of each milestone, not by timesheet hours: M1 P1 Foundation $26,808 (Nov 17, 2026), M2 P2a Services and Data $60,356 (Jan 26, 2027), M3 P2b Application Surface $68,210 (Mar 2, 2027), M4 P3 Launch $44,991 (Apr 6, 2027). The client has 5 business days to accept each milestone, and is notified in writing (email is enough) if the actual completion date differs from the estimate.",
-    "staffing_assumption": "Team size, roles and hours are not specified. Delivery Manager is Saadia Iqbal, and the team joins the client's daily standups. The schedule assumes no holiday stoppages and no client buyout of Toptal talent, and no design/UX role is yet assigned on either side.",
-    "commercial_exposure_note": "Margin is exposed to client-side dependencies: Toptal work cannot start until the related client-built work is done (notably the Snowflake schema before P2a), and the lowest-confidence pipelines are client-built. Toptal also tests the full platform, UAT is capped at two runs per milestone, and three failed remediation attempts on a milestone let the client terminate (work in progress is still payable).",
-    "approved_work_rule": "Only the work and test automation listed under the four milestones (P1, P2a, P2b, P3), plus Change Orders approved in writing, may be executed. This includes up to two UAT runs per milestone, one re-execution of tests after client remediation, and the 48-hour post-deployment defect watch.",
-    "non_approved_work_rule": "The following need a written Change Order before any work starts: platform/DevOps, security design, architecture and design stories, Snowflake data model work, ingestion/migration builds, and creation or maintenance of the client design system. The same applies to remediation of client-built defects, extra UAT runs or test re-runs, testing of other client components, rework from upstream schema or taxonomy changes, Cogen availability below ~95%, and hypercare or post-launch maintenance beyond the 48-hour watch.",
-    "work_at_risk_rule": "Work-at-risk requires written PMO Lead approval and executive exception sign-off. This covers any work before the October 7, 2026 effective date or beyond the approved milestone scope and fees.",
-    "change_control_trigger": "A Change Order is triggered by changes to scope, timeline or cost, or by a failed assumption. Examples are upstream Snowflake schema changes, API taxonomy shifts, design-system changes, UAT runs beyond two per milestone, extra test re-runs, and Cogen availability below ~95%. A mutually agreed start-date shift alone does not need one, because completion dates shift to match.",
+    "contract_type_implication": "Fixed Bid contract: Strict scope boundary controls, deliverable acceptance precision, and milestone contingency buffers are mandatory to protect margin [Standard PMO guardrail - confirm].",
+    "billing_consumption_assumption": "Invoicing tied strictly to formal client milestone acceptance sign-offs [Standard PMO guardrail - confirm].",
+    "staffing_assumption": "Fixed capacity and sprint budget allocations; headcount increases require formal scope amendment [Standard PMO guardrail - confirm].",
+    "commercial_exposure_note": "Delivery delays directly erode project margin. Scope creep without Change Order is prohibited [Standard PMO guardrail - confirm].",
+    "approved_work_rule": "Approved work is strictly defined by SOW deliverables. Any out-of-scope tasks require formal Change Order.",
+    "non_approved_work_rule": "Zero execution of out-of-scope requests without executed Change Order.",
+    "work_at_risk_rule": "Work-at-risk strictly forbidden on Fixed Bid without written PMO Lead and Director sign-off.",
+    "change_control_trigger": "Any requirement change, client delay > 3 days, or deliverable rework exceeding standard window.",
     "change_order_route": "PMO Lead leads -> Delivery Manager (Saadia Iqbal) aligns client contact (Mike Magwire) -> Client approves -> Contracting issues the Change Order. Unresolved disputes escalate through three levels: Client Contact and Delivery Manager (5 business days), their managers (5 business days), then executives.",
-    "budget_baseline": "Fixed Fee of $200,365 across four milestones, with an estimated 26-week schedule from October 7, 2026 to April 6, 2027.",
-    "variance_indicator": "Green (<5% variance); no actuals have been reported yet against the $200,365 baseline.",
-    "margin_risk_indicator": "High",
-    "escalation_threshold": "Escalate if milestone cost burn exceeds plan by more than 10%, the schedule slips by more than 5 days, or a client-owned dependency (e.g., Snowflake schema, environments, approvals) blocks a planned Toptal start."
+    "budget_baseline": "Fixed Bid commercial ceiling: milestone-based invoicing [Standard PMO guardrail - confirm].",
+    "variance_indicator": "Milestone acceptance gating without unapproved change orders.",
+    "margin_risk_indicator": "Low",
+    "escalation_threshold": "Milestone slip > 3 days or client acceptance rejection [Standard PMO guardrail - confirm]."
   },
   "talent_onboarding": {
     "talent_pm": "[UNASSIGNED - TO BE CONFIRMED]",
@@ -2769,11 +2952,11 @@
       "reviewer": "PMO Lead",
       "approver": "PMO Lead / Director, PMO",
       "due_date": null,
-      "status": "Confirmation Required",
-      "evidence": "Startup Kit drafted on 2026-10-02. Award date not stated in SOW [CONFIRMATION REQUIRED].",
+      "status": "Complete",
+      "evidence": "Startup Kit drafted on 2026-10-02 (Project awarded 2026-10-07). SLA Met.",
       "exception_required": false,
       "exception_details": null,
-      "approval_status": "Pending Confirmation"
+      "approval_status": "Approved"
     },
     {
       "item_id": "G01-02",
@@ -2812,7 +2995,7 @@
       "approver": "PMO Lead / Director, PMO",
       "due_date": null,
       "status": "Complete",
-      "evidence": "5 milestones mapped with external dates and internal buffer calculations.",
+      "evidence": "4 milestones mapped with external dates and internal buffer calculations.",
       "exception_required": false,
       "exception_details": null,
       "approval_status": "Approved"
@@ -3213,7 +3396,7 @@
     {
       "anomaly_id": "AMB-01",
       "category": "Date Conflict",
-      "conflicting_clauses": "Contract states: 'Estimated Start Date October 7, 2026' with completion April 6, 2027. Internal delivery plan states: 'No date has been agreed with Syngenta, and the phase sequence hangs off it.'",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Section 3 (Schedule); related open item in phase-scope-and-acceptance-syngenta-arc.docx Section 4, item 2: Contract states: 'Estimated Start Date October 7, 2026' with completion April 6, 2027. Internal delivery plan states: 'No date has been agreed with Syngenta, and the phase sequence hangs off it.'",
       "risk_impact": "All four milestone dates and fee timing depend on a start date the client may not have confirmed. A slip would move every milestone and invoice.",
       "recommended_clarification": "Can Syngenta confirm in writing that October 7, 2026 is the agreed start date, and that the milestone dates shift with any start change?",
       "status": "Open",
@@ -3227,7 +3410,7 @@
     {
       "anomaly_id": "AMB-02",
       "category": "Date Conflict",
-      "conflicting_clauses": "Contract states the schedule assumes 'no breaks or stoppages due to holidays', but the 26-week plan from October 7, 2026 to April 6, 2027 spans Thanksgiving, year-end holidays and other holidays.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Section 7 (Assumptions & Dependencies); Section 2.B (Fees table): Contract states the schedule assumes 'no breaks or stoppages due to holidays', but the 26-week plan from October 7, 2026 to April 6, 2027 spans Thanksgiving, year-end holidays and other holidays.",
       "risk_impact": "The fixed milestone dates (Nov 17, Jan 26, Mar 2, Apr 6) have no holiday buffer. Client availability gaps could cause delay disputes.",
       "recommended_clarification": "Should the holiday assumption be replaced with an agreed holiday calendar, or should the milestone dates be adjusted for known holiday periods?",
       "status": "Open",
@@ -3255,7 +3438,7 @@
     {
       "anomaly_id": "AMB-04",
       "category": "Ambiguous Acceptance",
-      "conflicting_clauses": "Contract states Client has 5 business days to accept each milestone, with deemed acceptance on silence. It also states UAT runs after each milestone, with up to two runs covering all UAT, and that the next milestone starts 'upon acceptance' of the prior one.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Section 7 (Acceptance); Exhibit A Section 7 (UAT assumption): Contract states Client has 5 business days to accept each milestone, with deemed acceptance on silence. It also states UAT runs after each milestone, with up to two runs covering all UAT, and that the next milestone starts 'upon acceptance' of the prior one.",
       "risk_impact": "It is unclear whether acceptance happens before or after UAT. This could stall milestone sign-off, billing and the start of the next phase.",
       "recommended_clarification": "Does the 5-business-day acceptance window run alongside or after the two UAT runs, and is UAT completion a condition for milestone acceptance?",
       "status": "Open",
@@ -3269,7 +3452,7 @@
     {
       "anomaly_id": "AMB-05",
       "category": "Ambiguous Acceptance",
-      "conflicting_clauses": "Contract states criteria 'expressed as 100%' are met if the output 'materially conforms' and any deviation 'does not materially affect' functionality, performance, security or usability. Remediation failure is judged 'within Client's reasonable discretion', with a termination right after three attempts.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Section 7 (Acceptance): Contract states criteria 'expressed as 100%' are met if the output 'materially conforms' and any deviation 'does not materially affect' functionality, performance, security or usability. Remediation failure is judged 'within Client's reasonable discretion', with a termination right after three attempts.",
       "risk_impact": "Numeric 100% targets can be read as absolute or as 'material'. The subjective judgment could lead to rejected milestones, delayed payment or termination.",
       "recommended_clarification": "Can the parties agree objective pass/fail thresholds, and who decides 'material' deviation and 'reasonable discretion'?",
       "status": "Open",
@@ -3283,7 +3466,7 @@
     {
       "anomaly_id": "AMB-06",
       "category": "Ambiguous Acceptance",
-      "conflicting_clauses": "Contract states a missed latency target 'will be treated as met' if telemetry 'may show' the cause is a Client-owned component, data volumes or 'environmental conditions outside Toptal's reasonable control'. It does not say who determines attribution or how.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Section 4 (Latency Acceptance Criteria): Contract states a missed latency target 'will be treated as met' if telemetry 'may show' the cause is a Client-owned component, data volumes or 'environmental conditions outside Toptal's reasonable control'. It does not say who determines attribution or how.",
       "risk_impact": "Performance acceptance depends on a subjective attribution call. This invites disputes over milestone acceptance and the defect remediation owner.",
       "recommended_clarification": "What objective method, evidence and decision-maker will be used to attribute a latency miss to Toptal-built versus Client-owned components?",
       "status": "Open",
@@ -3311,7 +3494,7 @@
     {
       "anomaly_id": "AMB-08",
       "category": "Scope Contradiction",
-      "conflicting_clauses": "Internal plan states 'Toptal delivers the QA test automation for every piece of work in the programme' and that testing ARC means 'testing against the full platform'. Contract states 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Sections 3 and 7; related wording in phase-scope-and-acceptance-syngenta-arc.docx Section 2: Internal plan states 'Toptal delivers the QA test automation for every piece of work in the programme' and that testing ARC means 'testing against the full platform'. Contract states 'Testing of other Client-built components, pipelines or environments is not included and may be added by Change Order.'",
       "risk_impact": "The QA boundary is open to broad reading by the client. This could add unpriced testing effort under a fixed fee.",
       "recommended_clarification": "Can the parties confirm that QA scope is limited to the listed Toptal-built and Certification stories, with all other Client-built testing handled by Change Order?",
       "status": "Open",
@@ -3325,7 +3508,7 @@
     {
       "anomaly_id": "AMB-09",
       "category": "Ownership Gap",
-      "conflicting_clauses": "Contract states remediation of failures in Client-built components is Client's responsibility, and Toptal re-executes tests 'in accordance with the Assumptions' with additional re-runs by Change Order. The internal plan states the remediation path 'has not been written down', and the number of included re-runs is not defined.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Section 3 (Remediation, Re-testing); open item 5 in phase-scope-and-acceptance-syngenta-arc.docx Section 4: Contract states remediation of failures in Client-built components is Client's responsibility, and Toptal re-executes tests 'in accordance with the Assumptions' with additional re-runs by Change Order. The internal plan states the remediation path 'has not been written down', and the number of included re-runs is not defined.",
       "risk_impact": "Without a defined remediation process and re-test allowance, Client fixes may be late and re-test effort may be disputed, delaying certification stories and milestone acceptance.",
       "recommended_clarification": "What are the Client's remediation turnaround expectations and the number of included re-test cycles per Certification story before a Change Order applies?",
       "status": "Open",
@@ -3353,7 +3536,7 @@
     {
       "anomaly_id": "AMB-11",
       "category": "Scope Contradiction",
-      "conflicting_clauses": "Contract states estimates include 'building up to [N] ARC-specific components', and the N placeholder is unfilled. Client must provide UI/UX designs for the Milestone 3 screens, while the internal plan notes no design or UX role exists on either side.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Section 7 (design system assumptions); open item 1 in phase-scope-and-acceptance-syngenta-arc.docx Section 4: Contract states estimates include 'building up to [N] ARC-specific components', and the N placeholder is unfilled. Client must provide UI/UX designs for the Milestone 3 screens, while the internal plan notes no design or UX role exists on either side.",
       "risk_impact": "An undefined component cap and an unassigned design owner create unpriced frontend scope, with Change Order disputes likely.",
       "recommended_clarification": "What is the maximum number of ARC-specific components in scope, and who provides UI/UX designs and by what date?",
       "status": "Open",
@@ -3367,7 +3550,7 @@
     {
       "anomaly_id": "AMB-12",
       "category": "Unclear SLA",
-      "conflicting_clauses": "Contract states the Cogen API is 'assumed to be available and stable at approximately 95%, as assessed by Syngenta', and failures below that level are handled by Change Order. The measurement window and method are undefined, and the contract flags Cogen/Tagasys provision as '[confirm]'.",
+      "conflicting_clauses": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf, Exhibit A Section 7 and Section 8 (Third Party Items): Contract states the Cogen API is 'assumed to be available and stable at approximately 95%, as assessed by Syngenta', and failures below that level are handled by Change Order. The measurement window and method are undefined, and the contract flags Cogen/Tagasys provision as '[confirm]'.",
       "risk_impact": "A client-assessed, approximate threshold gives no objective trigger for Change Orders. Unconfirmed provisioning of Cogen and Tagasys could block integration testing.",
       "recommended_clarification": "How, over what period and by whom will Cogen availability be measured, and who provisions Cogen and Tagasys access?",
       "status": "Open",
@@ -3490,7 +3673,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-04",
+      "deliverable_id": "DEL-05",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 1",
@@ -3505,7 +3688,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-04",
+      "deliverable_id": "DEL-06",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 1",
@@ -3520,7 +3703,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-04",
+      "deliverable_id": "DEL-07",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 1",
@@ -3535,7 +3718,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-05",
+      "deliverable_id": "DEL-08",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3550,7 +3733,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-06",
+      "deliverable_id": "DEL-09",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3565,7 +3748,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-07",
+      "deliverable_id": "DEL-10",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3580,7 +3763,7 @@
       "owner": "Toptal",
       "type": "Analysis",
       "fingerprint": [],
-      "deliverable_id": "DEL-07",
+      "deliverable_id": "DEL-11",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3595,7 +3778,7 @@
       "owner": "Toptal",
       "type": "Integration",
       "fingerprint": [],
-      "deliverable_id": "DEL-08",
+      "deliverable_id": "DEL-12",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3610,7 +3793,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-08",
+      "deliverable_id": "DEL-13",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3625,7 +3808,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-09",
+      "deliverable_id": "DEL-14",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3640,7 +3823,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-09",
+      "deliverable_id": "DEL-15",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3655,7 +3838,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-09",
+      "deliverable_id": "DEL-16",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3670,7 +3853,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-09",
+      "deliverable_id": "DEL-17",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3685,7 +3868,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-09",
+      "deliverable_id": "DEL-18",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 2",
@@ -3700,7 +3883,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-10",
+      "deliverable_id": "DEL-19",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3715,7 +3898,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-11",
+      "deliverable_id": "DEL-20",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3730,7 +3913,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-14",
+      "deliverable_id": "DEL-21",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3745,7 +3928,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-12",
+      "deliverable_id": "DEL-22",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3760,7 +3943,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-12",
+      "deliverable_id": "DEL-23",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3775,7 +3958,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-12",
+      "deliverable_id": "DEL-24",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3790,7 +3973,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-14",
+      "deliverable_id": "DEL-25",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3805,7 +3988,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-13",
+      "deliverable_id": "DEL-26",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3820,7 +4003,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-14",
+      "deliverable_id": "DEL-27",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3835,7 +4018,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-14",
+      "deliverable_id": "DEL-28",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 3",
@@ -3850,7 +4033,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-15",
+      "deliverable_id": "DEL-29",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3865,7 +4048,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-15",
+      "deliverable_id": "DEL-30",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3880,7 +4063,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-16",
+      "deliverable_id": "DEL-31",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3895,7 +4078,7 @@
       "owner": "Toptal",
       "type": "Build",
       "fingerprint": [],
-      "deliverable_id": "DEL-17",
+      "deliverable_id": "DEL-32",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3910,7 +4093,7 @@
       "owner": "Toptal",
       "type": "Test",
       "fingerprint": [],
-      "deliverable_id": "DEL-18",
+      "deliverable_id": "DEL-33",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3925,7 +4108,7 @@
       "owner": "Toptal",
       "type": "Certification",
       "fingerprint": [],
-      "deliverable_id": "DEL-19",
+      "deliverable_id": "DEL-34",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3940,7 +4123,7 @@
       "owner": "Toptal",
       "type": "Documentation",
       "fingerprint": [],
-      "deliverable_id": "DEL-20",
+      "deliverable_id": "DEL-35",
       "source_reference": {
         "document_name": "Syngenta Crop Protection, LLC - ARC Application Implementation SOW + Exhibit A.pdf",
         "clause_or_slide": "Exhibit A, Section 4 Work Output - Milestone 4",
@@ -3948,7 +4131,20 @@
       }
     }
   ],
-  "validation_report": null,
+  "validation_report": {
+    "findings": [
+      {
+        "invariant_id": "INV-01",
+        "severity": "repaired",
+        "message": "Reconciled 4 primary gates and moved 1 interim items to Interim Checkpoints (CP)."
+      },
+      {
+        "invariant_id": "INV-07",
+        "severity": "repaired",
+        "message": "Rebuilt 35 work packages from SOW work item catalogue with verified parent deliverables and work item phases."
+      }
+    ]
+  },
   "readiness_score": 67.0,
   "readiness_breakdown": {
     "mandatory_g01_controls": 72.7,
@@ -3959,6 +4155,7 @@
   "workflow_state": "Clarification Pending",
   "sow_awarded_date": "2026-10-07",
   "award_date_source": "stated",
+  "sla_verdict_source": null,
   "kit_drafted_date": "2026-10-02",
   "sla_met": true,
   "author_name": "[UNASSIGNED - TO BE CONFIRMED]",
