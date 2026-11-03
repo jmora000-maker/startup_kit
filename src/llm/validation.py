@@ -614,7 +614,7 @@ def validate_evidence_and_review_windows(baseline: StartupKitBaseline, findings:
     # KIT-03: Uniform contract-wide review window detection
     contract_wide_rw: Optional[str] = None
     cw_pattern = re.compile(
-        r'\b(?:have\s+|has\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*\(\d+\))?\s+business\s+days?\s+from\s+notice\s+of\s+(?:milestone\s+)?completion\b',
+        r'\b(?:have\s+|has\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*\(\d+\))?\s+(?:business|calendar|working)?\s*days?\s+(?:from\s+(?:the\s+date\s+of\s+)?notice(?:\s+of\s+(?:[A-Za-z0-9_\'\’\-]+\s+)?(?:milestone\s+)?completion)?|after\s+submission|to\s+(?:evaluate|review|test))\b',
         re.IGNORECASE
     )
     number_words = {

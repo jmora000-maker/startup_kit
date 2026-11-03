@@ -150,7 +150,7 @@ class BaselineAggregator:
                         if getattr(acc_item, "rejection_rework_path", None) and not d.rejection_rework_path:
                             d.rejection_rework_path = getattr(acc_item, "rejection_rework_path")
                         rw_val = getattr(acc_item, "review_window", None)
-                        if rw_val and "[CONFIRMATION REQUIRED]" not in rw_val and rw_val.strip().lower() != "5 business days":
+                        if rw_val and "[CONFIRMATION REQUIRED]" not in rw_val:
                             d.review_window = sanitize_report_text(rw_val)
 
             # Second pass: greedy one-to-one name similarity for unmatched acceptance items
@@ -185,7 +185,7 @@ class BaselineAggregator:
                         d.evidence_required = acc_item.evidence_required
                     if not d.acceptance_criteria and acc_item.acceptance_criteria:
                         d.acceptance_criteria = list(acc_item.acceptance_criteria)
-                    if acc_item.review_window and acc_item.review_window.strip() and acc_item.review_window.strip().lower() != "5 business days":
+                    if acc_item.review_window and acc_item.review_window.strip():
                         d.review_window = acc_item.review_window
                     if acc_item.rejection_rework_path:
                         d.rejection_rework_path = acc_item.rejection_rework_path
@@ -197,11 +197,11 @@ class BaselineAggregator:
                             d.sow_reference = acc_ref
 
             for d in deliverables:
-                if not d.review_window or d.review_window.strip().lower() == "5 business days" or "[CONFIRMATION REQUIRED]" in d.review_window:
+                if not d.review_window or "[CONFIRMATION REQUIRED]" in d.review_window:
                     d.review_window = default_review_window
         else:
             for d in deliverables:
-                if not d.review_window or d.review_window.strip().lower() == "5 business days":
+                if not d.review_window:
                     d.review_window = default_review_window
 
         # Granularity check (v5 B16)

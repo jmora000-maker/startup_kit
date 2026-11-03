@@ -418,6 +418,12 @@ def apply_corrections(baseline: StartupKitBaseline, corrections: List[Dict[str, 
             for d in out.deliverables:
                 if not c["extracted"] or (d.review_window or "").strip() == c["extracted"]:
                     d.review_window = new
+            if out.sow_interpretation:
+                app_exp = out.sow_interpretation.approval_expectations or ""
+                if app_exp:
+                    out.sow_interpretation.approval_expectations = f"Formal written sign-off within {new} of milestone completion notice. {app_exp}".strip()
+                else:
+                    out.sow_interpretation.approval_expectations = f"Formal written sign-off within {new} of milestone completion notice."
         elif parts[0] == "validation_findings" and len(parts) == 2 and out.validation_report:
             idx = int(parts[1]) - 1
             if 0 <= idx < len(out.validation_report.findings):

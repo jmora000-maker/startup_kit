@@ -574,11 +574,45 @@ def _build_acceptance_cards(narrative_text: str) -> List[AcceptanceCardData]:
 
 
 def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrativeModel:
-    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis and 3-card classification (HTL-72 / HTL-74 / HTL-98 / HTL-99)."""
+    """Build Slide 16 model (How Milestone Acceptance Works) using dual-tier synthesis and 3-card classification (HTL-72 / HTL-74 / HTL-98 / HTL-99 / HTL-105 / HTL-106 / HTL-107)."""
     sow = baseline.sow_interpretation
+    facts = _extract_allowed_numeric_facts(baseline)
+    ms_days_set = facts.get("milestone_acceptance_period_days", set())
+    verified_rw_days = min(ms_days_set) if ms_days_set else None
+
     # Tier 1: LLM synthesized acceptance process narrative
     if sow and sow.acceptance_process_narrative and sow.acceptance_process_narrative.strip():
         narrative = _sanitize_acceptance_narrative(sow.acceptance_process_narrative.strip(), baseline=baseline)
+
+        # HTL-107: Reconcile Review: and Deemed accepted: steps if missing or stripped
+        if verified_rw_days is not None:
+            lines = [l.strip() for l in narrative.split("\n") if l.strip()]
+            has_review = any(re.match(r'^(?:\*\*)?(?:Review|Client Review|Review Period|Review and SLAs)(?::|\*\*:)', l, re.IGNORECASE) for l in lines)
+            has_deemed = any(re.match(r'^(?:\*\*)?(?:Deemed [Aa]ccepted|Deemed [Aa]cceptance|Passive [Aa]cceptance|Passive [Ss]ign-off)(?::|\*\*:)', l, re.IGNORECASE) for l in lines)
+
+            if not has_review or not has_deemed:
+                new_lines: List[str] = []
+                review_inserted = False
+
+                for line in lines:
+                    lbl, body = parse_step_line(line)
+                    clean_lbl = lbl.lower().strip(" :*#_-") if lbl else ""
+
+                    new_lines.append(line)
+                    if not has_review and not review_inserted and clean_lbl in {"submission", "formal submission", "milestone submission"}:
+                        new_lines.append(f"**Review:** Client conducts {verified_rw_days}-business-day evaluation against specifications and acceptance criteria.")
+                        review_inserted = True
+
+                if not has_review and not review_inserted:
+                    idx = 1 if len(new_lines) >= 1 else 0
+                    new_lines.insert(idx, f"**Review:** Client conducts {verified_rw_days}-business-day evaluation against specifications and acceptance criteria.")
+
+                if not has_deemed:
+                    new_lines.append(f"**Deemed accepted:** If Client provides no written notice of failure within the {verified_rw_days}-business-day window, milestone is deemed accepted.")
+
+                narrative = "\n".join(new_lines)
+                narrative = _sanitize_acceptance_narrative(narrative, baseline=baseline)
+
         cards = _build_acceptance_cards(narrative)
         return Slide16AcceptanceNarrativeModel(
             narrative=narrative,
@@ -616,7 +650,9 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
         if sow and sow.approval_expectations and "[CONFIRMATION" not in sow.approval_expectations.upper()
         else None
     )
-    if app_exp:
+    if verified_rw_days:
+        steps.append(f"Review: Client conducts formal evaluation against specifications and acceptance criteria within a {verified_rw_days}-business-day review window.")
+    elif app_exp:
         clean_app_exp = _sanitize_no_dollars(app_exp)
         steps.append(f"Review: {clean_app_exp}")
     else:
@@ -642,7 +678,10 @@ def build_slide16_model(baseline: StartupKitBaseline) -> Slide16AcceptanceNarrat
         steps.append("Remediation: In the event of material non-conformance, client provides specific written notice of deficiency, followed by commercially reasonable remediation efforts.")
 
     # Step 4: Deemed accepted & Sign-off
-    steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
+    if verified_rw_days:
+        steps.append(f"Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance within the {verified_rw_days}-business-day window, followed by formal milestone certification and invoice release.")
+    else:
+        steps.append("Deemed accepted & Sign-off: Milestone is deemed accepted if client does not provide written notice of non-conformance before the review window expires, followed by formal milestone certification and invoice release.")
 
     narrative = "\n".join(steps)
     clean_narrative = _sanitize_acceptance_narrative(narrative, baseline=baseline)
