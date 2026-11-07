@@ -153,9 +153,9 @@ def _format_table_header_cell(
     font_size_pt: float = 9.5,
     bold: bool = True,
     border_hex: str = "D3DCEC",
-    fill_hex: str = "041133",
+    fill_hex: str = "0F256E",
 ) -> None:
-    """Format table header cell with dark navy background, white bold text, and D3DCEC borders (HTL-89)."""
+    """Format table header cell with dark navy background (#0F256E), white bold text, and D3DCEC borders (HTL-89 / HTL-103)."""
     cell.text = text
     tf = cell.text_frame
     tf.word_wrap = True
@@ -289,7 +289,7 @@ def write_slide15_acceptance_criteria_page(
             p0_1.runs[0].font.name = "Proxima Nova"
             p0_1.runs[0].font.size = Pt(8.0)
             p0_1.runs[0].font.bold = True
-            p0_1.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+            p0_1.runs[0].font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
         if row_data.deliverable_name:
             p0_2 = tf0.add_paragraph()
@@ -336,7 +336,7 @@ def write_slide15_acceptance_criteria_page(
             p2.runs[0].font.name = "Proxima Nova"
             p2.runs[0].font.size = Pt(8.0)
             p2.runs[0].font.bold = True
-            p2.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+            p2.runs[0].font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
 
 def write_slide15_acceptance_criteria(slide, model: GovernanceDeckModel) -> None:
@@ -388,15 +388,8 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         # Node rounded box
         node_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, n_left, flowchart_top, node_w, node_h)
         node_shape.fill.solid()
-        if idx == 2:  # Decision Check
-            node_shape.fill.fore_color.rgb = RGBColor(0x1D, 0x29, 0x39)
-            node_shape.line.color.rgb = RGBColor(0x1D, 0x29, 0x39)
-        elif idx == 3:  # Sign-Off & Deemed Accepted
-            node_shape.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
-            node_shape.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
-        else:
-            node_shape.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
-            node_shape.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        node_shape.fill.fore_color.rgb = RGBColor(0x0F, 0x25, 0x6E)
+        node_shape.line.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
         tf_node = node_shape.text_frame
         tf_node.margin_top = 0
@@ -497,8 +490,8 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
             badge_h,
         )
         badge.fill.solid()
-        badge.fill.fore_color.rgb = RGBColor(0x04, 0x11, 0x33)
-        badge.line.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        badge.fill.fore_color.rgb = RGBColor(0x0F, 0x25, 0x6E)
+        badge.line.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
         tf_badge = badge.text_frame
         tf_badge.margin_top = 0
         tf_badge.margin_bottom = 0
@@ -527,7 +520,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r_cat.font.name = "Proxima Nova"
         r_cat.font.size = Pt(8.0)
         r_cat.font.bold = True
-        r_cat.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+        r_cat.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
         # Content Text Box (HTL-105: uniform fixed height and geometry across all 3 cards)
         body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
@@ -553,7 +546,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
                 lead_run.font.name = "Proxima Nova"
                 lead_run.font.size = Pt(body_font_sz)
                 lead_run.font.bold = True
-                lead_run.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+                lead_run.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
                 rest_run = p_elem.add_run()
                 rest_run.text = body
@@ -659,7 +652,7 @@ def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
             r.font.name = "Proxima Nova"
             r.font.size = Pt(13)
             r.font.bold = True
-            r.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+            r.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
         # Paragraph 2: Card Lead / Subtitle
         p_lead = tf.add_paragraph()
@@ -912,6 +905,17 @@ def write_governance_deck(
 
     # Slide 19: Next Steps (Client Slide 15)
     write_slide15(prs_gov.slides[16 + total_s14_pages + total_s15_pages], client_deck_adapter)
+
+    # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E (HTL-103)
+    for slide in prs_gov.slides:
+        for shape in slide.shapes:
+            xml_str = etree.tostring(shape._element).decode()
+            if "041133" in xml_str or "041133" in xml_str.lower():
+                new_xml = xml_str.replace("041133", "0F256E").replace("041133", "0F256E")
+                new_elem = etree.fromstring(new_xml.encode())
+                parent = shape._element.getparent()
+                if parent is not None:
+                    parent.replace(shape._element, new_elem)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     prs_gov.save(str(target_path))

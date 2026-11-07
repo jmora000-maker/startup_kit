@@ -127,11 +127,13 @@ def _sanitize_no_dollars(text: str) -> str:
 
 
 def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None) -> str:
-    """Sanitize individual person names from acceptance narrative, preserving roles only (HTL-105)."""
+    """Sanitize individual person names from acceptance narrative, preserving roles only (HTL-105 / HTL-103)."""
     if not text:
         return text
 
     cleaned = text
+    roles = r'Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead'
+    known_names = r'Mike\s+Magwire|Saadia\s+Iqbal|Alicia\s+Cook|Satya|Mike|Magwire|Saadia|Iqbal|Alicia|Cook'
 
     # 1. Clean SME parentheticals and combinations first
     # e.g., "SME availability (Mike Magwire, Satya)" -> "SME availability"
@@ -140,11 +142,11 @@ def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None)
     cleaned = re.sub(r'\((?:Mike\s+Magwire|Satya|Mike)(?:\s*(?:,|and|&)\s*(?:Mike\s+Magwire|Satya|Mike|SME))+\)', 'named SMEs', cleaned)
     cleaned = re.sub(r'\b(?:Mike\s+Magwire|Satya)(?:\s*(?:,|and|&)\s*(?:Mike\s+Magwire|Satya))+\b', 'named SMEs', cleaned)
 
-    # 2. If preceded by a role, strip the individual name
+    # 2. If preceded by a role (with or without parenthetical), strip the individual name (HTL-103)
     # e.g. "Client Approver Mike Magwire" -> "Client Approver"
     # "Delivery Manager Saadia Iqbal" -> "Delivery Manager"
-    # "Client Contact Alicia Cook" -> "Client Contact"
-    cleaned = re.sub(r'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+(?:Mike\s+Magwire|Saadia\s+Iqbal|Alicia\s+Cook|Satya|Mike|Magwire|Saadia|Iqbal|Alicia|Cook)\b', r'\1', cleaned)
+    # "Client Contact (Mike Magwire)" -> "Client Contact"
+    cleaned = re.sub(rf'(?i)\b({roles})\s*(?:\(\s*|\s+)({known_names})(?:\s*\))?', r'\1', cleaned)
 
     # 3. Dynamic replacement based on baseline charter / stakeholder names if provided
     if baseline:
@@ -157,7 +159,7 @@ def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None)
                 role_name = getattr(baseline.charter, attr, None)
                 if role_name and isinstance(role_name, str) and role_name.strip() and "[UNASSIGNED" not in role_name.upper():
                     rn = re.escape(role_name.strip())
-                    cleaned = re.sub(rf'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+{rn}\b', r'\1', cleaned)
+                    cleaned = re.sub(rf'(?i)\b({roles})\s*(?:\(\s*|\s+){rn}(?:\s*\))?', r'\1', cleaned)
                     cleaned = re.sub(rf'(?i)\b{rn}\b', default_title, cleaned)
 
         if baseline.stakeholders:
@@ -180,7 +182,7 @@ def _sanitize_no_names(text: str, baseline: Optional[StartupKitBaseline] = None)
                     else:
                         title = "Client Approver" if "client" in raw_role.lower() else "named SME"
 
-                    cleaned = re.sub(rf'(?i)\b(Client\s+Approver|Client\s+Sponsor|Client\s+Contact|Delivery\s+Manager|Talent\s+PM|PMO\s+Lead)\s+{rn}\b', r'\1', cleaned)
+                    cleaned = re.sub(rf'(?i)\b({roles})\s*(?:\(\s*|\s+){rn}(?:\s*\))?', r'\1', cleaned)
                     cleaned = re.sub(rf'(?i)\b{rn}\b', title, cleaned)
 
     # 4. Standalone specific names fallback
@@ -365,10 +367,47 @@ def _determine_step_day_category(label: Optional[str], sentence: str) -> str:
     return "ambiguous"
 
 
+def _condense_step_body(label: Optional[str], body: str) -> str:
+    """Condense synthesized step body to a compact 10-18 word clause (HTL-103)."""
+    text = body.strip()
+    text = re.sub(r'(?i)\bin all material respects\b', '', text)
+    text = re.sub(r'(?i)\bwith written completion notice \(email suffices\)\b', 'with written notice', text)
+    text = re.sub(r'(?i)\b\(email suffices\)\b', '', text)
+    text = re.sub(r'(?i)\bso record the date\b', '', text)
+    text = re.sub(r'(?i)\bbefore dependent work proceeds\b', '', text)
+    text = re.sub(r'(?i)\bCheck the notice for these details and clarify any gaps with the Client Contact\.?\b', '', text)
+    text = re.sub(r'(?i)\bNo supplier rework turnaround is stated, so agree a date with Client at the time of notice\.?\b', '', text)
+    text = re.sub(r'(?i)\bClient is still expected to sign and deliver a certification of Milestone acceptance\.?\b', '', text)
+    text = re.sub(r'\s*\([^)]{10,}\)', '', text)
+    text = re.sub(r'\s{2,}', ' ', text).strip(' ,.;:')
+
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    primary = sentences[0].strip() if sentences else text
+    if len(primary.split()) < 8 and len(sentences) > 1:
+        primary = f"{primary} {sentences[1].strip()}".strip()
+
+    primary = primary.strip(' ,.;:') + '.'
+
+    words = primary.split()
+    if len(words) > 20:
+        m = re.match(r'^([^;]+?);', primary)
+        if m and 8 <= len(m.group(1).split()) <= 20:
+            primary = m.group(1).strip() + '.'
+        else:
+            cutoff = words[:20]
+            while cutoff and cutoff[-1].lower().rstrip('.,;:()') in {
+                "and", "or", "the", "a", "an", "of", "to", "in", "for", "with", "against", "its", "at", "by", "from", "on", "into", "that", "which", "is", "are", "does", "not", "as", "upon"
+            }:
+                cutoff.pop()
+            primary = ' '.join(cutoff).rstrip(' ,.;:') + '.'
+
+    return primary
+
+
 def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBaseline] = None) -> str:
     """Sanitize acceptance narrative: remove financial dollar amounts, administrative/commercial prerequisites
     (Purchase Orders, NDAs, invoicing setup), fabricated turnaround assumptions, contradictory weekly status
-    acceptance loops, individual person names, and ungrounded numeric timeframes (HTL-74, HTL-98, HTL-99, HTL-105, HTL-106)."""
+    acceptance loops, individual person names, ungrounded numeric timeframes, and redundant deliverable-specific/execution rules (HTL-74, HTL-98, HTL-99, HTL-103, HTL-105, HTL-106)."""
     if not text:
         return text
 
@@ -456,14 +495,15 @@ def _sanitize_acceptance_narrative(text: str, baseline: Optional[StartupKitBasel
             if s_mod.strip():
                 kept_sentences.append(s_mod.strip())
 
-        step_body = " ".join(kept_sentences).strip()
-        step_body = re.sub(r'\s{2,}', ' ', step_body).strip()
+        if not kept_sentences:
+            continue
 
-        if step_body:
-            if label:
-                cleaned_lines.append(f"{label} {step_body}")
-            else:
-                cleaned_lines.append(step_body)
+        combined_body = " ".join(kept_sentences).strip()
+        condensed_body = _condense_step_body(label, combined_body)
+        if label:
+            cleaned_lines.append(f"{label} {condensed_body}")
+        else:
+            cleaned_lines.append(condensed_body)
 
     return "\n".join(cleaned_lines)
 
@@ -542,6 +582,23 @@ def _build_acceptance_cards(narrative_text: str) -> List[AcceptanceCardData]:
             c2_steps.append((label, body))
         elif target == 3:
             c3_steps.append((label, body))
+
+    # Prioritize core contractual Card 1 steps: prerequisites/inputs ready, submission, and review (HTL-103)
+    if len(c1_steps) > 3:
+        core_c1 = [
+            (lbl, body) for lbl, body in c1_steps
+            if (lbl or "").lower().strip(" :*#_-") in {"inputs ready", "prerequisites", "submission", "review", "milestone acceptance period"}
+        ]
+        other_c1 = [
+            (lbl, body) for lbl, body in c1_steps
+            if (lbl or "").lower().strip(" :*#_-") not in {"inputs ready", "prerequisites", "submission", "review", "milestone acceptance period"}
+        ]
+        c1_steps = (core_c1 + other_c1)[:3]
+    else:
+        c1_steps = c1_steps[:3]
+
+    c2_steps = c2_steps[:3]
+    c3_steps = c3_steps[:3]
 
     # Balanced fallback guarantee: If SOW narrative was silent on triage/rework, populate Card 2 with standard contractual defaults
     if not c2_steps:

@@ -11,8 +11,8 @@ from pptx.dml.color import RGBColor
 
 # Canonical Constants (matching Slide 5 baseline)
 KICKER_COLOR = RGBColor(0x2E, 0x5A, 0xAC)   # #2E5AAC
-TITLE_COLOR = RGBColor(0x04, 0x11, 0x33)    # #041133
-SUBTITLE_COLOR = RGBColor(0x04, 0x11, 0x33) # #041133 (HTL-88)
+TITLE_COLOR = RGBColor(0x0F, 0x25, 0x6E)    # #0F256E (HTL-103)
+SUBTITLE_COLOR = RGBColor(0x0F, 0x25, 0x6E) # #0F256E (HTL-88 / HTL-103)
 
 # Positions and Dimensions in EMU (and Inches)
 KICKER_LEFT = Inches(0.525)    # 480073 EMU (0.525 in)
@@ -71,6 +71,9 @@ def format_kicker_shape(shape, kicker_text: Optional[str] = None) -> None:
     p.text = text
     p.space_before = Pt(0)
     p.space_after = Pt(0)
+    for end_rpr in p._p.xpath(".//a:endParaRPr"):
+        for solid_fill in end_rpr.xpath(".//a:solidFill"):
+            end_rpr.remove(solid_fill)
     for r in p.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(9.0)
@@ -104,6 +107,9 @@ def format_title_shape(shape, title_text: Optional[str] = None, title_sz: float 
     p.text = text
     p.space_before = Pt(0)
     p.space_after = Pt(0)
+    for end_rpr in p._p.xpath(".//a:endParaRPr"):
+        for solid_fill in end_rpr.xpath(".//a:solidFill"):
+            end_rpr.remove(solid_fill)
     for r in p.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(title_sz)
@@ -137,6 +143,9 @@ def format_subtitle_shape(shape, subtitle_text: Optional[str] = None) -> None:
     p.text = text
     p.space_before = Pt(0)
     p.space_after = Pt(0)
+    for end_rpr in p._p.xpath(".//a:endParaRPr"):
+        for solid_fill in end_rpr.xpath(".//a:solidFill"):
+            end_rpr.remove(solid_fill)
     for r in p.runs:
         r.font.name = "Proxima Nova"
         r.font.size = Pt(9.0)

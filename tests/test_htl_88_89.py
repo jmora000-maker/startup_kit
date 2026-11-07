@@ -71,7 +71,7 @@ def test_htl_88_deck_header_helper_unit_formatting():
     assert tp.runs[0].font.name == "Proxima Nova"
     assert tp.runs[0].font.size == Pt(24.0)
     assert tp.runs[0].font.bold is True
-    assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+    assert tp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
     # 3. Subtitle
     assert s is not None
@@ -84,7 +84,7 @@ def test_htl_88_deck_header_helper_unit_formatting():
     assert sp.runs[0].font.name == "Proxima Nova"
     assert sp.runs[0].font.size == Pt(9.0)
     assert sp.runs[0].font.bold is False
-    assert sp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+    assert sp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
 
 def test_htl_88_client_kickoff_deck_all_slides_header_standardization(tmp_path):
@@ -127,7 +127,7 @@ def test_htl_88_client_kickoff_deck_all_slides_header_standardization(tmp_path):
         assert tp.runs[0].font.name == "Proxima Nova"
         assert tp.runs[0].font.size == Pt(24.0)
         assert tp.runs[0].font.bold is True
-        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert tp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
     for s_num in standard_3_element_slides:
         slide = prs.slides[s_num - 1]
@@ -157,7 +157,7 @@ def test_htl_88_client_kickoff_deck_all_slides_header_standardization(tmp_path):
         assert tp.runs[0].font.name == "Proxima Nova"
         assert tp.runs[0].font.size == Pt(24.0)
         assert tp.runs[0].font.bold is True
-        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert tp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
         # Subtitle invariants
         assert abs(s.left - SUBTITLE_LEFT) < 1000, f"Slide {s_num} subtitle left mismatch"
@@ -169,7 +169,7 @@ def test_htl_88_client_kickoff_deck_all_slides_header_standardization(tmp_path):
         assert sp.runs[0].font.name == "Proxima Nova"
         assert sp.runs[0].font.size == Pt(9.0)
         assert sp.runs[0].font.bold is False
-        assert sp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert sp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
 
 def test_htl_88_pge_client_kickoff_deck_all_slides_header_standardization(tmp_path):
@@ -242,7 +242,7 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
         assert tp.runs[0].font.name == "Proxima Nova"
         assert tp.runs[0].font.size == Pt(24.0)
         assert tp.runs[0].font.bold is True
-        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert tp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
         if s_num == 6:
             assert tp.text == "The PM owns the plan and the day-to-day work"
 
@@ -275,7 +275,7 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
         assert tp.runs[0].font.name == "Proxima Nova"
         assert tp.runs[0].font.size == Pt(24.0)
         assert tp.runs[0].font.bold is True
-        assert tp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert tp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
         # Subtitle invariants
         assert abs(s.left - SUBTITLE_LEFT) < 1000, f"Gov Slide {s_num} subtitle left mismatch"
@@ -284,11 +284,11 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
         assert sp.runs[0].font.name == "Proxima Nova"
         assert sp.runs[0].font.size == Pt(9.0)
         assert sp.runs[0].font.bold is False
-        assert sp.runs[0].font.color.rgb == RGBColor(0x04, 0x11, 0x33)
+        assert sp.runs[0].font.color.rgb == RGBColor(0x0F, 0x25, 0x6E)
 
 
 def test_htl_89_governance_deck_tables_literal_navy_header_styling(tmp_path):
-    """HTL-89: Verify Slides 15, 18, and 19 tables in Governance Kickoff Deck all use literal RGB #041133 for header fills (not schemeClr)."""
+    """HTL-89 / HTL-103: Verify Slides 15, 18, and 19 tables in Governance Kickoff Deck all use literal RGB #0F256E for header fills (not schemeClr)."""
     for baseline_name, baseline in [
         ("arc_genomics", load_baseline("arc_genomics")),
         ("pge_ocp", _build_pge_baseline()),
@@ -313,16 +313,16 @@ def test_htl_89_governance_deck_tables_literal_navy_header_styling(tmp_path):
         assert len(tables_with_titles) >= 3, f"Expected at least 3 tables in {baseline_name}, found {len(tables_with_titles)}"
 
         for s_num, tbl, headers in tables_with_titles:
-            # 1. Header Row (Row 0): Check literal RGB #041133 fill on every header cell
+            # 1. Header Row (Row 0): Check literal RGB #0F256E fill on every header cell
             for col_idx in range(len(tbl.columns)):
                 cell = tbl.cell(0, col_idx)
                 tcPr = cell._tc.xpath(".//a:tcPr")[0]
 
-                # Assert literal srgbClr="041133" is present
+                # Assert literal srgbClr="0F256E" is present
                 solid_fill = tcPr.xpath("./a:solidFill/a:srgbClr")
                 assert solid_fill, f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) missing literal srgbClr solidFill"
-                assert solid_fill[0].get("val") == "041133", (
-                    f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) fill is {solid_fill[0].get('val')}, expected literal 041133"
+                assert solid_fill[0].get("val") == "0F256E", (
+                    f"{baseline_name} Slide {s_num} header cell (0, {col_idx}) fill is {solid_fill[0].get('val')}, expected literal 0F256E"
                 )
 
                 # Assert NO theme color reference (schemeClr) exists
@@ -339,7 +339,7 @@ def test_htl_89_governance_deck_tables_literal_navy_header_styling(tmp_path):
 
 
 def test_htl_89_client_deck_tables_literal_navy_header_styling(tmp_path):
-    """HTL-89: Verify Slides 6, 12, and 15 tables in Client Kickoff Deck use literal RGB #041133 for header fills."""
+    """HTL-89 / HTL-103: Verify Slides 6, 12, and 15 tables in Client Kickoff Deck use literal RGB #0F256E for header fills."""
     baseline = load_baseline("arc_genomics")
     baseline.project_name = "ARC Application Implementation"
     if baseline.charter:
@@ -360,5 +360,5 @@ def test_htl_89_client_deck_tables_literal_navy_header_styling(tmp_path):
             tcPr = cell._tc.xpath(".//a:tcPr")[0]
             solid_fill = tcPr.xpath("./a:solidFill/a:srgbClr")
             assert solid_fill, f"Client table header cell (0, {col_idx}) missing literal solidFill"
-            assert solid_fill[0].get("val") == "041133"
+            assert solid_fill[0].get("val") == "0F256E"
             assert not tcPr.xpath("./a:solidFill/a:schemeClr")

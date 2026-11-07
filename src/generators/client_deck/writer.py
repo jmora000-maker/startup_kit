@@ -120,13 +120,13 @@ def _format_table_cell(
 
 def _format_table_header_fill(
     cell,
-    fill_hex: str = "041133",
+    fill_hex: str = "0F256E",
     font_name: str = "Proxima Nova",
     font_size_pt: float = 11.0,
     font_color_rgb: RGBColor = RGBColor(0xFF, 0xFF, 0xFF),
     bold: bool = True,
 ) -> None:
-    """Format table header cell with literal RGB background fill (#041133) and bold white text (HTL-89)."""
+    """Format table header cell with literal RGB background fill (#0F256E) and bold white text (HTL-89 / HTL-103)."""
     tcPr = cell._tc.get_or_add_tcPr()
     for child in list(tcPr):
         if child.tag.endswith("solidFill"):
@@ -280,7 +280,7 @@ def _set_header_paragraph_format(p, font_size_pt: float, text: str) -> None:
         "b": "1",
     })
     solidFill = etree.SubElement(rPr, f"{{{ns_a}}}solidFill")
-    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", {"val": "041133"})
+    etree.SubElement(solidFill, f"{{{ns_a}}}srgbClr", {"val": "0F256E"})
     etree.SubElement(rPr, f"{{{ns_a}}}latin", {"typeface": "Proxima Nova Semibold"})
     etree.SubElement(rPr, f"{{{ns_a}}}ea", {"typeface": "Proxima Nova Semibold"})
     etree.SubElement(rPr, f"{{{ns_a}}}cs", {"typeface": "Proxima Nova Semibold"})
@@ -291,7 +291,7 @@ def _set_header_paragraph_format(p, font_size_pt: float, text: str) -> None:
 
     endRPr = etree.SubElement(p_elem, f"{{{ns_a}}}endParaRPr", {"sz": sz_val, "b": "1"})
     solidFill_end = etree.SubElement(endRPr, f"{{{ns_a}}}solidFill")
-    etree.SubElement(solidFill_end, f"{{{ns_a}}}srgbClr", {"val": "041133"})
+    etree.SubElement(solidFill_end, f"{{{ns_a}}}srgbClr", {"val": "0F256E"})
     etree.SubElement(endRPr, f"{{{ns_a}}}latin", {"typeface": "Proxima Nova Semibold"})
 
 
@@ -523,9 +523,9 @@ def _format_table_header_cell(
     font_size_pt: float = 9.5,
     bold: bool = True,
     border_hex: str = "D3DCEC",
-    fill_hex: str = "041133",
+    fill_hex: str = "0F256E",
 ) -> None:
-    """Format table header cell with dark navy background, white bold text, and D3DCEC borders (HTL-89 / HTL-100)."""
+    """Format table header cell with dark navy background (#0F256E), white bold text, and D3DCEC borders (HTL-89 / HTL-100 / HTL-103)."""
     cell.text = text
     tf = cell.text_frame
     tf.word_wrap = True
@@ -783,7 +783,7 @@ def write_slide6_deliverables_page(
             p0.runs[0].font.name = "Proxima Nova"
             p0.runs[0].font.size = Pt(8.0)
             p0.runs[0].font.bold = True
-            p0.runs[0].font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+            p0.runs[0].font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
         # Col 1: Outcomes / Deliverables
         cell1 = row.cells[1]
@@ -820,7 +820,7 @@ def write_slide6_deliverables_page(
                 r_id.font.name = "Proxima Nova"
                 r_id.font.size = Pt(8.0)
                 r_id.font.bold = True
-                r_id.font.color.rgb = RGBColor(0x04, 0x11, 0x33)
+                r_id.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
                 r_desc = p.add_run()
                 r_desc.text = del_desc
@@ -897,7 +897,7 @@ def write_slide12(slide, model: ClientDeckModel) -> None:
 
     # Pass 2: Populate table rows with true table-wide uniform font size across all cells
     for cell in table.rows[0].cells:
-        _format_table_header_fill(cell, fill_hex="041133")
+        _format_table_header_fill(cell, fill_hex="0F256E")
 
     for i, risk in enumerate(rendered_risks):
         row = table.rows[i + 1]
@@ -953,7 +953,7 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
 
     # Pass 2: Populate table rows with true table-wide uniform font size across all cells
     for cell in table.rows[0].cells:
-        _format_table_header_fill(cell, fill_hex="041133")
+        _format_table_header_fill(cell, fill_hex="0F256E")
 
     for i in range(num_steps):
         step = steps[i]
@@ -1053,6 +1053,17 @@ def write_client_deck(
 
     # Slide 15 (Next Steps): index is 13 + total_s6_pages
     write_slide15(prs.slides[13 + total_s6_pages], model)
+
+    # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E (HTL-103)
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            xml_str = etree.tostring(shape._element).decode()
+            if "041133" in xml_str or "041133" in xml_str.lower():
+                new_xml = xml_str.replace("041133", "0F256E").replace("041133", "0F256E")
+                new_elem = etree.fromstring(new_xml.encode())
+                parent = shape._element.getparent()
+                if parent is not None:
+                    parent.replace(shape._element, new_elem)
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(target_path))

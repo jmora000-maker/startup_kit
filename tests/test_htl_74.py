@@ -70,19 +70,16 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     cards = gov_model.slide16.cards
     assert len(cards) == 3
 
-    # Card 1: 5 steps
+    # Card 1: 3 steps (HTL-103)
     c1 = cards[0]
     assert c1.stage_label == "STAGE 01 & 02"
     assert c1.title == "SUBMISSION & REVIEW PROTOCOLS"
-    assert len(c1.steps) == 5
+    assert len(c1.steps) == 3
     c1_labels = [s[0].rstrip(":") for s in c1.steps if s[0]]
-    assert c1_labels == ["Inputs ready", "Execution and tracking", "Submission", "Review", "Deliverable-specific rules"]
-    assert "Mike Magwire" not in c1.steps[0][1] and "Mike Magwire" not in c1.steps[2][1]
-    assert "Saadia Iqbal" not in c1.steps[1][1]
+    assert c1_labels == ["Inputs ready", "Submission", "Review"]
+    assert "Mike Magwire" not in c1.steps[0][1] and "Mike Magwire" not in c1.steps[1][1]
     assert "Satya" not in c1.steps[0][1]
-    assert "Client Approver" in c1.steps[2][1]
-    assert "Delivery Manager" in c1.steps[1][1]
-    assert "HS-4781" in c1.steps[0][1] or "HS-4781" in c1.steps[4][1]
+    assert "Client Approver" in c1.steps[1][1]
 
     # Card 2: 3 steps
     c2 = cards[1]
@@ -93,15 +90,14 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     assert c2_labels == ["Triage", "Remediation", "Rework limit"]
     assert "repeated remediation attempts" in c2.steps[2][1]
 
-    # Card 3: 4 steps
+    # Card 3: 3 steps (HTL-103)
     c3 = cards[2]
     assert c3.stage_label == "STAGE 04"
     assert c3.title == "SIGN-OFF & CONTRACTUAL CLOSURE"
-    assert len(c3.steps) == 4
+    assert len(c3.steps) == 3
     c3_labels = [s[0].rstrip(":") for s in c3.steps if s[0]]
-    assert c3_labels == ["Deemed accepted", "Sign-off", "Next gate", "Exceptions"]
+    assert c3_labels == ["Deemed accepted", "Sign-off", "Next gate"]
     assert "Mike Magwire" not in c3.steps[1][1]
-    assert "Saadia Iqbal" not in c3.steps[3][1]
     assert "Client Approver" in c3.steps[1][1]
 
     # Export presentation and verify shapes and geometric containment
@@ -144,13 +140,13 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
     cards = gov_model.slide16.cards
     assert len(cards) == 3
 
-    # Card 1: 4 steps
+    # Card 1: 3 steps (HTL-103)
     c1 = cards[0]
-    assert len(c1.steps) == 4
+    assert len(c1.steps) == 3
     c1_labels = [s[0].rstrip(":") for s in c1.steps if s[0]]
-    assert c1_labels == ["Inputs ready", "Execution", "Submission", "Review"]
-    assert "Alicia Cook" not in c1.steps[1][1] and "Alicia Cook" not in c1.steps[2][1]
-    assert "Client Contact" in c1.steps[1][1] or "Client Contact" in c1.steps[2][1]
+    assert c1_labels == ["Inputs ready", "Submission", "Review"]
+    assert "Alicia Cook" not in c1.steps[1][1]
+    assert "Client Contact" in c1.steps[1][1] or "Client Approver" in c1.steps[1][1]
 
     # Card 2: 3 steps
     c2 = cards[1]
