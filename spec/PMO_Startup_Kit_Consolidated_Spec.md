@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 247 · October 21, 2026
+Revision 248 · October 21, 2026
 
 ## 0. Document control
 
@@ -646,13 +646,12 @@ These rules must hold for every fixture and every generated output folder (QA-04
 
 **Set directly by the user; updated when the user says priorities changed.** Items not listed here (the `HTL-01`-`HTL-46` status-audit items, and `HTL-73`'s standing watch-item) are not part of this ordering.
 
-**Done since this list was last set (`HTL-90` through `HTL-94`):** `HTL-91` (governance_deck validator, 20 branches, 100%/94% coverage), `HTL-92` (client_deck validator, 6 branches, 100%/100% coverage), `HTL-93` (pmo_workbook milestone phase reconciliation/gate fallback, 17 branches), `HTL-94` (defensive baseline-object-drop logging, 7 branches, 100% on target blocks), `HTL-90` (Manage Runs Streamlit `AppTest` suite covering `HTL-81`/`82`/`83`). Note: `HTL-90`'s investigation also surfaced and corrected a fabricated claim in `HTL-103`'s closure (the earlier "25 Streamlit test failures confirmed via git-stash comparison" was itself invented -- the real suite passes 79/79; see `HTL-103`'s spec entry for the full correction).
+**Done since this list was last set (`HTL-69`):** `HTL-69` -- durable anti-contamination safeguard (baseline factory + dual-layer contamination scanner, confirmed to catch both HTL-63's cross-client pollution pattern and HTL-100's template-residue pattern; live-risk call sites in test_htl_84_85.py and test_deck_layout.py migrated off fixture-cloning).
 
 **Remaining, in priority order:**
-1. `HTL-69` -- durable anti-contamination test safeguard
-2. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
-3. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
-4. `HTL-51` -- background execution without keeping the browser open
+1. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
+2. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
+3. `HTL-51` -- background execution without keeping the browser open
 
 
 ## Appendix A: Workbook column layouts
