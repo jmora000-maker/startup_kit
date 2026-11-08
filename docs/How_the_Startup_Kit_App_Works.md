@@ -31,7 +31,7 @@ Beyond standard review and generation workflows, the app provides administrator 
   - **LLM Provider**: Selection between `anthropic` and `openai` (defaults to `anthropic`).
   - **Model Override**: Optional model selection defaulting to `(provider default)` (resolving to server defaults like `claude-sonnet-5-5`), with explicit options for Anthropic (`claude-sonnet-5-5`, `claude-haiku-4-5-20251001`) and OpenAI (`gpt-4o`, `gpt-6.1-sol`).
   - **Mock Mode**: Offline test mode (`gen_mock` / `reingest_mock`) executing `MockLLMClient` against uploaded documents without network calls or API keys.
-  - **LLM Cache Mode**: Options for `off` (live API calls) and `replay` (replaying recorded test fixtures from `tests/fixtures/cache/`).
+  - **LLM Cache Mode**: Options for `off` (live API calls) and `replay` (replaying recorded test fixtures from `tests/fixtures/llm_cache/`).
   In addition, the legacy "Startup Kit" deliverable checkbox is gated and positioned last in the deliverable list so standard layouts remain stable.
 - **Fact Review Page**: Diagnostic per-deck trace JSON downloads (`.trace.json`, `_trace.json`, `_Deck_Trace_Manifest.json`) are completely hidden until unlocked.
 - **Manage Runs Page**: A full administrative dashboard for viewing run lifecycles, filtering runs by status, archiving or unarchiving past projects, and performing bulk run purges.

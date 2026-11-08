@@ -186,7 +186,7 @@ The tool includes a caching client wrapper (`--llm-cache`) that caches structure
 
 ## 5. Testing and Quality Checks
 
-The testing framework employs a multi-tiered validation architecture:
+The testing framework employs a multi-tiered validation architecture with over 1,108 passing tests across 47 test suites:
 
 1. **Recorded Fixtures**: Offline end-to-end extraction fixtures located in `tests/fixtures/sow/` (such as `arc_genomics`, `arc_overextracted`, `mock_sow`, `no_story_ids`, `numbered_deliverables`). They can be replayed deterministically without live API calls.
 2. **Oracles (`tests\oracles\`)**: Human-curated ground truth facts per SOW (e.g. gate counts, milestone delivery phases, story titles). Tested against baseline models and generated artifacts.
@@ -196,7 +196,13 @@ The testing framework employs a multi-tiered validation architecture:
    ```
    The deck checks read the written files back: INV-26 resolves every trace key in the Kit and Workbook and applies the boundary rules (no ellipsis, no comma cuts, no unbalanced brackets, names whole); INV-30 compares the Workbook RAID rows with the Kit RAID Log; INV-31 checks text quality; INV-32 checks bounds, overlaps, the fit estimate, and minimum fonts.
 4. **Snapshots (`tests\snapshots\` and `tests\snapshots_proposed\`)**: Regression tests compare newly generated workbook models and document contents against approved snapshot files in `tests/snapshots/<fixture>/snapshot.json`. Any differences are written to `tests/snapshots_proposed/` for human review.
-5. **Full Test Suite Execution**:
+5. **Streamlit AppTest Regression Harness (`HTL-90`)**:
+   Headless regression testing of the Streamlit user interface layer using Streamlit's native `AppTest` framework (`tests/test_manage_runs_apptest.py` and `tests/test_streamlit_app.py`). These tests validate page navigation, session-state persistence across view switches (`HTL-81`), two-stage bulk purge confirmations (`HTL-82`/`HTL-83`), upload caching across tabs (`HTL-31`), and admin passphrase gating (`HTL-27`, `HTL-86`).
+6. **Anti-Contamination Safeguards & Baseline Factory (`HTL-69`)**:
+   Durable safeguards prevent cross-client fixture pollution and static template shape residue:
+   - **Synthetic Baseline Factory (`tests/factories/baseline_factory.py`)**: `create_test_baseline(**overrides)` constructs completely clean, isolated `StartupKitBaseline` instances from scratch with neutral synthetic terms (`Acme`, `Test Alpha`) and genuinely empty default registers, eliminating the risk of partial-mutation fixture cloning.
+   - **Multi-Format Contamination Scanner (`tests/contamination.py`)**: `assert_no_cross_client_contamination()` performs deep text extraction across `.pptx` (slides, tables, speaker notes), `.xlsx` (all sheets and cells), and `.docx` (paragraphs and tables) to assert that generated artifacts contain zero peer-client keywords or historical template residue (`GLOBAL_TEMPLATE_CONTAMINATION_KEYWORDS`).
+7. **Full Test Suite Execution**:
    ```bash
    pytest -q
    ```
@@ -213,7 +219,7 @@ The testing framework employs a multi-tiered validation architecture:
      # Terminal 2: Cloud Storage Emulator (port 4443)
      fake-gcs-server.exe -scheme http -port 4443
      ```
-   Offline unit test suites without emulator dependencies (e.g. `pytest tests/test_models.py`, `pytest tests/test_scoring.py`) can be executed independently at any time.
+   Offline unit test suites without emulator dependencies (e.g. `pytest tests/test_models.py`, `pytest tests/test_scoring.py`, `pytest tests/test_manage_runs_apptest.py`, `pytest tests/test_contamination_safeguard.py`) can be executed independently at any time.
 
 ---
 
@@ -246,7 +252,9 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 
 ---
 
-## PS Governance Kickoff Deck (`HTL-72`)
+## 8. Deliverable Presentation Decks (`HTL-72`, `HTL-84`, `HTL-85`)
+
+### PS Governance Kickoff Deck (`HTL-72`)
 
 `--slides` writes `{Project}_PS_Governance_Kickoff.pptx` and `{Project}_Governance_Deck_trace.json` beside the Kit and Workbook; because every fact in the deck traces to those two documents, `--slides` also writes them in the same run (the log says `Deck sources: Startup Kit and Project Delivery Workbook also written`).
 
@@ -257,9 +265,7 @@ Snapshot updates and oracle modifications follow a controlled human-in-the-loop 
 - **Text:** shown whole or cut only at a sentence or clause boundary; never an ellipsis, a comma cut, an unbalanced bracket, or a shortened name. Text that does not fit gets a smaller font (within the minimums), then a `+N more` row or line.
 - **Review aids:** `python -m src.tools.render_deck <deck.pptx>` renders each slide to a PNG beside the deck when LibreOffice is installed (set `SOFFICE_PATH` if it is not on `PATH`). `python -m src.tools.dump_deck <deck.pptx>` prints every slide's text, tables, notes, and the slide-part count.
 
----
-
-## Client Kickoff Deck
+### Client Kickoff Deck
 
 The Client Kickoff Deck (`{Project}_Client_Kickoff_Deck.pptx`) and its trace manifest (`{Project}_Client_Kickoff_Deck.trace.json`) provide a 16-slide client-facing briefing delivered at engagement launch.
 - **Core Slides**: Cover (Slide 1), Executive Summary & Engagement Context (Slide 5), Solution Overview & Out of Scope (Slide 6), Governance & Cadence, Timeline & Milestones, Key Risks (Slide 12), and Immediate Next Steps (Slide 15).
@@ -269,7 +275,7 @@ The Client Kickoff Deck (`{Project}_Client_Kickoff_Deck.pptx`) and its trace man
 
 ---
 
-## Security Gates & Admin Controls (`HTL-27`, `HTL-75`, `HTL-86`)
+## 9. Security Gates & Admin Controls (`HTL-27`, `HTL-75`, `HTL-86`)
 
 The application enforces role-appropriate security and diagnostic boundaries across three distinct surfaces:
 
@@ -294,60 +300,72 @@ The application enforces role-appropriate security and diagnostic boundaries acr
 
 ---
 
-## Automatic Financial Scrubbing in Delivery Workbook (`HTL-77`)
+## 10. Automatic Financial Scrubbing in Delivery Workbook (`HTL-77`)
 
 To prevent billing figures, milestone fees, and commercial pricing terms from appearing in operational schedules, financial scrubbing operates downstream specifically within the Project Delivery Workbook (`.xlsx`) generation pipeline (`clean_text_v2` and `clean_contract_text` via `sanitize_financial_text`). It applies targeted regular expressions to strip raw dollar amounts, currency symbols, milestone fees, and hourly rates from Milestone descriptions, WBS tasks, and `critical_path_assumptions` (e.g., transforming `"Fee of $26,808 is invoiced on acceptance"` to `"Fee is invoiced on acceptance"`). The transformation performs natural sentence smoothing without inserting `[REDACTED]` placeholder tokens, preserves formulas and legitimate numeric content (dates, percentages, durations, WBS codes), and does not alter text prior to LLM extraction or touch other baseline documents.
 
 ---
 
-## Cloud Run Deployment
+## 11. Cloud Run Deployment & Operational Scripts
 
 The Startup Kit application is containerized with Docker (`Dockerfile` based on `python:3.14-slim`) for deployment to Google Cloud Run in the `toptal-delivery-apps` GCP project:
 - The app runs headless Streamlit (`src/review_ui/app.py`).
 - The storage layer is configured with `REVIEW_STORAGE_BACKEND=gcp`, persisting run metadata in Google Cloud Firestore and generated documents in Google Cloud Storage (`toptal-startup-kit-outputs`).
-- Secrets (such as `ANTHROPIC_API_KEY`) are injected at container startup via Secret Manager.
-- Service access is restricted with `--no-allow-unauthenticated`, requiring explicit IAM invoker permissions (`roles/run.invoker`).
+- Secrets (such as `ANTHROPIC_API_KEY`, `ADMIN_PASSPHRASE`, `GENERATION_PASSPHRASE`) are injected at container startup via Secret Manager.
+- Service access is restricted with `--no-allow-unauthenticated`, requiring explicit IAM invoker permissions (`roles/run.invoker`) or Identity-Aware Proxy (IAP) routing.
 
-For full deployment instructions, IAM prerequisites, Secret Manager setup, and verification checklists, see [docs/Cloud_Run_Deployment.md](docs/Cloud_Run_Deployment.md) and [docs/GCP_Firestore_CloudStorage_Setup.md](docs/GCP_Firestore_CloudStorage_Setup.md).
+### Operational Automation Scripts
+- **`deploy-and-verify.ps1`**: Automates Google Cloud Build image builds, Cloud Run deployment with Secret Manager injection, and post-deployment URL health checks.
+- **`rotate-anthropic-api-key.ps1`**: Adds a new secret version to Google Secret Manager and initiates a rolling Cloud Run service update.
+- **`open-deployed-app.ps1`**: Obtains an authenticated identity token and launches the active Cloud Run instance in the default browser.
+
+For full deployment instructions, IAM prerequisites, Secret Manager setup, and verification checklists, see [docs/Cloud_Run_Deployment.md](docs/Cloud_Run_Deployment.md), [docs/IAP_Setup_Plan.md](docs/IAP_Setup_Plan.md), and [docs/GCP_Firestore_CloudStorage_Setup.md](docs/GCP_Firestore_CloudStorage_Setup.md).
 
 ---
 
-## 8. Project Structure
+## 12. Project Structure
 
 ```text
 startup_kit/
-├── docs/                   # Architecture, GCP emulator setup, and Cloud Run deployment guides
+├── docs/                   # Architecture, GCP emulator setup, IAP, and Cloud Run deployment guides
 ├── inputs/                 # Input directory for SOWs and project documentation (.pdf, .docx, .pptx, .txt)
-├── output/                 # Output directory for generated Word reports and Excel workbooks
+├── output/                 # Output directory for generated Word reports, Excel workbooks, and decks
 ├── reports/                # Specification revision and verification reports
 ├── review_queue/           # Local file storage for Human Review run metadata and documents
 ├── review_uploads/         # Staging directory for review bundles collected by make_review_copies.ps1
+├── scripts/                # Diagnostic scripts and slide PNG export utilities
 ├── spec/                   # Authoritative specification documents and revision history
 ├── src/
 │   ├── core/               # Pydantic data models, interfaces, and baseline definitions
 │   ├── extractors/         # Multi-format document parsers and ingestion coordinator
-│   ├── generators/         # Document writers for Word reports (.docx) and Project Delivery Workbook (.xlsx)
+│   ├── generators/         # Document writers for Word reports (.docx), Workbooks (.xlsx), and decks (.pptx)
 │   ├── llm/                # LLM clients, prompt templates, structured domain extractors, and caching
 │   ├── review_storage/     # Dual storage backends (LocalReviewStorage, FirestoreReviewStorage)
-│   ├── review_ui/          # Streamlit web interface for human review and deliverable generation
+│   ├── review_ui/          # Streamlit web interface for human review, generation, and run management
 │   ├── scoring/            # 4-dimension readiness scoring engine and CLI telemetry reporting
 │   ├── storage/            # Standalone Firestore and Google Cloud Storage client modules
 │   └── tools/              # Utility scripts for artifact checking, normalization, and fixture recording
 ├── templates/              # PowerPoint presentation templates for onboarding deck generation
 ├── tests/
+│   ├── factories/          # Baseline factory (create_test_baseline) for clean synthetic test models
 │   ├── fixtures/           # SOW inputs and recorded LLM cache payloads
 │   ├── oracles/            # Human-curated ground truth facts per SOW
 │   ├── snapshots/          # Approved golden snapshots for regression testing
-│   └── snapshots_proposed/ # Proposed snapshot updates generated during test runs
+│   ├── snapshots_proposed/ # Proposed snapshot updates generated during test runs
+│   └── contamination.py    # Multi-format artifact contamination check utility (assert_no_cross_client_contamination)
 ├── .dockerignore           # Exclusions for Docker image builds
 ├── Dockerfile              # Container configuration for Cloud Run deployment (Python 3.14-slim)
+├── deploy-and-verify.ps1   # Cloud Run deployment, secret binding, and verification script
+├── env-vars.yaml           # Environment variable specification for Cloud Run deployment
 ├── firebase.json           # Firebase local emulator configuration
 ├── firestore.indexes.json  # Firestore composite index definitions
 ├── firestore.rules         # Firestore security rules
 ├── main.py                 # CLI entry point
 ├── make_review_copies.ps1  # Helper script to assemble snapshot review bundles
+├── open-deployed-app.ps1   # Helper script to open IAM-authenticated deployed Cloud Run app
 ├── promote_snapshots.ps1   # Safe snapshot promotion and verification script
 ├── README.md               # Tool documentation and user guide
 ├── requirements.txt        # Python package dependencies
+├── rotate-anthropic-api-key.ps1 # Secret Manager key rotation and service update script
 └── start-dev-servers.ps1   # Local development server orchestrator (emulators + Streamlit)
 ```

@@ -56,8 +56,9 @@ access there would do nothing.
 2. Ran a complete real session through it: Generate → Fact Review → Approve → Generate documents
    (run `Pilot-Ready_Product_Implementation_20261021_221841`)
 3. Independently confirmed via direct Firestore and Cloud Storage REST calls (not the app's own
-   UI): the real Firestore document shows `status: "generated"`, and all five expected files
-   (Startup Kit, Readiness Checklist, Workbook, Deck, trace manifest) exist in the real bucket
+   UI): the real Firestore document shows `status: "generated"`, and all expected deliverable files
+   (Startup Kit, Workbook, Deck, trace manifest, plus legacy Readiness Checklist in earlier runs;
+   production now standardizes on the four core deliverables per `OUT-13a`) exist in the real bucket
    with real sizes and checksums — the same standard of evidence used for every other
    verification in this project
 

@@ -469,26 +469,26 @@ them is still an open item as of this writing).
    was the subject of `HTL-38`'s fix — re-confirm it specifically against the real cloud
    deployment, not just the local emulators).
 
-### Convenience script
+### Operational Helper Scripts
 
-`deploy-and-verify.ps1`, in the repo root, packages the redeploy and verification sequence into
-one script: pushes pending commits, confirms `env-vars.yaml` exists, runs the real deploy command
-from Section 6, shows who currently has `run.invoker`, and launches the authenticated proxy with
-on-screen instructions. Run with:
-```powershell
-cd C:\Users\james\PycharmProjects\PythonProject\Startup_Kit
-.\deploy-and-verify.ps1
-```
-It stops immediately if the push or the deploy fails, rather than proceeding on top of a failure.
+The repository includes three automated PowerShell helper scripts to manage deployments, credentials, and access:
 
-For simply reconnecting to the already-deployed app on a normal day (no redeploy needed),
-`open-deployed-app.ps1`, also in the repo root, wraps just the authenticated proxy step:
-```powershell
-.\open-deployed-app.ps1
-```
-This is the one real limitation of today's `run.invoker`-based access model, worth remembering
-until IAP (see `docs/IAP_Setup_Plan.md`) replaces it: there is no way to just open a URL directly
-in a browser yet, this proxy step is required every time.
+1. **`deploy-and-verify.ps1`**: Packages the complete build, redeploy, and post-deployment verification sequence into a single command: pushes pending commits, confirms `env-vars.yaml` exists, builds the container image via Cloud Build, deploys to Cloud Run with Secret Manager secret bindings, reports active `run.invoker` grants, and launches the authenticated proxy with on-screen verification prompts.
+   ```powershell
+   .\deploy-and-verify.ps1
+   ```
+   It stops immediately if any build or deployment step fails, preventing execution against broken releases.
+
+2. **`rotate-anthropic-api-key.ps1`**: Automates secret rotation in Google Secret Manager without manual console edits. It reads the new API key, adds a new secret version to `anthropic-api-key`, and triggers a rolling Cloud Run service update so running containers adopt the new credential.
+   ```powershell
+   .\rotate-anthropic-api-key.ps1 -ApiKey "sk-ant-api..."
+   ```
+
+3. **`open-deployed-app.ps1`**: For reconnecting to the deployed app under IAM authentication without redeploying:
+   ```powershell
+   .\open-deployed-app.ps1
+   ```
+   *Note*: When accessing via IAP (`startup-kit.toptal.tech`), users navigate directly to the URL in their browser without running proxy scripts.
 
 ---
 

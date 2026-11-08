@@ -119,3 +119,24 @@ The application enforces role-appropriate security and diagnostic boundaries acr
 - **Diagnostic Trace Download Gating (`ADMIN_PASSPHRASE`, `HTL-86`)**: On Fact Review, diagnostic per-deck trace JSON files (`.trace.json`, `_trace.json`, `_Deck_Trace_Manifest.json`) are completely absent when locked, and become available for download only when the Fact Review admin gate is unlocked.
 - **Manage Runs Lifecycle Dashboard (`ADMIN_PASSPHRASE`, `HTL-75`, `HTL-81`, `HTL-82`, `HTL-83`)**: Provides administrative status filtering, run archive/unarchive toggles, and bulk run purge capabilities.
 - **Collapsed Fact Review Ergonomics (`HTL-53`)**: All 14 Fact Review expandable category containers default to collapsed (`expanded=False`), allowing reviewers to focus on targeted validation without excessive scrolling.
+
+---
+
+## 10. Anti-Contamination Safeguards & Baseline Factory (`HTL-69`)
+
+To prevent test pollution, false-positive alarms from partial fixture cloning, and static template residue leakage in production artifacts:
+
+### Synthetic Baseline Factory (`tests/factories/baseline_factory.py`)
+- **`create_test_baseline(**overrides)`**: Constructs completely clean, synthetic `StartupKitBaseline` instances from scratch with neutral defaults (`project_name="Test Alpha Modernization"`, `client_name="Acme Global Industries"`).
+- **Isolated Register Construction**: Optional registers (`interim_checkpoints`, `backlog_seed`, `decisions`, `contract_ambiguities`) default to genuinely empty lists rather than inheriting legacy data from recorded fixture baselines.
+- **Elimination of Fixture Cloning**: Replaces legacy patterns that cloned client fixtures (e.g. `load_baseline("arc_genomics")`) and partially mutated top-level strings, which historically caused un-overwritten milestones or RAID items to leak across client test boundaries (`HTL-63`).
+
+### Multi-Format Contamination Scanner (`tests/contamination.py`)
+- **`assert_no_cross_client_contamination(artifact_path, client_name, forbidden_keywords, include_template_keywords=True, allowed_terms=None)`**: Reusable artifact auditor performing deep recursive text extraction across generated `.pptx`, `.xlsx`, and `.docx` files.
+- **Format-Specific Extraction**:
+  - `.pptx`: Recursively scans all slide shapes, text frames, paragraphs, runs, table cells, and speaker notes (`slide.notes_slide.notes_text_frame`).
+  - `.xlsx`: Scans all worksheets, defined names, and non-empty data cells.
+  - `.docx`: Scans all body paragraphs, document tables, headers, and footers.
+- **Dual-Layer Contamination Keyword Auditing**:
+  1. *Dynamic Peer-Client Isolation*: Scans for caller-provided identifying terms (e.g., asserting a PGE artifact contains zero ARC Genomics or Syngenta keywords).
+  2. *Static Template Invariant Protection (`GLOBAL_TEMPLATE_CONTAMINATION_KEYWORDS`)*: Scans automatically for historical placeholder terms (e.g., `Rimage`, `EnterpriseOne`, `JD Edwards`, `OCI landing zone`, `DELIVERY GOVERNANCE OPERATING LAYER`) to prevent background layout shapes from leaking into client-facing deliverables (`HTL-100`).
