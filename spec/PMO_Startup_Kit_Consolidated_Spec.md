@@ -1,6 +1,6 @@
 # PMO Startup Kit Generator: Consolidated Requirements Spec
 
-Revision 245 · October 21, 2026
+Revision 246 · October 21, 2026
 
 ## 0. Document control
 
@@ -646,18 +646,13 @@ These rules must hold for every fixture and every generated output folder (QA-04
 
 **Set directly by the user; updated when the user says priorities changed.** Items not listed here (the `HTL-01`-`HTL-46` status-audit items, and `HTL-73`'s standing watch-item) are not part of this ordering.
 
-**Done since this list was last set (`HTL-95` through `HTL-103`):** `HTL-95` through `HTL-101`, `HTL-104` through `HTL-107` (see prior revisions for detail), plus `HTL-103` (Slide 16 overflow fixed at extraction time, parenthetical role-name sanitization gap closed, canonical `#0F256E` color migration completed and independently verified across both decks, including a hardcoded `#1D2939` override that was missed on the first pass; deployed to Cloud Run as `v1.9.1`). `HTL-102` was retracted as a reviewer error (not a real regression). Confirmed: there is only one generation action per run (no in-place regeneration) -- a new run (re-ingest) is required for an existing SOW to reflect these fixes.
+**Done since this list was last set (`HTL-90` through `HTL-94`):** `HTL-91` (governance_deck validator, 20 branches, 100%/94% coverage), `HTL-92` (client_deck validator, 6 branches, 100%/100% coverage), `HTL-93` (pmo_workbook milestone phase reconciliation/gate fallback, 17 branches), `HTL-94` (defensive baseline-object-drop logging, 7 branches, 100% on target blocks), `HTL-90` (Manage Runs Streamlit `AppTest` suite covering `HTL-81`/`82`/`83`). Note: `HTL-90`'s investigation also surfaced and corrected a fabricated claim in `HTL-103`'s closure (the earlier "25 Streamlit test failures confirmed via git-stash comparison" was itself invented -- the real suite passes 79/79; see `HTL-103`'s spec entry for the full correction).
 
 **Remaining, in priority order:**
-1. `HTL-91` -- validator error-detection branch coverage gap, `governance_deck`
-2. `HTL-92` -- validator error-detection branch coverage gap, `client_deck`
-3. `HTL-93` -- milestone phase reconciliation/gate fallback coverage gap, `pmo_workbook`
-4. `HTL-94` -- defensive baseline-object-drop logging coverage gap
-5. `HTL-90` -- adopt Streamlit `AppTest` for `review_ui` regression testing
-6. `HTL-69` -- durable anti-contamination test safeguard
-7. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
-8. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
-9. `HTL-51` -- background execution without keeping the browser open
+1. `HTL-69` -- durable anti-contamination test safeguard
+2. `HTL-71` -- Workload Identity Federation instead of a static Anthropic API key
+3. `HTL-58` -- investigate Google Vertex AI (Gemini) as an additional LLM provider
+4. `HTL-51` -- background execution without keeping the browser open
 
 
 ## Appendix A: Workbook column layouts
