@@ -13,8 +13,7 @@ from src.core.models import ProjectStartupCharter, StartupKitBaseline
 from src.generators.client_deck import build_client_deck_model, export_client_deck, write_client_deck
 from src.generators.governance_deck import export_governance_deck
 from src.review_storage.local import LocalReviewStorage
-from tests.deck_bundle import load_baseline
-from tests.test_htl_62 import _build_pge_baseline
+from tests.factories.baseline_factory import create_test_baseline
 
 APP_FILE = str(Path(__file__).parent.parent / "src" / "review_ui" / "app.py")
 
@@ -25,7 +24,10 @@ def test_htl_84_fact_review_warning_renders_for_real_pge_apptest(tmp_path, monke
     storage = LocalReviewStorage(base_dir=storage_dir)
     monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
 
-    pge_baseline = _build_pge_baseline()
+    pge_baseline = create_test_baseline(
+        project_name="Cloud Migration Assessment – Operational Compliance Program (OCP)",
+        client_name="Portland General Electric Company",
+    )
     client_name = pge_baseline.charter.client_name  # "Portland General Electric Company" (33 chars)
     project_name = pge_baseline.project_name        # "Cloud Migration Assessment – Operational Compliance Program (OCP)" (65 chars)
     combined_len = len(client_name.strip()) + len(project_name.strip())
@@ -72,7 +74,10 @@ def test_htl_84_fact_review_warning_dynamic_edit_lifecycle(tmp_path, monkeypatch
     storage = LocalReviewStorage(base_dir=storage_dir)
     monkeypatch.setattr("src.review_storage.get_review_storage", lambda: storage)
 
-    pge_baseline = _build_pge_baseline()
+    pge_baseline = create_test_baseline(
+        project_name="Cloud Migration Assessment – Operational Compliance Program (OCP)",
+        client_name="Portland General Electric Company",
+    )
     run_id = storage.create_run(
         project_name=pge_baseline.project_name,
         baseline=pge_baseline.model_dump(mode="json"),
@@ -108,7 +113,10 @@ def test_htl_84_fact_review_warning_dynamic_edit_lifecycle(tmp_path, monkeypatch
 
 def test_htl_85_client_kickoff_deck_slide1_renders_flat_24pt_for_pge(tmp_path):
     """HTL-85: Client Kickoff Deck Slide 1 renders unconditionally at flat 24pt for real long PGE name, matching Governance Deck."""
-    pge_baseline = _build_pge_baseline()
+    pge_baseline = create_test_baseline(
+        project_name="Cloud Migration Assessment – Operational Compliance Program (OCP)",
+        client_name="Portland General Electric Company",
+    )
 
     # 1. Export Client Kickoff Deck
     client_res = export_client_deck(pge_baseline, tmp_path / "client_deck")
@@ -145,7 +153,10 @@ def test_htl_85_client_kickoff_deck_slide1_renders_flat_24pt_for_pge(tmp_path):
 
 def test_htl_85_client_kickoff_deck_slide1_renders_flat_24pt_for_arc_genomics(tmp_path):
     """HTL-85: Client Kickoff Deck Slide 1 renders at flat 24pt across diverse baselines."""
-    arc_baseline = load_baseline("arc_application_implementation")
+    arc_baseline = create_test_baseline(
+        project_name="Agricultural Analytics & Cloud Migration Platform",
+        client_name="Syngenta Crop Protection, LLC",
+    )
 
     client_res = export_client_deck(arc_baseline, tmp_path / "arc_client_deck")
     prs_client = pptx.Presentation(str(client_res.file_path))

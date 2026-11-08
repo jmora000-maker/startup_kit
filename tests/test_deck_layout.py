@@ -196,10 +196,9 @@ def test_inv32_passes_on_every_content_slide_of_every_fixture(name, tmp_path):
 
 
 def _cover_of(tmp_path, project_name):
-    from tests.deck_bundle import load_baseline
+    from tests.factories.baseline_factory import create_test_baseline
 
-    baseline = load_baseline("mock_sow")
-    baseline.project_name = project_name
+    baseline = create_test_baseline(project_name=project_name)
     prs = build_bundle(tmp_path, baseline=baseline)["prs"]
     slide = prs.slides[0]
     return prs, slide.placeholders[0], slide.placeholders[1]
@@ -252,19 +251,19 @@ def test_cover_title_needing_more_than_the_subtitle_slack_is_a_genuine_failure(t
 
 def test_cover_subtitle_shrinks_to_fit_for_longer_client_name(tmp_path):
     """DECK-21 (5), INV-32: subtitle shrinks down from 23 pt (to min 16 pt) to fit on one line for longer client names."""
-    from tests.deck_bundle import load_baseline
-    baseline = load_baseline("arc_application_implementation")
-    baseline.charter.client_name = "Syngenta Crop Protection, LLC"
+    from tests.factories.baseline_factory import create_test_baseline
+    baseline = create_test_baseline(client_name="Syngenta Crop Protection, LLC")
     prs = build_bundle(tmp_path, baseline=baseline)["prs"]
     assert [str(v) for v in deck_checks.check_inv32(prs)] == []
 
 
 def test_cover_title_two_line_and_subtitle_shrink_compose_correctly(tmp_path):
     """DECK-21 (5), INV-32: 2-line title and shrunk subtitle compose correctly on the cover without overlap or overflow."""
-    from tests.deck_bundle import load_baseline
-    baseline = load_baseline("arc_application_implementation")
-    baseline.project_name = "Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing and Supply Planning"
-    baseline.charter.client_name = "Syngenta Crop Protection, LLC"
+    from tests.factories.baseline_factory import create_test_baseline
+    baseline = create_test_baseline(
+        project_name="Pfizer Global Analytics and Cloud Modernization Programme for Manufacturing and Supply Planning",
+        client_name="Syngenta Crop Protection, LLC",
+    )
     prs = build_bundle(tmp_path, baseline=baseline)["prs"]
     assert [str(v) for v in deck_checks.check_inv32(prs)] == []
 
