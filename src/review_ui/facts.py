@@ -551,6 +551,8 @@ def get_blocking_validation_errors(validation_report: Any) -> List[str]:
 
 def label_for_generated_file(filename: str) -> str:
     """Return a user-friendly label for a generated artifact filename."""
+    if "_Scope_Baseline_" in filename and filename.endswith(".docx"):
+        return "Scope Baseline (.docx)"
     if filename.endswith("_Startup_Readiness_Checklist.docx"):
         return "Startup Readiness Checklist (.docx)"
     if filename.endswith("_Startup_Kit.docx"):
@@ -607,9 +609,10 @@ def generate_approved_run(
             workbook=bool(run.outputs.get("workbook")),
             slides=bool(run.outputs.get("slides")),
             client_deck=bool(run.outputs.get("client_deck")),
+            scope_baseline=bool(run.outputs.get("scope_baseline")),
         )
     elif outputs is None:
-        outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True, client_deck=True)
+        outputs = OutputSelection(kit=True, checklist=True, workbook=True, slides=True, client_deck=True, scope_baseline=True)
 
     result = controller.generate_from_baseline(
         baseline=baseline,
@@ -636,6 +639,10 @@ def generate_approved_run(
             written_paths.append(result.client_deck.file_path)
         if result.client_deck.manifest_path.exists():
             written_paths.append(result.client_deck.manifest_path)
+    if result.scope_baseline is not None and result.scope_baseline.file_path.exists():
+        written_paths.append(result.scope_baseline.file_path)
+    elif result.scope_baseline_path and result.scope_baseline_path.exists():
+        written_paths.append(result.scope_baseline_path)
 
     references = storage.put_generated_files(run_id, written_paths)
     storage.update_status(run_id, "generated", if_state="approved")

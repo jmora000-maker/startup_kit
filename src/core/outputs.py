@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from src.generators.onboarding_deck import OnboardingDeckResult
     from src.generators.governance_deck import GovernanceDeckResult
     from src.generators.client_deck import ClientDeckResult
+    from src.generators.scope_baseline import ScopeBaselineResult
     from src.core.models import StartupKitBaseline, ValidationReport
 
 
@@ -20,6 +21,7 @@ class OutputSelection:
     slides: bool = False
     client_deck: bool = False
     governance_deck: bool = False
+    scope_baseline: bool = False
 
     @classmethod
     def from_flags(
@@ -32,16 +34,17 @@ class OutputSelection:
         slides: bool = False,
         client_deck: bool = False,
         governance_deck: bool = False,
+        scope_baseline: bool = False,
     ) -> "OutputSelection":
         has_slides = slides or governance_deck
         if all_:
-            return cls(kit=True, checklist=True, workbook=True, slides=True, client_deck=True, governance_deck=True)
+            return cls(kit=True, checklist=True, workbook=True, slides=True, client_deck=True, governance_deck=True, scope_baseline=True)
         if has_slides:
             # DECK-02: --slides implies writing Kit and Workbook as deck sources
-            return cls(kit=True, checklist=checklist, workbook=True, slides=True, client_deck=client_deck, governance_deck=True)
-        if not (kit or checklist or export_tools or has_slides or client_deck):
+            return cls(kit=True, checklist=checklist, workbook=True, slides=True, client_deck=client_deck, governance_deck=True, scope_baseline=scope_baseline)
+        if not (kit or checklist or export_tools or has_slides or client_deck or scope_baseline):
             return cls()  # default: workbook only
-        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=has_slides, client_deck=client_deck, governance_deck=has_slides)
+        return cls(kit=kit, checklist=checklist, workbook=export_tools, slides=has_slides, client_deck=client_deck, governance_deck=has_slides, scope_baseline=scope_baseline)
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,8 @@ class RunResult:
     governance_deck_path: Optional[Path] = None
     client_deck: Optional["ClientDeckResult"] = None
     client_deck_path: Optional[Path] = None
+    scope_baseline: Optional["ScopeBaselineResult"] = None
+    scope_baseline_path: Optional[Path] = None
     readiness_score: float = 0.0
     # HTL-24: structured fields so both front ends can render their own presentation from the
     # same underlying data, instead of only being able to read it off stdout/logs. The CLI's

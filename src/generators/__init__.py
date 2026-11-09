@@ -13,6 +13,7 @@ from src.generators.checklist import G01ChecklistRenderer
 from src.generators.docx_generator import DocxGenerator
 from src.generators.formatting import sanitize_filename
 from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
+from src.generators.scope_baseline import export_scope_baseline, ScopeBaselineResult
 
 __all__ = [
     "add_section_heading",
@@ -27,4 +28,6 @@ __all__ = [
     "sanitize_filename",
     "export_pmo_workbook",
     "PMOWorkbookResult",
+    "export_scope_baseline",
+    "ScopeBaselineResult",
 ]

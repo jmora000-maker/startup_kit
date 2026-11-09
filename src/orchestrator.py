@@ -43,6 +43,7 @@ from src.generators.pmo_workbook import export_pmo_workbook, PMOWorkbookResult
 from src.generators.onboarding_deck import export_onboarding_deck, OnboardingDeckResult
 from src.generators.governance_deck import export_governance_deck, GovernanceDeckResult
 from src.generators.client_deck import export_client_deck, ClientDeckResult
+from src.generators.scope_baseline import export_scope_baseline, ScopeBaselineResult
 from src.scoring.cli_reporter import (
     format_readiness_cli_summary,
     format_workbook_export_summary,
@@ -541,6 +542,7 @@ class StartupKitController:
                 "workbook": outputs.workbook,
                 "slides": outputs.slides,
                 "client_deck": outputs.client_deck,
+                "scope_baseline": outputs.scope_baseline,
             } if outputs else None
             run_id = storage.create_run(
                 project_name=project_name,
@@ -596,6 +598,7 @@ class StartupKitController:
         wb_result: Optional[PMOWorkbookResult] = None
         deck_result: Optional[OnboardingDeckResult] = None
         client_deck_result: Optional[ClientDeckResult] = None
+        scope_baseline_result: Optional[ScopeBaselineResult] = None
         written_paths: List[Path] = []
 
         if outputs.slides and not outputs.checklist:
@@ -634,6 +637,12 @@ class StartupKitController:
             written_paths.append(client_deck_result.file_path)
             written_paths.append(client_deck_result.manifest_path)
 
+        if outputs.scope_baseline:
+            progress("generating", "Scope Baseline")
+            logger.info("Exporting Scope Baseline document to %s", out_path)
+            scope_baseline_result = export_scope_baseline(baseline, out_path, llm_client=self.llm_client)
+            written_paths.append(scope_baseline_result.file_path)
+
         # 5. Build (but do not print) the CLI telemetry summary (HTL-16 Group 3: the
         # orchestrator itself prints nothing; main.py takes this returned text and prints it).
         summary_parts = [format_readiness_cli_summary(baseline, written_paths if written_paths else [out_path])]
@@ -660,6 +669,8 @@ class StartupKitController:
             governance_deck_path=deck_result.file_path if (deck_result and isinstance(deck_result, GovernanceDeckResult)) else None,
             client_deck=client_deck_result,
             client_deck_path=client_deck_result.file_path if client_deck_result else None,
+            scope_baseline=scope_baseline_result,
+            scope_baseline_path=scope_baseline_result.file_path if scope_baseline_result else None,
             readiness_score=baseline.readiness_score,
             baseline=baseline,
             validation_report=getattr(baseline, "validation_report", None),
@@ -872,6 +883,13 @@ class StartupKitController:
             written_paths.append(client_deck_result.file_path)
             written_paths.append(client_deck_result.manifest_path)
 
+        scope_baseline_result: Optional[ScopeBaselineResult] = None
+        if outputs.scope_baseline:
+            progress("generating", "Scope Baseline")
+            logger.info("Exporting Scope Baseline document to %s", export_dir)
+            scope_baseline_result = export_scope_baseline(baseline, export_dir, llm_client=self.llm_client)
+            written_paths.append(scope_baseline_result.file_path)
+
         if output_file is not None and not (outputs.kit or outputs.checklist):
             logger.warning("--output-file was provided but neither the Startup Kit nor the Readiness Checklist was selected; it only sets the destination folder for the workbook and deck.")
 
@@ -901,6 +919,8 @@ class StartupKitController:
             governance_deck_path=deck_result.file_path if (deck_result and isinstance(deck_result, GovernanceDeckResult)) else None,
             client_deck=client_deck_result,
             client_deck_path=client_deck_result.file_path if client_deck_result else None,
+            scope_baseline=scope_baseline_result,
+            scope_baseline_path=scope_baseline_result.file_path if scope_baseline_result else None,
             readiness_score=baseline.readiness_score,
             baseline=baseline,
             validation_report=getattr(baseline, "validation_report", None),

@@ -74,16 +74,17 @@ def validate_output_selection(
     workbook: Optional[bool] = None,
     slides: Optional[bool] = None,
     client_deck: Optional[bool] = None,
+    scope_baseline: Optional[bool] = None,
 ) -> Optional[str]:
     """HTL-47 / OUT-14: validates that at least one output deliverable is selected. Returns an error message, or None if valid."""
     if outputs is not None:
-        selected = bool(outputs.kit or outputs.workbook or outputs.slides or outputs.client_deck)
-    elif kit is not None or workbook is not None or slides is not None or client_deck is not None:
-        selected = bool(kit or workbook or slides or client_deck)
+        selected = bool(outputs.kit or outputs.workbook or outputs.slides or outputs.client_deck or outputs.scope_baseline)
+    elif kit is not None or workbook is not None or slides is not None or client_deck is not None or scope_baseline is not None:
+        selected = bool(kit or workbook or slides or client_deck or scope_baseline)
     else:
         selected = True
     if not selected:
-        return "Select at least one output deliverable (Startup Kit, Delivery Workbook, or PS Governance Kickoff) before generating."
+        return "Select at least one output deliverable (Startup Kit, Delivery Workbook, Scope Baseline, or PS Governance Kickoff) before generating."
     return None
 
 
@@ -96,6 +97,7 @@ def validate_generate_inputs(
     workbook: Optional[bool] = None,
     slides: Optional[bool] = None,
     client_deck: Optional[bool] = None,
+    scope_baseline: Optional[bool] = None,
 ) -> Optional[str]:
     """Pure validation for the "Generate" form. Requires at least one SOW file."""
     if not sow_file_names:
@@ -103,7 +105,7 @@ def validate_generate_inputs(
     date_err = validate_start_date_text(start_date_text)
     if date_err:
         return date_err
-    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides, client_deck=client_deck)
+    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides, client_deck=client_deck, scope_baseline=scope_baseline)
 
 
 def validate_reingest_inputs(
@@ -114,6 +116,7 @@ def validate_reingest_inputs(
     workbook: Optional[bool] = None,
     slides: Optional[bool] = None,
     client_deck: Optional[bool] = None,
+    scope_baseline: Optional[bool] = None,
 ) -> Optional[str]:
     """Pure validation for the "Re-ingest" form. Returns an error message, or None if valid."""
     if not uploaded_file_name:
@@ -121,7 +124,7 @@ def validate_reingest_inputs(
     date_err = validate_start_date_text(start_date_text)
     if date_err:
         return date_err
-    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides, client_deck=client_deck)
+    return validate_output_selection(outputs=outputs, kit=kit, workbook=workbook, slides=slides, client_deck=client_deck, scope_baseline=scope_baseline)
 
 
 def resolve_app_role(field_value: str) -> Optional[str]:
@@ -163,6 +166,10 @@ def collect_download_targets(run_result: RunResult) -> List[DownloadTarget]:
         targets.append(DownloadTarget("Client Deck Trace Manifest (.json)", run_result.client_deck.manifest_path))
     elif run_result.client_deck_path:
         targets.append(DownloadTarget("Client Kickoff Deck (.pptx)", run_result.client_deck_path))
+    if run_result.scope_baseline is not None:
+        targets.append(DownloadTarget("Scope Baseline (.docx)", run_result.scope_baseline.file_path))
+    elif run_result.scope_baseline_path:
+        targets.append(DownloadTarget("Scope Baseline (.docx)", run_result.scope_baseline_path))
     return targets
 
 
@@ -561,8 +568,16 @@ def _output_selection_from_checkboxes(
     workbook: bool = False,
     slides: bool = False,
     client_deck: bool = False,
+    scope_baseline: bool = False,
 ) -> OutputSelection:
-    return OutputSelection(kit=kit, checklist=False, workbook=workbook, slides=slides, client_deck=client_deck)
+    return OutputSelection(
+        kit=kit,
+        checklist=False,
+        workbook=workbook,
+        slides=slides,
+        client_deck=client_deck,
+        scope_baseline=scope_baseline,
+    )
 
 
 # Item 3 / HTL-31: both the Generate and Re-ingest tabs used to wrap all their fields in st.form,
@@ -802,7 +817,7 @@ def render() -> None:
             else:
                 provider, model, mock, cache_mode = "", "", False, "off"
             st.caption("Outputs to produce")
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             client_deck = _persisted_checkbox(
                 GENERATE_STORE, "gen_out_client_deck", "Client Kickoff Deck", False, widget_fn=col1.checkbox
             )
@@ -812,10 +827,13 @@ def render() -> None:
             workbook = _persisted_checkbox(
                 GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col3.checkbox
             )
+            scope_baseline = _persisted_checkbox(
+                GENERATE_STORE, "gen_out_scope_baseline", "Scope Baseline", False, widget_fn=col4.checkbox
+            )
             kit = False
             if admin_unlocked_gen:
                 kit = _persisted_checkbox(
-                    GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col4.checkbox
+                    GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col5.checkbox
                 )
             # HTL-29: "Review before finalizing" toggle, checked by default.
             review_before_finalizing = _persisted_checkbox(
@@ -830,7 +848,7 @@ def render() -> None:
                 sow_names = [f.name for f in (effective_sow_files or [])]
                 supp_names = [f.name for f in (effective_supporting_files or [])]
                 outputs = _output_selection_from_checkboxes(
-                    kit=kit, workbook=workbook, slides=slides, client_deck=client_deck
+                    kit=kit, workbook=workbook, slides=slides, client_deck=client_deck, scope_baseline=scope_baseline
                 )
                 error = validate_generate_inputs(
                     sow_file_names=sow_names,
@@ -848,7 +866,7 @@ def render() -> None:
                 sow_names = [f.name for f in (effective_sow_files or [])]
                 supp_names = [f.name for f in (effective_supporting_files or [])]
                 outputs = _output_selection_from_checkboxes(
-                    kit=kit, workbook=workbook, slides=slides, client_deck=client_deck
+                    kit=kit, workbook=workbook, slides=slides, client_deck=client_deck, scope_baseline=scope_baseline
                 )
                 error = validate_generate_inputs(
                     sow_file_names=sow_names,
@@ -976,7 +994,7 @@ def render() -> None:
             else:
                 provider_r, model_r, mock_r, cache_mode_r = "", "", False, "off"
             st.caption("Outputs to regenerate")
-            rcol1, rcol2, rcol3, rcol4 = st.columns(4)
+            rcol1, rcol2, rcol3, rcol4, rcol5 = st.columns(5)
             client_deck_r = _persisted_checkbox(
                 REINGEST_STORE, "reingest_out_client_deck", "Client Kickoff Deck", False, widget_fn=rcol1.checkbox
             )
@@ -986,10 +1004,13 @@ def render() -> None:
             workbook_r = _persisted_checkbox(
                 REINGEST_STORE, "reingest_out_workbook", "Delivery Workbook", False, widget_fn=rcol3.checkbox
             )
+            scope_baseline_r = _persisted_checkbox(
+                REINGEST_STORE, "reingest_out_scope_baseline", "Scope Baseline", False, widget_fn=rcol4.checkbox
+            )
             kit_r = False
             if admin_unlocked_r:
                 kit_r = _persisted_checkbox(
-                    REINGEST_STORE, "reingest_out_kit", "Startup Kit", False, widget_fn=rcol4.checkbox
+                    REINGEST_STORE, "reingest_out_kit", "Startup Kit", False, widget_fn=rcol5.checkbox
                 )
             is_reingest_running = st.session_state.get("reingest_is_running", False)
             has_reingest_result = st.session_state.get("reingest_run_result") is not None
@@ -998,7 +1019,7 @@ def render() -> None:
 
             if submitted_r:
                 outputs_r = _output_selection_from_checkboxes(
-                    kit=kit_r, workbook=workbook_r, slides=slides_r, client_deck=client_deck_r
+                    kit=kit_r, workbook=workbook_r, slides=slides_r, client_deck=client_deck_r, scope_baseline=scope_baseline_r
                 )
                 error = validate_reingest_inputs(
                     effective_kit_file.name if effective_kit_file else None,
@@ -1013,7 +1034,7 @@ def render() -> None:
 
             if is_reingest_running:
                 outputs_r = _output_selection_from_checkboxes(
-                    kit=kit_r, workbook=workbook_r, slides=slides_r, client_deck=client_deck_r
+                    kit=kit_r, workbook=workbook_r, slides=slides_r, client_deck=client_deck_r, scope_baseline=scope_baseline_r
                 )
                 error = validate_reingest_inputs(
                     effective_kit_file.name if effective_kit_file else None,
