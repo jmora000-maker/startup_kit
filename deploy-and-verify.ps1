@@ -36,7 +36,7 @@ gcloud run deploy startup-kit-app `
     --set-secrets ADMIN_PASSPHRASE=admin-passphrase:latest `
     --set-secrets GENERATION_PASSPHRASE=generation-passphrase:latest `
     --timeout=1800 `
-    --min-instances=1 `
+    --min-instances=2 `
     --no-allow-unauthenticated
 if ($LASTEXITCODE -ne 0) { throw "gcloud run deploy failed -- see the error above before continuing." }
 
