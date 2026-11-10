@@ -84,7 +84,7 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
     excl_r3 = (
         "Uncontracted features, ancillary documentation not specified in deliverable acceptance criteria, and post-delivery custom enhancements without an approved Change Order."
         if is_fixed else
-        "Backlog requests exceeding approved sprint capacity or unapproved work packages outside active work authorizations."
+        "Requests exceeding approved weekly capacity allocations or unapproved work packages outside active work authorizations."
     )
 
     # Row 4: Delivery Model & Service Boundaries (Neutral framing)
@@ -100,8 +100,8 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         )
     else:
         auth_r4 = (
-            f"Delivery structured under {delivery_model_str}. Team effort is governed by sprint backlog prioritization and authorized "
-            "weekly capacity allocations. Services encompass hands-on technical build, sprint-directed advisory, and delivery coordination."
+            f"Delivery structured under {delivery_model_str}. Team effort is governed by agreed work package prioritization and authorized "
+            "weekly capacity allocations. Services encompass contracted technical execution, structured advisory/assessment, and delivery coordination."
         )
         excl_r4 = (
             "24/7 on-call production operations, unapproved staffing additions, off-hours support outside authorized burn envelopes, "
@@ -138,14 +138,14 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
             "Unapproved work-at-risk, verbal scope changes, informal requirement additions, or work performed without a countersigned Change Order."
         )
     else:
-        approved_rule = guardrails.approved_work_rule if guardrails else "Only sprint-prioritized backlog items within authorized weekly effort caps are authorized for execution."
+        approved_rule = guardrails.approved_work_rule if guardrails else "Only authorized work packages and prioritized tasks within agreed weekly effort caps are authorized for execution."
         change_trigger = guardrails.change_control_trigger if guardrails else "Burn rate exceeding weekly cap by >10% or scope addition requiring NTE increase."
         auth_r6 = (
             f"Governance Tier: {gov_tier} (Time & Materials). {approved_rule} Billing is based on approved timesheets and authorized effort burn. "
             f"Change trigger: {change_trigger}."
         )
         excl_r6 = (
-            "Effort burn exceeding contractual NTE ceiling, work on unauthorized backlog items, or unbudgeted staffing additions without written approval."
+            "Effort burn exceeding contractual NTE ceiling, work on unauthorized tasks or out-of-scope work packages, or unbudgeted staffing additions without written approval."
         )
 
     return [
@@ -191,7 +191,7 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
             ChangeDecisionMatrixRow(
                 classification="Clarification",
                 trigger_condition="Minor requirement interpretation or design refinement within an authorized deliverable that does not affect cost, acceptance criteria, or milestone dates.",
-                governance_action="Logged in Sprint / Project Decision Log by Talent PM and Delivery Manager; aligned with client lead in weekly cadence.",
+                governance_action="Logged in Project Decision Log by Talent PM and Delivery Manager; aligned with client lead in weekly cadence.",
                 commercial_impact="Zero commercial impact. Delivered within existing fixed-fee milestone price.",
             ),
             ChangeDecisionMatrixRow(
@@ -217,27 +217,27 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
         return [
             ChangeDecisionMatrixRow(
                 classification="Clarification",
-                trigger_condition="Refinement of story acceptance criteria or implementation detail within the current sprint backlog that fits within standard weekly capacity.",
-                governance_action="Talent PM updates backlog user story; aligned during sprint planning or standup without formal escalation.",
+                trigger_condition="Interpretation of requirements, methodology refinement, or operational detailing within authorized work packages that fits within standard weekly capacity.",
+                governance_action="Talent PM / Delivery Lead clarifies task specifications; aligned with Client Lead in regular delivery cadence without formal escalation.",
                 commercial_impact="Zero commercial impact. Consumes standard authorized weekly hourly capacity.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Reprioritization",
-                trigger_condition="Client directs shifting team focus to higher-priority backlog items or deferring existing user stories within the authorized sprint window.",
-                governance_action="Talent PM reorders sprint backlog with Client Product Owner; Delivery Manager confirms burn rate and capacity alignment.",
+                trigger_condition="Client directs shifting team focus to higher-priority work packages or deferring scheduled tasks within the authorized delivery cycle.",
+                governance_action="Talent PM resequences task priorities with Client Lead; Delivery Manager confirms burn rate and capacity alignment.",
                 commercial_impact="Budget neutral within authorized capacity envelope; consumes standard weekly hours without NTE variance.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Expansion",
-                trigger_condition="Client requests additional work streams, expanded architecture scope, or staffing additions that will exhaust the current NTE budget ceiling.",
+                trigger_condition="Client requests additional work streams, expanded project scope, or staffing additions that will exhaust the current NTE budget ceiling.",
                 governance_action="Delivery Manager forecasts budget impact; PMO Lead initiates Work Authorization / NTE ceiling increase request for client executive approval.",
                 commercial_impact="Material commercial impact. Requires authorized increase to total NTE fee ceiling or extended billing authorization.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Dependency Impact",
-                trigger_condition="Client dependency or access blocker impedes active sprint development tasks, risking inefficient team burn.",
-                governance_action="Talent PM pivots team to unblocked backlog items; Delivery Manager issues blocker escalation. If idle, team stand-down is triggered.",
-                commercial_impact="Hours burn redirected to secondary backlog tasks to protect investment; schedule timeline adjusted without unapproved budget burn.",
+                trigger_condition="Client dependency, data provision delay, or access blocker impedes active delivery tasks, risking inefficient team burn.",
+                governance_action="Talent PM pivots team to unblocked work packages; Delivery Manager issues blocker escalation. If idle, team stand-down or capacity throttle is triggered.",
+                commercial_impact="Hours burn redirected to secondary productive tasks to protect investment; schedule timeline adjusted without unapproved budget burn.",
             ),
         ]
 
@@ -283,19 +283,19 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
         return [
             DecisionRuleControlRow(
                 control_dimension="Deliverable Boundary",
-                governing_rule="Work is guided by prioritized sprint backlogs aligned with overall delivery objectives.",
-                boundary_violation_trigger="Direction to execute tasks that do not align with SOW objectives or lack Product Owner acceptance criteria.",
-                commercial_control_route="Talent PM pauses task refinement until Product Owner clarifies acceptance criteria and priority.",
+                governing_rule="Work is guided by prioritized deliverable plans and authorized work packages aligned with overall SOW objectives.",
+                boundary_violation_trigger="Direction to execute tasks that do not align with SOW objectives or lack documented client acceptance criteria.",
+                commercial_control_route="Talent PM pauses task execution until Client Lead clarifies criteria and priority.",
             ),
             DecisionRuleControlRow(
                 control_dimension="Domain & Application Scope",
                 governing_rule="Activities focus on contracted target architectures, source repositories, and deployment environments.",
-                boundary_violation_trigger="Introduction of complex out-of-scope technology stacks that dilute sprint velocity.",
-                commercial_control_route="Delivery Manager assesses skill and velocity impact; aligns with client on backlog trade-offs.",
+                boundary_violation_trigger="Introduction of complex out-of-scope technology stacks that dilute delivery capacity or derail scheduled milestones.",
+                commercial_control_route="Delivery Manager assesses skill and capacity impact; aligns with client on delivery trade-offs.",
             ),
             DecisionRuleControlRow(
                 control_dimension="Service Depth & Delivery Boundaries",
-                governing_rule="Team provides hands-on technical development and sprint-level architectural advisory within weekly capacity.",
+                governing_rule="Team provides technical execution, domain assessment, and delivery advisory within authorized weekly capacity.",
                 boundary_violation_trigger="Requests for 24/7 incident management or unbudgeted off-hours standby.",
                 commercial_control_route="Delivery Manager enforces standard working hours policy and proposes formal on-call rate structure if required.",
             ),
@@ -307,9 +307,9 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
             ),
             DecisionRuleControlRow(
                 control_dimension="Core Dependency Health",
-                governing_rule="Team requires timely unblocking and environment availability to maintain productive sprint velocity.",
-                boundary_violation_trigger="External blocker halts active sprint stories with no immediate secondary tasks available.",
-                commercial_control_route="Delivery Manager triggers sprint replanning; if blocker exceeds 3 days, stand-down or capacity reduction is enacted to protect client budget.",
+                governing_rule="Team requires timely unblocking and environment availability to maintain productive delivery progress and burn efficiency.",
+                boundary_violation_trigger="External blocker halts active delivery tasks with no immediate secondary work packages available.",
+                commercial_control_route="Delivery Manager triggers delivery plan resequencing; if blocker exceeds 3 days, stand-down or capacity reduction is enacted to protect client budget.",
             ),
         ]
 
@@ -349,27 +349,27 @@ def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant
         return [
             ClassificationGuideRow(
                 classification="Clarification",
-                operational_characteristics="Refining sprint user story descriptions, updating acceptance test cases, or clarifying technical implementation choices.",
-                budget_milestone_impact="Consumes planned sprint hours; zero variance to weekly burn rate.",
-                approval_pathway="Talent PM & Client Product Owner alignment in sprint ceremonies.",
+                operational_characteristics="Detailing deliverable activity requirements, clarifying assessment criteria, updating evaluation cases, or refining technical execution approach.",
+                budget_milestone_impact="Consumes planned weekly hours; zero variance to authorized burn rate.",
+                approval_pathway="Talent PM & Client Lead alignment in regular delivery syncs; logged in Project Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Reprioritization",
-                operational_characteristics="Reordering sprint backlog priorities, moving stories between sprints, or deferring low-priority tasks in favor of emerging priorities.",
+                operational_characteristics="Reordering work package priorities, resequencing deliverable tasks, or deferring non-critical activities in favor of emerging priorities.",
                 budget_milestone_impact="Zero budget impact; total weekly effort remains within standard capacity envelope.",
-                approval_pathway="Client Product Owner backlog prioritization; Delivery Manager capacity sign-off.",
+                approval_pathway="Client Lead priority directive; Delivery Manager capacity and burn alignment.",
             ),
             ClassificationGuideRow(
                 classification="Expansion",
-                operational_characteristics="Introducing substantial new epics, adding unbudgeted roles/talent, or increasing delivery scope beyond the total authorized NTE hours.",
+                operational_characteristics="Introducing substantial new work streams, adding unbudgeted roles/talent, or increasing delivery scope beyond the total authorized NTE hours.",
                 budget_milestone_impact="Requires increase to contractual NTE budget ceiling or additional billing authorization.",
                 approval_pathway="PMO Lead & Client Executive execute formal SOW Amendment / NTE Increase.",
             ),
             ClassificationGuideRow(
                 classification="Dependency Impact",
-                operational_characteristics="Third-party system outages, blocked access to client environments, or absence of required client SMEs during sprint cycles.",
+                operational_characteristics="Third-party platform outages, delayed client data/environment access, or unavailability of required client SMEs during delivery cycles.",
                 budget_milestone_impact="Team pivots to secondary tasks; if unresolvable, capacity throttled to avoid wasteful burn.",
-                approval_pathway="Delivery Manager escalation; PMO Lead & Client Lead agree on sprint adjustment or standby protocol.",
+                approval_pathway="Delivery Manager escalation; PMO Lead & Client Lead agree on schedule adjustment or standby protocol.",
             ),
         ]
 
@@ -390,7 +390,7 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
                 classification="Clarification",
                 scenario_description=f"During execution of '{deliv_name}', the client requests adjusting the data validation logic and schema error formatting to align with internal data naming standards.",
                 analysis="The request refines internal formatting within the agreed deliverable boundary without adding new functional workflows or altering milestone delivery dates.",
-                resolution_and_governance="Classified as Clarification. Talent PM approves refinement within active sprint cycle; logged in Decision Log with zero impact on milestone price or delivery schedule.",
+                resolution_and_governance="Classified as Clarification. Talent PM approves refinement within active delivery cycle; logged in Decision Log with zero impact on milestone price or delivery schedule.",
             ),
             PracticalDecisionExample(
                 classification="Reprioritization",
@@ -415,15 +415,15 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
         return [
             PracticalDecisionExample(
                 classification="Clarification",
-                scenario_description=f"During sprint refinement for '{deliv_name}', the client product owner clarifies the acceptance criteria for error notification handling.",
-                analysis="Clarifies implementation details for an authorized user story without expanding sprint scope or exceeding weekly capacity.",
-                resolution_and_governance="Classified as Clarification. Talent PM updates story acceptance criteria in the backlog; executed within standard weekly sprint capacity.",
+                scenario_description=f"During delivery review for '{deliv_name}', the client lead clarifies the acceptance criteria for error notification handling.",
+                analysis="Clarifies implementation details for an authorized task without expanding project scope or exceeding weekly capacity.",
+                resolution_and_governance="Classified as Clarification. Talent PM updates task acceptance criteria in the deliverable plan; executed within standard weekly capacity.",
             ),
             PracticalDecisionExample(
                 classification="Reprioritization",
-                scenario_description=f"The client requests deferring two lower-priority integration tasks in '{deliv_name}' to expedite a high-priority data processing workflow in the upcoming sprint.",
-                analysis="Total estimated story points and weekly team capacity remain balanced, shifting focus without increasing overall effort burn.",
-                resolution_and_governance="Classified as Reprioritization. Client Product Owner reorders the backlog; Delivery Manager confirms velocity and burn rate stay within weekly hours cap.",
+                scenario_description=f"The client requests deferring two lower-priority integration tasks in '{deliv_name}' to expedite a high-priority data processing workflow in the upcoming delivery cycle.",
+                analysis="Total estimated effort and weekly team capacity remain balanced, shifting focus without increasing overall effort burn.",
+                resolution_and_governance="Classified as Reprioritization. Client Lead reorders work priorities; Delivery Manager confirms burn rate stays within weekly hours cap.",
             ),
             PracticalDecisionExample(
                 classification="Expansion",
@@ -434,7 +434,7 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
             PracticalDecisionExample(
                 classification="Dependency Impact",
                 scenario_description=f"Development on '{deliv_name}' is impeded due to a 5-day outage and delayed access provisioning for '{dep_desc}'.",
-                analysis="The access blocker prevents engineering progress on primary sprint stories, creating a risk of inefficient hours burn.",
-                resolution_and_governance="Classified as Dependency Impact. Talent PM pivots the team to secondary backlog tasks; Delivery Manager escalates to Client Sponsor to resolve access without wasteful burn.",
+                analysis="The access blocker prevents engineering progress on primary delivery tasks, creating a risk of inefficient hours burn.",
+                resolution_and_governance="Classified as Dependency Impact. Talent PM pivots the team to secondary work packages; Delivery Manager escalates to Client Sponsor to resolve access without wasteful burn.",
             ),
         ]

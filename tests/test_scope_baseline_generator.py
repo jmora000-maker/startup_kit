@@ -246,3 +246,42 @@ def test_ui_and_outputs_integration():
     # 4. label_for_generated_file
     assert label_for_generated_file("Syngenta_Scope_Baseline_Fixed_Bid.docx") == "Scope Baseline (.docx)"
     assert label_for_generated_file("Syngenta_Scope_Baseline_Time_and_Materials.docx") == "Scope Baseline (.docx)"
+
+
+def test_methodology_neutrality_no_agile_jargon_in_scope_baseline():
+    """Verify that neither Fixed Bid nor T&M Scope Baseline text contains hardcoded Agile/Scrum jargon."""
+    import re
+
+    banned_agile_patterns = [
+        r"\bsprint(?:s)?\b",
+        r"\bbacklog(?:s)?\b",
+        r"\bproduct owner\b",
+        r"\buser stor(?:y|ies)\b",
+        r"\bstandup(?:s)?\b",
+        r"\bceremon(?:y|ies)\b",
+        r"\bstory points\b",
+        r"\bepics?\b",
+    ]
+
+    for variant in ("Fixed Bid", "Time and Materials"):
+        baseline = _create_sample_baseline(variant)
+        doc_model = build_scope_baseline_document(baseline)
+
+        # Collect all generated text across all 5 tables
+        all_text_fragments = []
+        for r in doc_model.table1_summary:
+            all_text_fragments.extend([r.dimension, r.authorized_work, r.excluded_scope])
+        for r in doc_model.table2_change_matrix:
+            all_text_fragments.extend([r.classification, r.trigger_condition, r.governance_action, r.commercial_impact])
+        for r in doc_model.table3_decision_rules:
+            all_text_fragments.extend([r.control_dimension, r.governing_rule, r.boundary_violation_trigger, r.commercial_control_route])
+        for r in doc_model.table4_classification_guide:
+            all_text_fragments.extend([r.classification, r.operational_characteristics, r.budget_milestone_impact, r.approval_pathway])
+        for e in doc_model.table5_examples:
+            all_text_fragments.extend([e.classification, e.scenario_description, e.analysis, e.resolution_and_governance])
+
+        full_doc_text = " ".join(all_text_fragments)
+
+        for pat in banned_agile_patterns:
+            matches = re.findall(pat, full_doc_text, flags=re.IGNORECASE)
+            assert not matches, f"Found forbidden Agile/Scrum term matching '{pat}' in {variant} Scope Baseline: {matches}"

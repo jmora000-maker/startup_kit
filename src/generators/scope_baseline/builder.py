@@ -45,7 +45,7 @@ RULES:
 2. GROUNDING REQUIREMENT: Scenarios must directly reference the real components, tools, systems, dependencies, and deliverables listed above. Do NOT use generic placeholder text (e.g., 'System X', 'Feature Y').
 3. COMMERCIAL FRAMING CONSISTENCY:
    - If Fixed Bid: Frame resolutions around fixed deliverable acceptance, milestone sign-offs, zero unauthorized budget variance, and formal Change Orders. Never mention hourly caps, timesheet tracking, or NTE burn.
-   - If Time and Materials: Frame resolutions around backlog prioritization, sprint capacity, weekly burn rates, and NTE ceiling governance. Never claim deliverables are fixed-price milestones.
+   - If Time and Materials: Frame resolutions around work package prioritization, authorized weekly capacity, effort burn rates, and NTE ceiling governance. Never claim deliverables are fixed-price milestones.
 4. Each scenario must include:
    - classification: "Clarification" | "Reprioritization" | "Expansion" | "Dependency Impact"
    - scenario_description: Concrete, realistic narrative vignette.
