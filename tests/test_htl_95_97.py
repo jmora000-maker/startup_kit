@@ -45,7 +45,7 @@ def test_htl_95_slide5_and_slide13_font_size_10pt(tmp_path):
 
     s5_shapes = [s for s in slide5.shapes if s.has_text_frame]
     card1 = next(s for s in s5_shapes if s.shape_id == 176 or "Assess PGE's cloud application" in s.text_frame.text)
-    card2 = next(s for s in s5_shapes if s.shape_id == 180 or "Fragmented on-premise infrastructure" in s.text_frame.text)
+    card2 = next(s for s in s5_shapes if s.shape_id == 180 or "Fragmented on-premise infrastructure" in s.text_frame.text or "legacy OCP application" in s.text_frame.text)
     card3 = next(s for s in s5_shapes if s.shape_id == 184 or "Formal client sign-off" in s.text_frame.text)
 
     sz1 = card1.text_frame.paragraphs[0].runs[0].font.size.pt
@@ -56,17 +56,17 @@ def test_htl_95_slide5_and_slide13_font_size_10pt(tmp_path):
     assert sz2 == 10.0, f"Expected 10.0pt for Card 2, got {sz2}pt"
     assert sz3 == 10.0, f"Expected 10.0pt for Card 3, got {sz3}pt"
 
-    # 2. PS Governance Kickoff Deck (Slide 13)
+    # 2. PS Governance Kickoff Deck (Slide 14 - HTL-109)
     g_model = build_governance_deck_model(baseline)
     g_out = tmp_path / "gov_deck_s13_10pt.pptx"
     write_governance_deck(g_model, g_out)
 
     g_prs = pptx.Presentation(str(g_out))
-    slide13 = g_prs.slides[12]
+    slide13 = g_prs.slides[13]
 
     s13_shapes = [s for s in slide13.shapes if s.has_text_frame]
     g_card1 = next(s for s in s13_shapes if s.shape_id == 176 or "Assess PGE's cloud application" in s.text_frame.text)
-    g_card2 = next(s for s in s13_shapes if s.shape_id == 180 or "Fragmented on-premise infrastructure" in s.text_frame.text)
+    g_card2 = next(s for s in s13_shapes if s.shape_id == 180 or "Fragmented on-premise infrastructure" in s.text_frame.text or "legacy OCP application" in s.text_frame.text)
     g_card3 = next(s for s in s13_shapes if s.shape_id == 184 or "Formal client sign-off" in s.text_frame.text)
 
     g_sz1 = g_card1.text_frame.paragraphs[0].runs[0].font.size.pt

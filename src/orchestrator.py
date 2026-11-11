@@ -626,14 +626,14 @@ class StartupKitController:
         if outputs.slides:
             progress("generating", "PS Governance Kickoff")
             logger.info("Exporting PS Governance Kickoff Deck to %s", out_path)
-            deck_result = export_governance_deck(baseline, out_path)
+            deck_result = export_governance_deck(baseline, out_path, llm_client=self.llm_client)
             written_paths.append(deck_result.file_path)
             written_paths.append(deck_result.manifest_path)
 
         if outputs.client_deck:
             progress("generating", "Client Kickoff Deck")
             logger.info("Exporting Client Kickoff Deck to %s", out_path)
-            client_deck_result = export_client_deck(baseline, out_path)
+            client_deck_result = export_client_deck(baseline, out_path, llm_client=self.llm_client)
             written_paths.append(client_deck_result.file_path)
             written_paths.append(client_deck_result.manifest_path)
 
@@ -871,7 +871,7 @@ class StartupKitController:
         if outputs.slides:
             progress("generating", "PS Governance Kickoff")
             logger.info("Exporting PS Governance Kickoff Deck to %s", export_dir)
-            deck_result = export_governance_deck(baseline, export_dir)
+            deck_result = export_governance_deck(baseline, export_dir, llm_client=self.llm_client)
             written_paths.append(deck_result.file_path)
             written_paths.append(deck_result.manifest_path)
 
@@ -879,7 +879,7 @@ class StartupKitController:
         if outputs.client_deck:
             progress("generating", "Client Kickoff Deck")
             logger.info("Exporting Client Kickoff Deck to %s", export_dir)
-            client_deck_result = export_client_deck(baseline, export_dir)
+            client_deck_result = export_client_deck(baseline, export_dir, llm_client=self.llm_client)
             written_paths.append(client_deck_result.file_path)
             written_paths.append(client_deck_result.manifest_path)
 

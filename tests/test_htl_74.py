@@ -164,7 +164,7 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
     # Export presentation and verify PPTX shapes
     res = export_governance_deck(baseline, tmp_path / "pge_slide16")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = prs.slides[16]
 
     for s in slide16.shapes:
         top_in = s.top / 914400.0
@@ -217,7 +217,7 @@ def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
     # Export presentation and verify
     res = export_governance_deck(baseline, tmp_path / "lean_slide16")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = prs.slides[16]
 
     card_shapes = [s for s in slide16.shapes if s.has_text_frame and ("STAGE 01" in s.text_frame.text or "STAGE 03" in s.text_frame.text or "STAGE 04" in s.text_frame.text)]
     assert len(card_shapes) == 3
@@ -280,7 +280,7 @@ def test_htl_74_tier2_deterministic_fallback_when_narrative_none(tmp_path):
     # Export presentation
     res = export_governance_deck(baseline, tmp_path / "tier2_slide16")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = prs.slides[16]
 
     for s in slide16.shapes:
         top_in = s.top / 914400.0
@@ -302,7 +302,7 @@ def test_htl_74_financial_scrubbing_zero_dollar_signs(tmp_path):
 
     res = export_governance_deck(baseline, tmp_path / "scrub_slide16")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = prs.slides[16]
 
     for s in slide16.shapes:
         if s.has_text_frame:

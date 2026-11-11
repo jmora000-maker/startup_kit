@@ -563,6 +563,206 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
                 run.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
 
 
+def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 11 Change Decision Matrix 4-card layout and bottom footer banner matching Slides 9/10 exactly (HTL-109)."""
+    # 1. Clear any placeholder shapes
+    for s in list(slide.shapes):
+        slide.shapes._spTree.remove(s._element)
+
+    # 2. Add Header (kicker + title)
+    kicker_txt = model.slide11.kicker or "DECISION RIGHTS IN PRACTICE"
+    title_txt = model.slide11.title or "Change Decision Matrix"
+    apply_slide_header_formatting(
+        slide,
+        kicker_text=kicker_txt,
+        title_text=title_txt,
+        has_subtitle=False,
+    )
+
+    # 3. Add 4 Cards (Clarification, Reprioritization, Expansion, Dependency Impact)
+    # Available total width: 8.665 in (7,923,022 EMU)
+    # 4 cards: width 2.04 in (1,865,376 EMU), gap 0.168 in (153,618 EMU)
+    # Left positions: 0.6675 in (610,350 EMU), 2.8755 in (2,629,344 EMU), 5.0835 in (4,648,338 EMU), 7.2915 in (6,667,332 EMU)
+    # Top: 1.6684 in (1,525,630 EMU), Height: 2.7106 in (2,478,600 EMU)
+    card_w = 1865376
+    card_h = 2478600
+    card_top = 1525630
+    left_positions = [610350, 2629344, 4648338, 6667332]
+
+    cards = model.slide11.cards
+    for idx, c_left in enumerate(left_positions):
+        if idx >= len(cards):
+            break
+        card = cards[idx]
+
+        # Card Outer Rounded Rectangle
+        card_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, c_left, card_top, card_w, card_h)
+        card_shape.fill.solid()
+        card_shape.fill.fore_color.rgb = RGBColor(0xFD, 0xFD, 0xFE)
+        card_shape.line.color.rgb = RGBColor(0xDD, 0xE3, 0xEE)
+        card_shape.line.width = 7150
+
+        # Section 1: Classification Title (11pt Bold #1B2336) & Operational Characteristics (8.5pt Regular #5B6475)
+        sec1_left = c_left + 109728   # 0.12 in padding
+        sec1_top = 1627632           # 1.78 in top
+        sec1_w = 1645920             # 1.80 in width
+        sec1_h = 600000              # 0.65 in height
+
+        tb1 = slide.shapes.add_textbox(sec1_left, sec1_top, sec1_w, sec1_h)
+        tf1 = tb1.text_frame
+        tf1.word_wrap = True
+        tf1.margin_top = 0
+        tf1.margin_bottom = 0
+        tf1.margin_left = 0
+        tf1.margin_right = 0
+        for bpr in tb1._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+
+        p_title = tf1.paragraphs[0]
+        p_title.space_before = Pt(0)
+        p_title.space_after = Pt(2)
+        r_title = p_title.add_run()
+        r_title.text = card.classification
+        r_title.font.name = "Proxima Nova"
+        r_title.font.size = Pt(11.0)
+        r_title.font.bold = True
+        r_title.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
+
+        p_desc = tf1.add_paragraph()
+        p_desc.space_before = Pt(0)
+        p_desc.space_after = Pt(0)
+        p_desc.line_spacing = 1.15
+        r_desc = p_desc.add_run()
+        r_desc.text = card.operational_characteristics
+        r_desc.font.name = "Proxima Nova"
+        r_desc.font.size = Pt(8.5)
+        r_desc.font.bold = False
+        r_desc.font.color.rgb = RGBColor(0x5B, 0x64, 0x75)
+
+        # Section 2: "WHAT IT MEANS" label (8.5pt Bold #204ECF) & Budget / Milestone Impact (8.5pt Regular #5B6475)
+        sec2_top = 2267712           # 2.48 in top
+        sec2_h = 960000              # 1.05 in height
+
+        tb2 = slide.shapes.add_textbox(sec1_left, sec2_top, sec1_w, sec2_h)
+        tf2 = tb2.text_frame
+        tf2.word_wrap = True
+        tf2.margin_top = 0
+        tf2.margin_bottom = 0
+        tf2.margin_left = 0
+        tf2.margin_right = 0
+        for bpr in tb2._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+
+        p_lbl = tf2.paragraphs[0]
+        p_lbl.space_before = Pt(0)
+        p_lbl.space_after = Pt(2)
+        r_lbl = p_lbl.add_run()
+        r_lbl.text = "WHAT IT MEANS"
+        r_lbl.font.name = "Proxima Nova"
+        r_lbl.font.size = Pt(8.5)
+        r_lbl.font.bold = True
+        r_lbl.font.color.rgb = RGBColor(0x20, 0x4E, 0xCF)
+
+        p_imp = tf2.add_paragraph()
+        p_imp.space_before = Pt(0)
+        p_imp.space_after = Pt(0)
+        p_imp.line_spacing = 1.15
+        r_imp = p_imp.add_run()
+        r_imp.text = card.budget_milestone_impact
+        r_imp.font.name = "Proxima Nova"
+        r_imp.font.size = Pt(8.5)
+        r_imp.font.bold = False
+        r_imp.font.color.rgb = RGBColor(0x5B, 0x64, 0x75)
+
+        # Section 3: Bottom Pill Box (Fill #EAEFF8, Line #EAEFF8) + Pathway Text
+        pill_left = c_left + 73152   # 0.08 in inset
+        pill_top = 3352629          # 3.6665 in top
+        pill_w = 1719072            # 1.88 in width
+        pill_h = 514500             # 0.5627 in height
+
+        pill_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, pill_left, pill_top, pill_w, pill_h)
+        pill_shape.fill.solid()
+        pill_shape.fill.fore_color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
+        pill_shape.line.color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
+        pill_shape.line.width = 9525
+
+        tb3 = slide.shapes.add_textbox(sec1_left, pill_top, sec1_w, pill_h)
+        tf3 = tb3.text_frame
+        tf3.word_wrap = True
+        tf3.margin_top = 0
+        tf3.margin_bottom = 0
+        tf3.margin_left = 0
+        tf3.margin_right = 0
+        for bpr in tb3._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+
+        p_pill = tf3.paragraphs[0]
+        p_pill.space_before = Pt(0)
+        p_pill.space_after = Pt(0)
+        p_pill.line_spacing = 1.15
+
+        r_lead = p_pill.add_run()
+        r_lead.text = "Authority: "
+        r_lead.font.name = "Proxima Nova"
+        r_lead.font.size = Pt(8.5)
+        r_lead.font.bold = True
+        r_lead.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
+
+        r_path = p_pill.add_run()
+        r_path.text = card.decision_pathway
+        r_path.font.name = "Proxima Nova"
+        r_path.font.size = Pt(8.5)
+        r_path.font.bold = False
+        r_path.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
+
+    # 4. Bottom Full-Width Footer Banner
+    # Container box: Left 610350 EMU (0.6675 in), Top 4199920 EMU (4.5934 in), Width 7923022 EMU (8.6647 in), Height 480240 EMU (0.5252 in)
+    foot_left = 610350
+    foot_top = 4199920
+    foot_w = 7923022
+    foot_h = 480240
+
+    foot_box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, foot_left, foot_top, foot_w, foot_h)
+    foot_box.fill.solid()
+    foot_box.fill.fore_color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
+    foot_box.line.color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
+    foot_box.line.width = 9525
+
+    # Accent bar on left of banner
+    bar_left = 816150   # 0.8925 in
+    bar_top = 4289134   # 4.6909 in
+    bar_w = 41160       # 0.0450 in
+    bar_h = 301980      # 0.3302 in
+    bar_box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, bar_left, bar_top, bar_w, bar_h)
+    bar_box.fill.solid()
+    bar_box.fill.fore_color.rgb = RGBColor(0x20, 0x4E, 0xCF)
+    bar_box.line.color.rgb = RGBColor(0x20, 0x4E, 0xCF)
+    bar_box.line.width = 9525
+
+    # Banner text
+    txt_left = 987570   # 1.0800 in
+    txt_w = 7545802     # 8.2522 in
+    tb_foot = slide.shapes.add_textbox(txt_left, foot_top, txt_w, foot_h)
+    tf_foot = tb_foot.text_frame
+    tf_foot.word_wrap = True
+    tf_foot.margin_top = 0
+    tf_foot.margin_bottom = 0
+    tf_foot.margin_left = 0
+    tf_foot.margin_right = 0
+    for bpr in tb_foot._element.xpath(".//a:bodyPr"):
+        bpr.set("anchor", "m")
+
+    p_foot = tf_foot.paragraphs[0]
+    p_foot.space_before = Pt(0)
+    p_foot.space_after = Pt(0)
+    r_foot = p_foot.add_run()
+    r_foot.text = model.slide11.footer_banner
+    r_foot.font.name = "Proxima Nova"
+    r_foot.font.size = Pt(9.0)
+    r_foot.font.bold = False
+    r_foot.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
+
+
 def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
     """Populate Slide 17 Approach 3-card layout with uniform font fitting and Proxima Nova typography (HTL-72 / HTL-88)."""
     # 1. Clear any placeholder shapes
@@ -785,19 +985,27 @@ def write_governance_deck(
             s_extra.shapes._spTree.remove(s._element)
         extra_crit_indices.append(len(prs_gov.slides) - 1)
 
+    # Slide 11: Change Decision Matrix (HTL-109)
+    s_change_matrix = prs_gov.slides.add_slide(layout_clean)
+    for s in list(s_change_matrix.shapes):
+        s_change_matrix.shapes._spTree.remove(s._element)
+    change_matrix_index = len(prs_gov.slides) - 1
+
     # Reorder slides into exact sequence:
-    # 0..10: Slides 1..11
-    # 11: Slide 12 (Team Roster - index 11)
-    # 12: Slide 13 (Why We're Here - index 12)
-    # deliver_indices: Slide 14 pages (What We Deliver - index 13 + extra_deliver_indices)
-    # crit_indices: Slide 15 pages (Acceptance Criteria - index 17 + extra_crit_indices)
-    # 18: Slide 16 (How Acceptance Works - index 18)
-    # 14: Slide 17 (Approach - index 14)
-    # 19: Slide 18 (Initial Risk Register - index 19)
-    # 15: Slide 19 (Next Steps - index 15)
+    # 0..9: Slides 1..10
+    # change_matrix_index: Slide 11 (Change Decision Matrix - index 10)
+    # 10: Slide 12 (Project Details - index 11)
+    # 11: Slide 13 (Team Roster - index 12)
+    # 12: Slide 14 (Why We're Here - index 13)
+    # deliver_indices: Slide 15 pages (What We Deliver - index 13 + extra_deliver_indices)
+    # crit_indices: Slide 16 pages (Acceptance Criteria - index 17 + extra_crit_indices)
+    # 18: Slide 17 (How Acceptance Works - index 18)
+    # 14: Slide 18 (Approach - index 14)
+    # 19: Slide 19 (Initial Risk Register - index 19)
+    # 15: Slide 20 (Next Steps - index 15)
     deliver_indices = [13] + extra_deliver_indices
     crit_indices = [17] + extra_crit_indices
-    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] + deliver_indices + crit_indices + [18, 14, 19, 15]
+    desired_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, change_matrix_index, 10, 11, 12] + deliver_indices + crit_indices + [18, 14, 19, 15]
     sldIdLst = prs_gov.slides._sldIdLst
     all_sld_ids = list(sldIdLst)
 
@@ -853,7 +1061,7 @@ def write_governance_deck(
         ),
     )
 
-    # Format canonical slide headers across template and lifted content slides (HTL-88)
+    # Format canonical slide headers across template and lifted content slides (HTL-88 / HTL-109)
     apply_slide_header_formatting(prs_gov.slides[1], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[3], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[4], has_subtitle=False)
@@ -863,48 +1071,52 @@ def write_governance_deck(
     apply_slide_header_formatting(prs_gov.slides[8], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[9], has_subtitle=False)
     apply_slide_header_formatting(prs_gov.slides[11], has_subtitle=False)
-    apply_slide_header_formatting(prs_gov.slides[12])
-    apply_slide_header_formatting(prs_gov.slides[14 + total_s14_pages + total_s15_pages])  # Slide 17 Approach
-    apply_slide_header_formatting(prs_gov.slides[15 + total_s14_pages + total_s15_pages])  # Slide 18 Risk Register
-    apply_slide_header_formatting(prs_gov.slides[16 + total_s14_pages + total_s15_pages])  # Slide 19 Next Steps
+    apply_slide_header_formatting(prs_gov.slides[12], has_subtitle=False)
+    apply_slide_header_formatting(prs_gov.slides[13])
+    apply_slide_header_formatting(prs_gov.slides[15 + total_s14_pages + total_s15_pages])  # Slide 18 Approach
+    apply_slide_header_formatting(prs_gov.slides[16 + total_s14_pages + total_s15_pages])  # Slide 19 Risk Register
+    apply_slide_header_formatting(prs_gov.slides[17 + total_s14_pages + total_s15_pages])  # Slide 20 Next Steps
 
     # Populate slides:
     # Slide 1 (index 0)
     write_slide1(prs_gov.slides[0], model)
 
-    # Slide 13 (index 12): Why We're Here (Client Slide 5)
-    write_slide5(prs_gov.slides[12], client_deck_adapter)
+    # Slide 11 (index 10): Change Decision Matrix (HTL-109)
+    write_slide11_change_decision_matrix(prs_gov.slides[10], model)
 
-    # Slide 14 pages (starting at index 13): What We Deliver (HTL-100)
+    # Slide 14 (index 13): Why We're Here (Client Slide 5)
+    write_slide5(prs_gov.slides[13], client_deck_adapter)
+
+    # Slide 15 pages (starting at index 14): What We Deliver (HTL-100)
     for c_idx, chunk_ws in enumerate(chunks_s14):
         write_slide6_deliverables_page(
-            prs_gov.slides[13 + c_idx],
+            prs_gov.slides[14 + c_idx],
             chunk_ws,
             client_deck_adapter,
             page_num=c_idx + 1,
             total_pages=total_s14_pages,
         )
 
-    # Slide 15 pages (starting at index 13 + total_s14_pages): Acceptance Criteria Table (HTL-72 / HTL-88 / HTL-89)
+    # Slide 16 pages (starting at index 14 + total_s14_pages): Acceptance Criteria Table (HTL-72 / HTL-88 / HTL-89)
     for c_idx, chunk_rows in enumerate(chunks_s15):
         write_slide15_acceptance_criteria_page(
-            prs_gov.slides[13 + total_s14_pages + c_idx],
+            prs_gov.slides[14 + total_s14_pages + c_idx],
             chunk_rows,
             page_num=c_idx + 1,
             total_pages=total_s15_pages,
         )
 
-    # Slide 16: How Milestone Acceptance Works Narrative (HTL-72 / HTL-88)
-    write_slide16_acceptance_narrative(prs_gov.slides[13 + total_s14_pages + total_s15_pages], model)
+    # Slide 17: How Milestone Acceptance Works Narrative (HTL-72 / HTL-88)
+    write_slide16_acceptance_narrative(prs_gov.slides[14 + total_s14_pages + total_s15_pages], model)
 
-    # Slide 17: Approach 3-Card Layout (HTL-72 / HTL-88)
-    write_slide17_approach(prs_gov.slides[14 + total_s14_pages + total_s15_pages], model)
+    # Slide 18: Approach 3-Card Layout (HTL-72 / HTL-88)
+    write_slide17_approach(prs_gov.slides[15 + total_s14_pages + total_s15_pages], model)
 
-    # Slide 18: Initial Risk Register (Client Slide 12)
-    write_slide12(prs_gov.slides[15 + total_s14_pages + total_s15_pages], client_deck_adapter)
+    # Slide 19: Initial Risk Register (Client Slide 12)
+    write_slide12(prs_gov.slides[16 + total_s14_pages + total_s15_pages], client_deck_adapter)
 
-    # Slide 19: Next Steps (Client Slide 15)
-    write_slide15(prs_gov.slides[16 + total_s14_pages + total_s15_pages], client_deck_adapter)
+    # Slide 20: Next Steps (Client Slide 15)
+    write_slide15(prs_gov.slides[17 + total_s14_pages + total_s15_pages], client_deck_adapter)
 
     # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E (HTL-103)
     for slide in prs_gov.slides:

@@ -196,8 +196,8 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
 
     # In PS Governance Kickoff Deck:
     # Slide 2: Kicker only
-    # Slides 4, 5, 6, 7, 8, 9, 10, 12: Kicker + Title only
-    # Slides 13, 14, 15, 16, 17, 18, 19: Kicker + Title + Subtitle
+    # Slides 4, 5, 6, 7, 8, 9, 10, 11, 13: Kicker + Title only (HTL-109)
+    # Slides 14, 15, 16, 17, 18, 19, 20: Kicker + Title + Subtitle (HTL-109)
 
     # Slide 2: Kicker only
     slide2 = prs.slides[1]
@@ -212,7 +212,7 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
     assert k2.text_frame.paragraphs[0].runs[0].font.bold is True
     assert k2.text_frame.paragraphs[0].runs[0].font.color.rgb == RGBColor(0x2E, 0x5A, 0xAC)
 
-    kicker_title_only_slides = [4, 5, 6, 7, 8, 9, 10, 12]
+    kicker_title_only_slides = [4, 5, 6, 7, 8, 9, 10, 11, 13]
 
     for s_num in kicker_title_only_slides:
         slide = prs.slides[s_num - 1]
@@ -246,10 +246,10 @@ def test_htl_88_governance_kickoff_deck_all_slides_header_standardization(tmp_pa
         if s_num == 6:
             assert tp.text == "The PM owns the plan and the day-to-day work"
 
-    # Content slides with Subtitle: Slide 13 (Why we're here), Slide 14 pages (What we deliver), Slide 15 pages (Acceptance Criteria),
-    # Slide 16 (How Acceptance Works), Slide 17 (Approach), Slide 18 (Risk Register), Slide 19 (Next Steps)
+    # Content slides with Subtitle: Slide 14 (Why we're here), Slide 15 pages (What we deliver), Slide 16 pages (Acceptance Criteria),
+    # Slide 17 (How Acceptance Works), Slide 18 (Approach), Slide 19 (Risk Register), Slide 20 (Next Steps)
     total_slides = len(prs.slides)
-    standard_3_element_indices = [12, 13, 14, 15, 16, 17, 18]
+    standard_3_element_indices = [13, 14, 15, 16, 17, 18, 19]
     for s_idx in standard_3_element_indices:
         slide = prs.slides[s_idx]
         s_num = s_idx + 1

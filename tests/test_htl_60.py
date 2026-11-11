@@ -21,7 +21,7 @@ from src.llm.aggregator import BaselineAggregator
 
 def test_htl_60_tier1_llm_synthesis_fields_used_directly():
     """HTL-60: When solution_overview and success_criteria_summary are present, deck models use them directly."""
-    sol_overview = "The engagement delivers a comprehensive assessment and cloud migration roadmap for PGE's Operational Compliance Program (OCP) systems. Workstreams inventory in-scope workloads and map dependencies to establish target architectures and a multi-year TCO model. Delivery culminates in a 7 Rs disposition register and sequenced migration wave plan aligned with compliance standards."
+    sol_overview = "The engagement delivers a comprehensive assessment and cloud migration roadmap for PGE's Operational Compliance Program (OCP) systems. Workstreams inventory in-scope workloads and map dependencies to establish target architectures and a multi-year TCO model."
     succ_summary = "Project success is defined by formal client acceptance of the Cloud Migration Assessment Report within the 5-business-day review window. In-scope workloads must achieve at least 95% inventory coverage with hosting requirements recorded, mapped dependencies, and right-sized cost estimates. Every workload receives an approved 7 Rs disposition and is sequenced into a validated migration wave roadmap."
 
     baseline = StartupKitBaseline(

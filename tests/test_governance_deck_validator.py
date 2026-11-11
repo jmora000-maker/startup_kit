@@ -78,7 +78,7 @@ def test_validator_branch_3_slide_count_mismatch(tmp_path):
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert any("Expected exactly 19 slides in Governance Deck, found 20" in e for e in errors)
+    assert any("Expected exactly 20 slides in Governance Deck, found 21" in e for e in errors)
 
 
 # --- Group C: Slide 1 Header, Subtitle, and Placeholder Invariants ---
@@ -127,158 +127,129 @@ def test_validator_branch_6_slide1_unreplaced_placeholders(tmp_path):
     assert "Slide 1 contains unreplaced [Client Name] or [Project Name] placeholders" in errors
 
 
-# --- Group D: Slide 12 Team Roster Title Invariants ---
+# --- Group D: Slide 13 Team Roster Title Invariants ---
 
 
-def test_validator_branch_7_slide12_missing_team_title(tmp_path):
-    """Branch 7: Catch Slide 12 missing 'The people delivering this project' title."""
-    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s12_missing_title")
+def test_validator_branch_7_slide13_missing_team_title(tmp_path):
+    """Branch 7: Catch Slide 13 missing 'The people delivering this project' title."""
+    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s13_missing_title")
     prs = pptx.Presentation(str(pptx_path))
 
-    s12 = prs.slides[11]
-    for shape in s12.shapes:
+    s13 = prs.slides[12]
+    for shape in s13.shapes:
         if shape.has_text_frame and "The people delivering this project" in shape.text_frame.text:
             shape.text_frame.text = "Our Delivery Team Roster"
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 12 title is missing 'The people delivering this project'" in errors
+    assert "Slide 13 title is missing 'The people delivering this project'" in errors
 
 
-def test_validator_branch_8_slide12_retains_client_facing_title(tmp_path):
-    """Branch 8: Catch Slide 12 retaining legacy client-facing 'The people delivering your project' title."""
-    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s12_client_title")
+def test_validator_branch_8_slide13_retains_client_facing_title(tmp_path):
+    """Branch 8: Catch Slide 13 retaining legacy client-facing 'The people delivering your project' title."""
+    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s13_client_title")
     prs = pptx.Presentation(str(pptx_path))
 
-    s12 = prs.slides[11]
-    for shape in s12.shapes:
+    s13 = prs.slides[12]
+    for shape in s13.shapes:
         if shape.has_text_frame and "The people delivering this project" in shape.text_frame.text:
             shape.text_frame.text = "The people delivering your project"
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 12 title still contains 'The people delivering your project'" in errors
+    assert "Slide 13 title still contains 'The people delivering your project'" in errors
 
 
-# --- Group E: Slide 13 Why We're Here Placeholder Invariant ---
+# --- Group E: Slide 14 Why We're Here Placeholder Invariant ---
 
 
-def test_validator_branch_9_slide13_unreplaced_placeholders(tmp_path):
-    """Branch 9: Catch Slide 13 containing unreplaced '[Pre-filled:' placeholders."""
+def test_validator_branch_9_slide14_unreplaced_placeholders(tmp_path):
+    """Branch 9: Catch Slide 14 containing unreplaced '[Pre-filled:' placeholders."""
     baseline = _build_pge_baseline()
     model = build_governance_deck_model(baseline)
     model.slide13.what_problem_are_we_solving = "[Pre-filled: Project Purpose and Core Objectives]"
-    out_path = tmp_path / "s13_placeholders" / "deck.pptx"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    write_governance_deck(model, out_path)
-
-    errors = check_governance_deck_traceability(model, out_path)
-    assert "Slide 13 contains unreplaced '[Pre-filled:' placeholders" in errors
-
-
-# --- Group F: Slide 14 Deliverables Table Placeholder Invariant ---
-
-
-def test_validator_branch_10_slide14_unreplaced_placeholders(tmp_path):
-    """Branch 10: Catch Slide 14 containing unreplaced '[high level summary' or '[Workstream or Feature' tokens."""
-    baseline = _build_pge_baseline()
-    model = build_governance_deck_model(baseline)
-    model.slide14.solution_overview = "Deliverables: [high level summary of deliverables and [Workstream or Feature]"
     out_path = tmp_path / "s14_placeholders" / "deck.pptx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     write_governance_deck(model, out_path)
 
     errors = check_governance_deck_traceability(model, out_path)
-    assert "Slide 14 contains unreplaced placeholder text" in errors
+    assert "Slide 14 contains unreplaced '[Pre-filled:' placeholders" in errors
 
 
-# --- Group G: Slide 15 Acceptance Criteria Table & Title Invariants ---
+# --- Group F: Slide 15 Deliverables Table Placeholder Invariant ---
 
 
-def test_validator_branch_11_slide15_missing_table(tmp_path):
-    """Branch 11: Catch Slide 15 missing Deliverable Acceptance Criteria table."""
-    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s15_missing_table")
+def test_validator_branch_10_slide15_unreplaced_placeholders(tmp_path):
+    """Branch 10: Catch Slide 15 containing unreplaced '[high level summary' or '[Workstream or Feature' tokens."""
+    baseline = _build_pge_baseline()
+    model = build_governance_deck_model(baseline)
+    model.slide14.solution_overview = "Deliverables: [high level summary of deliverables and [Workstream or Feature]"
+    out_path = tmp_path / "s15_placeholders" / "deck.pptx"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    write_governance_deck(model, out_path)
+
+    errors = check_governance_deck_traceability(model, out_path)
+    assert "Slide 15 contains unreplaced placeholder text" in errors
+
+
+# --- Group G: Slide 16 Acceptance Criteria Table & Title Invariants ---
+
+
+def test_validator_branch_11_slide16_missing_table(tmp_path):
+    """Branch 11: Catch Slide 16 missing Deliverable Acceptance Criteria table."""
+    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s16_missing_table")
     prs = pptx.Presentation(str(pptx_path))
 
-    s15 = prs.slides[14]
+    s16 = prs.slides[15]
     # Remove table shape
-    for shape in list(s15.shapes):
+    for shape in list(s16.shapes):
         if shape.has_table:
             sp_elem = shape._element
             sp_elem.getparent().remove(sp_elem)
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 15 is missing Deliverable Acceptance Criteria table" in errors
+    assert "Slide 16 is missing Deliverable Acceptance Criteria table" in errors
 
 
-def test_validator_branch_12_slide15_missing_title(tmp_path):
-    """Branch 12: Catch Slide 15 missing title 'Deliverable acceptance criteria'."""
-    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s15_missing_title")
-    prs = pptx.Presentation(str(pptx_path))
-
-    s15 = prs.slides[14]
-    for shape in s15.shapes:
-        if shape.has_text_frame and "Deliverable acceptance criteria" in shape.text_frame.text:
-            shape.text_frame.text = "Other Deliverable Criteria"
-    prs.save(str(pptx_path))
-
-    errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 15 is missing title 'Deliverable acceptance criteria'" in errors
-
-
-# --- Group H: Slide 16 How Milestone Acceptance Works Title & Placeholder Invariants ---
-
-
-def test_validator_branch_13_slide16_missing_title(tmp_path):
-    """Branch 13: Catch Slide 16 missing title 'How milestone acceptance works'."""
+def test_validator_branch_12_slide16_missing_title(tmp_path):
+    """Branch 12: Catch Slide 16 missing title 'Deliverable acceptance criteria'."""
     model, pptx_path = _create_valid_deck_and_model(tmp_path, "s16_missing_title")
     prs = pptx.Presentation(str(pptx_path))
 
     s16 = prs.slides[15]
     for shape in s16.shapes:
+        if shape.has_text_frame and "Deliverable acceptance criteria" in shape.text_frame.text:
+            shape.text_frame.text = "Other Deliverable Criteria"
+    prs.save(str(pptx_path))
+
+    errors = check_governance_deck_traceability(model, pptx_path)
+    assert "Slide 16 is missing title 'Deliverable acceptance criteria'" in errors
+
+
+# --- Group H: Slide 17 How Milestone Acceptance Works Title & Placeholder Invariants ---
+
+
+def test_validator_branch_13_slide17_missing_title(tmp_path):
+    """Branch 13: Catch Slide 17 missing title 'How milestone acceptance works'."""
+    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s17_missing_title")
+    prs = pptx.Presentation(str(pptx_path))
+
+    s17 = prs.slides[16]
+    for shape in s17.shapes:
         if shape.has_text_frame and "How milestone acceptance works" in shape.text_frame.text:
             shape.text_frame.text = "Acceptance Milestone Process"
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 16 is missing title 'How milestone acceptance works'" in errors
+    assert "Slide 17 is missing title 'How milestone acceptance works'" in errors
 
 
-def test_validator_branch_14_slide16_unreplaced_placeholders(tmp_path):
-    """Branch 14: Catch Slide 16 containing '[Pre-filled:' or '[CONFIRMATION REQUIRED]' placeholder text."""
+def test_validator_branch_14_slide17_unreplaced_placeholders(tmp_path):
+    """Branch 14: Catch Slide 17 containing '[Pre-filled:' or '[CONFIRMATION REQUIRED]' placeholder text."""
     baseline = _build_pge_baseline()
     model = build_governance_deck_model(baseline)
     model.slide16.cards[0].steps.append(("Review", "[CONFIRMATION REQUIRED] Acceptance review period"))
-    out_path = tmp_path / "s16_placeholders" / "deck.pptx"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    write_governance_deck(model, out_path)
-
-    errors = check_governance_deck_traceability(model, out_path)
-    assert "Slide 16 contains unreplaced placeholder text" in errors
-
-
-# --- Group I: Slide 17 Approach Title & Placeholder Invariants ---
-
-
-def test_validator_branch_15_slide17_missing_title(tmp_path):
-    """Branch 15: Catch Slide 17 missing title 'Approach'."""
-    baseline = _build_pge_baseline()
-    model = build_governance_deck_model(baseline)
-    model.slide17.title = "Project Delivery Strategy"
-    out_path = tmp_path / "s17_missing_title" / "deck.pptx"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    write_governance_deck(model, out_path)
-
-    errors = check_governance_deck_traceability(model, out_path)
-    assert "Slide 17 is missing title 'Approach'" in errors
-
-
-def test_validator_branch_16_slide17_unreplaced_placeholders(tmp_path):
-    """Branch 16: Catch Slide 17 containing '[Pre-filled:' or '[CONFIRMATION REQUIRED]' placeholder text."""
-    baseline = _build_pge_baseline()
-    model = build_governance_deck_model(baseline)
-    model.slide17.cards[0].bullets.append("[Pre-filled: Core Technical Methodology]")
     out_path = tmp_path / "s17_placeholders" / "deck.pptx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     write_governance_deck(model, out_path)
@@ -287,27 +258,40 @@ def test_validator_branch_16_slide17_unreplaced_placeholders(tmp_path):
     assert "Slide 17 contains unreplaced placeholder text" in errors
 
 
-# --- Group J: Slide 18 & 19 Structured Table Invariants ---
+# --- Group I: Slide 18 Approach Title & Placeholder Invariants ---
 
 
-def test_validator_branch_17_slide18_missing_risk_table(tmp_path):
-    """Branch 17: Catch Slide 18 missing Initial Risk Register table."""
-    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s18_missing_table")
-    prs = pptx.Presentation(str(pptx_path))
+def test_validator_branch_15_slide18_missing_title(tmp_path):
+    """Branch 15: Catch Slide 18 missing title 'Approach'."""
+    baseline = _build_pge_baseline()
+    model = build_governance_deck_model(baseline)
+    model.slide17.title = "Project Delivery Strategy"
+    out_path = tmp_path / "s18_missing_title" / "deck.pptx"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    write_governance_deck(model, out_path)
 
-    s18 = prs.slides[17]
-    for shape in list(s18.shapes):
-        if shape.has_table:
-            sp_elem = shape._element
-            sp_elem.getparent().remove(sp_elem)
-    prs.save(str(pptx_path))
-
-    errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 18 is missing Initial Risk Register table" in errors
+    errors = check_governance_deck_traceability(model, out_path)
+    assert "Slide 18 is missing title 'Approach'" in errors
 
 
-def test_validator_branch_18_slide19_missing_next_steps_table(tmp_path):
-    """Branch 18: Catch Slide 19 missing Next Steps table."""
+def test_validator_branch_16_slide18_unreplaced_placeholders(tmp_path):
+    """Branch 16: Catch Slide 18 containing '[Pre-filled:' or '[CONFIRMATION REQUIRED]' placeholder text."""
+    baseline = _build_pge_baseline()
+    model = build_governance_deck_model(baseline)
+    model.slide17.cards[0].bullets.append("[Pre-filled: Core Technical Methodology]")
+    out_path = tmp_path / "s18_placeholders" / "deck.pptx"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    write_governance_deck(model, out_path)
+
+    errors = check_governance_deck_traceability(model, out_path)
+    assert "Slide 18 contains unreplaced placeholder text" in errors
+
+
+# --- Group J: Slide 19 & 20 Structured Table Invariants ---
+
+
+def test_validator_branch_17_slide19_missing_risk_table(tmp_path):
+    """Branch 17: Catch Slide 19 missing Initial Risk Register table."""
     model, pptx_path = _create_valid_deck_and_model(tmp_path, "s19_missing_table")
     prs = pptx.Presentation(str(pptx_path))
 
@@ -319,7 +303,23 @@ def test_validator_branch_18_slide19_missing_next_steps_table(tmp_path):
     prs.save(str(pptx_path))
 
     errors = check_governance_deck_traceability(model, pptx_path)
-    assert "Slide 19 is missing Next Steps table" in errors
+    assert "Slide 19 is missing Initial Risk Register table" in errors
+
+
+def test_validator_branch_18_slide20_missing_next_steps_table(tmp_path):
+    """Branch 18: Catch Slide 20 missing Next Steps table."""
+    model, pptx_path = _create_valid_deck_and_model(tmp_path, "s20_missing_table")
+    prs = pptx.Presentation(str(pptx_path))
+
+    s20 = prs.slides[19]
+    for shape in list(s20.shapes):
+        if shape.has_table:
+            sp_elem = shape._element
+            sp_elem.getparent().remove(sp_elem)
+    prs.save(str(pptx_path))
+
+    errors = check_governance_deck_traceability(model, pptx_path)
+    assert "Slide 20 is missing Next Steps table" in errors
 
 
 # --- Group K: Companion Trace Manifest Invariants ---

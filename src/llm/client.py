@@ -632,7 +632,6 @@ class LangChainLLMClient(ILLMClient):
                         "OpenAI text generation failed (%s): %s",
                         type(openai_exc).__name__,
                         openai_exc,
-                        exc_info=True,
                     )
                     if self._chat_model is not None:
                         if "TextGeneration" not in self.fallback_domains:
@@ -667,7 +666,6 @@ class LangChainLLMClient(ILLMClient):
                         "Anthropic text generation failed (%s): %s",
                         type(anthropic_exc).__name__,
                         anthropic_exc,
-                        exc_info=True,
                     )
                     if self._openai_chat_model is not None:
                         if "TextGeneration" not in self.fallback_domains:
@@ -694,14 +692,23 @@ class LangChainLLMClient(ILLMClient):
 class MockLLMClient(ILLMClient):
     """Deterministic Mock LLM client for offline unit and integration tests."""
 
-    def __init__(self, responses_by_schema: Optional[dict] = None, primary_provider: str = "mock"):
+    def __init__(
+        self,
+        responses_by_schema: Optional[dict] = None,
+        text_responses: Optional[dict] = None,
+        primary_provider: str = "mock",
+    ):
         self.responses_by_schema = responses_by_schema or {}
+        self.text_responses = text_responses or {}
         self.call_history = []
         self.primary_provider = primary_provider
         self.fallback_domains: list[str] = []
 
     def set_response(self, schema: Type[Any], response_obj: Any):
         self.responses_by_schema[schema] = response_obj
+
+    def set_text_response(self, key_or_substring: str, response_text: str):
+        self.text_responses[key_or_substring] = response_text
 
     def generate_structured(
         self,
@@ -738,4 +745,7 @@ class MockLLMClient(ILLMClient):
             "prompt": prompt,
             "system_prompt": system_prompt
         })
-        return "Mock response for prompt."
+        for k, v in self.text_responses.items():
+            if k in prompt:
+                return v
+        return self.text_responses.get("default", "Mock response for prompt.")

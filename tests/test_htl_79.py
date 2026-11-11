@@ -59,12 +59,12 @@ def test_governance_deck_slide15_single_page_path(tmp_path):
 
     res = export_governance_deck(pge_baseline, tmp_path / "gov_pge")
     assert res.file_path.exists()
-    assert res.slides_count == 19
+    assert res.slides_count == 20
 
     prs = pptx.Presentation(str(res.file_path))
 
-    # Slide 15 is index 14
-    slide15 = prs.slides[14]
+    # Slide 16 is index 15 (HTL-109)
+    slide15 = prs.slides[15]
 
     # Verify subtitle does NOT contain "Part X of Y" or "(Part"
     subtitle_shapes = [

@@ -4,17 +4,40 @@ Reuses the proven character-width and line-height heuristics established in
 src/generators/onboarding_deck/layout.py (DECK-21).
 """
 
+import logging
 import math
+import os
 import re
 import textwrap
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
+from src.core.interfaces import ILLMClient
+from src.config import config
+from src.llm.prompts import (
+    CONDENSE_PROBLEM_STATEMENT_PROMPT,
+    CONDENSE_SOLUTION_OVERVIEW_PROMPT,
+)
 from src.generators.onboarding_deck.layout import (
     AVG_CHAR_WIDTH_FACTOR,
     LINE_HEIGHT_FACTOR,
 )
 
+logger = logging.getLogger(__name__)
+
 BOLD_CHAR_WIDTH_FACTOR = 0.58
+
+
+def _get_default_llm_client() -> Optional[ILLMClient]:
+    """Helper to instantiate default LangChainLLMClient if API keys are configured and not in offline test runner."""
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return None
+    try:
+        from src.llm.client import LangChainLLMClient
+        if config.anthropic_api_key or config.openai_api_key:
+            return LangChainLLMClient()
+    except Exception as exc:
+        logger.debug("Could not initialize default LangChainLLMClient: %s", exc)
+    return None
 
 
 def wrap_lines(
@@ -77,6 +100,108 @@ def truncate_at_clause(
         return clean[:last_space].rstrip() + suffix
 
     return slice_text.rstrip() + suffix
+
+
+def condense_problem_statement(
+    text: str,
+    max_chars: int = 180,
+    llm_client: Optional[ILLMClient] = None,
+) -> str:
+    """Condense problem statement into 1-2 concise sentences within max_chars preserving full semantic meaning via LLM rewriting (HTL-109)."""
+    clean = str(text or "").strip()
+    if not clean or len(clean) <= max_chars or clean.startswith("["):
+        return clean
+
+    # Step 1: Real LLM rewriting
+    client = llm_client or _get_default_llm_client()
+    if client is not None and hasattr(client, "generate_text"):
+        try:
+            prompt = CONDENSE_PROBLEM_STATEMENT_PROMPT.format(text=clean, max_chars=max_chars)
+            rewritten = client.generate_text(prompt=prompt, system_prompt="You are a senior delivery director rewriting slide content.")
+            rewritten_clean = str(rewritten or "").strip().strip('"').strip("'").strip()
+            if rewritten_clean and len(rewritten_clean) <= max_chars and not rewritten_clean.endswith("..."):
+                logger.info("Successfully condensed problem_statement via LLM (length %d -> %d).", len(clean), len(rewritten_clean))
+                return rewritten_clean
+            elif rewritten_clean:
+                trimmed = rewritten_clean[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+                if len(trimmed) <= max_chars:
+                    logger.info("Successfully condensed problem_statement via LLM with boundary trim (length %d -> %d).", len(clean), len(trimmed))
+                    return trimmed
+        except Exception as exc:
+            logger.warning("LLM condensation for problem_statement failed (%s); falling back to deterministic clause selection.", exc)
+    else:
+        logger.info("No LLM client available for problem_statement condensation; using deterministic clause fallback.")
+
+    # Step 2: Deterministic Fallback (only when LLM is unavailable or fails)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if s.strip()]
+    if sentences:
+        if len(sentences[0]) <= max_chars:
+            if len(sentences) > 1 and len(f"{sentences[0]} {sentences[1]}") <= max_chars:
+                return f"{sentences[0]} {sentences[1]}"
+            return sentences[0]
+
+        s0 = sentences[0]
+        s0_sub = re.sub(r",\s*which\s+[^,.]*", "", s0)
+        s0_sub = re.sub(r",\s*and\s+its\s+failure\s+to\s+[^,.]*", "", s0_sub)
+        if len(s0_sub) <= max_chars:
+            return s0_sub.rstrip(" ,") + "."
+
+        return s0[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+
+    return clean[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+
+
+def condense_solution_overview(
+    text: str,
+    max_chars: int = 300,
+    llm_client: Optional[ILLMClient] = None,
+) -> str:
+    """Condense solution overview into 2-3 cohesive sentences within max_chars preserving full semantic meaning via LLM rewriting (HTL-109)."""
+    clean = str(text or "").strip()
+    if not clean or len(clean) <= max_chars or clean.startswith("["):
+        return clean
+
+    # Step 1: Real LLM rewriting
+    client = llm_client or _get_default_llm_client()
+    if client is not None and hasattr(client, "generate_text"):
+        try:
+            prompt = CONDENSE_SOLUTION_OVERVIEW_PROMPT.format(text=clean, max_chars=max_chars)
+            rewritten = client.generate_text(prompt=prompt, system_prompt="You are a senior delivery director rewriting slide content.")
+            rewritten_clean = str(rewritten or "").strip().strip('"').strip("'").strip()
+            if rewritten_clean and len(rewritten_clean) <= max_chars and not rewritten_clean.endswith("..."):
+                logger.info("Successfully condensed solution_overview via LLM (length %d -> %d).", len(clean), len(rewritten_clean))
+                return rewritten_clean
+            elif rewritten_clean:
+                trimmed = rewritten_clean[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+                if len(trimmed) <= max_chars:
+                    logger.info("Successfully condensed solution_overview via LLM with boundary trim (length %d -> %d).", len(clean), len(trimmed))
+                    return trimmed
+        except Exception as exc:
+            logger.warning("LLM condensation for solution_overview failed (%s); falling back to deterministic clause selection.", exc)
+    else:
+        logger.info("No LLM client available for solution_overview condensation; using deterministic clause fallback.")
+
+    # Step 2: Deterministic Fallback (only when LLM is unavailable or fails)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if s.strip()]
+    if sentences:
+        result_s = []
+        cur_len = 0
+        for s in sentences:
+            add_len = len(s) + (1 if result_s else 0)
+            if cur_len + add_len <= max_chars:
+                result_s.append(s)
+                cur_len += add_len
+            else:
+                break
+        if result_s:
+            return " ".join(result_s)
+
+        s0 = sentences[0]
+        if len(s0) > max_chars:
+            return s0[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+        return s0
+
+    return clean
 
 
 def select_fitting_font_size(

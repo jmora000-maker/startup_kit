@@ -53,8 +53,8 @@ Extract:
 - talent_pm: Named Talent Project Manager if mentioned, else null.
 - pmo_lead: Named PMO Lead if mentioned, else null.
 - executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.
-- problem_statement: 1-2 concise sentences stating the client's concrete current-state pain point or operational bottleneck. Set to null if not stated in source documents.
-- solution_overview: A cohesive 2-3 sentence narrative synthesizing the technical approach, key workstreams, and delivery cadence into an integrated client solution (using active verbs, focused on business value, not a bare list of deliverable titles).
+- problem_statement: 1-2 concise sentences stating the client's concrete current-state pain point or operational bottleneck (strictly under 180 characters total). Set to null if not stated in source documents.
+- solution_overview: A cohesive 2-3 sentence narrative synthesizing the technical approach, key workstreams, and delivery cadence into an integrated client solution (strictly under 300 characters total, using active verbs, focused on business value, not a bare list of deliverable titles).
 - success_criteria_summary: A natural 2-3 sentence narrative framed around customer outcomes and business value (what the client actually gets or can now do/decide), avoiding raw internal delivery metrics or acceptance percentage thresholds.
 - source_reference: Document name, section/slide reference, and confidence score.
 
@@ -360,4 +360,32 @@ For each detected ambiguity or conflict:
 
 DOCUMENTS CONTENT:
 {documents_text}
+"""
+
+CONDENSE_PROBLEM_STATEMENT_PROMPT = """You are a senior delivery director rewriting a client problem statement for an executive presentation slide (HTL-109).
+
+Rewrite and distill the provided problem statement into 1-2 punchy, complete sentences that strictly fit within {max_chars} characters while preserving full semantic meaning.
+
+CRITICAL RULES:
+1. PRESERVE MEANING: Retain the core current-state operational bottlenecks, root causes, or pain points.
+2. COMPLETE SENTENCES: The output must consist of complete, grammatically sound sentences. Do NOT end with ellipsis (...) or chop clauses mid-sentence.
+3. CHARACTER BUDGET: The total output length MUST be <= {max_chars} characters.
+4. NO META-TEXT: Return ONLY the rewritten problem statement prose. Do not include markdown quotes, introductory labels, bullet points, or explanations.
+
+Input text:
+{text}
+"""
+
+CONDENSE_SOLUTION_OVERVIEW_PROMPT = """You are a senior delivery director rewriting a project solution overview for an executive presentation slide (HTL-109).
+
+Rewrite and distill the provided solution overview into 2-3 cohesive, complete sentences that strictly fit within {max_chars} characters while preserving full semantic meaning.
+
+CRITICAL RULES:
+1. PRESERVE MEANING: Retain the core technical approach, integrated workstreams, and business value.
+2. COMPLETE SENTENCES: The output must consist of complete, grammatically sound sentences. Do NOT end with ellipsis (...) or chop clauses mid-sentence.
+3. CHARACTER BUDGET: The total output length MUST be <= {max_chars} characters.
+4. NO META-TEXT: Return ONLY the rewritten solution overview prose. Do not include markdown quotes, introductory labels, bullet points, or explanations.
+
+Input text:
+{text}
 """

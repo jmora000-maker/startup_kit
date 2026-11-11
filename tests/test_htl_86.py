@@ -153,6 +153,7 @@ def test_generate_page_locked_state_checkbox_order_and_startup_kit_hidden():
         "gen_out_client_deck",
         "gen_out_slides",
         "gen_out_workbook",
+        "gen_out_scope_baseline",
     ]
     assert checkbox_keys == expected_order_locked
 
@@ -179,6 +180,7 @@ def test_generate_page_unlocked_state_startup_kit_rendered_as_last_option():
         "gen_out_client_deck",
         "gen_out_slides",
         "gen_out_workbook",
+        "gen_out_scope_baseline",
         "gen_out_kit",
     ]
     assert checkbox_keys == expected_order_unlocked
@@ -194,7 +196,7 @@ def test_generate_page_unlocked_state_startup_kit_rendered_as_last_option():
 # =========================================================================
 
 def test_reingest_tab_locked_state_checkbox_order_and_startup_kit_hidden():
-    """HTL-86: On Re-ingest tab when locked, checkboxes are [Client Deck, PS Governance, Workbook]
+    """HTL-86: On Re-ingest tab when locked, checkboxes are [Client Deck, PS Governance, Workbook, Scope Baseline]
     and Startup Kit is completely absent (not rendered)."""
     at = AppTest.from_file(APP_FILE, default_timeout=10)
     at.session_state["generation_unlocked"] = True
@@ -207,6 +209,7 @@ def test_reingest_tab_locked_state_checkbox_order_and_startup_kit_hidden():
         "reingest_out_client_deck",
         "reingest_out_slides",
         "reingest_out_workbook",
+        "reingest_out_scope_baseline",
     ]
     assert reingest_checkbox_keys == expected_order_locked
     assert not any(cb.key == "reingest_out_kit" for cb in at.checkbox)
@@ -231,6 +234,7 @@ def test_reingest_tab_unlocked_state_startup_kit_rendered_as_last_option():
         "reingest_out_client_deck",
         "reingest_out_slides",
         "reingest_out_workbook",
+        "reingest_out_scope_baseline",
         "reingest_out_kit",
     ]
     assert reingest_checkbox_keys == expected_order_unlocked

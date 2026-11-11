@@ -111,7 +111,7 @@ def test_htl_72_slide13_greenfield_null_fallback_behavior(tmp_path):
 
     res = export_governance_deck(arc_baseline, tmp_path / "arc_s13")
     prs = pptx.Presentation(str(res.file_path))
-    slide13 = prs.slides[12]
+    slide13 = prs.slides[13]
     s13_texts = [p.text for s in slide13.shapes if s.has_text_frame for p in s.text_frame.paragraphs if p.text.strip()]
     assert any("[To be confirmed in Project Success Agreement · Define current pain points with client]" in t for t in s13_texts)
 
@@ -163,14 +163,14 @@ def test_htl_72_cross_artifact_consistency_pge_baseline(tmp_path):
     gov_prs = pptx.Presentation(str(gov_res.file_path))
     client_prs = pptx.Presentation(str(client_res.file_path))
 
-    # Verify Gov Slide 13 matches Client Slide 5 rendered texts
-    s13_texts = [p.text for s in gov_prs.slides[12].shapes if s.has_text_frame for p in s.text_frame.paragraphs if p.text.strip()]
+    # Verify Gov Slide 14 (Why We're Here) matches Client Slide 5 rendered texts
+    s13_texts = [p.text for s in gov_prs.slides[13].shapes if s.has_text_frame for p in s.text_frame.paragraphs if p.text.strip()]
     s5_texts = [p.text for s in client_prs.slides[4].shapes if s.has_text_frame for p in s.text_frame.paragraphs if p.text.strip()]
     assert any("Assessment and cloud migration roadmap" in t for t in s13_texts)
-    assert any("aging custom system with recurring production failures" in t for t in s13_texts)
+    assert any("aging custom system with recurring production failures" in t for t in s13_texts or "undocumented stored procedures" in t for t in s13_texts)
 
-    # Verify Gov Slide 18 table matches Client Slide 12 table
-    gov_s18_table = [s.table for s in gov_prs.slides[17].shapes if s.has_table][0]
+    # Verify Gov Slide 19 table matches Client Slide 12 table
+    gov_s18_table = [s.table for s in gov_prs.slides[18].shapes if s.has_table][0]
     client_s12_table = [s.table for s in client_prs.slides[11].shapes if s.has_table][0]
     assert len(gov_s18_table.rows) == len(client_s12_table.rows)
     for r_i in range(len(gov_s18_table.rows)):
@@ -193,7 +193,7 @@ def test_htl_72_cross_artifact_consistency_arc_baseline(tmp_path):
     assert len(gov_model.slide19.next_steps) == len(client_model.slide15.next_steps)
 
     gov_res = export_governance_deck(arc_baseline, tmp_path / "gov_arc")
-    assert gov_res.slides_count == 26
+    assert gov_res.slides_count == 27
     assert gov_res.trace_entries_count >= 10
 
     errs = check_governance_deck_traceability(gov_model, gov_res.file_path)
@@ -210,7 +210,7 @@ def test_htl_72_placeholder_eradication(tmp_path):
         for shape in slide.shapes:
             if shape.has_text_frame:
                 txt = shape.text_frame.text
-                if idx in (0, 12, 13, 17, 18):  # Populated slides (1, 13, 14, 18, 19)
+                if idx in (0, 10, 13, 14, 18, 19):  # Populated slides (1, 11, 14, 15, 19, 20)
                     assert "[Client Name]" not in txt
                     assert "[Project Name]" not in txt
                     assert "[Pre-filled:" not in txt
@@ -219,7 +219,7 @@ def test_htl_72_placeholder_eradication(tmp_path):
 
 
 def test_htl_72_slide12_template_placeholders_and_images_intact(tmp_path):
-    """HTL-72: Verify Slide 12 is a direct unmodified lift of Project Kickoff Deck page 3 placeholders and icon images (left for human editing)."""
+    """HTL-72: Verify Slide 13 is a direct unmodified lift of Project Kickoff Deck page 3 placeholders and icon images (left for human editing)."""
     baseline = _build_pge_baseline()
     baseline.charter.delivery_manager = "Yulia Ainley"
     baseline.charter.talent_pm = "Jane Doe"
@@ -228,7 +228,7 @@ def test_htl_72_slide12_template_placeholders_and_images_intact(tmp_path):
     res = export_governance_deck(baseline, tmp_path / "roster_check")
     prs = pptx.Presentation(str(res.file_path))
 
-    slide12 = prs.slides[11]  # 0-indexed slide 12
+    slide12 = prs.slides[12]  # 0-indexed slide 13 (Team Roster)
     s12_texts = [s.text_frame.text.strip() for s in slide12.shapes if s.has_text_frame and s.text_frame.text.strip()]
 
     # 1. Must contain exact Project Kickoff Deck page 3 template placeholders with Governance wording "this project"
@@ -302,23 +302,23 @@ def test_htl_72_tier1_customer_outcome_framing(tmp_path):
     res = export_governance_deck(baseline, tmp_path / "tier1_out")
     prs = pptx.Presentation(str(res.file_path))
 
-    # Slide 13 (Why We're Here)
-    s13_texts = [s.text_frame.text.strip() for s in prs.slides[12].shapes if s.has_text_frame]
+    # Slide 14 (Why We're Here)
+    s13_texts = [s.text_frame.text.strip() for s in prs.slides[13].shapes if s.has_text_frame]
     assert any("The client receives a clear, evidence-backed view" in t for t in s13_texts)
 
-    # Slide 14 (What We Deliver)
-    s14_texts = [s.text_frame.text.strip() for s in prs.slides[13].shapes if s.has_text_frame]
+    # Slide 15 (What We Deliver)
+    s14_texts = [s.text_frame.text.strip() for s in prs.slides[14].shapes if s.has_text_frame]
     assert any("The engagement delivers a comprehensive assessment" in t for t in s14_texts)
 
 
 def test_htl_72_slide15_deliverable_acceptance_criteria_pge(tmp_path):
-    """HTL-72: Verify Slide 15 renders Deliverable Acceptance Criteria table with 12 countable bullets and gate mapping (HTL-62/64/72)."""
+    """HTL-72: Verify Slide 16 renders Deliverable Acceptance Criteria table with 12 countable bullets and gate mapping (HTL-62/64/72)."""
     import json
     baseline = _build_pge_baseline()
     res = export_governance_deck(baseline, tmp_path / "slide15_test")
 
     prs = pptx.Presentation(str(res.file_path))
-    slide15 = prs.slides[14]  # 0-indexed slide 15
+    slide15 = prs.slides[15]  # 0-indexed slide 16
 
     # 1. Header & Textbox validations
     textboxes = [s.text_frame.text.strip() for s in slide15.shapes if s.has_text_frame and not s.has_table]
@@ -408,7 +408,7 @@ def test_htl_72_slide15_custom_deliverables_and_placeholders(tmp_path):
 
     res = export_governance_deck(baseline, tmp_path / "custom_deliv_test")
     prs = pptx.Presentation(str(res.file_path))
-    slide15 = prs.slides[14]
+    slide15 = prs.slides[15]
 
     table_shapes = [s for s in slide15.shapes if s.has_table]
     assert len(table_shapes) == 1
@@ -428,7 +428,7 @@ def test_htl_72_slide15_custom_deliverables_and_placeholders(tmp_path):
 
 
 def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
-    """HTL-72 / HTL-74: Verify Slide 16 renders Option C flowchart and 3-card deep dive layout with Proxima Nova typography, bold lead-in, and trace attribution."""
+    """HTL-72 / HTL-74: Verify Slide 17 renders Option C flowchart and 3-card deep dive layout with Proxima Nova typography, bold lead-in, and trace attribution."""
     import json
     baseline = _build_pge_baseline()
     pge_narrative = (
@@ -456,7 +456,7 @@ def test_htl_72_slide16_tier1_narrative_rendering_and_trace(tmp_path):
 
     res = export_governance_deck(baseline, tmp_path / "slide16_tier1")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]  # 0-indexed slide 16
+    slide16 = prs.slides[16]  # 0-indexed slide 17
 
     # 1. Header validations
     textboxes = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
@@ -513,7 +513,7 @@ def test_htl_72_slide16_tier2_fallback_and_dynamic_trace(tmp_path):
 
     res = export_governance_deck(baseline, tmp_path / "slide16_tier2")
     prs = pptx.Presentation(str(res.file_path))
-    slide16 = prs.slides[15]
+    slide16 = prs.slides[16]
 
     s16_texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
     assert any("Submission:" in t for t in s16_texts)
@@ -580,7 +580,7 @@ def test_htl_72_slide17_approach_3card_layout_pge(tmp_path):
     baseline = _build_pge_baseline()
     res = export_governance_deck(baseline, tmp_path / "slide17_pge")
     prs = pptx.Presentation(str(res.file_path))
-    slide17 = prs.slides[16]  # 0-indexed slide 17
+    slide17 = prs.slides[17]  # 0-indexed slide 18
 
     # 1. Header validations
     textboxes = [s.text_frame.text.strip() for s in slide17.shapes if s.has_text_frame]
@@ -731,13 +731,13 @@ def test_htl_76_decks_render_tier1_and_reject_tier2_fallback(tmp_path):
     arc_res = export_governance_deck(arc_baseline, tmp_path / "arc_htl76")
     arc_prs = pptx.Presentation(str(arc_res.file_path))
 
-    # Slide 13 (Why We Are Here / Success)
-    s13_texts = [s.text_frame.text.strip() for s in arc_prs.slides[12].shapes if s.has_text_frame]
+    # Slide 14 (Why We Are Here / Success)
+    s13_texts = [s.text_frame.text.strip() for s in arc_prs.slides[13].shapes if s.has_text_frame]
     assert any("Project success is defined by formal milestone sign-offs" in t for t in s13_texts)
     assert not any("Project purpose:" in t for t in s13_texts)
 
-    # Slide 14 (What We Will Deliver / Solution Overview)
-    s14_texts = [s.text_frame.text.strip() for s in arc_prs.slides[13].shapes if s.has_text_frame]
+    # Slide 15 (What We Will Deliver / Solution Overview)
+    s14_texts = [s.text_frame.text.strip() for s in arc_prs.slides[14].shapes if s.has_text_frame]
     assert any("The engagement delivers the scientist-facing ARC genomics application" in t for t in s14_texts)
     assert not any("P1 Foundation (est. weeks 1-6):" in t for t in s14_texts)
 
@@ -746,11 +746,11 @@ def test_htl_76_decks_render_tier1_and_reject_tier2_fallback(tmp_path):
     pge_res = export_governance_deck(pge_baseline, tmp_path / "pge_htl76")
     pge_prs = pptx.Presentation(str(pge_res.file_path))
 
-    # Slide 13
-    pge_s13_texts = [s.text_frame.text.strip() for s in pge_prs.slides[12].shapes if s.has_text_frame]
+    # Slide 14
+    pge_s13_texts = [s.text_frame.text.strip() for s in pge_prs.slides[13].shapes if s.has_text_frame]
     assert any("The client receives a clear, evidence-backed view" in t for t in pge_s13_texts)
 
-    # Slide 14
-    pge_s14_texts = [s.text_frame.text.strip() for s in pge_prs.slides[13].shapes if s.has_text_frame]
+    # Slide 15
+    pge_s14_texts = [s.text_frame.text.strip() for s in pge_prs.slides[14].shapes if s.has_text_frame]
     assert any("The engagement delivers a comprehensive assessment" in t for t in pge_s14_texts)
     assert not any("Portfolio inventory across in-scope workloads. Dependency mapping" in t for t in pge_s14_texts)

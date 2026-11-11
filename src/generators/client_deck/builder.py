@@ -2,6 +2,7 @@
 
 import re
 from typing import List, Optional, Sequence, Tuple
+from src.core.interfaces import ILLMClient
 from src.core.models import (
     Deliverable,
     Milestone,
@@ -23,6 +24,10 @@ from src.generators.client_deck.spec import (
     WorkstreamBlock,
 )
 from src.generators.client_deck.trace import ClientDeckTraceManifest, TraceRef
+from src.generators.client_deck.fit import (
+    condense_problem_statement,
+    condense_solution_overview,
+)
 
 COMMERCIAL_EXCLUSION_REGEX = re.compile(
     r"(?:\$\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[kKmMbB](?:illion)?)?)"
@@ -98,7 +103,10 @@ def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
     return Slide1Model(client_name=client_sponsor, project_name=project_name)
 
 
-def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
+def build_slide5_model(
+    baseline: StartupKitBaseline,
+    llm_client: Optional[ILLMClient] = None,
+) -> Slide5Model:
     """Build Slide 5 model (Project Success Agreement - Why We're Here) with financial scrubbing (HTL-50 / HTL-54)."""
     why_raw = (
         (baseline.charter.project_purpose if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]" else None)
@@ -121,6 +129,9 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
     else:
         problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
 
+    if problem and not problem.startswith("["):
+        problem = condense_problem_statement(problem, max_chars=180, llm_client=llm_client)
+
     raw_summary = (
         baseline.charter.success_criteria_summary
         if baseline.charter and baseline.charter.success_criteria_summary and baseline.charter.success_criteria_summary != "[CONFIRMATION REQUIRED]"
@@ -137,7 +148,10 @@ def build_slide5_model(baseline: StartupKitBaseline) -> Slide5Model:
     )
 
 
-def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
+def build_slide6_model(
+    baseline: StartupKitBaseline,
+    llm_client: Optional[ILLMClient] = None,
+) -> Slide6Model:
     """Build Slide 6 model (What We Will Deliver) using canonical PMO Workbook schedule rows (HTL-49 / HTL-50)."""
     wb = build_workbook_model(baseline)
     names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
@@ -249,6 +263,9 @@ def build_slide6_model(baseline: StartupKitBaseline) -> Slide6Model:
 
     if not overview:
         overview = "Comprehensive milestone-based delivery establishing core platform capabilities in alignment with contracted specifications."
+
+    if overview and not overview.startswith("["):
+        overview = condense_solution_overview(overview, max_chars=300, llm_client=llm_client)
 
     # Out of Scope
     out_of_scope: List[str] = []
@@ -396,12 +413,15 @@ def build_slide15_model(baseline: StartupKitBaseline) -> Slide15Model:
     return Slide15Model(next_steps=candidates[:4])
 
 
-def build_client_deck_model(baseline: StartupKitBaseline) -> ClientDeckModel:
+def build_client_deck_model(
+    baseline: StartupKitBaseline,
+    llm_client: Optional[ILLMClient] = None,
+) -> ClientDeckModel:
     """Build complete ClientDeckModel and populate trace manifest."""
     project_name = baseline.project_name or "Project Baseline"
     slide1 = build_slide1_model(baseline)
-    slide5 = build_slide5_model(baseline)
-    slide6 = build_slide6_model(baseline)
+    slide5 = build_slide5_model(baseline, llm_client=llm_client)
+    slide6 = build_slide6_model(baseline, llm_client=llm_client)
     slide12 = build_slide12_model(baseline)
     slide15 = build_slide15_model(baseline)
 

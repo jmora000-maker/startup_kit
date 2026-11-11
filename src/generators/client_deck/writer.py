@@ -12,6 +12,8 @@ from pptx.dml.color import RGBColor
 from src.config import CLIENT_DECK_TEMPLATE_PATH
 from src.generators.deck_header import apply_slide_header_formatting
 from src.generators.client_deck.fit import (
+    condense_problem_statement,
+    condense_solution_overview,
     estimate_text_height,
     fit_deliverables_for_block,
     select_fitting_font_size,
@@ -185,15 +187,11 @@ def write_slide1(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95)."""
+    """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95 / HTL-109)."""
     candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
-    # Card 2 (Problem Statement): max height is 0.46 in (~33.1 pt / max 2-3 lines at 10.0pt)
-    prob_raw = model.slide5.what_problem_are_we_solving
-    if estimate_text_height(prob_raw, width_in=7.75, size_pt=10.0) > 0.46 * 72.0:
-        prob_raw = truncate_at_clause(prob_raw, max_chars=220, suffix="...")
-        while estimate_text_height(prob_raw, width_in=7.75, size_pt=10.0) > 0.46 * 72.0 and len(prob_raw) > 30:
-            prob_raw = truncate_at_clause(prob_raw[:-4], max_chars=len(prob_raw) - 20, suffix="...")
+    # Card 2 (Problem Statement): condensed via LLM / deterministic model to preserve meaning without "..." truncation
+    prob_raw = condense_problem_statement(model.slide5.what_problem_are_we_solving)
 
     # Pass 1: Compute fitting font sizes across all three cards (HTL-52 / HTL-54 / HTL-95)
     sz_why, fitted_why = select_fitting_font_size(
@@ -218,12 +216,6 @@ def write_slide5(slide, model: ClientDeckModel) -> None:
         min_font_floor=10.0,
     )
     uniform_sz = min(sz_why, sz_prob, sz_succ)
-
-    # Re-fit texts at uniform_sz if needed to ensure no overflow
-    if estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.46 * 72.0:
-        fitted_prob = truncate_at_clause(fitted_prob, max_chars=200, suffix="...")
-        while estimate_text_height(fitted_prob, width_in=7.75, size_pt=uniform_sz) > 0.46 * 72.0 and len(fitted_prob) > 30:
-            fitted_prob = truncate_at_clause(fitted_prob[:-4], max_chars=len(fitted_prob) - 20, suffix="...")
 
     # Pass 2: Render cards with uniform font size
     for shape in slide.shapes:
@@ -651,11 +643,7 @@ def write_slide6_deliverables_page(
     oos_width = 2600000
     oos_height = 1850000
 
-    so_text = model.slide6.solution_overview
-    if estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0:
-        so_text = truncate_at_clause(so_text, max_chars=420, suffix="...")
-        while estimate_text_height(so_text, width_in=2.84, size_pt=10.0, char_width_factor=0.55) > 140.0 and len(so_text) > 50:
-            so_text = truncate_at_clause(so_text[:-4], max_chars=len(so_text) - 20, suffix="...")
+    so_text = condense_solution_overview(model.slide6.solution_overview)
 
     oos_items = _fit_out_of_scope_items(model.slide6.out_of_scope, inner_w_in=2.58, max_h_pt=120.0)
 

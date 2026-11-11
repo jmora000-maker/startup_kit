@@ -13,6 +13,27 @@ class Slide1Model:
 
 
 @dataclass
+class ChangeMatrixCard:
+    """One card on Slide 11 (Change Decision Matrix - HTL-109)."""
+    classification: str
+    operational_characteristics: str
+    budget_milestone_impact: str
+    decision_pathway: str
+
+
+@dataclass
+class Slide11ChangeMatrixModel:
+    """Model for Slide 11 (Change Decision Matrix - HTL-109)."""
+    kicker: str = "DECISION RIGHTS IN PRACTICE"
+    title: str = "Change Decision Matrix"
+    footer_banner: str = (
+        "To keep commitments consistent, please work with your DM and PMO before agreeing "
+        "to changes that impact scope, timeline, or commercial terms."
+    )
+    cards: List[ChangeMatrixCard] = field(default_factory=list)
+
+
+@dataclass
 class Slide13WhyModel:
     """Model for Slide 13 (Project Success Agreement - Why We're Here - Lifted Client Slide 5)."""
     why_are_we_doing_this: str
@@ -132,6 +153,7 @@ class GovernanceDeckModel:
     slide14: Slide14DeliverModel
     slide18: Slide18RisksModel
     slide19: Slide19NextStepsModel
+    slide11: Slide11ChangeMatrixModel = field(default_factory=Slide11ChangeMatrixModel)
     slide15: Slide15AcceptanceCriteriaModel = field(default_factory=Slide15AcceptanceCriteriaModel)
     slide16: Slide16AcceptanceNarrativeModel = field(default_factory=Slide16AcceptanceNarrativeModel)
     slide17: Slide17ApproachModel = field(default_factory=Slide17ApproachModel)

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from src.core.interfaces import ILLMClient
 from src.core.models import StartupKitBaseline
 from src.generators.formatting import sanitize_filename
 from src.generators.client_deck.writer import chunk_workstreams_for_deliverables_table
@@ -12,6 +13,7 @@ from src.generators.governance_deck.spec import GovernanceDeckModel
 from src.generators.governance_deck.trace import GovernanceDeckTraceManifest, TraceRef
 from src.generators.governance_deck.writer import write_governance_deck
 from src.generators.governance_deck.validator import check_governance_deck_traceability
+from src.generators.pmo_workbook.rows import WorkbookModel
 
 
 @dataclass(frozen=True)
@@ -29,13 +31,15 @@ def export_governance_deck(
     output_dir: Path,
     template_path: Optional[Path] = None,
     client_template_path: Optional[Path] = None,
+    wb: Optional[WorkbookModel] = None,
+    llm_client: Optional[ILLMClient] = None,
 ) -> GovernanceDeckResult:
     """Build and save {Project_Name}_PS_Governance_Kickoff.pptx and trace manifest into output_dir (HTL-72 / HTL-100)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_name = sanitize_filename(baseline.project_name)
     target_path = output_dir / f"{clean_name}_PS_Governance_Kickoff.pptx"
 
-    model = build_governance_deck_model(baseline)
+    model = build_governance_deck_model(baseline, wb=wb, llm_client=llm_client)
     saved_path = write_governance_deck(
         model,
         target_path,
@@ -50,7 +54,7 @@ def export_governance_deck(
     max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
     chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
     total_s15_pages = len(chunks_s15)
-    total_slides = 17 + total_s14_pages + total_s15_pages
+    total_slides = 18 + total_s14_pages + total_s15_pages
 
     return GovernanceDeckResult(
         file_path=saved_path,

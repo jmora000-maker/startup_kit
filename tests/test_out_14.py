@@ -1547,7 +1547,7 @@ def test_htl_54_slide5_card2_height_bounding_and_no_overflow(tmp_path):
     c2_shape = next(s for s in slide5.shapes if s.shape_id == 180 or (s.has_text_frame and "Fragmented clinical telemetry" in s.text_frame.text))
 
     c2_text = c2_shape.text_frame.text
-    assert c2_text.endswith("...")
+    assert not c2_text.endswith("...")
     from src.generators.client_deck.fit import estimate_text_height
     c2_p = c2_shape.text_frame.paragraphs[0]
     font_sz = c2_p.runs[0].font.size.pt

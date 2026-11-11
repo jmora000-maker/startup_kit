@@ -91,9 +91,9 @@ def test_htl_100_pge_single_page_deliverables_table(tmp_path):
     g_res = export_governance_deck(baseline, tmp_path)
     g_prs = pptx.Presentation(str(g_res.file_path))
 
-    # PGE: Slide 14 is single page, Slide 15 is single page -> total slides = 19
-    assert g_res.slides_count == 19
-    gov_s14 = g_prs.slides[13]
+    # PGE: Slide 15 is single page, Slide 16 is single page -> total slides = 20 (HTL-109)
+    assert g_res.slides_count == 20
+    gov_s14 = g_prs.slides[14]
 
     g_tbl_shape = next(s for s in gov_s14.shapes if s.has_table)
     g_table = g_tbl_shape.table
@@ -170,8 +170,8 @@ def test_htl_100_arc_multi_page_deliverables_table(tmp_path):
     g_res = export_governance_deck(baseline, tmp_path)
     g_prs = pptx.Presentation(str(g_res.file_path))
 
-    # ARC Governance Deck has 4 Slide 14 pages + 9 Slide 15 pages + 17 base = 30 slides
-    assert g_res.slides_count == 30
+    # Total slides = 31 (HTL-109)
+    assert g_res.slides_count == 31
     gov_s14_slides = [
         s for s in g_prs.slides
         if any(shp.has_text_frame and "What we will deliver" in shp.text_frame.text for shp in s.shapes)
@@ -215,24 +215,24 @@ def test_htl_100_downstream_slide_reindexing_integrity(tmp_path):
     g_res = export_governance_deck(baseline, tmp_path)
     g_prs = pptx.Presentation(str(g_res.file_path))
 
-    # Total 4 pages on Slide 14 + 9 pages on Slide 15:
-    # Indices 13..16: Slide 14 pages (What We Deliver)
-    # Indices 17..25: Slide 15 pages (Acceptance Criteria)
-    # Index 26: Slide 16 (How Milestone Acceptance Works)
-    # Index 27: Slide 17 (Approach)
-    # Index 28: Slide 18 (Initial Risk Register)
-    # Index 29: Slide 19 (Next Steps)
-    slide16 = g_prs.slides[26]
+    # Total 4 pages on Slide 15 + 9 pages on Slide 16:
+    # Indices 14..17: Slide 15 pages (What We Deliver)
+    # Indices 18..26: Slide 16 pages (Acceptance Criteria)
+    # Index 27: Slide 17 (How Milestone Acceptance Works)
+    # Index 28: Slide 18 (Approach)
+    # Index 29: Slide 19 (Initial Risk Register)
+    # Index 30: Slide 20 (Next Steps)
+    slide16 = g_prs.slides[27]
     assert any("How milestone acceptance works" in shp.text_frame.text for shp in slide16.shapes if shp.has_text_frame)
 
-    slide17 = g_prs.slides[27]
+    slide17 = g_prs.slides[28]
     assert any("Approach" in shp.text_frame.text for shp in slide17.shapes if shp.has_text_frame)
 
-    slide18 = g_prs.slides[28]
+    slide18 = g_prs.slides[29]
     tbl18 = next(s.table for s in slide18.shapes if s.has_table)
     assert "Risk" in tbl18.cell(0, 0).text
 
-    slide19 = g_prs.slides[29]
+    slide19 = g_prs.slides[30]
     tbl19 = next(s.table for s in slide19.shapes if s.has_table)
     assert "Action" in tbl19.cell(0, 1).text
 

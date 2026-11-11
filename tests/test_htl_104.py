@@ -78,10 +78,10 @@ def test_htl_104_pge_milestone_date_sow_shift_across_all_four_artifacts(tmp_path
     g_res = export_governance_deck(shifted_baseline, tmp_path)
     g_prs = pptx.Presentation(str(g_res.file_path))
 
-    # Slide 16 (Submission step completion date, 16th slide / index 15)
-    s16 = g_prs.slides[15]
-    s16_text = " ".join(shp.text_frame.text for shp in s16.shapes if shp.has_text_frame)
-    assert "2026-12-02" in s16_text, f"Shifted M1 date 2026-12-02 not found in Gov Deck Slide 16: {s16_text}"
+    # Slide 17 (Submission step completion date, 17th slide / index 16, HTL-109)
+    s17 = g_prs.slides[16]
+    s17_text = " ".join(shp.text_frame.text for shp in s17.shapes if shp.has_text_frame)
+    assert "2026-12-02" in s17_text, f"Shifted M1 date 2026-12-02 not found in Gov Deck Slide 17: {s17_text}"
 
     # 3. Client Kickoff Deck (.pptx)
     c_res = export_client_deck(shifted_baseline, tmp_path)

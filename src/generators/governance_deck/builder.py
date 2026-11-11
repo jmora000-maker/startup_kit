@@ -4,6 +4,7 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 from src.config import sanitize_financial_text
+from src.core.interfaces import ILLMClient
 from src.core.models import StartupKitBaseline
 from src.generators.kit_values import kit_header_values
 from src.generators.onboarding_deck.textrules import is_placeholder_text
@@ -20,10 +21,12 @@ from src.generators.governance_deck.spec import (
     AcceptanceCardData,
     AcceptanceCriterionRow,
     ApproachCard,
+    ChangeMatrixCard,
     GovernanceDeckModel,
     NextStepItem,
     RiskItem,
     Slide1Model,
+    Slide11ChangeMatrixModel,
     Slide13WhyModel,
     Slide14DeliverModel,
     Slide15AcceptanceCriteriaModel,
@@ -42,9 +45,32 @@ def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
     return Slide1Model(client_name=client_m.client_name, project_name=client_m.project_name)
 
 
-def build_slide13_model(baseline: StartupKitBaseline) -> Slide13WhyModel:
+def build_slide11_model(baseline: StartupKitBaseline) -> Slide11ChangeMatrixModel:
+    """Build Slide 11 model (Change Decision Matrix - HTL-109) reading from Table 4 classification guide rows."""
+    from src.generators.scope_baseline.templates import build_table4_classification_guide_rows
+    contract_raw = baseline.contract_type or (baseline.charter.contract_type if baseline.charter else "") or ""
+    variant = "Fixed Bid" if "fixed" in contract_raw.lower() else "Time and Materials"
+    t4_rows = build_table4_classification_guide_rows(baseline, variant)
+
+    cards = []
+    for row in t4_rows:
+        cards.append(
+            ChangeMatrixCard(
+                classification=row.classification,
+                operational_characteristics=row.operational_characteristics,
+                budget_milestone_impact=row.budget_milestone_impact,
+                decision_pathway=row.approval_pathway,
+            )
+        )
+    return Slide11ChangeMatrixModel(cards=cards)
+
+
+def build_slide13_model(
+    baseline: StartupKitBaseline,
+    llm_client: Optional[ILLMClient] = None,
+) -> Slide13WhyModel:
     """Build Slide 13 model (Why We're Here) reusing client deck slide 5 extraction (HTL-72)."""
-    s5 = client_build_slide5_model(baseline)
+    s5 = client_build_slide5_model(baseline, llm_client=llm_client)
     return Slide13WhyModel(
         why_are_we_doing_this=s5.why_are_we_doing_this,
         what_problem_are_we_solving=s5.what_problem_are_we_solving,
@@ -52,9 +78,12 @@ def build_slide13_model(baseline: StartupKitBaseline) -> Slide13WhyModel:
     )
 
 
-def build_slide14_model(baseline: StartupKitBaseline) -> Slide14DeliverModel:
+def build_slide14_model(
+    baseline: StartupKitBaseline,
+    llm_client: Optional[ILLMClient] = None,
+) -> Slide14DeliverModel:
     """Build Slide 14 model (What We Will Deliver) reusing client deck slide 6 extraction (HTL-72)."""
-    s6 = client_build_slide6_model(baseline)
+    s6 = client_build_slide6_model(baseline, llm_client=llm_client)
     ws_blocks = [
         WorkstreamBlock(
             title=ws.title,
@@ -885,14 +914,16 @@ def build_slide19_model(baseline: StartupKitBaseline) -> Slide19NextStepsModel:
 def build_governance_deck_model(
     baseline: StartupKitBaseline,
     wb: Optional[WorkbookModel] = None,
+    llm_client: Optional[ILLMClient] = None,
 ) -> GovernanceDeckModel:
     """Complete builder transforming StartupKitBaseline into GovernanceDeckModel with 19-slide trace manifest (HTL-72)."""
     project_name = baseline.project_name or "Project Baseline"
     manifest = GovernanceDeckTraceManifest(project_name=project_name)
 
     slide1 = build_slide1_model(baseline)
-    slide13 = build_slide13_model(baseline)
-    slide14 = build_slide14_model(baseline)
+    slide11 = build_slide11_model(baseline)
+    slide13 = build_slide13_model(baseline, llm_client=llm_client)
+    slide14 = build_slide14_model(baseline, llm_client=llm_client)
     slide15 = build_slide15_model(baseline, wb=wb)
     slide16 = build_slide16_model(baseline)
     slide17 = build_slide17_model(baseline, wb=wb)
@@ -922,6 +953,24 @@ def build_governance_deck_model(
         ],
         values=[headers.get("client_sponsor", "Client"), headers.get("project_name", project_name)],
     )
+
+    # 2. Slide 11 Traces (Change Decision Matrix - HTL-109)
+    for card in slide11.cards:
+        manifest.add(
+            slide=11,
+            shape=f"Card: {card.classification}",
+            element=f"Change Decision Matrix: {card.classification}",
+            displayed_value=f"{card.operational_characteristics} | {card.budget_milestone_impact} | {card.decision_pathway}",
+            traces=[
+                TraceRef(
+                    artifact="Kit",
+                    locator="Scope Baseline",
+                    key="classification_guide",
+                    field="contract_type",
+                )
+            ],
+            values=[card.operational_characteristics, card.budget_milestone_impact, card.decision_pathway],
+        )
 
     # 2. Slide 13 Traces (Lifted Client Slide 5)
     manifest.add(
@@ -1204,6 +1253,7 @@ def build_governance_deck_model(
     return GovernanceDeckModel(
         project_name=project_name,
         slide1=slide1,
+        slide11=slide11,
         slide13=slide13,
         slide14=slide14,
         slide15=slide15,
