@@ -244,3 +244,258 @@ def test_htl_109_deterministic_fallback_when_llm_unavailable():
     assert "OCP" in fallback_sol
     h_so = estimate_text_height(fallback_sol, width_in=2.84, size_pt=10.0, char_width_factor=0.55)
     assert h_so <= 140.0 + 1e-4
+
+
+def test_htl_109_slide11_unified_text_frame_and_pill_anchoring(tmp_path: Path):
+    """HTL-109: Verify Slide 11 cards use a single unified text frame for Sections 1 & 2 and anchor Section 3 pill to bottom."""
+    baseline = _build_pge_baseline()
+    res = export_governance_deck(baseline, tmp_path / "gov_s11_unified")
+    prs = pptx.Presentation(str(res.file_path))
+    slide11 = prs.slides[10]
+
+    # Find the 4 main card textboxes and 4 pill textboxes
+    # Card X positions: ~0.67in, ~2.88in, ~5.08in, ~7.29in
+    left_positions = [610350, 2629344, 4648338, 6667332]
+
+    for c_left in left_positions:
+        sec1_left = c_left + 109728
+        card_tbs = [s for s in slide11.shapes if s.has_text_frame and abs(s.left - sec1_left) < 5000]
+        # Should have exactly 2 textboxes per card: 1 unified body textbox (Sec 1+2), 1 pill textbox (Sec 3)
+        assert len(card_tbs) == 2, f"Expected 2 textboxes at left={sec1_left}, got {len(card_tbs)}"
+
+        # Find body textbox (higher up, top ~1.78in) and pill textbox (lower, top ~3.67in)
+        body_tb = min(card_tbs, key=lambda s: s.top)
+        pill_tb = max(card_tbs, key=lambda s: s.top)
+
+        # 1. Verify unified body textbox has 4 distinct paragraphs
+        tf_body = body_tb.text_frame
+        assert len(tf_body.paragraphs) == 4, f"Expected 4 paragraphs in body textbox, got {len(tf_body.paragraphs)}"
+
+        # Para 0: Title (11pt bold)
+        p0 = tf_body.paragraphs[0]
+        assert len(p0.runs) >= 1
+        assert p0.runs[0].font.size == pptx.util.Pt(11.0)
+        assert p0.runs[0].font.bold is True
+
+        # Para 1: Characteristics (8.5pt regular)
+        p1 = tf_body.paragraphs[1]
+        assert len(p1.runs) >= 1
+        assert p1.runs[0].font.size == pptx.util.Pt(8.5)
+        assert p1.runs[0].font.bold is False
+
+        # Para 2: "WHAT IT MEANS" label (8.5pt bold)
+        p2 = tf_body.paragraphs[2]
+        assert len(p2.runs) >= 1
+        assert p2.runs[0].text == "WHAT IT MEANS"
+        assert p2.runs[0].font.size == pptx.util.Pt(8.5)
+        assert p2.runs[0].font.bold is True
+
+        # Para 3: Impact (8.5pt regular)
+        p3 = tf_body.paragraphs[3]
+        assert len(p3.runs) >= 1
+        assert p3.runs[0].font.size == pptx.util.Pt(8.5)
+        assert p3.runs[0].font.bold is False
+
+        # 2. Verify pill textbox is anchored to bottom
+        pill_top_in = pill_tb.top / 914400.0
+        assert 3.60 <= pill_top_in <= 3.75, f"Pill top outside expected range: {pill_top_in}in"
+        assert "Authority:" in pill_tb.text_frame.text
+
+
+def test_htl_109_table4_character_budget_compliance():
+    """HTL-109: Verify all Table 4 classification guide rows strictly obey 110/70/75 character budgets."""
+    from src.generators.scope_baseline.templates import build_table4_classification_guide_rows
+
+    for variant in ["Fixed Bid", "Time and Materials"]:
+        rows = build_table4_classification_guide_rows(None, variant)
+        assert len(rows) == 4
+        for r in rows:
+            assert len(r.operational_characteristics) <= 110, (
+                f"[{variant}] {r.classification} operational_characteristics exceeds 110 chars: "
+                f"len={len(r.operational_characteristics)} ({r.operational_characteristics})"
+            )
+            assert len(r.budget_milestone_impact) <= 70, (
+                f"[{variant}] {r.classification} budget_milestone_impact exceeds 70 chars: "
+                f"len={len(r.budget_milestone_impact)} ({r.budget_milestone_impact})"
+            )
+            assert len(r.approval_pathway) <= 75, (
+                f"[{variant}] {r.classification} approval_pathway exceeds 75 chars: "
+                f"len={len(r.approval_pathway)} ({r.approval_pathway})"
+            )
+
+
+def test_htl_109_geometric_margin_and_worst_case():
+    """HTL-109: Rigorous geometric calculation verifying positive margin and zero overlap for all cards and worst-case text."""
+    from src.generators.scope_baseline.templates import build_table4_classification_guide_rows
+    from src.generators.client_deck.fit import wrap_lines
+
+    usable_sec12_pt = (3.6665 - 1.7795 - 0.057) * 72.0  # 131.76 pt
+    usable_pill_pt = 0.5627 * 72.0  # 40.51 pt
+
+    for variant in ["Fixed Bid", "Time and Materials"]:
+        rows = build_table4_classification_guide_rows(None, variant)
+        for r in rows:
+            title_lines = wrap_lines(r.classification, 1.8, 11.0, 0.60)
+            title_pt = (title_lines * 11.0 * 1.15) + 2.0
+
+            char_lines = wrap_lines(r.operational_characteristics, 1.8, 8.5, 0.50)
+            char_pt = (char_lines * 8.5 * 1.15) + 6.0
+
+            lbl_lines = wrap_lines("WHAT IT MEANS", 1.8, 8.5, 0.60)
+            lbl_pt = (lbl_lines * 8.5 * 1.15) + 2.0
+
+            imp_lines = wrap_lines(r.budget_milestone_impact, 1.8, 8.5, 0.50)
+            imp_pt = (imp_lines * 8.5 * 1.15)
+
+            total_sec12_pt = title_pt + char_pt + lbl_pt + imp_pt
+            sec12_margin_pt = usable_sec12_pt - total_sec12_pt
+
+            path_text = "Authority: " + r.approval_pathway
+            path_lines = wrap_lines(path_text, 1.8, 8.5, 0.50)
+            path_pt = path_lines * 8.5 * 1.15
+            pill_margin_pt = usable_pill_pt - path_pt
+
+            assert sec12_margin_pt >= 20.0, f"Insufficient margin on [{variant}] {r.classification}: {sec12_margin_pt}pt"
+            assert pill_margin_pt >= 5.0, f"Insufficient pill margin on [{variant}] {r.classification}: {pill_margin_pt}pt"
+
+    # Worst case (110 chars char / 70 chars imp / 75 chars path with wide letters)
+    wc_title_pt = (2 * 11.0 * 1.15) + 2.0
+    wc_char_lines = wrap_lines("W" * 110, 1.8, 8.5, 0.60)
+    wc_char_pt = (wc_char_lines * 8.5 * 1.15) + 6.0
+    wc_lbl_pt = (1 * 8.5 * 1.15) + 2.0
+    wc_imp_lines = wrap_lines("W" * 70, 1.8, 8.5, 0.60)
+    wc_imp_pt = (wc_imp_lines * 8.5 * 1.15)
+    wc_total_sec12_pt = wc_title_pt + wc_char_pt + wc_lbl_pt + wc_imp_pt
+    assert usable_sec12_pt > wc_total_sec12_pt
+
+    wc_path_lines = wrap_lines("Authority: " + ("W" * 75), 1.8, 8.5, 0.60)
+    wc_path_pt = wc_path_lines * 8.5 * 1.15
+    assert usable_pill_pt > wc_path_pt
+
+
+def test_htl_109_no_orphaned_slide_or_notes_parts(tmp_path: Path):
+    """HTL-109: Permanent regression test verifying zero orphaned slide, notes, or media parts in generated .pptx packages."""
+    import zipfile
+    import xml.etree.ElementTree as ET
+
+    baselines = [
+        ("fixed_bid", load_baseline("arc_application_implementation")),
+        ("time_and_materials", _build_pge_baseline()),
+    ]
+
+    for label, baseline in baselines:
+        res = export_governance_deck(baseline, tmp_path / f"gov_orphan_check_{label}")
+        pptx_path = res.file_path
+        prs = pptx.Presentation(str(pptx_path))
+
+        with zipfile.ZipFile(pptx_path, "r") as z:
+            names = set(z.namelist())
+            pres_xml = z.read("ppt/presentation.xml")
+            pres_rels_xml = z.read("ppt/_rels/presentation.xml.rels")
+
+            tree = ET.fromstring(pres_xml)
+            rels_tree = ET.fromstring(pres_rels_xml)
+
+            ns = {
+                "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+                "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+            }
+
+            r_map = {
+                rel.attrib["Id"]: rel.attrib["Target"]
+                for rel in rels_tree.findall("{http://schemas.openxmlformats.org/package/2006/relationships}Relationship")
+            }
+
+            active_slide_targets = []
+            for sldId in tree.findall(".//p:sldId", ns):
+                rId = sldId.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
+                active_slide_targets.append(r_map[rId])
+
+            zip_slide_files = [n for n in names if n.startswith("ppt/slides/slide") and n.endswith(".xml")]
+            zip_notes_files = [n for n in names if n.startswith("ppt/notesSlides/notesSlide") and n.endswith(".xml")]
+
+            # 1. Exact 1:1 count match: active presentation slide IDs == slide XML files in zip == presentation.slides count
+            assert len(zip_slide_files) == len(active_slide_targets) == len(prs.slides), (
+                f"[{label}] Slide count mismatch: zip_slides={len(zip_slide_files)}, "
+                f"active_targets={len(active_slide_targets)}, prs_slides={len(prs.slides)}"
+            )
+
+            # 2. Zero orphaned slide parts in zip
+            orphaned_slides = [
+                s for s in zip_slide_files
+                if s.replace("ppt/", "") not in active_slide_targets and s not in active_slide_targets
+            ]
+            assert len(orphaned_slides) == 0, f"[{label}] Found orphaned slide files in zip: {orphaned_slides}"
+
+            # 3. Zero orphaned notes slide parts (every notesSlide in zip must be referenced by an active slide)
+            active_notes_targets = set()
+            for target in active_slide_targets:
+                slide_file = "ppt/" + target if not target.startswith("ppt/") else target
+                slide_rel_file = slide_file.replace("slides/", "slides/_rels/") + ".rels"
+                if slide_rel_file in names:
+                    s_rel_tree = ET.fromstring(z.read(slide_rel_file))
+                    for rel in s_rel_tree.findall("{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"):
+                        if "notesSlide" in rel.attrib.get("Type", ""):
+                            active_notes_targets.add(rel.attrib["Target"].replace("../notesSlides/", ""))
+
+            orphaned_notes = [
+                n for n in zip_notes_files
+                if n.replace("ppt/notesSlides/", "") not in active_notes_targets
+            ]
+            assert len(orphaned_notes) == 0, f"[{label}] Found orphaned notes files in zip: {orphaned_notes}"
+
+            # 4. Zero orphaned slide relationships in presentation.xml.rels
+            slide_rels_in_pres = [
+                rel.attrib["Id"] for rel in rels_tree.findall("{http://schemas.openxmlformats.org/package/2006/relationships}Relationship")
+                if "slide" in rel.attrib.get("Type", "") and "slideMaster" not in rel.attrib.get("Type", "") and "slideLayout" not in rel.attrib.get("Type", "")
+            ]
+            active_sld_rids = [
+                sldId.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
+                for sldId in tree.findall(".//p:sldId", ns)
+            ]
+            orphaned_rels = set(slide_rels_in_pres) - set(active_sld_rids)
+            assert len(orphaned_rels) == 0, f"[{label}] Found orphaned slide relationships in presentation.xml.rels: {orphaned_rels}"
+
+            # 5. Full package reachability graph check: every entry in the .pptx zip is reachable from root rels
+            visited = {"[Content_Types].xml", "_rels/.rels"}
+            queue = ["_rels/.rels"]
+            while queue:
+                rel_path = queue.pop(0)
+                if rel_path not in names:
+                    continue
+                base_dir = str(Path(rel_path).parent).replace("\\", "/")
+                if base_dir == "_rels":
+                    base_target_dir = ""
+                elif base_dir.endswith("/_rels"):
+                    base_target_dir = base_dir[:-6]
+                else:
+                    base_target_dir = base_dir
+
+                tree_rel = ET.fromstring(z.read(rel_path))
+                for rel in tree_rel.findall("{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"):
+                    target = rel.attrib["Target"]
+                    if target.startswith("/"):
+                        resolved = target[1:]
+                    elif target.startswith("../"):
+                        parts = (base_target_dir + "/" + target).split("/")
+                        norm_parts = []
+                        for p in parts:
+                            if p == "..":
+                                if norm_parts:
+                                    norm_parts.pop()
+                            elif p and p != ".":
+                                norm_parts.append(p)
+                        resolved = "/".join(norm_parts)
+                    else:
+                        resolved = f"{base_target_dir}/{target}" if base_target_dir else target
+
+                    if resolved in names and resolved not in visited:
+                        visited.add(resolved)
+                        r_p = Path(resolved)
+                        r_rel_path = str(r_p.parent / "_rels" / (r_p.name + ".rels")).replace("\\", "/")
+                        if r_rel_path in names and r_rel_path not in visited:
+                            visited.add(r_rel_path)
+                            queue.append(r_rel_path)
+
+            unreachable = names - visited
+            assert len(unreachable) == 0, f"[{label}] Unreachable package entries in zip: {unreachable}"
