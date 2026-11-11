@@ -466,11 +466,11 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.79 in
     avail_h_pt = tb_h / 12700.0                        # ~188 pt
 
-    body_font_sz = 7.5
+    body_font_sz = 8.5
     line_spacing = 1.08
-    space_after_pt = 2.0
+    space_after_pt = 4.0
 
-    # Render all 3 cards with uniform fixed font size (7.5 pt) and uniform text box geometry (HTL-105)
+    # Render all 3 cards with uniform fixed font size (8.5 pt), vertical centering, and balanced spacing (HTL-105 / HTL-110)
     for c_idx, card in enumerate(cards[:3]):
         c_left = 457200 + c_idx * (card_w + gap)
 
@@ -522,7 +522,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r_cat.font.bold = True
         r_cat.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
-        # Content Text Box (HTL-105: uniform fixed height and geometry across all 3 cards)
+        # Content Text Box (HTL-105 / HTL-110: uniform fixed height, vertical centering, and balanced spacing across all 3 cards)
         body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
@@ -531,7 +531,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         tf_b.margin_left = 0
         tf_b.margin_right = 0
         for bpr in body_box._element.xpath(".//a:bodyPr"):
-            bpr.set("anchor", "t")
+            bpr.set("anchor", "ctr")
 
         for p_idx, (label, body) in enumerate(card.steps):
             p_elem = tf_b.paragraphs[0] if p_idx == 0 else tf_b.add_paragraph()
@@ -730,8 +730,8 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
 
     foot_box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, foot_left, foot_top, foot_w, foot_h)
     foot_box.fill.solid()
-    foot_box.fill.fore_color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
-    foot_box.line.color.rgb = RGBColor(0xEA, 0xEF, 0xF8)
+    foot_box.fill.fore_color.rgb = RGBColor(0x0F, 0x25, 0x6E)
+    foot_box.line.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
     foot_box.line.width = 9525
 
     # Accent bar on left of banner
@@ -741,8 +741,8 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
     bar_h = 301980      # 0.3302 in
     bar_box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, bar_left, bar_top, bar_w, bar_h)
     bar_box.fill.solid()
-    bar_box.fill.fore_color.rgb = RGBColor(0x20, 0x4E, 0xCF)
-    bar_box.line.color.rgb = RGBColor(0x20, 0x4E, 0xCF)
+    bar_box.fill.fore_color.rgb = RGBColor(0x00, 0xCC, 0x83)
+    bar_box.line.color.rgb = RGBColor(0x00, 0xCC, 0x83)
     bar_box.line.width = 9525
 
     # Banner text
@@ -764,9 +764,9 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
     r_foot = p_foot.add_run()
     r_foot.text = model.slide11.footer_banner
     r_foot.font.name = "Proxima Nova"
-    r_foot.font.size = Pt(9.0)
+    r_foot.font.size = Pt(11.0)
     r_foot.font.bold = False
-    r_foot.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
+    r_foot.font.color.rgb = RGBColor(0xF4, 0xF6, 0xFB)
 
 
 def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:

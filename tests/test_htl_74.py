@@ -120,7 +120,7 @@ def test_htl_74_arc_genomics_12_step_classification_and_rendering(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 7.5
+    assert c1_size == c2_size == c3_size == 8.5
 
     # Verify flowchart elements
     texts = [s.text_frame.text.strip() for s in slide16.shapes if s.has_text_frame]
@@ -180,7 +180,7 @@ def test_htl_74_pge_10_step_classification_and_rendering(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 7.5
+    assert c1_size == c2_size == c3_size == 8.5
 
 
 def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
@@ -231,7 +231,7 @@ def test_htl_74_lean_5_step_sow_zero_empty_card_fallback(tmp_path):
     c1_size = card1_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c2_size = card2_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
     c3_size = card3_boxes[0].text_frame.paragraphs[0].runs[0].font.size.pt
-    assert c1_size == c2_size == c3_size == 7.5
+    assert c1_size == c2_size == c3_size == 8.5
 
 
 def test_htl_74_dispute_heavy_contract_escalation_classification(tmp_path):

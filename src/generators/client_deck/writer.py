@@ -52,8 +52,9 @@ def _replace_shape_text(
     new_text: str,
     default_font_size: Optional[Pt] = None,
     font_color_rgb: Optional[RGBColor] = None,
+    font_name: str = "Proxima Nova",
 ) -> None:
-    """Replace all text in a shape text frame preserving the original formatting style."""
+    """Replace all text in a shape text frame ensuring Proxima Nova font styling."""
     if not shape.has_text_frame:
         return
     tf = shape.text_frame
@@ -67,11 +68,14 @@ def _replace_shape_text(
 
     if not tf.paragraphs:
         p = tf.add_paragraph()
-        p.text = new_text
+        r = p.add_run()
+        r.text = new_text
+        r.font.name = font_name
+        if default_font_size is not None:
+            r.font.size = default_font_size
         return
 
     first_p = tf.paragraphs[0]
-    font_name = first_p.runs[0].font.name if first_p.runs and first_p.runs[0].font.name else "Proxima Nova"
     font_size = (
         default_font_size
         if default_font_size is not None

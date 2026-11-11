@@ -56,8 +56,24 @@ def test_htl_109_slide11_change_decision_matrix_structure_and_geometry(tmp_path:
     assert "WHAT IT MEANS" in all_text
     assert "Authority:" in all_text
 
-    # 3. Footer Banner validation
-    assert any("To keep commitments consistent, please work with your DM and PMO" in t for t in textboxes)
+    # 3. Footer Banner validation (colors, font-size, typography)
+    foot_text_shapes = [s for s in slide11.shapes if s.has_text_frame and "To keep commitments consistent" in s.text_frame.text]
+    assert len(foot_text_shapes) == 1, "Expected 1 footer text shape"
+    foot_tb = foot_text_shapes[0]
+    foot_p = foot_tb.text_frame.paragraphs[0]
+    assert len(foot_p.runs) > 0
+    assert foot_p.runs[0].font.name == "Proxima Nova"
+    assert foot_p.runs[0].font.size == pptx.util.Pt(11.0)
+    assert foot_p.runs[0].font.color.rgb == pptx.dml.color.RGBColor(0xF4, 0xF6, 0xFB)
+
+    # Footer banner background box and accent bar styling (matching Slides 9/10 #0F256E and #00CC83)
+    foot_bg_shapes = [s for s in slide11.shapes if s.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.AUTO_SHAPE and s.left == 610350 and s.top == 4199920]
+    assert len(foot_bg_shapes) == 1, "Expected 1 footer background box"
+    assert foot_bg_shapes[0].fill.fore_color.rgb == pptx.dml.color.RGBColor(0x0F, 0x25, 0x6E)
+
+    accent_bar_shapes = [s for s in slide11.shapes if s.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.AUTO_SHAPE and s.left == 816150 and s.top == 4289134]
+    assert len(accent_bar_shapes) == 1, "Expected 1 footer accent bar"
+    assert accent_bar_shapes[0].fill.fore_color.rgb == pptx.dml.color.RGBColor(0x00, 0xCC, 0x83)
 
     # 4. Card count & positioning
     # Total shapes includes: header shapes, 4 card backgrounds, 4 title boxes, 4 impact boxes, 4 pill backgrounds, 4 pill textboxes, 1 footer bg, 1 footer accent, 1 footer text
@@ -139,13 +155,28 @@ def test_htl_109_elimination_of_ellipsis_truncation(tmp_path: Path):
     client_prs = pptx.Presentation(str(client_res.file_path))
 
     # Gov Slide 14 & Client Slide 5 (Why We're Here / Problem Statement)
-    gov_s14_texts = [s.text_frame.text.strip() for s in gov_prs.slides[13].shapes if s.has_text_frame]
-    client_s5_texts = [s.text_frame.text.strip() for s in client_prs.slides[4].shapes if s.has_text_frame]
+    gov_s14_shapes = {s.shape_id: s for s in gov_prs.slides[13].shapes if s.has_text_frame}
+    client_s5_shapes = {s.shape_id: s for s in client_prs.slides[4].shapes if s.has_text_frame}
+
+    gov_s14_texts = [s.text_frame.text.strip() for s in gov_s14_shapes.values()]
+    client_s5_texts = [s.text_frame.text.strip() for s in client_s5_shapes.values()]
 
     for t in gov_s14_texts:
         assert not t.endswith("..."), f"Governance Slide 14 contains trailing truncation: {t}"
     for t in client_s5_texts:
         assert not t.endswith("..."), f"Client Slide 5 contains trailing truncation: {t}"
+
+    # Verify all three cards (shapes 176, 180, 184) consistently render in Proxima Nova font
+    for card_shape_id in [176, 180, 184]:
+        assert card_shape_id in gov_s14_shapes, f"Shape {card_shape_id} not found on Governance Slide 14"
+        for p in gov_s14_shapes[card_shape_id].text_frame.paragraphs:
+            for r in p.runs:
+                assert r.font.name == "Proxima Nova", f"Gov Slide 14 shape {card_shape_id} run rendered with wrong font: {r.font.name}"
+
+        assert card_shape_id in client_s5_shapes, f"Shape {card_shape_id} not found on Client Slide 5"
+        for p in client_s5_shapes[card_shape_id].text_frame.paragraphs:
+            for r in p.runs:
+                assert r.font.name == "Proxima Nova", f"Client Slide 5 shape {card_shape_id} run rendered with wrong font: {r.font.name}"
 
     # Gov Slide 15 & Client Slide 6 (Deliverables / Solution Overview)
     gov_s15_texts = [s.text_frame.text.strip() for s in gov_prs.slides[14].shapes if s.has_text_frame]
