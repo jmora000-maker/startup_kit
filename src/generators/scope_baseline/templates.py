@@ -322,54 +322,54 @@ def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant
         return [
             ClassificationGuideRow(
                 classification="Clarification",
-                operational_characteristics="Detailing existing acceptance criteria, resolving minor UI/UX ambiguities, or refining technical design within an authorized deliverable.",
-                budget_milestone_impact="No cost impact ($0); no milestone schedule change.",
-                approval_pathway="Talent PM & Delivery Manager approval; logged in Project Decision Log.",
+                operational_characteristics="Refining acceptance criteria, UI/UX details, or technical design within an authorized deliverable.",
+                budget_milestone_impact="No cost impact ($0); milestone schedule unchanged.",
+                approval_pathway="Talent PM & DM approval; logged in Project Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Reprioritization",
-                operational_characteristics="Swapping equivalent complexity work packages, reordering delivery sequence, or substituting features of equal effort within a deliverable.",
-                budget_milestone_impact="Budget neutral; milestone delivery dates remain unchanged.",
-                approval_pathway="Delivery Manager & Client Lead written alignment; PMO Lead concurrence.",
+                operational_characteristics="Swapping equivalent complexity work packages or reordering tasks within a deliverable.",
+                budget_milestone_impact="Budget neutral; milestone delivery dates unchanged.",
+                approval_pathway="DM & Client Lead written alignment; PMO Lead concurrence.",
             ),
             ClassificationGuideRow(
                 classification="Expansion",
-                operational_characteristics="Adding new functional modules, integrating additional third-party platforms, or expanding deliverable acceptance boundaries.",
-                budget_milestone_impact="Increases fixed contract price and/or extends milestone delivery timeline.",
-                approval_pathway="PMO Lead & Contracting issue formal Change Order; executive client sign-off required.",
+                operational_characteristics="Adding new functional modules, third-party integrations, or expanding deliverable boundaries.",
+                budget_milestone_impact="Increases fixed contract price and/or extends timeline.",
+                approval_pathway="PMO Lead & Contracting issue formal Change Order; client sign-off.",
             ),
             ClassificationGuideRow(
                 classification="Dependency Impact",
-                operational_characteristics="Client review turnaround delays, delayed environment credentials, or late delivery of client-owned prerequisites.",
-                budget_milestone_impact="Milestone schedule extended day-for-day; potential standby fee if resources are idled.",
-                approval_pathway="Delivery Manager formal notice to Client Sponsor; PMO Lead schedule baseline update.",
+                operational_characteristics="Client review turnaround delays, delayed credentials, or late client-owned prerequisites.",
+                budget_milestone_impact="Schedule extended day-for-day; potential standby fee.",
+                approval_pathway="DM notice to Client Sponsor; PMO Lead schedule update.",
             ),
         ]
     else:
         return [
             ClassificationGuideRow(
                 classification="Clarification",
-                operational_characteristics="Detailing deliverable activity requirements, clarifying assessment criteria, updating evaluation cases, or refining technical execution approach.",
-                budget_milestone_impact="Consumes planned weekly hours; zero variance to authorized burn rate.",
-                approval_pathway="Talent PM & Client Lead alignment in regular delivery syncs; logged in Project Decision Log.",
+                operational_characteristics="Detailing activity requirements, clarifying assessment criteria, or refining execution approach.",
+                budget_milestone_impact="Consumes planned weekly hours; zero variance to burn rate.",
+                approval_pathway="Talent PM & Client Lead alignment; logged in Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Reprioritization",
-                operational_characteristics="Reordering work package priorities, resequencing deliverable tasks, or deferring non-critical activities in favor of emerging priorities.",
-                budget_milestone_impact="Zero budget impact; total weekly effort remains within standard capacity envelope.",
-                approval_pathway="Client Lead priority directive; Delivery Manager capacity and burn alignment.",
+                operational_characteristics="Reordering work priorities, resequencing tasks, or deferring non-critical activities.",
+                budget_milestone_impact="Zero budget impact; effort stays within weekly envelope.",
+                approval_pathway="Client Lead directive; DM capacity and burn alignment.",
             ),
             ClassificationGuideRow(
                 classification="Expansion",
-                operational_characteristics="Introducing substantial new work streams, adding unbudgeted roles/talent, or increasing delivery scope beyond the total authorized NTE hours.",
-                budget_milestone_impact="Requires increase to contractual NTE budget ceiling or additional billing authorization.",
-                approval_pathway="PMO Lead & Client Executive execute formal SOW Amendment / NTE Increase.",
+                operational_characteristics="Introducing new workstreams, adding roles, or expanding scope beyond authorized NTE hours.",
+                budget_milestone_impact="Requires contractual NTE ceiling increase or added billing.",
+                approval_pathway="PMO Lead & Client Executive execute SOW Amendment / NTE Increase.",
             ),
             ClassificationGuideRow(
                 classification="Dependency Impact",
-                operational_characteristics="Third-party platform outages, delayed client data/environment access, or unavailability of required client SMEs during delivery cycles.",
-                budget_milestone_impact="Team pivots to secondary tasks; if unresolvable, capacity throttled to avoid wasteful burn.",
-                approval_pathway="Delivery Manager escalation; PMO Lead & Client Lead agree on schedule adjustment or standby protocol.",
+                operational_characteristics="Third-party outages, delayed data/environment access, or unavailable client SMEs.",
+                budget_milestone_impact="Team pivots; if unresolvable, capacity throttled to avoid burn.",
+                approval_pathway="DM escalation; PMO Lead & Client Lead agree standby protocol.",
             ),
         ]
 
