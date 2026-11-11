@@ -602,28 +602,24 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         card_shape.line.color.rgb = RGBColor(0xDD, 0xE3, 0xEE)
         card_shape.line.width = 7150
 
-        # Unified Section 1 & Section 2 Textbox (Single text frame: Title + Characteristics + WHAT IT MEANS + Impact)
-        # Positioned from card top margin down to above the bottom pill box (HTL-109)
+        # Section 1: Title + Characteristics Textbox
         sec1_left = c_left + 109728   # 0.12 in padding
-        sec1_top = card_top + 102002  # 1.78 in top (1627632 EMU)
-        sec1_w = 1645920             # 1.80 in width
-        pill_bottom_margin = 137101 # ~0.15 in margin from card bottom
-        pill_h = 514500             # 0.5627 in height
-        pill_top = card_top + card_h - pill_h - pill_bottom_margin  # 3352629 EMU (3.6665 in)
-        sec1_h = pill_top - sec1_top - 50000  # Usable height above pill (~1.83 in)
+        sec1_top = 1627632            # 1.780 in top (1627632 EMU)
+        sec1_w = 1645920              # 1.800 in width
+        sec1_h = 731520               # 0.800 in height (731520 EMU / 57.6 pt)
 
-        tb_body = slide.shapes.add_textbox(sec1_left, sec1_top, sec1_w, sec1_h)
-        tf_body = tb_body.text_frame
-        tf_body.word_wrap = True
-        tf_body.margin_top = 0
-        tf_body.margin_bottom = 0
-        tf_body.margin_left = 0
-        tf_body.margin_right = 0
-        for bpr in tb_body._element.xpath(".//a:bodyPr"):
+        tb1 = slide.shapes.add_textbox(sec1_left, sec1_top, sec1_w, sec1_h)
+        tf1 = tb1.text_frame
+        tf1.word_wrap = True
+        tf1.margin_top = 0
+        tf1.margin_bottom = 0
+        tf1.margin_left = 0
+        tf1.margin_right = 0
+        for bpr in tb1._element.xpath(".//a:bodyPr"):
             bpr.set("anchor", "t")
 
         # 1. Classification Title (11pt Bold #1B2336)
-        p_title = tf_body.paragraphs[0]
+        p_title = tf1.paragraphs[0]
         p_title.space_before = Pt(0)
         p_title.space_after = Pt(2)
         r_title = p_title.add_run()
@@ -634,9 +630,9 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         r_title.font.color.rgb = RGBColor(0x1B, 0x23, 0x36)
 
         # 2. Operational Characteristics (8.5pt Regular #5B6475)
-        p_desc = tf_body.add_paragraph()
+        p_desc = tf1.add_paragraph()
         p_desc.space_before = Pt(0)
-        p_desc.space_after = Pt(6)  # 6pt spacing between Section 1 and Section 2
+        p_desc.space_after = Pt(0)
         p_desc.line_spacing = 1.15
         r_desc = p_desc.add_run()
         r_desc.text = card.operational_characteristics
@@ -645,8 +641,22 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         r_desc.font.bold = False
         r_desc.font.color.rgb = RGBColor(0x5B, 0x64, 0x75)
 
+        # Section 2: "WHAT IT MEANS" Header + Budget/Milestone Impact Textbox
+        sec2_top = 2505456            # 2.740 in top (2505456 EMU)
+        sec2_h = 685800               # 0.750 in height (685800 EMU / 54.0 pt)
+
+        tb2 = slide.shapes.add_textbox(sec1_left, sec2_top, sec1_w, sec2_h)
+        tf2 = tb2.text_frame
+        tf2.word_wrap = True
+        tf2.margin_top = 0
+        tf2.margin_bottom = 0
+        tf2.margin_left = 0
+        tf2.margin_right = 0
+        for bpr in tb2._element.xpath(".//a:bodyPr"):
+            bpr.set("anchor", "t")
+
         # 3. "WHAT IT MEANS" Header (8.5pt Bold #204ECF)
-        p_lbl = tf_body.add_paragraph()
+        p_lbl = tf2.paragraphs[0]
         p_lbl.space_before = Pt(0)
         p_lbl.space_after = Pt(2)
         r_lbl = p_lbl.add_run()
@@ -657,7 +667,7 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         r_lbl.font.color.rgb = RGBColor(0x20, 0x4E, 0xCF)
 
         # 4. Budget / Milestone Impact (8.5pt Regular #5B6475)
-        p_imp = tf_body.add_paragraph()
+        p_imp = tf2.add_paragraph()
         p_imp.space_before = Pt(0)
         p_imp.space_after = Pt(0)
         p_imp.line_spacing = 1.15
@@ -671,6 +681,9 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         # Section 3: Bottom Pill Box (Fill #EAEFF8, Line #EAEFF8) + Pathway Text
         # Anchored to card bottom edge (card_top + card_h) with fixed offset
         pill_left = c_left + 73152   # 0.08 in inset
+        pill_bottom_margin = 137101 # ~0.15 in margin from card bottom
+        pill_h = 514500             # 0.5627 in height
+        pill_top = card_top + card_h - pill_h - pill_bottom_margin  # 3352629 EMU (3.6665 in)
         pill_w = 1719072            # 1.88 in width
 
         pill_shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, pill_left, pill_top, pill_w, pill_h)
@@ -687,7 +700,7 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
         tf3.margin_left = 0
         tf3.margin_right = 0
         for bpr in tb3._element.xpath(".//a:bodyPr"):
-            bpr.set("anchor", "m")
+            bpr.set("anchor", "ctr")
 
         p_pill = tf3.paragraphs[0]
         p_pill.space_before = Pt(0)
@@ -743,7 +756,7 @@ def write_slide11_change_decision_matrix(slide, model: GovernanceDeckModel) -> N
     tf_foot.margin_left = 0
     tf_foot.margin_right = 0
     for bpr in tb_foot._element.xpath(".//a:bodyPr"):
-        bpr.set("anchor", "m")
+        bpr.set("anchor", "ctr")
 
     p_foot = tf_foot.paragraphs[0]
     p_foot.space_before = Pt(0)

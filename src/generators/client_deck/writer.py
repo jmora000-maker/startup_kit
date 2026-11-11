@@ -14,6 +14,7 @@ from src.generators.deck_header import apply_slide_header_formatting
 from src.generators.client_deck.fit import (
     condense_problem_statement,
     condense_solution_overview,
+    condense_why_are_we_doing_this,
     estimate_text_height,
     fit_deliverables_for_block,
     select_fitting_font_size,
@@ -190,12 +191,15 @@ def write_slide5(slide, model: ClientDeckModel) -> None:
     """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95 / HTL-109)."""
     candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
+    # Card 1 (Why are we doing this): condensed via LLM / deterministic model to preserve meaning without clipping
+    why_raw = condense_why_are_we_doing_this(model.slide5.why_are_we_doing_this)
+
     # Card 2 (Problem Statement): condensed via LLM / deterministic model to preserve meaning without "..." truncation
     prob_raw = condense_problem_statement(model.slide5.what_problem_are_we_solving)
 
     # Pass 1: Compute fitting font sizes across all three cards (HTL-52 / HTL-54 / HTL-95)
     sz_why, fitted_why = select_fitting_font_size(
-        model.slide5.why_are_we_doing_this,
+        why_raw,
         width_in=7.75,
         max_height_in=0.46,
         candidate_sizes=candidate_sizes,

@@ -389,3 +389,17 @@ CRITICAL RULES:
 Input text:
 {text}
 """
+
+CONDENSE_WHY_ARE_WE_DOING_THIS_PROMPT = """You are a senior delivery director rewriting project purpose and strategic context for an executive presentation slide (HTL-109).
+
+Rewrite and distill the provided initiative purpose into 1-2 punchy, complete sentences that strictly fit within {max_chars} characters while preserving full strategic intent.
+
+CRITICAL RULES:
+1. PRESERVE MEANING: Retain the strategic imperative, core business objective, and primary organizational driver.
+2. COMPLETE SENTENCES: The output must consist of complete, grammatically sound sentences. Do NOT end with ellipsis (...) or chop clauses mid-sentence.
+3. CHARACTER BUDGET: The total output length MUST be <= {max_chars} characters.
+4. NO META-TEXT: Return ONLY the rewritten purpose prose. Do not include markdown quotes, introductory labels, bullet points, or explanations.
+
+Input text:
+{text}
+"""

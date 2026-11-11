@@ -16,6 +16,7 @@ from src.config import config
 from src.llm.prompts import (
     CONDENSE_PROBLEM_STATEMENT_PROMPT,
     CONDENSE_SOLUTION_OVERVIEW_PROMPT,
+    CONDENSE_WHY_ARE_WE_DOING_THIS_PROMPT,
 )
 from src.generators.onboarding_deck.layout import (
     AVG_CHAR_WIDTH_FACTOR,
@@ -131,6 +132,55 @@ def condense_problem_statement(
             logger.warning("LLM condensation for problem_statement failed (%s); falling back to deterministic clause selection.", exc)
     else:
         logger.info("No LLM client available for problem_statement condensation; using deterministic clause fallback.")
+
+    # Step 2: Deterministic Fallback (only when LLM is unavailable or fails)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if s.strip()]
+    if sentences:
+        if len(sentences[0]) <= max_chars:
+            if len(sentences) > 1 and len(f"{sentences[0]} {sentences[1]}") <= max_chars:
+                return f"{sentences[0]} {sentences[1]}"
+            return sentences[0]
+
+        s0 = sentences[0]
+        s0_sub = re.sub(r",\s*which\s+[^,.]*", "", s0)
+        s0_sub = re.sub(r",\s*and\s+its\s+failure\s+to\s+[^,.]*", "", s0_sub)
+        if len(s0_sub) <= max_chars:
+            return s0_sub.rstrip(" ,") + "."
+
+        return s0[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+
+    return clean[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+
+
+def condense_why_are_we_doing_this(
+    text: str,
+    max_chars: int = 180,
+    llm_client: Optional[ILLMClient] = None,
+) -> str:
+    """Condense 'Why are we doing this' purpose into 1-2 concise sentences within max_chars preserving full strategic intent via LLM rewriting (HTL-109)."""
+    clean = str(text or "").strip()
+    if not clean or len(clean) <= max_chars or clean.startswith("["):
+        return clean
+
+    # Step 1: Real LLM rewriting
+    client = llm_client or _get_default_llm_client()
+    if client is not None and hasattr(client, "generate_text"):
+        try:
+            prompt = CONDENSE_WHY_ARE_WE_DOING_THIS_PROMPT.format(text=clean, max_chars=max_chars)
+            rewritten = client.generate_text(prompt=prompt, system_prompt="You are a senior delivery director rewriting slide content.")
+            rewritten_clean = str(rewritten or "").strip().strip('"').strip("'").strip()
+            if rewritten_clean and len(rewritten_clean) <= max_chars and not rewritten_clean.endswith("..."):
+                logger.info("Successfully condensed why_are_we_doing_this via LLM (length %d -> %d).", len(clean), len(rewritten_clean))
+                return rewritten_clean
+            elif rewritten_clean:
+                trimmed = rewritten_clean[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.") + "."
+                if len(trimmed) <= max_chars:
+                    logger.info("Successfully condensed why_are_we_doing_this via LLM with boundary trim (length %d -> %d).", len(clean), len(trimmed))
+                    return trimmed
+        except Exception as exc:
+            logger.warning("LLM condensation for why_are_we_doing_this failed (%s); falling back to deterministic clause selection.", exc)
+    else:
+        logger.info("No LLM client available for why_are_we_doing_this condensation; using deterministic clause fallback.")
 
     # Step 2: Deterministic Fallback (only when LLM is unavailable or fails)
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", clean) if s.strip()]

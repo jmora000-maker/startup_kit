@@ -27,6 +27,7 @@ from src.generators.client_deck.trace import ClientDeckTraceManifest, TraceRef
 from src.generators.client_deck.fit import (
     condense_problem_statement,
     condense_solution_overview,
+    condense_why_are_we_doing_this,
 )
 
 COMMERCIAL_EXCLUSION_REGEX = re.compile(
@@ -115,6 +116,8 @@ def build_slide5_model(
     why = scrub_commercial_clauses(why_raw) if why_raw else ""
     if not why:
         why = "Establish core platform capabilities and deliver contracted business outcomes." if not why_raw or not COMMERCIAL_EXCLUSION_REGEX.search(why_raw) else "[To be confirmed in Project Success Agreement]"
+    elif not why.startswith("["):
+        why = condense_why_are_we_doing_this(why, max_chars=180, llm_client=llm_client)
 
     # Read extracted problem statement directly (HTL-54)
     raw_problem = (
