@@ -159,7 +159,7 @@ def test_htl_96_slide6_combined_textbox_and_real_bullets(tmp_path):
 
 
 def test_htl_105_slide16_uniform_card_geometry_and_font_size(tmp_path):
-    """HTL-105 / HTL-110: Verify Slide 16 cards have uniform text box heights, vertical centering anchor, and uniform 8.5pt font size across all 3 cards."""
+    """HTL-105 / HTL-110: Verify Slide 16 cards have uniform text box heights, top-anchoring, and uniform 9.0pt font size across all 3 cards."""
     # Build baseline with different step counts across cards
     from tests.test_htl_74 import ARC_12_STEP_NARRATIVE
     baseline = load_baseline("arc_application_implementation")
@@ -184,15 +184,15 @@ def test_htl_105_slide16_uniform_card_geometry_and_font_size(tmp_path):
 
     assert h1 == h2 == h3, f"Expected uniform height across all cards: Card 1 ({h1}), Card 2 ({h2}), Card 3 ({h3})"
 
-    # All 3 cards must share the exact same uniform 8.5pt body font size (HTL-110)
+    # All 3 cards must share the exact same uniform 9.0pt body font size (HTL-110)
     sz1 = c1_box.text_frame.paragraphs[0].runs[0].font.size.pt
     sz2 = c2_box.text_frame.paragraphs[0].runs[0].font.size.pt
     sz3 = c3_box.text_frame.paragraphs[0].runs[0].font.size.pt
 
-    assert sz1 == sz2 == sz3 == 8.5, f"Expected uniform 8.5pt font size, got {sz1}, {sz2}, {sz3}"
+    assert sz1 == sz2 == sz3 == 9.0, f"Expected uniform 9.0pt font size, got {sz1}, {sz2}, {sz3}"
 
-    # Verify vertical centering anchor
+    # Verify top-anchoring
     for box in [c1_box, c2_box, c3_box]:
         bpr = box._element.xpath(".//a:bodyPr")
         assert len(bpr) > 0
-        assert bpr[0].get("anchor") == "ctr"
+        assert bpr[0].get("anchor") == "t"

@@ -136,20 +136,20 @@ def test_htl_103_zero_remaining_041133_across_both_generated_decks(tmp_path):
 
 
 def test_htl_103_slide16_card_geometry_and_font_uniformity(tmp_path):
-    """HTL-103 / HTL-110: Verify Slide 16 cards all maintain uniform 8.5pt font, vertical centering anchor, and uniform card height."""
+    """HTL-103 / HTL-110: Verify Slide 16 cards all maintain uniform 9.0pt font, top-anchoring, and uniform card height."""
     arc = load_baseline("arc_application_implementation")
     gov_res = export_governance_deck(arc, tmp_path / "gov_arc")
     prs = pptx.Presentation(str(gov_res.file_path))
 
     slide16 = next(s for s in prs.slides if any(shp.has_text_frame and "How milestone acceptance works" in shp.text_frame.text for shp in s.shapes))
-    body_text_boxes = [s for s in slide16.shapes if s.has_text_frame and s.height > 2000000 and s.text_frame.text.strip()]
+    body_text_boxes = [s for s in slide16.shapes if s.has_text_frame and s.height > 1800000 and s.text_frame.text.strip()]
     assert len(body_text_boxes) == 3
 
-    # Check text box body runs are all exactly 8.5pt and vertically centered
+    # Check text box body runs are all exactly 9.0pt and top-anchored
     for tb in body_text_boxes:
         bpr = tb._element.xpath(".//a:bodyPr")
         assert len(bpr) > 0
-        assert bpr[0].get("anchor") == "ctr"
+        assert bpr[0].get("anchor") == "t"
         for p in tb.text_frame.paragraphs:
             for r in p.runs:
-                assert r.font.size == Pt(8.5)
+                assert r.font.size == Pt(9.0)
