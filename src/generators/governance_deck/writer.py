@@ -459,18 +459,20 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
     badge_h = 173736     # 0.19 in
     badge_inset = 45720  # 0.05 in
 
-    cat_top = card_top + badge_h + badge_inset + 9144   # +0.01 in
+    badge_to_cat_gap = 144780                           # 11.4 pt (0.1583 in / HTL-110 pill-to-subheader gap)
+    cat_top = card_top + badge_inset + badge_h + badge_to_cat_gap
     cat_h = 137160                                      # 0.15 in
-    tb_top = cat_top + cat_h + 9144                     # +0.01 in
+    header_to_body_gap = 292100                         # 23.0 pt (0.3194 in / HTL-110 calibrated ~37.1pt visual gap)
+    tb_top = cat_top + cat_h + header_to_body_gap
     tb_h = card_h - (tb_top - card_top) - badge_inset
     avail_w_in = (card_w - 2 * badge_inset) / 914400.0  # ~2.79 in
-    avail_h_pt = tb_h / 12700.0                        # ~188 pt
+    avail_h_pt = tb_h / 12700.0                        # ~155 pt
 
-    body_font_sz = 8.5
+    body_font_sz = 9.0
     line_spacing = 1.08
     space_after_pt = 4.0
 
-    # Render all 3 cards with uniform fixed font size (8.5 pt), vertical centering, and balanced spacing (HTL-105 / HTL-110)
+    # Render all 3 cards with uniform fixed font size (9.0 pt), top anchoring, centered 9.0pt sub-headers, and balanced spacing (HTL-105 / HTL-110)
     for c_idx, card in enumerate(cards[:3]):
         c_left = 457200 + c_idx * (card_w + gap)
 
@@ -506,7 +508,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         r_badge.font.bold = True
         r_badge.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
-        # Category Title Box below badge
+        # Category Title Box below badge (HTL-110: centered alignment and 9.0pt font)
         cat_box = slide.shapes.add_textbox(c_left + badge_inset, cat_top, card_w - (2 * badge_inset), cat_h)
         tf_cat = cat_box.text_frame
         tf_cat.word_wrap = True
@@ -515,14 +517,15 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         tf_cat.margin_left = 0
         tf_cat.margin_right = 0
         p_cat = tf_cat.paragraphs[0]
+        p_cat.alignment = pptx.enum.text.PP_ALIGN.CENTER
         r_cat = p_cat.add_run()
         r_cat.text = card.title
         r_cat.font.name = "Proxima Nova"
-        r_cat.font.size = Pt(8.0)
+        r_cat.font.size = Pt(9.0)
         r_cat.font.bold = True
         r_cat.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
 
-        # Content Text Box (HTL-105 / HTL-110: uniform fixed height, vertical centering, and balanced spacing across all 3 cards)
+        # Content Text Box (HTL-105 / HTL-110: uniform fixed height, top-anchoring, and balanced spacing across all 3 cards)
         body_box = slide.shapes.add_textbox(c_left + badge_inset, tb_top, card_w - (2 * badge_inset), tb_h)
         tf_b = body_box.text_frame
         tf_b.word_wrap = True
@@ -531,7 +534,7 @@ def write_slide16_acceptance_narrative(slide, model: GovernanceDeckModel) -> Non
         tf_b.margin_left = 0
         tf_b.margin_right = 0
         for bpr in body_box._element.xpath(".//a:bodyPr"):
-            bpr.set("anchor", "ctr")
+            bpr.set("anchor", "t")
 
         for p_idx, (label, body) in enumerate(card.steps):
             p_elem = tf_b.paragraphs[0] if p_idx == 0 else tf_b.add_paragraph()
