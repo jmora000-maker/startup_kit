@@ -110,19 +110,20 @@ def render() -> None:
     m2.metric("Active Runs", len(active_runs))
     m3.metric("Archived Runs", len(archived_runs))
 
-    # HTL-81: Stateful Tab Navigation via horizontal radio
+    # HTL-81 / HTL-111: Stateful Tab Navigation via horizontal radio
     if SESSION_KEY_VIEW_TAB not in st.session_state:
         st.session_state[SESSION_KEY_VIEW_TAB] = "active"
 
     selected_view = st.radio(
         "View",
         options=["active", "archived"],
-        format_func=lambda x: f"Active Runs ({len(active_runs)})"
-        if x == "active"
-        else f"Archived Runs ({len(archived_runs)})",
+        format_func=lambda x: "Active Runs" if x == "active" else "Archived Runs",
         horizontal=True,
         key=SESSION_KEY_VIEW_TAB,
     )
+    if selected_view not in ("active", "archived"):
+        selected_view = "active"
+        st.session_state[SESSION_KEY_VIEW_TAB] = "active"
 
     if selected_view == "active":
         if not active_runs:

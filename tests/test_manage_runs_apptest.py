@@ -519,3 +519,121 @@ def test_manage_runs_apptest_partial_purge_failure_displays_summary_error(clean_
     assert at.error
     assert any("Purged 1 run(s). 1 failed: " in str(e.value) for e in at.error)
     assert any("Cloud Storage timeout on run2" in str(e.value) for e in at.error)
+
+
+# ==============================================================================
+# Group 5: HTL-111 Sequential Archive & Unarchive Actions (Multi-Step Regression)
+# ==============================================================================
+
+def test_manage_runs_apptest_sequential_archive_actions_survive_consecutive_reruns(clean_storage):
+    """Verify consecutive Archive actions in sequence do not clear radio selection or hide active list (HTL-111)."""
+    run1 = _seed_sample_run(clean_storage, "Alpha Project")
+    run2 = _seed_sample_run(clean_storage, "Beta Project")
+    run3 = _seed_sample_run(clean_storage, "Gamma Project")
+    run4 = _seed_sample_run(clean_storage, "Delta Project")
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.sidebar.radio(key="app_page_selector").set_value("Manage Runs").run()
+
+    # Unlock
+    at.text_input(key="manage_runs_passphrase_input").input(config.admin_passphrase)
+    at.button(key="manage_runs_unlock_button").click().run()
+
+    # Initial state: 4 active runs rendered
+    assert at.radio(key="manage_runs_view_tab").value == "active"
+    archive_buttons_initial = [b for b in at.button if b.key.startswith("btn_archive_")]
+    assert len(archive_buttons_initial) == 4
+
+    # Action 1: Archive Run 1 (1st consecutive action)
+    at.button(key=f"btn_archive_{run1}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run1).archived is True
+    assert at.radio(key="manage_runs_view_tab").value == "active"
+    archive_buttons_after_1 = [b for b in at.button if b.key.startswith("btn_archive_")]
+    assert len(archive_buttons_after_1) == 3
+
+    # Action 2: Archive Run 2 (2nd consecutive action - triggers HTL-111 bug if dynamic label serde fails)
+    at.button(key=f"btn_archive_{run2}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run2).archived is True
+    # The active tab must remain selected and the active run list must not disappear
+    assert at.radio(key="manage_runs_view_tab").value == "active"
+    archive_buttons_after_2 = [b for b in at.button if b.key.startswith("btn_archive_")]
+    assert len(archive_buttons_after_2) == 2
+    assert any(f"btn_archive_{run3}" == b.key for b in archive_buttons_after_2)
+    assert any(f"btn_archive_{run4}" == b.key for b in archive_buttons_after_2)
+
+    # Action 3: Archive Run 3 (3rd consecutive action)
+    at.button(key=f"btn_archive_{run3}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run3).archived is True
+    assert at.radio(key="manage_runs_view_tab").value == "active"
+    archive_buttons_after_3 = [b for b in at.button if b.key.startswith("btn_archive_")]
+    assert len(archive_buttons_after_3) == 1
+    assert archive_buttons_after_3[0].key == f"btn_archive_{run4}"
+
+    # Verify metrics update accurately
+    metrics = {m.label: m.value for m in at.metric}
+    assert metrics.get("Total Runs") == "4"
+    assert metrics.get("Active Runs") == "1"
+    assert metrics.get("Archived Runs") == "3"
+
+
+def test_manage_runs_apptest_sequential_unarchive_actions_survive_consecutive_reruns(clean_storage):
+    """Verify consecutive Unarchive actions in sequence do not clear radio selection or hide archived list (HTL-111)."""
+    run1 = _seed_sample_run(clean_storage, "Alpha Project")
+    run2 = _seed_sample_run(clean_storage, "Beta Project")
+    run3 = _seed_sample_run(clean_storage, "Gamma Project")
+    run4 = _seed_sample_run(clean_storage, "Delta Project")
+
+    clean_storage.archive_run(run1)
+    clean_storage.archive_run(run2)
+    clean_storage.archive_run(run3)
+    clean_storage.archive_run(run4)
+
+    at = AppTest.from_file(APP_FILE, default_timeout=10).run()
+    at.sidebar.radio(key="app_page_selector").set_value("Manage Runs").run()
+
+    # Unlock and switch to Archived tab
+    at.text_input(key="manage_runs_passphrase_input").input(config.admin_passphrase)
+    at.button(key="manage_runs_unlock_button").click().run()
+    at.radio(key="manage_runs_view_tab").set_value("archived").run()
+
+    # Initial state: 4 archived runs rendered
+    assert at.radio(key="manage_runs_view_tab").value == "archived"
+    unarchive_buttons_initial = [b for b in at.button if b.key.startswith("btn_unarchive_")]
+    assert len(unarchive_buttons_initial) == 4
+
+    # Action 1: Unarchive Run 1 (1st consecutive action)
+    at.button(key=f"btn_unarchive_{run1}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run1).archived is False
+    assert at.radio(key="manage_runs_view_tab").value == "archived"
+    unarchive_buttons_after_1 = [b for b in at.button if b.key.startswith("btn_unarchive_")]
+    assert len(unarchive_buttons_after_1) == 3
+
+    # Action 2: Unarchive Run 2 (2nd consecutive action - triggers HTL-111 bug if dynamic label serde fails)
+    at.button(key=f"btn_unarchive_{run2}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run2).archived is False
+    # The archived tab must remain selected and the archived run list must not disappear
+    assert at.radio(key="manage_runs_view_tab").value == "archived"
+    unarchive_buttons_after_2 = [b for b in at.button if b.key.startswith("btn_unarchive_")]
+    assert len(unarchive_buttons_after_2) == 2
+    assert any(f"btn_unarchive_{run3}" == b.key for b in unarchive_buttons_after_2)
+    assert any(f"btn_unarchive_{run4}" == b.key for b in unarchive_buttons_after_2)
+
+    # Action 3: Unarchive Run 3 (3rd consecutive action)
+    at.button(key=f"btn_unarchive_{run3}").click().run()
+    assert not at.exception
+    assert clean_storage.get_run(run3).archived is False
+    assert at.radio(key="manage_runs_view_tab").value == "archived"
+    unarchive_buttons_after_3 = [b for b in at.button if b.key.startswith("btn_unarchive_")]
+    assert len(unarchive_buttons_after_3) == 1
+    assert unarchive_buttons_after_3[0].key == f"btn_unarchive_{run4}"
+
+    # Verify metrics update accurately
+    metrics = {m.label: m.value for m in at.metric}
+    assert metrics.get("Total Runs") == "4"
+    assert metrics.get("Active Runs") == "3"
+    assert metrics.get("Archived Runs") == "1"
