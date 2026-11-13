@@ -87,7 +87,7 @@ def render() -> None:
     with header_col:
         st.caption("Administrative run lifecycle and storage management.")
     with lock_col:
-        if st.button("Lock page", key="manage_runs_lock_button"):
+        if st.button("Lock page", key="manage_runs_lock_button", type="primary"):
             lock_manage_runs()
             st.rerun()
 
@@ -136,7 +136,7 @@ def render() -> None:
                     with c_info:
                         _render_run_info(run, is_archived=False)
                     with c_action:
-                        if st.button("Archive", key=f"btn_archive_{run.run_id}"):
+                        if st.button("Archive", key=f"btn_archive_{run.run_id}", type="primary"):
                             try:
                                 storage.archive_run(run.run_id)
                                 st.session_state[SESSION_KEY_FLASH_SUCCESS] = (
@@ -176,7 +176,7 @@ def render() -> None:
                     c_confirm, c_cancel = st.columns([2, 1])
                     with c_confirm:
                         if st.button(
-                            f"Confirm & Delete {len(selected_runs)} Runs",
+                            f"⚠️ Confirm & Delete {len(selected_runs)} Runs",
                             key="btn_bulk_purge_confirm",
                             type="primary",
                         ):
@@ -209,29 +209,29 @@ def render() -> None:
                             st.rerun()
 
                     with c_cancel:
-                        if st.button("Cancel", key="btn_bulk_purge_cancel"):
+                        if st.button("Cancel", key="btn_bulk_purge_cancel", type="primary"):
                             st.session_state[SESSION_KEY_BULK_PURGE_CONFIRMING] = False
                             st.rerun()
 
             # Bulk Action Toolbar
             col_sel_all, col_desel_all, col_bulk_purge, _ = st.columns([1, 1, 2, 2])
             with col_sel_all:
-                if st.button("Select All", key="btn_select_all_archived"):
+                if st.button("Select All", key="btn_select_all_archived", type="primary"):
                     for r in sorted_archived:
                         st.session_state[f"chk_select_{r.run_id}"] = True
                     st.rerun()
             with col_desel_all:
-                if st.button("Deselect All", key="btn_deselect_all_archived"):
+                if st.button("Deselect All", key="btn_deselect_all_archived", type="primary"):
                     for r in sorted_archived:
                         st.session_state[f"chk_select_{r.run_id}"] = False
                     st.rerun()
             with col_bulk_purge:
                 selected_count = len(selected_runs)
                 if st.button(
-                    f"Purge Selected ({selected_count})",
+                    f"⚠️ Purge Selected ({selected_count})",
                     key="btn_bulk_purge_init",
                     disabled=(selected_count == 0),
-                    type="primary" if selected_count > 0 else "secondary",
+                    type="primary",
                 ):
                     st.session_state[SESSION_KEY_BULK_PURGE_CONFIRMING] = True
                     st.rerun()
@@ -249,7 +249,7 @@ def render() -> None:
                     with c_info:
                         _render_run_info(run, is_archived=True)
                     with c_action:
-                        if st.button("Unarchive", key=f"btn_unarchive_{run.run_id}"):
+                        if st.button("Unarchive", key=f"btn_unarchive_{run.run_id}", type="primary"):
                             try:
                                 storage.unarchive_run(run.run_id)
                                 st.session_state.pop(f"chk_select_{run.run_id}", None)

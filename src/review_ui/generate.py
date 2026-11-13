@@ -656,7 +656,7 @@ def _render_admin_gate(
             entered = st.text_input(
                 "Admin passphrase", type="password", key=f"{key_prefix}_admin_passphrase_input"
             )
-            if st.button("Unlock", key=f"{key_prefix}_admin_unlock_button"):
+            if st.button("Unlock", key=f"{key_prefix}_admin_unlock_button", type="primary"):
                 if is_admin_unlocked(entered, config.admin_passphrase):
                     st.session_state[unlocked_key] = True
                     st.rerun()
@@ -681,7 +681,7 @@ def _render_generation_gate(key_prefix: str) -> bool:
         entered = st.text_input(
             "Generation passphrase", type="password", key=f"{key_prefix}_gen_passphrase_input"
         )
-        if st.button("Unlock generation", key=f"{key_prefix}_gen_unlock_button"):
+        if st.button("Unlock generation", key=f"{key_prefix}_gen_unlock_button", type="primary"):
             if is_generation_unlocked(entered, config.generation_passphrase):
                 unlock_generation_session()
                 st.rerun()
@@ -842,7 +842,7 @@ def render() -> None:
             is_gen_running = st.session_state.get("gen_is_running", False)
             has_gen_result = st.session_state.get("generate_run_result") is not None
             gen_disabled = is_gen_running or has_gen_result
-            submitted = st.button("Generate", key="gen_submit_button", disabled=gen_disabled)
+            submitted = st.button("Generate", key="gen_submit_button", disabled=gen_disabled, type="primary")
 
             if submitted:
                 sow_names = [f.name for f in (effective_sow_files or [])]
@@ -1015,7 +1015,7 @@ def render() -> None:
             is_reingest_running = st.session_state.get("reingest_is_running", False)
             has_reingest_result = st.session_state.get("reingest_run_result") is not None
             reingest_disabled = is_reingest_running or has_reingest_result
-            submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button", disabled=reingest_disabled)
+            submitted_r = st.button("Re-ingest and recalculate", key="reingest_submit_button", disabled=reingest_disabled, type="primary")
 
             if submitted_r:
                 outputs_r = _output_selection_from_checkboxes(

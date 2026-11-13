@@ -292,7 +292,7 @@ def _render_fact_review_page() -> None:
     )
 
     if is_fixture:
-        saved = st.button("Save review", key="fact_review_save_button")
+        saved = st.button("Save review", key="fact_review_save_button", type="primary")
     elif run.state == "approved":
         if getattr(run, "generation_started_at", None) and not is_generating:
             formatted_time = run.generation_started_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -309,7 +309,7 @@ def _render_fact_review_page() -> None:
                     type="password",
                     key=f"fact_review_{selected_run_id}_gen_passphrase_input",
                 )
-                if st.button("Unlock generation", key=f"fact_review_{selected_run_id}_gen_unlock_button"):
+                if st.button("Unlock generation", key=f"fact_review_{selected_run_id}_gen_unlock_button", type="primary"):
                     if generate_page.is_generation_unlocked(entered, config.generation_passphrase):
                         generate_page.unlock_generation_session()
                         st.rerun()
@@ -320,6 +320,7 @@ def _render_fact_review_page() -> None:
                 "Generate documents",
                 key="fact_review_generate_button",
                 disabled=is_generating,
+                type="primary",
             )
     elif run.state == "pending_review":
         blocking_errors = review.get_blocking_validation_errors(run.validation_report)
@@ -330,12 +331,13 @@ def _render_fact_review_page() -> None:
             )
         col1, col2 = st.columns(2)
         with col1:
-            saved = st.button("Save review", key="fact_review_save_button")
+            saved = st.button("Save review", key="fact_review_save_button", type="primary")
         with col2:
             approved = st.button(
                 "Approve",
                 key="fact_review_approve_button",
                 disabled=bool(blocking_errors),
+                type="primary",
             )
     elif run.state == "generated":
         st.info(f"Run {selected_run_id} has been generated.")
