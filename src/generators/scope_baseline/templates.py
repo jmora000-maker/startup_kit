@@ -13,6 +13,15 @@ from src.generators.scope_baseline.models import (
 
 logger = logging.getLogger(__name__)
 
+# HTL-114: Canonical role-assignment patterns for Scope Event Governance
+# In-Envelope (Clarification, Reprioritization): Talent PM leads, Delivery Manager supports as needed
+ROLE_LEAD_IN_ENVELOPE = "Talent PM leads {action} ({support} supports if needed)"
+ROLE_LEAD_IN_ENVELOPE_CONCISE = "Talent PM leads {context} ({support} supports); logged in Decision Log."
+
+# Out-of-Envelope (Expansion, Dependency Impact): Talent PM triggers, routed to DM & PMO Lead
+ROLE_TRIGGER_OUT_OF_ENVELOPE = "Talent PM triggers {event}; routed to Delivery Manager and PMO Lead to {resolution}."
+ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE = "Talent PM triggers; DM & PMO Lead {action}"
+
 
 def resolve_contract_variant(contract_type: Optional[str]) -> str:
     """Normalize contract_type into either 'Fixed Bid' or 'Time and Materials'."""
@@ -191,25 +200,31 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
             ChangeDecisionMatrixRow(
                 classification="Clarification",
                 trigger_condition="Minor requirement interpretation or design refinement within an authorized deliverable that does not affect cost, acceptance criteria, or milestone dates.",
-                governance_action="Logged in Project Decision Log by Talent PM and Delivery Manager; aligned with client lead in weekly cadence.",
+                governance_action=f"{ROLE_LEAD_IN_ENVELOPE.format(action='resolution and logs in Project Decision Log', support='Delivery Manager')}; aligned with Client Lead in weekly cadence.",
                 commercial_impact="Zero commercial impact. Delivered within existing fixed-fee milestone price.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Reprioritization",
                 trigger_condition="Client requests adjusting the sequence of work packages or swapping an equivalent feature within an in-progress deliverable without increasing total effort or altering milestone acceptance dates.",
-                governance_action="Delivery Manager and PMO Lead evaluate equal complexity trade-off; documented in Decision Log with written client concurrence.",
+                governance_action=f"{ROLE_LEAD_IN_ENVELOPE.format(action='trade-off evaluation with Client Lead', support='Delivery Manager')}; documented in Decision Log with written client concurrence.",
                 commercial_impact="Neutral budget impact. Milestone delivery schedule and total fixed price remain unchanged.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Expansion",
                 trigger_condition="Client requests new functional scope, additional environments, or material modification to contracted deliverable acceptance criteria.",
-                governance_action="Execution halts on requested item; Delivery Manager scopes impact and PMO Lead drafts formal Change Order with revised pricing and timeline for executive sign-off.",
+                governance_action=ROLE_TRIGGER_OUT_OF_ENVELOPE.format(
+                    event="event and halts execution on requested item",
+                    resolution="draft formal Change Order with revised pricing and timeline for executive sign-off",
+                ),
                 commercial_impact="Material commercial impact. Requires formal Change Order adjusting total fixed contract fee and milestone schedule.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Dependency Impact",
                 trigger_condition="Client prerequisite delay (e.g., environment access, stakeholder review sign-off, or external API provision) exceeds contractual turnaround window.",
-                governance_action="Delivery Manager raises formal Risk/Blocker notification; PMO Lead initiates Schedule Relief protocol and adjusts impacted milestone dates.",
+                governance_action=ROLE_TRIGGER_OUT_OF_ENVELOPE.format(
+                    event="blocker notification and pivots team",
+                    resolution="initiate contractual Schedule Relief and adjust milestone dates",
+                ),
                 commercial_impact="Schedule baseline extended by equivalent delay duration. If standby effort is incurred, commercial adjustment or stand-down protocol is enacted.",
             ),
         ]
@@ -218,25 +233,31 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
             ChangeDecisionMatrixRow(
                 classification="Clarification",
                 trigger_condition="Interpretation of requirements, methodology refinement, or operational detailing within authorized work packages that fits within standard weekly capacity.",
-                governance_action="Talent PM / Delivery Lead clarifies task specifications; aligned with Client Lead in regular delivery cadence without formal escalation.",
+                governance_action=f"{ROLE_LEAD_IN_ENVELOPE.format(action='task clarification with Client Lead', support='Delivery Manager')}; aligned in regular delivery cadence without formal escalation.",
                 commercial_impact="Zero commercial impact. Consumes standard authorized weekly hourly capacity.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Reprioritization",
                 trigger_condition="Client directs shifting team focus to higher-priority work packages or deferring scheduled tasks within the authorized delivery cycle.",
-                governance_action="Talent PM resequences task priorities with Client Lead; Delivery Manager confirms burn rate and capacity alignment.",
+                governance_action="Talent PM leads task resequencing with Client Lead (Delivery Manager confirms capacity/burn alignment if needed); logged in Decision Log.",
                 commercial_impact="Budget neutral within authorized capacity envelope; consumes standard weekly hours without NTE variance.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Expansion",
                 trigger_condition="Client requests additional work streams, expanded project scope, or staffing additions that will exhaust the current NTE budget ceiling.",
-                governance_action="Delivery Manager forecasts budget impact; PMO Lead initiates Work Authorization / NTE ceiling increase request for client executive approval.",
+                governance_action=ROLE_TRIGGER_OUT_OF_ENVELOPE.format(
+                    event="event",
+                    resolution="forecast impact and initiate Work Authorization / NTE ceiling increase request for client executive approval",
+                ),
                 commercial_impact="Material commercial impact. Requires authorized increase to total NTE fee ceiling or extended billing authorization.",
             ),
             ChangeDecisionMatrixRow(
                 classification="Dependency Impact",
                 trigger_condition="Client dependency, data provision delay, or access blocker impedes active delivery tasks, risking inefficient team burn.",
-                governance_action="Talent PM pivots team to unblocked work packages; Delivery Manager issues blocker escalation. If idle, team stand-down or capacity throttle is triggered.",
+                governance_action=ROLE_TRIGGER_OUT_OF_ENVELOPE.format(
+                    event="blocker and pivots team to unblocked tasks",
+                    resolution="issue blocker escalation and enact standby or capacity throttling if needed",
+                ),
                 commercial_impact="Hours burn redirected to secondary productive tasks to protect investment; schedule timeline adjusted without unapproved budget burn.",
             ),
         ]
@@ -258,7 +279,7 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
                 control_dimension="Domain & Application Scope",
                 governing_rule="Development and configuration are restricted to the explicitly listed platforms, systems, and APIs.",
                 boundary_violation_trigger="Requests to integrate unlisted legacy systems, build on unsupported clouds, or support external platforms.",
-                commercial_control_route="Delivery Manager issues Scope Notice; work deferred until supplemental SOW / Change Order is executed.",
+                commercial_control_route="Talent PM halts out-of-scope work; Delivery Manager and PMO Lead issue Scope Notice and route formal Change Order.",
             ),
             DecisionRuleControlRow(
                 control_dimension="Service Depth & Delivery Boundaries",
@@ -276,7 +297,7 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
                 control_dimension="Core Dependency Health",
                 governing_rule="Client must provide environments, access credentials, and review feedback within agreed contractual SLA windows.",
                 boundary_violation_trigger="Client dependency unmet after 5 business days from agreed validation date.",
-                commercial_control_route="Delivery Manager issues formal Dependency Delay Notice; downstream milestone dates extended on a day-for-day basis.",
+                commercial_control_route="Talent PM triggers blocker; Delivery Manager and PMO Lead issue Dependency Delay Notice and extend downstream milestone dates.",
             ),
         ]
     else:
@@ -291,7 +312,7 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
                 control_dimension="Domain & Application Scope",
                 governing_rule="Activities focus on contracted target architectures, source repositories, and deployment environments.",
                 boundary_violation_trigger="Introduction of complex out-of-scope technology stacks that dilute delivery capacity or derail scheduled milestones.",
-                commercial_control_route="Delivery Manager assesses skill and capacity impact; aligns with client on delivery trade-offs.",
+                commercial_control_route="Talent PM triggers scope review; Delivery Manager and PMO Lead assess capacity impact and align with client on trade-offs or NTE increase.",
             ),
             DecisionRuleControlRow(
                 control_dimension="Service Depth & Delivery Boundaries",
@@ -309,7 +330,7 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
                 control_dimension="Core Dependency Health",
                 governing_rule="Team requires timely unblocking and environment availability to maintain productive delivery progress and burn efficiency.",
                 boundary_violation_trigger="External blocker halts active delivery tasks with no immediate secondary work packages available.",
-                commercial_control_route="Delivery Manager triggers delivery plan resequencing; if blocker exceeds 3 days, stand-down or capacity reduction is enacted to protect client budget.",
+                commercial_control_route="Talent PM pivots team to unblocked work; Delivery Manager and PMO Lead initiate stand-down or capacity throttle if blocker exceeds 3 days.",
             ),
         ]
 
@@ -324,25 +345,25 @@ def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant
                 classification="Clarification",
                 operational_characteristics="Refining acceptance criteria, UI/UX details, or technical design within an authorized deliverable.",
                 budget_milestone_impact="No cost impact ($0); milestone schedule unchanged.",
-                approval_pathway="Talent PM & DM approval; logged in Project Decision Log.",
+                approval_pathway="Talent PM leads (DM supports if needed); logged in Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Reprioritization",
                 operational_characteristics="Swapping equivalent complexity work packages or reordering tasks within a deliverable.",
                 budget_milestone_impact="Budget neutral; milestone delivery dates unchanged.",
-                approval_pathway="DM & Client Lead written alignment; PMO Lead concurrence.",
+                approval_pathway=ROLE_LEAD_IN_ENVELOPE_CONCISE.format(context="with Client", support="DM"),
             ),
             ClassificationGuideRow(
                 classification="Expansion",
                 operational_characteristics="Adding new functional modules, third-party integrations, or expanding deliverable boundaries.",
                 budget_milestone_impact="Increases fixed contract price and/or extends timeline.",
-                approval_pathway="PMO Lead & Contracting issue formal Change Order; client sign-off.",
+                approval_pathway=ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE.format(action="route Change Order for client sign-off."),
             ),
             ClassificationGuideRow(
                 classification="Dependency Impact",
                 operational_characteristics="Client review turnaround delays, delayed credentials, or late client-owned prerequisites.",
                 budget_milestone_impact="Schedule extended day-for-day; potential standby fee.",
-                approval_pathway="DM notice to Client Sponsor; PMO Lead schedule update.",
+                approval_pathway=ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE.format(action="execute Schedule Relief / Change Order."),
             ),
         ]
     else:
@@ -351,25 +372,25 @@ def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant
                 classification="Clarification",
                 operational_characteristics="Detailing activity requirements, clarifying assessment criteria, or refining execution approach.",
                 budget_milestone_impact="Consumes planned weekly hours; zero variance to burn rate.",
-                approval_pathway="Talent PM & Client Lead alignment; logged in Decision Log.",
+                approval_pathway="Talent PM leads (DM supports if needed); logged in Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Reprioritization",
                 operational_characteristics="Reordering work priorities, resequencing tasks, or deferring non-critical activities.",
                 budget_milestone_impact="Zero budget impact; effort stays within weekly envelope.",
-                approval_pathway="Client Lead directive; DM capacity and burn alignment.",
+                approval_pathway="Talent PM leads with Client (DM aligns burn); logged in Decision Log.",
             ),
             ClassificationGuideRow(
                 classification="Expansion",
                 operational_characteristics="Introducing new workstreams, adding roles, or expanding scope beyond authorized NTE hours.",
                 budget_milestone_impact="Requires contractual NTE ceiling increase or added billing.",
-                approval_pathway="PMO Lead & Client Executive execute SOW Amendment / NTE Increase.",
+                approval_pathway=ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE.format(action="route NTE Increase for client sign-off."),
             ),
             ClassificationGuideRow(
                 classification="Dependency Impact",
                 operational_characteristics="Third-party outages, delayed data/environment access, or unavailable client SMEs.",
                 budget_milestone_impact="Team pivots; if unresolvable, capacity throttled to avoid burn.",
-                approval_pathway="DM escalation; PMO Lead & Client Lead agree standby protocol.",
+                approval_pathway=ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE.format(action="agree standby / commercial adjustment."),
             ),
         ]
 
@@ -390,25 +411,25 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
                 classification="Clarification",
                 scenario_description=f"During execution of '{deliv_name}', the client requests adjusting the data validation logic and schema error formatting to align with internal data naming standards.",
                 analysis="The request refines internal formatting within the agreed deliverable boundary without adding new functional workflows or altering milestone delivery dates.",
-                resolution_and_governance="Classified as Clarification. Talent PM approves refinement within active delivery cycle; logged in Decision Log with zero impact on milestone price or delivery schedule.",
+                resolution_and_governance="Classified as Clarification. Talent PM leads resolution and approves refinement within active delivery cycle (Delivery Manager supporting); logged in Decision Log with zero impact on milestone price or delivery schedule.",
             ),
             PracticalDecisionExample(
                 classification="Reprioritization",
                 scenario_description=f"The client requests delivering the reporting dashboard module ahead of the automated export utility within '{deliv_name}' to support an upcoming executive demo.",
                 analysis="The two components have equivalent estimated effort and fall entirely within the authorized milestone boundary. Total effort and completion date are unaffected.",
-                resolution_and_governance="Classified as Reprioritization. Delivery Manager and Client Lead approve the sequence trade-off in writing; documented in Decision Log with no change to contract price.",
+                resolution_and_governance="Classified as Reprioritization. Talent PM leads trade-off with Client Lead (Delivery Manager supporting); documented in Decision Log with no change to contract price.",
             ),
             PracticalDecisionExample(
                 classification="Expansion",
                 scenario_description=f"The client requests extending '{deliv_name}' to incorporate '{excl_desc}', which was explicitly excluded in the SOW.",
                 analysis="The requested functionality represents out-of-scope work that requires additional architectural build, testing, and dedicated effort not budgeted in the fixed fee.",
-                resolution_and_governance="Classified as Expansion. Delivery Manager halts out-of-scope work; PMO Lead drafts formal Change Order with additional fee and milestone extension for client executive sign-off.",
+                resolution_and_governance="Classified as Expansion. Talent PM triggers event and halts out-of-scope work; routed to Delivery Manager and PMO Lead to draft formal Change Order with additional fee and milestone extension for client executive sign-off.",
             ),
             PracticalDecisionExample(
                 classification="Dependency Impact",
                 scenario_description=f"Delivery is blocked because '{dep_desc}' is delayed by 7 business days past the scheduled validation date.",
                 analysis="The contractual dependency is a prerequisite for deliverable verification and end-to-end testing, impeding milestone sign-off through no fault of the delivery team.",
-                resolution_and_governance="Classified as Dependency Impact. Delivery Manager issues formal Blocker Notice; PMO Lead adjusts downstream milestone gates day-for-day under the contractual Schedule Relief protocol.",
+                resolution_and_governance="Classified as Dependency Impact. Talent PM triggers blocker escalation; routed to Delivery Manager and PMO Lead to adjust downstream milestone gates day-for-day under the contractual Schedule Relief protocol.",
             ),
         ]
     else:
@@ -417,24 +438,24 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
                 classification="Clarification",
                 scenario_description=f"During delivery review for '{deliv_name}', the client lead clarifies the acceptance criteria for error notification handling.",
                 analysis="Clarifies implementation details for an authorized task without expanding project scope or exceeding weekly capacity.",
-                resolution_and_governance="Classified as Clarification. Talent PM updates task acceptance criteria in the deliverable plan; executed within standard weekly capacity.",
+                resolution_and_governance="Classified as Clarification. Talent PM leads task clarification and updates acceptance criteria (Delivery Manager supporting); executed within standard weekly capacity.",
             ),
             PracticalDecisionExample(
                 classification="Reprioritization",
                 scenario_description=f"The client requests deferring two lower-priority integration tasks in '{deliv_name}' to expedite a high-priority data processing workflow in the upcoming delivery cycle.",
                 analysis="Total estimated effort and weekly team capacity remain balanced, shifting focus without increasing overall effort burn.",
-                resolution_and_governance="Classified as Reprioritization. Client Lead reorders work priorities; Delivery Manager confirms burn rate stays within weekly hours cap.",
+                resolution_and_governance="Classified as Reprioritization. Talent PM leads task resequencing with Client Lead; Delivery Manager confirms burn rate stays within weekly hours cap.",
             ),
             PracticalDecisionExample(
                 classification="Expansion",
                 scenario_description=f"The client requests spinning up an additional work stream to build '{excl_desc}', which will cause total project spend to exceed the contractual NTE ceiling.",
                 analysis="Adding new functional scope and dedicated engineering capacity represents a material scope expansion beyond the authorized NTE budget envelope.",
-                resolution_and_governance="Classified as Expansion. PMO Lead and Delivery Manager prepare a forecast impact assessment; client executive executes a formal Work Authorization / NTE ceiling increase.",
+                resolution_and_governance="Classified as Expansion. Talent PM triggers event; Delivery Manager and PMO Lead prepare forecast impact assessment and route Work Authorization / NTE ceiling increase for client executive execution.",
             ),
             PracticalDecisionExample(
                 classification="Dependency Impact",
                 scenario_description=f"Development on '{deliv_name}' is impeded due to a 5-day outage and delayed access provisioning for '{dep_desc}'.",
                 analysis="The access blocker prevents engineering progress on primary delivery tasks, creating a risk of inefficient hours burn.",
-                resolution_and_governance="Classified as Dependency Impact. Talent PM pivots the team to secondary work packages; Delivery Manager escalates to Client Sponsor to resolve access without wasteful burn.",
+                resolution_and_governance="Classified as Dependency Impact. Talent PM triggers blocker and pivots team to secondary work packages; Delivery Manager and PMO Lead escalate to Client Sponsor to agree standby or throttle capacity without wasteful burn.",
             ),
         ]

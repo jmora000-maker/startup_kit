@@ -42,15 +42,18 @@ RULES:
    - Reprioritization: Request to swap, reorder, or defer work items of equivalent complexity within the authorized scope envelope without altering overall price or milestone delivery dates.
    - Expansion: Request for new functionality, unsupported platforms, or features outside the authorized scope, requiring a formal Change Order (Fixed Bid) or Work Authorization / NTE ceiling increase (Time & Materials).
    - Dependency Impact: Client delay or external blocker to a stated dependency, triggering contractual Schedule Relief protocols or standby procedures.
-2. GROUNDING REQUIREMENT: Scenarios must directly reference the real components, tools, systems, dependencies, and deliverables listed above. Do NOT use generic placeholder text (e.g., 'System X', 'Feature Y').
-3. COMMERCIAL FRAMING CONSISTENCY:
+2. ROLE-ATTRIBUTION GOVERNANCE (HTL-114):
+   - In-Envelope Scenarios (Clarification, Reprioritization): Talent PM leads the resolution and trade-offs, with Delivery Manager supporting as needed and PMO Lead informed.
+   - Out-of-Envelope Scenarios (Expansion, Dependency Impact): Talent PM triggers/identifies the event or blocker and pivots/halts work, then routes to Delivery Manager and PMO Lead to draft a Change Order, NTE ceiling increase, or Schedule Relief.
+3. GROUNDING REQUIREMENT: Scenarios must directly reference the real components, tools, systems, dependencies, and deliverables listed above. Do NOT use generic placeholder text (e.g., 'System X', 'Feature Y').
+4. COMMERCIAL FRAMING CONSISTENCY:
    - If Fixed Bid: Frame resolutions around fixed deliverable acceptance, milestone sign-offs, zero unauthorized budget variance, and formal Change Orders. Never mention hourly caps, timesheet tracking, or NTE burn.
    - If Time and Materials: Frame resolutions around work package prioritization, authorized weekly capacity, effort burn rates, and NTE ceiling governance. Never claim deliverables are fixed-price milestones.
-4. Each scenario must include:
+5. Each scenario must include:
    - classification: "Clarification" | "Reprioritization" | "Expansion" | "Dependency Impact"
    - scenario_description: Concrete, realistic narrative vignette.
    - analysis: Detailed evaluation of why this scenario fits this classification against the project's baseline boundaries.
-   - resolution_and_governance: Specific operational, approval, and commercial resolution strictly framed for {contract_variant}.
+   - resolution_and_governance: Specific operational, approval, and commercial resolution strictly framed for {contract_variant} following the role-attribution rules.
 """
 
 

@@ -734,13 +734,14 @@ class BaselineAggregator:
                 )
             ]
 
-        # KIT-14: RACI Matrix with "Work at risk" and exact spec cell values
+        # KIT-14 / HTL-114: RACI Matrix with two-tier scope governance
         raci_matrix = [
             RACIItem(decision_or_activity="Startup readiness (G-01 gate)", pmo_lead="R, A", delivery_manager="R", talent_pm="C", sales_accounts="I", client="C"),
             RACIItem(decision_or_activity="Talent staffing & replacement", pmo_lead="R", delivery_manager="R, A", talent_pm="I", sales_accounts="I", client="I"),
+            RACIItem(decision_or_activity="Scope clarification & reprioritization", pmo_lead="I", delivery_manager="C", talent_pm="R, A", sales_accounts="I", client="C"),
+            RACIItem(decision_or_activity="Scope expansion & Change Orders", pmo_lead="R, A", delivery_manager="R", talent_pm="R", sales_accounts="I", client="A"),
+            RACIItem(decision_or_activity="Delivery risk, blockers & recovery", pmo_lead="R, A", delivery_manager="C", talent_pm="R", sales_accounts="I", client="I"),
             RACIItem(decision_or_activity="Work at risk", pmo_lead="R, A", delivery_manager="C", talent_pm="C", sales_accounts="I", client="I"),
-            RACIItem(decision_or_activity="Scope & change", pmo_lead="R", delivery_manager="R", talent_pm="C", sales_accounts="I", client="A"),
-            RACIItem(decision_or_activity="Delivery risk & recovery", pmo_lead="R, A", delivery_manager="C", talent_pm="R", sales_accounts="I", client="I"),
         ]
 
         # 12. Build Commercial Guardrails (Layer 3)
