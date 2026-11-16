@@ -97,11 +97,11 @@ def test_htl_96_slide6_combined_textbox_and_real_bullets(tmp_path):
         old_body_shapes = [s for s in slide6.shapes if s.shape_id == 194]
         assert len(old_body_shapes) == 0, f"Shape 194 should be removed for {name}"
 
-        # Fixed coordinates and dimensions
+        # Fixed coordinates and dimensions (HTL-96 / HTL-113)
         assert so_box.top == 580000
         assert so_box.left == 6347125
         assert so_box.width == 2600000
-        assert so_box.height == 2150000
+        assert so_box.height == 1900000
 
         tf_so = so_box.text_frame
         assert len(tf_so.paragraphs) == 2
@@ -122,10 +122,10 @@ def test_htl_96_slide6_combined_textbox_and_real_bullets(tmp_path):
         oos_shapes = [s for s in slide6.shapes if s.shape_id == 202 or (s.has_text_frame and "Out of Scope:" in s.text_frame.text)]
         assert len(oos_shapes) == 1, f"Expected exactly 1 Out of Scope shape for {name}"
         oos_box = oos_shapes[0]
-        assert oos_box.top == 2850000
+        assert oos_box.top == 2482600
         assert oos_box.left == 6347125
         assert oos_box.width == 2600000
-        assert oos_box.height == 1850000
+        assert oos_box.height == 2066500
         tf_oos = oos_box.text_frame
 
         # Header paragraph: 14pt bold & 5pt space-after
@@ -196,3 +196,76 @@ def test_htl_105_slide16_uniform_card_geometry_and_font_size(tmp_path):
         bpr = box._element.xpath(".//a:bodyPr")
         assert len(bpr) > 0
         assert bpr[0].get("anchor") == "t"
+
+
+def test_htl_113_out_of_scope_full_text_and_geometry(tmp_path):
+    """HTL-113: Out of Scope card preserves full untruncated text for realistic SOW exclusions across Client and Governance decks."""
+    real_uat_exclusions = [
+        "Applications previously decommissioned by the client (approximately 80).",
+        "Decommissioning, archiving, data migration, or any development, refactoring, or remediation of applications.",
+        "Configuration or implementation of destination platforms such as Project Hub.",
+        "User research beyond sampled interviews (high-use), plus user communications, change management, and training.",
+    ]
+
+    for baseline_name, base_baseline in [("PGE", _build_pge_baseline()), ("ARC", load_baseline("arc_application_implementation"))]:
+        base_baseline.charter.exclusions = list(real_uat_exclusions)
+        base_baseline.sow_interpretation.out_of_scope_items = list(real_uat_exclusions)
+
+        # 1. Client Kickoff Deck
+        c_model = build_client_deck_model(base_baseline)
+        c_out = tmp_path / f"client_deck_htl113_{baseline_name}.pptx"
+        write_client_deck(c_model, c_out)
+
+        c_prs = pptx.Presentation(str(c_out))
+        c_s6 = c_prs.slides[5]
+
+        # Verify Out of Scope box text has NO truncation "..."
+        oos_shape = next(s for s in c_s6.shapes if s.has_text_frame and "Out of Scope:" in s.text_frame.text)
+        oos_paras = [p.text for p in oos_shape.text_frame.paragraphs[1:]]
+        assert len(oos_paras) == 4, f"Expected 4 items, got {len(oos_paras)}"
+        for orig, rendered in zip(real_uat_exclusions, oos_paras):
+            assert rendered == orig, f"Expected full text '{orig}', got '{rendered}'"
+            assert not rendered.endswith("..."), f"Text should not be truncated with '...': {rendered}"
+
+        # Verify Box Geometry and Overlap clearance
+        so_shape = next(s for s in c_s6.shapes if s.has_text_frame and "Solution Overview" in s.text_frame.text)
+        assert so_shape.top == 580000
+        assert so_shape.height == 1900000
+        assert oos_shape.top == 2482600
+        assert oos_shape.height == 2066500
+        assert oos_shape.top >= so_shape.top + so_shape.height, "Out of Scope box overlaps Solution Overview box"
+
+        # 2. PS Governance Kickoff Deck (Deliverables Page)
+        g_model = build_governance_deck_model(base_baseline)
+        g_out = tmp_path / f"gov_deck_htl113_{baseline_name}.pptx"
+        write_governance_deck(g_model, g_out)
+
+        g_prs = pptx.Presentation(str(g_out))
+        # Find deliverables slide in governance deck
+        g_deliv_slide = next(s for s in g_prs.slides if any(shp.has_text_frame and "What we will deliver" in shp.text_frame.text for shp in s.shapes))
+        g_oos_shape = next(s for s in g_deliv_slide.shapes if s.has_text_frame and "Out of Scope:" in s.text_frame.text)
+        g_oos_paras = [p.text for p in g_oos_shape.text_frame.paragraphs[1:]]
+        assert len(g_oos_paras) == 4
+        for orig, rendered in zip(real_uat_exclusions, g_oos_paras):
+            assert rendered == orig, f"Expected full text '{orig}' in Gov Deck, got '{rendered}'"
+            assert not rendered.endswith("...")
+
+        g_so_shape = next(s for s in g_deliv_slide.shapes if s.has_text_frame and "Solution Overview" in s.text_frame.text)
+        assert g_so_shape.top == 580000
+        assert g_so_shape.height == 1900000
+        assert g_oos_shape.top == 2482600
+        assert g_oos_shape.height == 2066500
+        assert g_oos_shape.top >= g_so_shape.top + g_so_shape.height
+
+    # 3. Pathological overflow fallback safety check (>140pt)
+    from src.generators.client_deck.writer import _fit_out_of_scope_items
+    huge_items = [
+        "A" * 200,
+        "B" * 200,
+        "C" * 200,
+        "D" * 200,
+    ]
+    fitted = _fit_out_of_scope_items(huge_items, inner_w_in=2.58, max_h_pt=140.0)
+    assert len(fitted) == 4
+    # All items should have been truncated to fit
+    assert any(it.endswith("...") for it in fitted)

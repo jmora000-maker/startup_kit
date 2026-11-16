@@ -455,8 +455,13 @@ def _populate_deliverables_box(shape, deliverables: List[str], font_size: Pt, ov
         _set_paragraph_bullet_format(p, font_pt, item_text, is_overflow=is_ovf)
 
 
-def _fit_out_of_scope_items(items: Sequence[str], inner_w_in: float = 2.58, max_h_pt: float = 120.0) -> List[str]:
-    """Truncate Out of Scope bullet items at natural clause boundaries so they reliably fit within fixed box height (HTL-96)."""
+def _fit_out_of_scope_items(
+    items: Sequence[str],
+    inner_w_in: float = 2.75,
+    max_h_pt: float = 140.0,
+    char_width_factor: float = 0.45,
+) -> List[str]:
+    """Truncate Out of Scope bullet items at natural clause boundaries if they exceed box height capacity (HTL-96 / HTL-113)."""
     if not items:
         return []
     fitted = [it.strip() for it in items if it and it.strip()]
@@ -464,7 +469,7 @@ def _fit_out_of_scope_items(items: Sequence[str], inner_w_in: float = 2.58, max_
     def _calc_h(cand: List[str]) -> float:
         h = 0.0
         for it in cand:
-            lines = wrap_lines(it, width_in=inner_w_in, size_pt=10.0, char_width_factor=0.55)
+            lines = wrap_lines(it, width_in=inner_w_in, size_pt=10.0, char_width_factor=char_width_factor)
             h += lines * 10.0 * 1.15 + 1.5
         return h
 
@@ -639,21 +644,21 @@ def write_slide6_deliverables_page(
         if shp._element not in preserved_elements:
             slide.shapes._spTree.remove(shp._element)
 
-    # 4. Populate Right Dark Panel (Solution Overview & Out of Scope - HTL-96)
+    # 4. Populate Right Dark Panel (Solution Overview & Out of Scope - HTL-96 / HTL-113)
     white_color = RGBColor(255, 255, 255)
-    so_top = 580000
-    so_left = 6347125
-    so_width = 2600000
-    so_height = 2150000
+    so_top = 580000       # 0.634 in
+    so_left = 6347125     # 6.941 in
+    so_width = 2600000    # 2.843 in
+    so_height = 1900000   # 2.078 in (HTL-113: bottom = 2.712 in, clearing oos_top)
 
-    oos_top = 2850000
-    oos_left = 6347125
-    oos_width = 2600000
-    oos_height = 1850000
+    oos_top = 2482600     # 2.715 in (HTL-113: 0.40 in higher than previous 3.117 in)
+    oos_left = 6347125    # 6.941 in
+    oos_width = 2600000   # 2.843 in
+    oos_height = 2066500  # 2.260 in (HTL-113: 0.24 in taller than previous 2.023 in)
 
     so_text = condense_solution_overview(model.slide6.solution_overview)
 
-    oos_items = _fit_out_of_scope_items(model.slide6.out_of_scope, inner_w_in=2.58, max_h_pt=120.0)
+    oos_items = _fit_out_of_scope_items(model.slide6.out_of_scope, inner_w_in=2.75, max_h_pt=140.0, char_width_factor=0.45)
 
     # Populate Solution Overview
     if so_shape is None:
