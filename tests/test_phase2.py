@@ -80,7 +80,7 @@ def test_pmo_stakeholder_incorporation_and_raci(phase2_source_ref):
     assert "Elevated Tier" in dir_pmo.decision_rights
     assert dir_pmo.escalation_responsibility == "VP, Delivery / Executive Leadership"
 
-    # 2. RACI Matrix enforces AR-10 / KIT-14 decision rights
+    # 2. RACI Matrix enforces AR-10 / KIT-14 / HTL-114 decision rights
     raci_map = {r.decision_or_activity: r for r in baseline.raci_matrix}
     assert "Startup readiness (G-01 gate)" in raci_map
     assert raci_map["Startup readiness (G-01 gate)"].pmo_lead == "R, A"
@@ -96,26 +96,33 @@ def test_pmo_stakeholder_incorporation_and_raci(phase2_source_ref):
     assert raci_map["Talent staffing & replacement"].sales_accounts == "I"
     assert raci_map["Talent staffing & replacement"].client == "I"
 
+    assert "Scope clarification & reprioritization" in raci_map
+    assert raci_map["Scope clarification & reprioritization"].pmo_lead == "I"
+    assert raci_map["Scope clarification & reprioritization"].delivery_manager == "C"
+    assert raci_map["Scope clarification & reprioritization"].talent_pm == "R, A"
+    assert raci_map["Scope clarification & reprioritization"].sales_accounts == "I"
+    assert raci_map["Scope clarification & reprioritization"].client == "C"
+
+    assert "Scope expansion & Change Orders" in raci_map
+    assert raci_map["Scope expansion & Change Orders"].pmo_lead == "R, A"
+    assert raci_map["Scope expansion & Change Orders"].delivery_manager == "R"
+    assert raci_map["Scope expansion & Change Orders"].talent_pm == "R"
+    assert raci_map["Scope expansion & Change Orders"].sales_accounts == "I"
+    assert raci_map["Scope expansion & Change Orders"].client == "A"
+
+    assert "Delivery risk, blockers & recovery" in raci_map
+    assert raci_map["Delivery risk, blockers & recovery"].pmo_lead == "R, A"
+    assert raci_map["Delivery risk, blockers & recovery"].delivery_manager == "C"
+    assert raci_map["Delivery risk, blockers & recovery"].talent_pm == "R"
+    assert raci_map["Delivery risk, blockers & recovery"].sales_accounts == "I"
+    assert raci_map["Delivery risk, blockers & recovery"].client == "I"
+
     assert "Work at risk" in raci_map
     assert raci_map["Work at risk"].pmo_lead == "R, A"
     assert raci_map["Work at risk"].delivery_manager == "C"
     assert raci_map["Work at risk"].talent_pm == "C"
     assert raci_map["Work at risk"].sales_accounts == "I"
     assert raci_map["Work at risk"].client == "I"
-
-    assert "Scope & change" in raci_map
-    assert raci_map["Scope & change"].pmo_lead == "R"
-    assert raci_map["Scope & change"].delivery_manager == "R"
-    assert raci_map["Scope & change"].talent_pm == "C"
-    assert raci_map["Scope & change"].sales_accounts == "I"
-    assert raci_map["Scope & change"].client == "A"
-
-    assert "Delivery risk & recovery" in raci_map
-    assert raci_map["Delivery risk & recovery"].pmo_lead == "R, A"
-    assert raci_map["Delivery risk & recovery"].delivery_manager == "C"
-    assert raci_map["Delivery risk & recovery"].talent_pm == "R"
-    assert raci_map["Delivery risk & recovery"].sales_accounts == "I"
-    assert raci_map["Delivery risk & recovery"].client == "I"
 
 
 def test_startup_readiness_scoring_engine(phase2_source_ref):

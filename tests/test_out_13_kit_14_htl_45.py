@@ -110,9 +110,10 @@ def sample_full_baseline():
         raci_matrix=[
             RACIItem(decision_or_activity="Startup readiness (G-01 gate)", pmo_lead="R, A", delivery_manager="R", talent_pm="C", sales_accounts="I", client="C"),
             RACIItem(decision_or_activity="Talent staffing & replacement", pmo_lead="R", delivery_manager="R, A", talent_pm="I", sales_accounts="I", client="I"),
+            RACIItem(decision_or_activity="Scope clarification & reprioritization", pmo_lead="I", delivery_manager="C", talent_pm="R, A", sales_accounts="I", client="C"),
+            RACIItem(decision_or_activity="Scope expansion & Change Orders", pmo_lead="R, A", delivery_manager="R", talent_pm="R", sales_accounts="I", client="A"),
+            RACIItem(decision_or_activity="Delivery risk, blockers & recovery", pmo_lead="R, A", delivery_manager="C", talent_pm="R", sales_accounts="I", client="I"),
             RACIItem(decision_or_activity="Work at risk", pmo_lead="R, A", delivery_manager="C", talent_pm="C", sales_accounts="I", client="I"),
-            RACIItem(decision_or_activity="Scope & change", pmo_lead="R", delivery_manager="R", talent_pm="C", sales_accounts="I", client="A"),
-            RACIItem(decision_or_activity="Delivery risk & recovery", pmo_lead="R, A", delivery_manager="C", talent_pm="R", sales_accounts="I", client="I"),
         ],
         communications_plan=[
             CommunicationsPlanItem(id="COM-01", name="Weekly PSR", audience="Client Sponsor, PMO", content_owner="Jane Doe", cadence="Weekly", format="PDF", delivery_day="Friday")
@@ -317,18 +318,19 @@ def test_kit_14_raci_matrix_headers_and_values(sample_full_baseline, tmp_path):
     expected_rows = [
         ["Startup readiness (G-01 gate)", "R, A", "R", "C", "I", "C"],
         ["Talent staffing & replacement", "R", "R, A", "I", "I", "I"],
+        ["Scope clarification & reprioritization", "I", "C", "R, A", "I", "C"],
+        ["Scope expansion & Change Orders", "R, A", "R", "R", "I", "A"],
+        ["Delivery risk, blockers & recovery", "R, A", "C", "R", "I", "I"],
         ["Work at risk", "R, A", "C", "C", "I", "I"],
-        ["Scope & change", "R", "R", "C", "I", "A"],
-        ["Delivery risk & recovery", "R, A", "C", "R", "I", "I"],
     ]
 
-    assert len(rows_data) == 5
+    assert len(rows_data) == 6
     for idx, expected in enumerate(expected_rows):
         assert rows_data[idx] == expected
 
 
 def test_kit_14_aggregator_default_raci_matrix():
-    """KIT-14: BaselineAggregator populates the exact 5 rows and values per KIT-14 spec."""
+    """KIT-14 / HTL-114: BaselineAggregator populates the exact 6 rows and values per HTL-114 spec."""
     from src.core.models import CharterExtraction, DeliverablesExtraction, MilestonesExtraction, RAIDExtraction
     aggregator = BaselineAggregator()
     charter = CharterExtraction(project_name="RACI Test Project", contract_type="Time and Materials")
@@ -346,9 +348,10 @@ def test_kit_14_aggregator_default_raci_matrix():
     expected_rows = [
         ["Startup readiness (G-01 gate)", "R, A", "R", "C", "I", "C"],
         ["Talent staffing & replacement", "R", "R, A", "I", "I", "I"],
+        ["Scope clarification & reprioritization", "I", "C", "R, A", "I", "C"],
+        ["Scope expansion & Change Orders", "R, A", "R", "R", "I", "A"],
+        ["Delivery risk, blockers & recovery", "R, A", "C", "R", "I", "I"],
         ["Work at risk", "R, A", "C", "C", "I", "I"],
-        ["Scope & change", "R", "R", "C", "I", "A"],
-        ["Delivery risk & recovery", "R, A", "C", "R", "I", "I"],
     ]
     assert raci_rows == expected_rows
 
