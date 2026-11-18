@@ -59,10 +59,14 @@ def validate_table5_examples(examples: List[PracticalDecisionExample], variant: 
             for pat in BANNED_FIXED_BID_TERMS:
                 if re.search(pat, text_to_check, re.IGNORECASE):
                     findings.append(f"Fixed Bid example for '{ex.classification}' mentions forbidden T&M term matching '{pat}'.")
-        else:
+        elif variant == "Time and Materials":
             for pat in BANNED_TM_TERMS:
                 if re.search(pat, text_to_check, re.IGNORECASE):
                     findings.append(f"Time and Materials example for '{ex.classification}' mentions forbidden Fixed Bid term matching '{pat}'.")
+        elif variant == "Programmatic":
+            for pat in BANNED_TM_TERMS:
+                if re.search(pat, text_to_check, re.IGNORECASE):
+                    findings.append(f"Programmatic example for '{ex.classification}' mentions forbidden Fixed Bid term matching '{pat}'.")
 
     return findings
 

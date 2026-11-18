@@ -76,4 +76,5 @@ class ClientDeckModel:
     slide6: Slide6Model
     slide12: Slide12Model
     slide15: Slide15Model
+    contract_type: str = ""
     manifest: ClientDeckTraceManifest = field(default_factory=lambda: ClientDeckTraceManifest(project_name=""))

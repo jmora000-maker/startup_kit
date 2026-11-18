@@ -26,3 +26,10 @@ def kit_header_values(baseline: StartupKitBaseline) -> dict:
         "talent_pm": tpm_meta,
         "pmo_lead": pmo_meta,
     }
+
+
+def resolve_pm_role_title(contract_type: str | None) -> str:
+    """Return 'Product Manager' for Programmatic contracts, and 'Project Manager' otherwise (HTL-115)."""
+    if contract_type and "programmatic" in contract_type.strip().lower():
+        return "Product Manager"
+    return "Project Manager"

@@ -363,7 +363,17 @@ def build_deck_model(
             overflow_rows += sum(1 for r in t.rows if r.overflow)
         for c in s.cards:
             overflow_rows += sum(1 for p in c.paras if p.kind == MORE)
-    return DeckModel(project, hv["client_sponsor"], cover, slides, manifest, kit_file, wb_file, overflow_rows)
+    return DeckModel(
+        project,
+        hv["client_sponsor"],
+        cover,
+        slides,
+        manifest,
+        kit_file,
+        wb_file,
+        overflow_rows,
+        contract_type=baseline.contract_type or (baseline.charter.contract_type if baseline.charter else "") or "",
+    )
 
 
 def _cover_sources(cover: CoverSpec) -> List[Tuple[str, str]]:

@@ -24,14 +24,16 @@ ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE = "Talent PM triggers; DM & PMO Lead {actio
 
 
 def resolve_contract_variant(contract_type: Optional[str]) -> str:
-    """Normalize contract_type into either 'Fixed Bid' or 'Time and Materials'."""
+    """Normalize contract_type into 'Fixed Bid', 'Time and Materials', or 'Programmatic'."""
     if not contract_type:
         logger.warning("Unset contract_type; defaulting Scope Baseline variant to 'Time and Materials'")
         return "Time and Materials"
     ct_lower = contract_type.strip().lower()
+    if any(k in ct_lower for k in ("programmatic", "retainer")):
+        return "Programmatic"
     if "fixed" in ct_lower:
         return "Fixed Bid"
-    if any(k in ct_lower for k in ("time", "t&m", "tm", "materials", "hourly", "rate", "consumption")):
+    if any(k in ct_lower for k in ("time", "t&m", "tm", "materials", "hourly", "rate", "consumption", "capacity")):
         return "Time and Materials"
     logger.warning("Unrecognized contract_type '%s'; defaulting Scope Baseline variant to 'Time and Materials'", contract_type)
     return "Time and Materials"
@@ -193,9 +195,7 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
 
 def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) -> List[ChangeDecisionMatrixRow]:
     """Build the 4 rows for Table 2: Change Decision Matrix."""
-    is_fixed = variant == "Fixed Bid"
-
-    if is_fixed:
+    if variant == "Fixed Bid":
         return [
             ChangeDecisionMatrixRow(
                 classification="Clarification",
@@ -226,6 +226,33 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
                     resolution="initiate contractual Schedule Relief and adjust milestone dates",
                 ),
                 commercial_impact="Schedule baseline extended by equivalent delay duration. If standby effort is incurred, commercial adjustment or stand-down protocol is enacted.",
+            ),
+        ]
+    elif variant == "Programmatic":
+        return [
+            ChangeDecisionMatrixRow(
+                classification="Clarification",
+                trigger_condition="Interpretation of requirements, acceptance criteria detailing, or sprint task specifications within active backlog workstreams.",
+                governance_action="Product Manager leads resolution with Client Product Owner (Delivery Manager supports if needed); logged in Project Decision Log.",
+                commercial_impact="Zero commercial impact. Delivered within agreed weekly team capacity.",
+            ),
+            ChangeDecisionMatrixRow(
+                classification="Reprioritization",
+                trigger_condition="Client Product Owner directs adjusting sprint backlog priorities, resequencing user stories, or swapping backlog items for upcoming sprints.",
+                governance_action="Client Product Owner leads and decides backlog trade-offs; Product Manager facilitates and confirms capacity within weekly envelope; zero Change Order required.",
+                commercial_impact="Zero budget impact. Consumes standard flat weekly fee; sprint backlog rebalanced without Change Order.",
+            ),
+            ChangeDecisionMatrixRow(
+                classification="Expansion",
+                trigger_condition="Client requests functional scope exceeding weekly team capacity ceiling or introducing workstreams outside agreed product roadmap.",
+                governance_action="Product Manager triggers event; routed to Delivery Manager and PMO Lead to evaluate capacity expansion, additional squads, or SOW Amendment.",
+                commercial_impact="Material commercial impact. Requires SOW Amendment or added team capacity allocation with adjusted weekly retainer fee.",
+            ),
+            ChangeDecisionMatrixRow(
+                classification="Dependency Impact",
+                trigger_condition="Client fails to maintain at least 2 sprints of Definition-of-Ready backlog or delays critical dependency inputs, risking team idle time.",
+                governance_action="Product Manager triggers blocker and pivots team to secondary backlog tasks; routed to Delivery Manager and PMO Lead to align client on stand-down or capacity throttle.",
+                commercial_impact="Capacity redirected to protect sprint velocity; unblocked backlog required to prevent team stand-down or commercial adjustment.",
             ),
         ]
     else:
@@ -265,9 +292,7 @@ def build_table2_change_matrix_rows(baseline: StartupKitBaseline, variant: str) 
 
 def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str) -> List[DecisionRuleControlRow]:
     """Build the 5 rows for Table 3: Decision Rules & Commercial Controls."""
-    is_fixed = variant == "Fixed Bid"
-
-    if is_fixed:
+    if variant == "Fixed Bid":
         return [
             DecisionRuleControlRow(
                 control_dimension="Deliverable Boundary",
@@ -298,6 +323,39 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
                 governing_rule="Client must provide environments, access credentials, and review feedback within agreed contractual SLA windows.",
                 boundary_violation_trigger="Client dependency unmet after 5 business days from agreed validation date.",
                 commercial_control_route="Talent PM triggers blocker; Delivery Manager and PMO Lead issue Dependency Delay Notice and extend downstream milestone dates.",
+            ),
+        ]
+    elif variant == "Programmatic":
+        return [
+            DecisionRuleControlRow(
+                control_dimension="Deliverable Boundary",
+                governing_rule="Work items are defined fresh per sprint backlog in accordance with agreed product roadmap priorities.",
+                boundary_violation_trigger="Introduction of unvetted epics or out-of-roadmap capabilities without prior sprint backlog refinement.",
+                commercial_control_route="Product Manager pauses story intake; aligns with Client PO on roadmap sequencing in upcoming sprint refinement.",
+            ),
+            DecisionRuleControlRow(
+                control_dimension="Domain & Application Scope",
+                governing_rule="Delivery focuses on agreed product roadmaps, sprint backlogs, and designated target repositories.",
+                boundary_violation_trigger="Introduction of workstreams or external domains outside agreed product roadmap boundaries.",
+                commercial_control_route="Product Manager triggers scope review; Delivery Manager and PMO Lead align with client on backlog trade-offs or team expansion.",
+            ),
+            DecisionRuleControlRow(
+                control_dimension="Service Depth & Delivery Boundaries",
+                governing_rule="Sprint velocity is bounded by the named weekly team capacity ceiling (hours per role).",
+                boundary_violation_trigger="Backlog demand consistently exceeding authorized weekly team capacity allocations.",
+                commercial_control_route="Product Manager and Client PO adjust sprint commitments; Delivery Manager scopes additional team capacity if sustained.",
+            ),
+            DecisionRuleControlRow(
+                control_dimension="Effort Burn & NTE Ceilings",
+                governing_rule="Flat weekly fee applies; weekly team capacity serves as the not-to-exceed operational ceiling.",
+                boundary_violation_trigger="Sprint effort reaching weekly capacity ceiling or unapproved overtime requested.",
+                commercial_control_route="Product Manager caps sprint output within weekly capacity envelope; PMO Lead ensures zero unapproved fee variance.",
+            ),
+            DecisionRuleControlRow(
+                control_dimension="Core Dependency Health",
+                governing_rule="Client PO maintains a continuously-ready backlog (>= 2 sprints of Definition-of-Ready stories) and timely reviews.",
+                boundary_violation_trigger="Ready backlog drops below 2 sprints or client dependency delays block active sprint execution.",
+                commercial_control_route="Product Manager pivots team; Delivery Manager and PMO Lead issue dependency notice and initiate stand-down if blocker exceeds 3 days.",
             ),
         ]
     else:
@@ -337,9 +395,7 @@ def build_table3_decision_rules_rows(baseline: StartupKitBaseline, variant: str)
 
 def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant: str) -> List[ClassificationGuideRow]:
     """Build the 4 rows for Table 4: Scope Classification Guide."""
-    is_fixed = variant == "Fixed Bid"
-
-    if is_fixed:
+    if variant == "Fixed Bid":
         return [
             ClassificationGuideRow(
                 classification="Clarification",
@@ -364,6 +420,33 @@ def build_table4_classification_guide_rows(baseline: StartupKitBaseline, variant
                 operational_characteristics="Client review turnaround delays, delayed credentials, or late client-owned prerequisites.",
                 budget_milestone_impact="Schedule extended day-for-day; potential standby fee.",
                 approval_pathway=ROLE_TRIGGER_OUT_OF_ENVELOPE_CONCISE.format(action="execute Schedule Relief / Change Order."),
+            ),
+        ]
+    elif variant == "Programmatic":
+        return [
+            ClassificationGuideRow(
+                classification="Clarification",
+                operational_characteristics="Refining user story acceptance criteria or technical specifications in active sprint backlog.",
+                budget_milestone_impact="Consumes planned weekly capacity; zero change to flat weekly fee.",
+                approval_pathway="Product Manager leads (DM supports if needed); logged in Decision Log.",
+            ),
+            ClassificationGuideRow(
+                classification="Reprioritization",
+                operational_characteristics="Client PO reprioritizes backlog, swaps stories, or resequences sprint goals.",
+                budget_milestone_impact="Zero budget impact; resolved within weekly capacity without Change Order.",
+                approval_pathway="Client PO decides; Product Manager confirms capacity; zero CO required.",
+            ),
+            ClassificationGuideRow(
+                classification="Expansion",
+                operational_characteristics="Scope exceeds weekly team capacity or falls outside agreed product roadmap.",
+                budget_milestone_impact="Requires SOW Amendment or additional weekly team capacity fee.",
+                approval_pathway="Product Manager triggers; DM & PMO Lead route team expansion / SOW update.",
+            ),
+            ClassificationGuideRow(
+                classification="Dependency Impact",
+                operational_characteristics="Client fails to provide >= 2 sprints ready backlog or delays prerequisites.",
+                budget_milestone_impact="Team pivots; if idle, capacity throttled to protect commercial investment.",
+                approval_pathway="Product Manager triggers; DM & PMO Lead agree standby / backlog relief.",
             ),
         ]
     else:
@@ -430,6 +513,33 @@ def build_table5_fallback_examples(baseline: StartupKitBaseline, variant: str) -
                 scenario_description=f"Delivery is blocked because '{dep_desc}' is delayed by 7 business days past the scheduled validation date.",
                 analysis="The contractual dependency is a prerequisite for deliverable verification and end-to-end testing, impeding milestone sign-off through no fault of the delivery team.",
                 resolution_and_governance="Classified as Dependency Impact. Talent PM triggers blocker escalation; routed to Delivery Manager and PMO Lead to adjust downstream milestone gates day-for-day under the contractual Schedule Relief protocol.",
+            ),
+        ]
+    elif variant == "Programmatic":
+        return [
+            PracticalDecisionExample(
+                classification="Clarification",
+                scenario_description=f"During active sprint delivery for '{deliv_name}', the client PO clarifies acceptance criteria and edge-case behavior for a user story.",
+                analysis="Clarifies backlog task specifications within the active sprint without introducing unvetted workstreams or exceeding agreed weekly team capacity.",
+                resolution_and_governance="Classified as Clarification. Product Manager leads resolution with Client PO (Delivery Manager supporting); logged in Decision Log with zero change to flat weekly retainer.",
+            ),
+            PracticalDecisionExample(
+                classification="Reprioritization",
+                scenario_description=f"The client PO requests reordering the sprint backlog to prioritize executive reporting capabilities ahead of batch export workflows in '{deliv_name}'.",
+                analysis="The client PO exercises contractual rights to resequence sprint backlog priorities within agreed roadmap boundaries and team capacity without requiring a Change Order.",
+                resolution_and_governance="Classified as Reprioritization. Client Product Owner decides trade-off; Product Manager facilitates and confirms capacity within weekly envelope; zero Change Order required.",
+            ),
+            PracticalDecisionExample(
+                classification="Expansion",
+                scenario_description=f"The client requests adding '{excl_desc}' into active sprint backlogs, requiring dedicated engineering capacity beyond the agreed weekly team ceiling.",
+                analysis="The requested functionality exceeds the contracted weekly team capacity ceiling and falls outside the agreed product roadmap boundaries.",
+                resolution_and_governance="Classified as Expansion. Product Manager triggers event; routed to Delivery Manager and PMO Lead to evaluate capacity expansion and execute a formal SOW Amendment with updated weekly retainer fee.",
+            ),
+            PracticalDecisionExample(
+                classification="Dependency Impact",
+                scenario_description=f"The client fails to provide Definition-of-Ready user stories for the upcoming sprint, leaving less than 2 sprints of ready backlog for '{deliv_name}'.",
+                analysis="Breaches the core dependency to maintain >= 2 sprints of Definition-of-Ready backlog, creating immediate risk of idle team capacity.",
+                resolution_and_governance="Classified as Dependency Impact. Product Manager triggers blocker and pivots team to secondary technical debt tasks; routed to Delivery Manager and PMO Lead to issue dependency notice and enact stand-down protocol if unblocked work is exhausted.",
             ),
         ]
     else:

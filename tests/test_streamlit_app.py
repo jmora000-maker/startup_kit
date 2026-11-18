@@ -184,10 +184,10 @@ def test_collect_download_targets_includes_every_generated_path(tmp_path):
 # (src/review_ui/app.py) -- these tests exercise that one shared definition and its helper.
 
 
-def test_contract_types_is_the_closed_two_value_set():
+def test_contract_types_is_the_closed_three_value_set():
     # Matches src/llm/prompts.py's extraction instructions and src/generators/checklist.py's
-    # commercial-guardrail branching, which only ever distinguish these two values.
-    assert CONTRACT_TYPES == ["Time and Materials", "Fixed Bid"]
+    # commercial-guardrail branching (HTL-115).
+    assert CONTRACT_TYPES == ["Time and Materials", "Fixed Bid", "Programmatic"]
 
 
 def test_governance_tiers_matches_the_core_model_closed_set():

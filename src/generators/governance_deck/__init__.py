@@ -48,13 +48,17 @@ def export_governance_deck(
     )
     manifest_path = target_path.with_name(f"{clean_name}_PS_Governance_Kickoff.trace.json")
 
-    chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
-    total_s14_pages = len(chunks_s14)
-    rows_s15 = model.slide15.rows
-    max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
-    chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
-    total_s15_pages = len(chunks_s15)
-    total_slides = 18 + total_s14_pages + total_s15_pages
+    is_programmatic = bool(baseline.contract_type and any(k in baseline.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    if is_programmatic:
+        total_slides = 20
+    else:
+        chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
+        total_s14_pages = len(chunks_s14)
+        rows_s15 = model.slide15.rows
+        max_per_page = len(rows_s15) if len(rows_s15) <= 7 else 4
+        chunks_s15 = [rows_s15[i : i + max_per_page] for i in range(0, len(rows_s15), max_per_page)] if rows_s15 else [[]]
+        total_s15_pages = len(chunks_s15)
+        total_slides = 18 + total_s14_pages + total_s15_pages
 
     return GovernanceDeckResult(
         file_path=saved_path,

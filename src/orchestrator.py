@@ -618,10 +618,14 @@ class StartupKitController:
             logger.info("Readiness Checklist deliverable generation skipped (discontinued per OUT-13a)")
 
         if outputs.workbook:
-            progress("generating", "Delivery Workbook")
-            logger.info("Exporting Project Delivery Workbook to %s", out_path)
-            wb_result = export_pmo_workbook(baseline, out_path, start_date=start_date)
-            written_paths.append(wb_result.file_path)
+            contract_type_clean = (baseline.contract_type or "").strip().lower()
+            if "programmatic" in contract_type_clean or "retainer" in contract_type_clean:
+                logger.info("Skipping PMO Delivery Workbook export: not applicable to Programmatic commercial model (HTL-115).")
+            else:
+                progress("generating", "Delivery Workbook")
+                logger.info("Exporting Project Delivery Workbook to %s", out_path)
+                wb_result = export_pmo_workbook(baseline, out_path, start_date=start_date)
+                written_paths.append(wb_result.file_path)
 
         if outputs.slides:
             progress("generating", "PS Governance Kickoff")
@@ -862,10 +866,14 @@ class StartupKitController:
 
         export_dir = target_path.parent
         if outputs.workbook:
-            progress("generating", "Delivery Workbook")
-            logger.info("Exporting Project Delivery Workbook to %s", export_dir)
-            wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
-            written_paths.append(wb_result.file_path)
+            contract_type_clean = (baseline.contract_type or "").strip().lower()
+            if "programmatic" in contract_type_clean or "retainer" in contract_type_clean:
+                logger.info("Skipping PMO Delivery Workbook export: not applicable to Programmatic commercial model (HTL-115).")
+            else:
+                progress("generating", "Delivery Workbook")
+                logger.info("Exporting Project Delivery Workbook to %s", export_dir)
+                wb_result = export_pmo_workbook(baseline, export_dir, start_date=start_date)
+                written_paths.append(wb_result.file_path)
 
         deck_result: Optional[Union[GovernanceDeckResult, OnboardingDeckResult]] = None
         if outputs.slides:

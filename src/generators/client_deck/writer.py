@@ -192,7 +192,16 @@ def write_slide1(slide, model: ClientDeckModel) -> None:
 
 
 def write_slide5(slide, model: ClientDeckModel) -> None:
-    """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95 / HTL-109)."""
+    """Populate Slide 5 (Why We're Here) with uniform 10pt font scaling across all three cards, strict 3-line bounding on Card 2, and top anchoring (HTL-48 / HTL-52 / HTL-54 / HTL-95 / HTL-109 / HTL-115)."""
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    kicker_title = "ENGAGEMENT OVERVIEW" if is_programmatic else "PROJECT SUCCESS AGREEMENT"
+    apply_slide_header_formatting(slide, kicker_text=kicker_title)
+
+    if is_programmatic and slide.has_notes_slide:
+        notes_tf = slide.notes_slide.notes_text_frame
+        if notes_tf and "before Discovery" in notes_tf.text:
+            notes_tf.text = notes_tf.text.replace("before Discovery", "before Sprint 1")
+
     candidate_sizes = [10.0, 9.5, 9.0, 8.5, 8.0]
 
     # Card 1 (Why are we doing this): condensed via LLM / deterministic model to preserve meaning without clipping
@@ -601,15 +610,27 @@ def write_slide6_deliverables_page(
     page_num: int = 1,
     total_pages: int = 1,
 ) -> None:
-    """Populate one Slide 6 'What we will deliver' page with 2-column navy-header deliverables table on left and dark panel on right (HTL-100)."""
+    """Populate one Slide 6 'What we will deliver' page with 2-column navy-header deliverables table on left and dark panel on right (HTL-100 / HTL-115)."""
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    kicker_title = "ENGAGEMENT OVERVIEW" if is_programmatic else "PROJECT SUCCESS AGREEMENT"
+    col2_header = "Focus" if is_programmatic else "Outcomes / Deliverables"
+
     # 1. Slide Header
     if total_pages > 1:
-        sub_text = f"Contracted project deliverables and workstream outcomes mapped to delivery phases (Part {page_num} of {total_pages})."
+        sub_text = (
+            f"Backlog themes and feature focus mapped to delivery workstreams (Part {page_num} of {total_pages})."
+            if is_programmatic else
+            f"Contracted project deliverables and workstream outcomes mapped to delivery phases (Part {page_num} of {total_pages})."
+        )
     else:
-        sub_text = "Contracted project deliverables and workstream outcomes mapped to delivery phases."
+        sub_text = (
+            "Backlog themes and feature focus mapped to delivery workstreams."
+            if is_programmatic else
+            "Contracted project deliverables and workstream outcomes mapped to delivery phases."
+        )
     k_shape, t_shape, s_shape = apply_slide_header_formatting(
         slide,
-        kicker_text="PROJECT SUCCESS AGREEMENT",
+        kicker_text=kicker_title,
         title_text="What we will deliver",
         subtitle_text=sub_text,
     )
@@ -752,7 +773,7 @@ def write_slide6_deliverables_page(
     # Header Row
     table.rows[0].height = Pt(22)
     _format_table_header_cell(table.cell(0, 0), "Workstream / Feature Set", font_size_pt=9.5, bold=True)
-    _format_table_header_cell(table.cell(0, 1), "Outcomes / Deliverables", font_size_pt=9.5, bold=True)
+    _format_table_header_cell(table.cell(0, 1), col2_header, font_size_pt=9.5, bold=True)
 
     if not workstreams:
         cell0 = table.rows[1].cells[0]
@@ -1037,6 +1058,22 @@ def write_client_deck(
     apply_slide_header_formatting(prs.slides[4 + total_s6_pages + 9])  # Slide 15
 
     # Populate slides
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    if is_programmatic:
+        # Slide 3 (Team Roster): replace "Project Manager" / "Talent PM" with "Product Manager" (HTL-115)
+        for shp in prs.slides[2].shapes:
+            if shp.has_text_frame:
+                for p in shp.text_frame.paragraphs:
+                    for r in p.runs:
+                        if "Project Manager" in r.text:
+                            r.text = r.text.replace("Project Manager", "Product Manager")
+                        if "Talent PM" in r.text:
+                            r.text = r.text.replace("Talent PM", "Product Manager")
+                    if "Project Manager" in p.text:
+                        p.text = p.text.replace("Project Manager", "Product Manager")
+                    if "Talent PM" in p.text:
+                        p.text = p.text.replace("Talent PM", "Product Manager")
+
     write_slide1(prs.slides[0], model)
     write_slide5(prs.slides[4], model)
 

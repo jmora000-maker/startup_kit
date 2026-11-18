@@ -5,6 +5,7 @@ the title blue and the kicker large (Appendix L, L2). Geometry, fonts, and row h
 DeckModel, which sized them with the fit estimate.
 """
 
+import os
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -380,6 +381,33 @@ def _fit_cover(slide: Any) -> None:
         sub_bottom = ls.top + ls.height
         sub_top = max(ls.top, min(wanted_top, sub_bottom - sub_need))
         sub.left, sub.top, sub.width, sub.height = ls.left, sub_top, ls.width, sub_bottom - sub_top
+
+
+def resolve_onboarding_deck_template_path(
+    custom_path: Optional[Path] = None,
+    contract_type: Optional[str] = None,
+) -> Path:
+    """Resolve the Talent Team Onboarding Deck template path with fallback resolution (DECK-06 / HTL-115)."""
+    if custom_path and Path(custom_path).exists():
+        return Path(custom_path)
+
+    env_path = os.getenv("DECK_TEMPLATE_PATH")
+    if env_path and Path(env_path).exists():
+        return Path(env_path)
+
+    is_programmatic = bool(contract_type and any(k in contract_type.strip().lower() for k in ("programmatic", "retainer")))
+
+    if is_programmatic:
+        candidates = [
+            Path("templates/Team Onboarding TEMPLATE_Programmatic.pptx"),
+            Path("templates/Team_Onboarding_TEMPLATE_Programmatic.pptx"),
+            DECK_TEMPLATE_PATH,
+        ]
+        for cand in candidates:
+            if cand.exists():
+                return cand
+
+    return Path("templates/Team Onboarding TEMPLATE_Project.pptx") if Path("templates/Team Onboarding TEMPLATE_Project.pptx").exists() else DECK_TEMPLATE_PATH
 
 
 def write_onboarding_deck(

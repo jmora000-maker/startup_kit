@@ -153,6 +153,7 @@ class GovernanceDeckModel:
     slide14: Slide14DeliverModel
     slide18: Slide18RisksModel
     slide19: Slide19NextStepsModel
+    contract_type: str = ""
     slide11: Slide11ChangeMatrixModel = field(default_factory=Slide11ChangeMatrixModel)
     slide15: Slide15AcceptanceCriteriaModel = field(default_factory=Slide15AcceptanceCriteriaModel)
     slide16: Slide16AcceptanceNarrativeModel = field(default_factory=Slide16AcceptanceNarrativeModel)

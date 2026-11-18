@@ -26,7 +26,7 @@ from typing import Dict, List
 
 GOVERNANCE_TIERS: List[str] = ["Guided", "Partnered", "Elevated"]
 
-CONTRACT_TYPES: List[str] = ["Time and Materials", "Fixed Bid"]
+CONTRACT_TYPES: List[str] = ["Time and Materials", "Fixed Bid", "Programmatic"]
 
 MODEL_OPTIONS_BY_PROVIDER: Dict[str, List[str]] = {
     "anthropic": ["claude-sonnet-5-5", "claude-haiku-4-5-20251001"],

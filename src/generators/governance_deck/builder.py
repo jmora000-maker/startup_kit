@@ -47,9 +47,9 @@ def build_slide1_model(baseline: StartupKitBaseline) -> Slide1Model:
 
 def build_slide11_model(baseline: StartupKitBaseline) -> Slide11ChangeMatrixModel:
     """Build Slide 11 model (Change Decision Matrix - HTL-109) reading from Table 4 classification guide rows."""
-    from src.generators.scope_baseline.templates import build_table4_classification_guide_rows
+    from src.generators.scope_baseline.templates import build_table4_classification_guide_rows, resolve_contract_variant
     contract_raw = baseline.contract_type or (baseline.charter.contract_type if baseline.charter else "") or ""
-    variant = "Fixed Bid" if "fixed" in contract_raw.lower() else "Time and Materials"
+    variant = resolve_contract_variant(contract_raw)
     t4_rows = build_table4_classification_guide_rows(baseline, variant)
 
     cards = []
@@ -1252,6 +1252,7 @@ def build_governance_deck_model(
 
     return GovernanceDeckModel(
         project_name=project_name,
+        contract_type=baseline.contract_type or (baseline.charter.contract_type if baseline.charter else "") or "",
         slide1=slide1,
         slide11=slide11,
         slide13=slide13,

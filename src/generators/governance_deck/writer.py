@@ -49,8 +49,11 @@ from src.generators.governance_deck.builder import _build_acceptance_cards, pars
 from src.generators.governance_deck.spec import GovernanceDeckModel
 
 
-def resolve_governance_deck_template_path(custom_path: Optional[Path] = None) -> Path:
-    """Resolve the PS Governance Kickoff Deck template path with fallback resolution (HTL-72)."""
+def resolve_governance_deck_template_path(
+    custom_path: Optional[Path] = None,
+    contract_type: Optional[str] = None,
+) -> Path:
+    """Resolve the PS Governance Kickoff Deck template path with fallback resolution (HTL-72 / HTL-115)."""
     if custom_path and custom_path.exists():
         return custom_path
 
@@ -60,13 +63,30 @@ def resolve_governance_deck_template_path(custom_path: Optional[Path] = None) ->
         if p.exists():
             return p
 
+    is_programmatic = bool(contract_type and any(k in contract_type.strip().lower() for k in ("programmatic", "retainer")))
+
+    if is_programmatic:
+        candidates = [
+            Path("templates/PS Governance Kickoff TEMPLATE - Programmatic.pptx"),
+            Path("templates/PS_Governance_Kickoff_TEMPLATE_-_Programmatic.pptx"),
+            Path("templates/PS_Governance Kickoff_TEMPLATE.pptx"),
+        ]
+        for cand in candidates:
+            if cand.exists():
+                return cand
+
     primary_path = Path("templates/PS_Governance Kickoff_TEMPLATE.pptx")
     if primary_path.exists():
         return primary_path
 
-    fallback_path = Path("templates/PS_Governance_Kickoff_TEMPLATE.pptx")
-    if fallback_path.exists():
-        return fallback_path
+    fallback_candidates = [
+        Path("templates/PS_Governance_Kickoff_TEMPLATE.pptx"),
+        Path("templates/PS Governance Kickoff TEMPLATE - Project.pptx"),
+        Path("templates/PS_Governance_Kickoff_TEMPLATE_-_Project.pptx"),
+    ]
+    for cand in fallback_candidates:
+        if cand.exists():
+            return cand
 
     return primary_path
 
@@ -885,7 +905,10 @@ def write_governance_deck(
     client_template_path: Optional[Path] = None,
 ) -> Path:
     """Load template presentation, assemble 19 slides, populate lifted and new slides, and save output file (HTL-72)."""
-    src_template = resolve_governance_deck_template_path(template_path)
+    src_template = resolve_governance_deck_template_path(
+        custom_path=template_path,
+        contract_type=getattr(model, "contract_type", None),
+    )
     if not src_template.exists():
         raise FileNotFoundError(f"Governance Deck template not found at {src_template}")
 
@@ -895,6 +918,147 @@ def write_governance_deck(
 
     prs_gov = pptx.Presentation(str(src_template))
     prs_client = pptx.Presentation(str(src_client_template))
+
+    # Convert governance deck models to client models for slide writers
+    client_deck_adapter = ClientDeckModel(
+        project_name=model.project_name,
+        contract_type=model.contract_type,
+        slide1=ClientSlide1Model(client_name=model.slide1.client_name, project_name=model.slide1.project_name),
+        slide5=ClientSlide5Model(
+            why_are_we_doing_this=model.slide13.why_are_we_doing_this,
+            what_problem_are_we_solving=model.slide13.what_problem_are_we_solving,
+            what_does_success_look_like=model.slide13.what_does_success_look_like,
+        ),
+        slide6=ClientSlide6Model(
+            workstreams=[
+                ClientWorkstreamBlock(
+                    title=ws.title,
+                    deliverables=list(ws.deliverables),
+                    overflow_count=ws.overflow_count,
+                )
+                for ws in model.slide14.workstreams
+            ],
+            solution_overview=model.slide14.solution_overview,
+            out_of_scope=list(model.slide14.out_of_scope),
+        ),
+        slide12=ClientSlide12Model(
+            risks=[
+                ClientRiskItem(
+                    id=r.id,
+                    description=r.description,
+                    prob_impact=r.prob_impact,
+                    mitigation=r.mitigation,
+                    target_date=r.target_date,
+                    severity_score=r.severity_score,
+                )
+                for r in model.slide18.risks
+            ]
+        ),
+        slide15=ClientSlide15Model(
+            next_steps=[
+                ClientNextStepItem(
+                    owner=st.owner,
+                    action=st.action,
+                    due=st.due,
+                )
+                for st in model.slide19.next_steps
+            ]
+        ),
+    )
+
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+
+    if is_programmatic:
+        # Programmatic Governance Deck flow (HTL-115)
+        # Template has 18 slides (0..17).
+        layout_clean = prs_gov.slide_layouts[17] if len(prs_gov.slide_layouts) > 17 else prs_gov.slide_layouts[0]
+
+        # 1. Slide 1 (Cover): write_slide1
+        write_slide1(prs_gov.slides[0], model)
+
+        # 2. Slide 2 (Agenda): Remove 01-08 numbers and update 8 topics (HTL-115 Item 4)
+        s2 = prs_gov.slides[1]
+        for shp in s2.shapes:
+            if shp.has_text_frame:
+                txt = shp.text_frame.text.strip()
+                if txt in ("01", "02", "03", "04", "05", "06", "07", "08"):
+                    shp.text_frame.text = ""
+                elif "Sprint sign-off" in txt:
+                    for p in shp.text_frame.paragraphs:
+                        if "Sprint sign-off" in p.text:
+                            p.text = p.text.replace("Sprint sign-off", "Next steps")
+
+        # 3. Slide 8 (Ways of Working): update fee phrasing
+        s8 = prs_gov.slides[7]
+        for shp in s8.shapes:
+            if shp.has_text_frame and "against the not-to-exceed" in shp.text_frame.text:
+                for p in shp.text_frame.paragraphs:
+                    if "against the not-to-exceed" in p.text:
+                        p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+
+        s9 = prs_gov.slides[8]
+        for shp in s9.shapes:
+            if shp.has_text_frame and "against the not-to-exceed" in shp.text_frame.text:
+                for p in shp.text_frame.paragraphs:
+                    if "against the not-to-exceed" in p.text:
+                        p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+
+        # 4. Insert Change Decision Matrix immediately after Slide 11 (Slide 11+1)
+        s_change_matrix = prs_gov.slides.add_slide(layout_clean)
+        for s in list(s_change_matrix.shapes):
+            s_change_matrix.shapes._spTree.remove(s._element)
+        write_slide11_change_decision_matrix(s_change_matrix, model)
+        change_matrix_index = len(prs_gov.slides) - 1
+
+        # 5. Insert Next Steps slide before closing slide (Slide 15 retained - HTL-115 Item 4)
+        s_next_steps = prs_gov.slides.add_slide(layout_clean)
+        for s in list(s_next_steps.shapes):
+            s_next_steps.shapes._spTree.remove(s._element)
+        for s in prs_client.slides[14].shapes:
+            s_next_steps.shapes._spTree.append(copy.deepcopy(s._element))
+        write_slide15(s_next_steps, client_deck_adapter)
+        next_steps_index = len(prs_gov.slides) - 1
+
+        # Reorder into desired sequence:
+        # Slides 0..10 (Slides 1..11)
+        # change_matrix_index (Slide 12: Change Decision Matrix)
+        # Slides 11..16 (Slides 13..18)
+        # next_steps_index (Slide 19: Next Steps)
+        # Slide 17 (Slide 20: Closing slide)
+        desired_indices = list(range(11)) + [change_matrix_index] + list(range(11, 17)) + [next_steps_index, 17]
+        sldIdLst = prs_gov.slides._sldIdLst
+        all_sld_ids = list(sldIdLst)
+        for child in list(sldIdLst):
+            sldIdLst.remove(child)
+        for idx in desired_indices:
+            sldIdLst.append(all_sld_ids[idx])
+
+        # Apply header formatting
+        for s_idx in [1, 3, 4, 5, 6, 7, 8, 9, 10]:
+            apply_slide_header_formatting(prs_gov.slides[s_idx], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[12], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[13], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[14], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[15], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[16], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[17], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[18])  # Next steps
+
+        # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E
+        for slide in prs_gov.slides:
+            for shape in slide.shapes:
+                for clr in shape._element.iter():
+                    val = clr.attrib.get("val")
+                    if val and val.upper() == "041133":
+                        clr.attrib["val"] = "0F256E"
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        prs_gov.save(str(target_path))
+
+        manifest_path = target_path.with_name(f"{target_path.stem}.trace.json")
+        model.manifest.write_json(manifest_path)
+
+        return target_path
 
     layout_default = prs_gov.slide_layouts[14]
 
@@ -1032,52 +1196,6 @@ def write_governance_deck(
 
     for idx in desired_indices:
         sldIdLst.append(all_sld_ids[idx])
-
-    # Convert governance deck models to client models for slide writers
-    client_deck_adapter = ClientDeckModel(
-        project_name=model.project_name,
-        slide1=ClientSlide1Model(client_name=model.slide1.client_name, project_name=model.slide1.project_name),
-        slide5=ClientSlide5Model(
-            why_are_we_doing_this=model.slide13.why_are_we_doing_this,
-            what_problem_are_we_solving=model.slide13.what_problem_are_we_solving,
-            what_does_success_look_like=model.slide13.what_does_success_look_like,
-        ),
-        slide6=ClientSlide6Model(
-            workstreams=[
-                ClientWorkstreamBlock(
-                    title=ws.title,
-                    deliverables=list(ws.deliverables),
-                    overflow_count=ws.overflow_count,
-                )
-                for ws in model.slide14.workstreams
-            ],
-            solution_overview=model.slide14.solution_overview,
-            out_of_scope=list(model.slide14.out_of_scope),
-        ),
-        slide12=ClientSlide12Model(
-            risks=[
-                ClientRiskItem(
-                    id=r.id,
-                    description=r.description,
-                    prob_impact=r.prob_impact,
-                    mitigation=r.mitigation,
-                    target_date=r.target_date,
-                    severity_score=r.severity_score,
-                )
-                for r in model.slide18.risks
-            ]
-        ),
-        slide15=ClientSlide15Model(
-            next_steps=[
-                ClientNextStepItem(
-                    owner=st.owner,
-                    action=st.action,
-                    due=st.due,
-                )
-                for st in model.slide19.next_steps
-            ]
-        ),
-    )
 
     # Format canonical slide headers across template and lifted content slides (HTL-88 / HTL-109)
     apply_slide_header_formatting(prs_gov.slides[1], has_subtitle=False)

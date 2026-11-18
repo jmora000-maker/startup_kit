@@ -569,6 +569,7 @@ def build_client_deck_model(
 
     return ClientDeckModel(
         project_name=project_name,
+        contract_type=baseline.contract_type or (baseline.charter.contract_type if baseline.charter else "") or "",
         slide1=slide1,
         slide5=slide5,
         slide6=slide6,

@@ -153,3 +153,4 @@ class DeckModel:
     kit_file_name: str = ""
     workbook_file_name: str = ""
     overflow_rows_used: int = 0
+    contract_type: str = ""

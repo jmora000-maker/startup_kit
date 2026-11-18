@@ -23,7 +23,7 @@ STRICT BUSINESS RULES & CONSTRAINTS:
    - clause_or_slide: the section number, heading, or slide number (e.g. "Section 3.2", "Slide 4", "Page 2")
    - confidence_score: floating point score between 0.0 and 1.0 indicating extraction confidence.
 7. GOVERNANCE TIERS: Valid tiers are 'Guided', 'Partnered', 'Elevated'. Default to 'Partnered' if not specified.
-8. CONTRACT TYPES: Common types include 'Time and Materials' and 'Fixed Bid'.
+8. CONTRACT TYPES: Common types include 'Time and Materials', 'Fixed Bid', and 'Programmatic'.
 """
 
 CHARTER_PROMPT = """Analyze the provided project documents and extract the overall Project Charter, Governance metadata, and Client Problem Statement.
@@ -48,7 +48,7 @@ Extract:
 - project_name: Title of the project or engagement (a single clean title).
 - client_name: Name of the client or sponsoring organization.
 - governance_tier: 'Guided', 'Partnered', or 'Elevated' (default 'Partnered').
-- contract_type: 'Time and Materials' or 'Fixed Bid' (default 'Time and Materials').
+- contract_type: 'Time and Materials', 'Fixed Bid', or 'Programmatic' (default 'Time and Materials'). Infer 'Programmatic' when the SOW specifies a flat weekly retainer fee with capacity-based sprint backlog delivery.
 - delivery_manager: Named Delivery Manager if mentioned, else null.
 - talent_pm: Named Talent Project Manager if mentioned, else null.
 - pmo_lead: Named PMO Lead if mentioned, else null.
@@ -287,7 +287,7 @@ CONSTRAINTS:
 2. Do NOT mention or reference the SOW, contracts, or source documents.
 
 Extract:
-- contract_type_implication: Commercial rules based on Time and Materials or Fixed Bid
+- contract_type_implication: Commercial rules based on Time and Materials, Fixed Bid, or Programmatic (capacity-based flat weekly retainer)
 - billing_consumption_assumption: Invoicing and timesheet rules
 - staffing_assumption: Team allocation and staffing constraints
 - commercial_exposure_note: Financial exposure notes
