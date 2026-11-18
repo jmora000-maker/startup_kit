@@ -246,6 +246,11 @@ def write_slide5(slide, model: ClientDeckModel) -> None:
         shape.text_frame.margin_top = 0
         shape.text_frame.word_wrap = True
 
+        if is_programmatic:
+            fitted_why = fitted_why.replace("Project Success Agreement", "Engagement Overview")
+            fitted_prob = fitted_prob.replace("Project Success Agreement", "Engagement Overview")
+            fitted_succ = fitted_succ.replace("Project Success Agreement", "Engagement Overview")
+
         if "[Pre-filled: the business initiative" in text or shape.shape_id == 176:
             _replace_shape_text(shape, fitted_why, Pt(uniform_sz))
         elif "[Pre-filled: the current pain point" in text or shape.shape_id == 180:
@@ -1001,6 +1006,95 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
                 table._tbl.remove(tr_elements[-1])
 
 
+def write_slide8_approach(slide, model: ClientDeckModel) -> None:
+    """Populate Slide 8 (Strategic Approach / Sprint Cadence Lifecycle) for Programmatic contracts (HTL-116)."""
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    if not is_programmatic:
+        return
+
+    # Update slide header
+    apply_slide_header_formatting(
+        slide,
+        kicker_text="ENGAGEMENT OVERVIEW",
+        title_text="Mobilize, deliver in two-week sprints, then close",
+        subtitle_text="Our strategic approach that adapts to how you work.",
+    )
+
+    # Replace waterfall diagram (Shape 228) with Programmatic sprint lifecycle diagram from Team Onboarding template
+    template_candidates = [
+        Path("templates/Team Onboarding TEMPLATE_Programmatic.pptx"),
+        Path("templates/Team_Onboarding_TEMPLATE_Programmatic.pptx"),
+    ]
+    src_template = next((p for p in template_candidates if p.exists()), None)
+    if src_template:
+        onboarding_prs = pptx.Presentation(str(src_template))
+        onboarding_s6 = onboarding_prs.slides[5]
+        # Remove old waterfall diagram shape (id 228 or large group shape) and release any associated part relationships (HTL-116)
+        for s in list(slide.shapes):
+            if s.shape_id == 228 or (s.shape_type == pptx.enum.shapes.MSO_SHAPE_TYPE.GROUP and s.top > 1500000):
+                # Search shape XML for relationship IDs to drop from slide part rels
+                try:
+                    for elem in s._element.iter():
+                        for k, v in elem.attrib.items():
+                            if isinstance(v, str) and v.startswith("rId") and v in slide.part.rels:
+                                slide.part.drop_rel(v)
+                except Exception:
+                    pass
+                slide.shapes._spTree.remove(s._element)
+
+        # Copy body shapes from onboarding Slide 6 (shapes 2..31)
+        for bs in list(onboarding_s6.shapes)[2:]:
+            slide.shapes._spTree.append(copy.deepcopy(bs._element))
+
+
+def write_slide9_cadence(slide, model: ClientDeckModel) -> None:
+    """Populate Slide 9 (Operating Rhythm / Agile Cadence) for Programmatic contracts (HTL-116)."""
+    is_programmatic = bool(model.contract_type and any(k in model.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    if not is_programmatic:
+        return
+
+    apply_slide_header_formatting(
+        slide,
+        kicker_text="WAYS OF WORKING",
+        title_text="Our operating rhythm",
+        subtitle_text="Our philosophy is no surprises by design.",
+    )
+
+    cadence_cards = [
+        {
+            "pill": "DAILY",
+            "body": "Project team stand-ups\n(15 mins)\n\nImmediate tactical alignment, sharing of daily goals, and rapid unblocking of technical hurdles.",
+        },
+        {
+            "pill": "SPRINT PLANNING",
+            "body": "Backlog Refinement & Commitment\n\nBacklog grooming, story estimation, and sprint commitment against weekly team capacity.",
+        },
+        {
+            "pill": "SPRINT DEMO & ACCEPTANCE",
+            "body": "Demo & Sprint Sign-Off\n(End of Sprint)\n\nFormal demonstration and SOW acceptance review window for completed sprint deliverables.",
+        },
+        {
+            "pill": "GOVERNANCE",
+            "body": "Retrospective & Alignment\n\nDelivery Manager and Client PO sync on burn rate, weekly capacity health, and blocker escalation.",
+        },
+    ]
+
+    pills = sorted(
+        [s for s in slide.shapes if s.has_text_frame and s.text_frame.text.strip() in ('DAILY', 'WEEKLY', 'MONTHLY', 'AD-HOC', 'SPRINT PLANNING', 'SPRINT DEMO & ACCEPTANCE', 'GOVERNANCE')],
+        key=lambda s: s.left,
+    )
+    bodies = sorted(
+        [s for s in slide.shapes if s.has_text_frame and s.text_frame.text.strip() and s.text_frame.text.strip() not in ('DAILY', 'WEEKLY', 'MONTHLY', 'AD-HOC', 'WAYS OF WORKING', 'Our philosophy is no surprises by design.', 'Our operating rhythm', 'SPRINT PLANNING', 'SPRINT DEMO & ACCEPTANCE', 'GOVERNANCE')],
+        key=lambda s: s.left,
+    )
+
+    for idx, card in enumerate(cadence_cards):
+        if idx < len(pills):
+            _replace_shape_text(pills[idx], card["pill"], default_font_size=Pt(10), font_color_rgb=RGBColor(0xFF, 0xFF, 0xFF))
+        if idx < len(bodies):
+            _replace_shape_text(bodies[idx], card["body"], default_font_size=Pt(9.5), font_color_rgb=RGBColor(0x33, 0x33, 0x33))
+
+
 def write_client_deck(
     model: ClientDeckModel,
     target_path: Path,
@@ -1085,6 +1179,12 @@ def write_client_deck(
             page_num=c_idx + 1,
             total_pages=total_s6_pages,
         )
+
+    # Slide 8 (Strategic Approach / Sprint Cadence): index is 4 + total_s6_pages + 2
+    write_slide8_approach(prs.slides[4 + total_s6_pages + 2], model)
+
+    # Slide 9 (Operating Rhythm / Agile Cadence): index is 4 + total_s6_pages + 3
+    write_slide9_cadence(prs.slides[4 + total_s6_pages + 3], model)
 
     # Slide 12 (Initial Risk Register): index is 10 + total_s6_pages
     write_slide12(prs.slides[10 + total_s6_pages], model)

@@ -43,6 +43,11 @@ COMMERCIAL_EXCLUSION_REGEX = re.compile(
     re.IGNORECASE,
 )
 
+COMPLETION_PHRASE_REGEX = re.compile(
+    r"(?:concludes|service period ends|deliverables accepted following|milestone sign-off|formal acceptance|acceptance following demonstration)",
+    re.IGNORECASE,
+)
+
 
 def scrub_commercial_clauses(text: str) -> str:
     """Scrub financial and commercial clauses/sentences from continuous prose text (HTL-50 / HTL-54)."""
@@ -71,8 +76,8 @@ def scrub_commercial_clauses(text: str) -> str:
     return ""
 
 
-def format_success_criteria_prose(criteria: Sequence[str], summary: Optional[str] = None) -> str:
-    """Distill success criteria into narrative prose sentences (OUT-14.2 / HTL-50 / HTL-60)."""
+def format_success_criteria_prose(criteria: Sequence[str], summary: Optional[str] = None, fallback_doc: str = "Project Success Agreement") -> str:
+    """Distill success criteria into narrative prose sentences (OUT-14.2 / HTL-50 / HTL-60 / HTL-116)."""
     if summary and summary.strip() and summary.strip() != "[CONFIRMATION REQUIRED]":
         scrubbed = scrub_commercial_clauses(summary.strip())
         if scrubbed:
@@ -85,7 +90,7 @@ def format_success_criteria_prose(criteria: Sequence[str], summary: Optional[str
         if c and c.strip() and c.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(c)
     ]
     if not clean:
-        return "[To be confirmed in Project Success Agreement]"
+        return f"[To be confirmed in {fallback_doc}]"
 
     sentences = []
     for item in clean:
@@ -108,14 +113,17 @@ def build_slide5_model(
     baseline: StartupKitBaseline,
     llm_client: Optional[ILLMClient] = None,
 ) -> Slide5Model:
-    """Build Slide 5 model (Project Success Agreement - Why We're Here) with financial scrubbing (HTL-50 / HTL-54)."""
+    """Build Slide 5 model (Project Success Agreement / Engagement Overview - Why We're Here) with financial scrubbing (HTL-50 / HTL-54 / HTL-116)."""
+    is_programmatic = bool(baseline.contract_type and any(k in baseline.contract_type.strip().lower() for k in ("programmatic", "retainer")))
+    fallback_doc = "Engagement Overview" if is_programmatic else "Project Success Agreement"
+
     why_raw = (
         (baseline.charter.project_purpose if baseline.charter and baseline.charter.project_purpose and baseline.charter.project_purpose != "[CONFIRMATION REQUIRED]" else None)
         or (baseline.governance_context.executive_summary if baseline.governance_context and baseline.governance_context.executive_summary else None)
     )
     why = scrub_commercial_clauses(why_raw) if why_raw else ""
     if not why:
-        why = "Establish core platform capabilities and deliver contracted business outcomes." if not why_raw or not COMMERCIAL_EXCLUSION_REGEX.search(why_raw) else "[To be confirmed in Project Success Agreement]"
+        why = "Establish core platform capabilities and deliver contracted business outcomes." if not why_raw or not COMMERCIAL_EXCLUSION_REGEX.search(why_raw) else f"[To be confirmed in {fallback_doc}]"
     elif not why.startswith("["):
         why = condense_why_are_we_doing_this(why, max_chars=180, llm_client=llm_client)
 
@@ -128,9 +136,9 @@ def build_slide5_model(
     if raw_problem:
         problem = scrub_commercial_clauses(raw_problem)
         if not problem:
-            problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
+            problem = f"[To be confirmed in {fallback_doc} · Define current pain points with client]"
     else:
-        problem = "[To be confirmed in Project Success Agreement · Define current pain points with client]"
+        problem = f"[To be confirmed in {fallback_doc} · Define current pain points with client]"
 
     if problem and not problem.startswith("["):
         problem = condense_problem_statement(problem, max_chars=180, llm_client=llm_client)
@@ -143,6 +151,7 @@ def build_slide5_model(
     success = format_success_criteria_prose(
         baseline.charter.success_criteria if baseline.charter else [],
         summary=raw_summary,
+        fallback_doc=fallback_doc,
     )
     return Slide5Model(
         why_are_we_doing_this=why,
@@ -155,86 +164,119 @@ def build_slide6_model(
     baseline: StartupKitBaseline,
     llm_client: Optional[ILLMClient] = None,
 ) -> Slide6Model:
-    """Build Slide 6 model (What We Will Deliver) using canonical PMO Workbook schedule rows (HTL-49 / HTL-50)."""
+    """Build Slide 6 model (What We Will Deliver / Focus) using canonical PMO Workbook schedule rows or agile workstreams (HTL-49 / HTL-50 / HTL-116)."""
     wb = build_workbook_model(baseline)
     names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
     m_dict = {m.id: m for m in (baseline.milestones or [])}
 
-    level2 = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
-    if not level2:
-        level2 = [r for r in wb.schedule_rows if r.row_type in ("Milestone", "Checkpoint")]
-
+    is_programmatic = bool(baseline.contract_type and any(k in baseline.contract_type.strip().lower() for k in ("programmatic", "retainer")))
     workstreams: List[WorkstreamBlock] = []
 
-    if level2:
-        for r in level2:
-            m = m_dict.get(r.milestone_id)
-            if m and m.description and (not r.name or r.name in [f"Phase {i}" for i in range(1, 10)] + [f"Milestone {i}" for i in range(1, 10)]):
-                raw_title = m.description
-            else:
-                raw_title = r.name or (m.description if m else "") or r.workstream or "Phase Delivery"
-
-            if COMMERCIAL_EXCLUSION_REGEX.search(raw_title):
-                title = scrub_commercial_clauses(raw_title)
-                if not title:
-                    title = r.workstream or "Phase Delivery"
-            else:
-                title = raw_title
-
-            linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
-
-            deliv_items: List[str] = []
-            for did in linked_ids:
-                d_name = names.get(did)
-                if d_name:
-                    if COMMERCIAL_EXCLUSION_REGEX.search(d_name):
-                        continue
-                    if d_name.startswith(did):
-                        deliv_items.append(d_name)
-                    else:
-                        deliv_items.append(f"{did} {d_name}")
-                else:
-                    if not COMMERCIAL_EXCLUSION_REGEX.search(did):
-                        deliv_items.append(did)
-
-            if not deliv_items:
-                deliv_items = ["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"]
-
-            workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
-    elif baseline.deliverables:
-        chunk_size = 3
-        non_comm_delivs = [d for d in baseline.deliverables if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")]
-        active_delivs = non_comm_delivs if non_comm_delivs else []
-        if active_delivs:
-            for i in range(0, len(active_delivs), chunk_size):
-                chunk = active_delivs[i : i + chunk_size]
-                title = f"Phase {i // chunk_size + 1} Delivery"
-                deliv_items = []
-                for d in chunk:
-                    crit_fallback = d.acceptance_criteria[0] if (isinstance(d.acceptance_criteria, list) and d.acceptance_criteria) else (d.acceptance_criteria if isinstance(d.acceptance_criteria, str) else None)
-                    d_name = d.name or crit_fallback or f"Deliverable {d.id}"
-                    did = d.id or ""
-                    if did and not d_name.startswith(did):
-                        deliv_items.append(f"{did} {d_name}")
-                    else:
-                        deliv_items.append(d_name)
-                workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
-        else:
+    if is_programmatic:
+        raw_delivs = baseline.deliverables or []
+        non_comm_delivs = [
+            d for d in raw_delivs
+            if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")
+            and not COMPLETION_PHRASE_REGEX.search(d.name or "")
+        ]
+        if non_comm_delivs:
+            for d in non_comm_delivs:
+                title = d.name or f"Workstream {d.id}"
+                desc = d.description if d.description and d.description != d.name and not COMPLETION_PHRASE_REGEX.search(d.description) else ""
+                items = [desc] if desc else [title]
+                workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+        elif baseline.charter and baseline.charter.high_level_scope:
+            clean_scope = [
+                s.strip().rstrip(";. ")
+                for s in baseline.charter.high_level_scope
+                if s and s.strip() and s.strip() != "[CONFIRMATION REQUIRED]"
+                and not COMMERCIAL_EXCLUSION_REGEX.search(s)
+                and not COMPLETION_PHRASE_REGEX.search(s)
+            ]
+            for s in clean_scope:
+                workstreams.append(WorkstreamBlock(title=s, deliverables=[s], overflow_count=0))
+        if not workstreams:
             workstreams.append(
                 WorkstreamBlock(
-                    title="Phase 1 Delivery",
-                    deliverables=["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"],
+                    title="Feature Development & Backlog Delivery",
+                    deliverables=["Sprint backlog features and roadmap workstream delivery"],
                     overflow_count=0,
                 )
             )
     else:
-        workstreams.append(
-            WorkstreamBlock(
-                title="Phase 1: Project Kickoff & Foundation",
-                deliverables=["Architecture & Delivery Setup", "Core Workstream Alignment"],
-                overflow_count=0,
+        level2 = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
+        if not level2:
+            level2 = [r for r in wb.schedule_rows if r.row_type in ("Milestone", "Checkpoint")]
+
+        if level2:
+            for r in level2:
+                m = m_dict.get(r.milestone_id)
+                if m and m.description and not COMPLETION_PHRASE_REGEX.search(m.description) and (not r.name or r.name in [f"Phase {i}" for i in range(1, 10)] + [f"Milestone {i}" for i in range(1, 10)]):
+                    raw_title = m.description
+                else:
+                    raw_title = r.name or (m.description if m and not COMPLETION_PHRASE_REGEX.search(m.description) else "") or r.workstream or "Phase Delivery"
+
+                if COMMERCIAL_EXCLUSION_REGEX.search(raw_title) or COMPLETION_PHRASE_REGEX.search(raw_title):
+                    title = scrub_commercial_clauses(raw_title)
+                    if not title or COMPLETION_PHRASE_REGEX.search(title):
+                        title = r.workstream or "Phase Delivery"
+                else:
+                    title = raw_title
+
+                linked_ids = [x.strip() for x in (r.linked_deliverables or "").split(",") if x.strip()]
+
+                deliv_items: List[str] = []
+                for did in linked_ids:
+                    d_name = names.get(did)
+                    if d_name:
+                        if COMMERCIAL_EXCLUSION_REGEX.search(d_name) or COMPLETION_PHRASE_REGEX.search(d_name):
+                            continue
+                        if d_name.startswith(did):
+                            deliv_items.append(d_name)
+                        else:
+                            deliv_items.append(f"{did} {d_name}")
+                    else:
+                        if not COMMERCIAL_EXCLUSION_REGEX.search(did) and not COMPLETION_PHRASE_REGEX.search(did):
+                            deliv_items.append(did)
+
+                if not deliv_items:
+                    deliv_items = ["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"]
+
+                workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
+        elif baseline.deliverables:
+            chunk_size = 3
+            non_comm_delivs = [d for d in baseline.deliverables if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")]
+            active_delivs = non_comm_delivs if non_comm_delivs else []
+            if active_delivs:
+                for i in range(0, len(active_delivs), chunk_size):
+                    chunk = active_delivs[i : i + chunk_size]
+                    title = f"Phase {i // chunk_size + 1} Delivery"
+                    deliv_items = []
+                    for d in chunk:
+                        crit_fallback = d.acceptance_criteria[0] if (isinstance(d.acceptance_criteria, list) and d.acceptance_criteria) else (d.acceptance_criteria if isinstance(d.acceptance_criteria, str) else None)
+                        d_name = d.name or crit_fallback or f"Deliverable {d.id}"
+                        did = d.id or ""
+                        if did and not d_name.startswith(did):
+                            deliv_items.append(f"{did} {d_name}")
+                        else:
+                            deliv_items.append(d_name)
+                    workstreams.append(WorkstreamBlock(title=title, deliverables=deliv_items, overflow_count=0))
+            else:
+                workstreams.append(
+                    WorkstreamBlock(
+                        title="Phase 1 Delivery",
+                        deliverables=["[No non-commercial deliverables identified for this phase · See Project Delivery Workbook]"],
+                        overflow_count=0,
+                    )
+                )
+        else:
+            workstreams.append(
+                WorkstreamBlock(
+                    title="Phase 1: Project Kickoff & Foundation",
+                    deliverables=["Architecture & Delivery Setup", "Core Workstream Alignment"],
+                    overflow_count=0,
+                )
             )
-        )
 
     # Solution Overview (HTL-60)
     overview = ""

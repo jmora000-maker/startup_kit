@@ -41,7 +41,12 @@ def export_scope_baseline(
 
     doc_model = build_scope_baseline_document(baseline, llm_client=llm_client)
     clean_name = sanitize_filename(doc_model.project_name)
-    variant_slug = "Fixed_Bid" if doc_model.contract_variant == "Fixed Bid" else "Time_and_Materials"
+    if doc_model.contract_variant == "Fixed Bid":
+        variant_slug = "Fixed_Bid"
+    elif doc_model.contract_variant == "Programmatic":
+        variant_slug = "Programmatic"
+    else:
+        variant_slug = "Time_and_Materials"
     target_path = output_dir / f"{clean_name}_Scope_Baseline_{variant_slug}.docx"
 
     saved_path = write_scope_baseline_docx(doc_model, target_path)

@@ -142,7 +142,7 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         approved_rule = guardrails.approved_work_rule if guardrails else "Only authorized project scope and approved Change Orders are authorized for execution."
         change_trigger = guardrails.change_control_trigger if guardrails else "Material scope shift, timeline variance > 5 days, or deliverable criteria alteration."
         auth_r6 = (
-            f"Governance Tier: {gov_tier} (Fixed Bid). {approved_rule} Billing is tied directly to formal deliverable and milestone acceptance. "
+            f"Governance Tier: {gov_tier}. {approved_rule} Billing is tied directly to formal deliverable and milestone acceptance. "
             f"Change trigger: {change_trigger}."
         )
         excl_r6 = (
@@ -152,7 +152,7 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         approved_rule = guardrails.approved_work_rule if guardrails else "Only authorized work packages and prioritized tasks within agreed weekly effort caps are authorized for execution."
         change_trigger = guardrails.change_control_trigger if guardrails else "Burn rate exceeding weekly cap by >10% or scope addition requiring NTE increase."
         auth_r6 = (
-            f"Governance Tier: {gov_tier} (Time & Materials). {approved_rule} Billing is based on approved timesheets and authorized effort burn. "
+            f"Governance Tier: {gov_tier}. {approved_rule} Billing is based on approved timesheets and authorized effort burn. "
             f"Change trigger: {change_trigger}."
         )
         excl_r6 = (
