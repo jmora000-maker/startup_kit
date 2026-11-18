@@ -20,7 +20,7 @@ The tool reads a Statement of Work (SOW) and supporting documents to produce fou
 
 ### Execution Interfaces & Storage Architecture
 The tool supports two primary workflows:
-- **Interactive Human Review UI (Streamlit)**: Launch with `streamlit run src/review_ui/app.py` to ingest SOWs and supporting notes via dual upload slots (with SOW-first precedence, automatic financial scrubbing, and gap-filling), inspect and edit extracted baseline facts (with collapsed fact-category panels), approve verified baselines, and generate deliverables. Billed LLM extraction and generation actions are protected by a dedicated `GENERATION_PASSPHRASE` gate.
+- **Interactive Human Review UI (Streamlit)**: Launch with `python -m streamlit run src/review_ui/app.py` to ingest SOWs and supporting notes via dual upload slots (with SOW-first precedence, automatic financial scrubbing, and gap-filling), inspect and edit extracted baseline facts (with collapsed fact-category panels), approve verified baselines, and generate deliverables. Billed LLM extraction and generation actions are protected by a dedicated `GENERATION_PASSPHRASE` gate. *(Note: On Windows environments with PowerShell Application Control policies, invoking via `python -m streamlit` avoids executable shim blocking).*
 - **Manage Runs Admin Page**: A dedicated administrative interface for inspecting run lifecycles, filtering runs by status, archiving/unarchiving historical records, and performing bulk run purges (protected by `ADMIN_PASSPHRASE`).
 - **Command-Line Interface (CLI)**: Run `python main.py` for batch extraction, headless processing, and automated pipeline execution.
 
@@ -52,6 +52,11 @@ pip install -r requirements.txt
 
 ### Local Development Stack (Emulators & Dev Servers)
 For local development and running the complete test suite or Human Review UI with cloud storage features, two local emulators are used:
+- **Standalone Streamlit UI**: Launch the review UI locally with default local storage (`review_queue/` and `output/`):
+  ```powershell
+  python -m streamlit run src/review_ui/app.py
+  ```
+  *(Note: On Windows environments with PowerShell Application Control policies, the bare `.venv\Scripts\streamlit.exe` shim can be blocked, while routing through `python.exe` avoids that.)*
 - **Firestore Emulator**: Port `8080` (`127.0.0.1:8080`, UI on port `4000`). Start with:
   ```powershell
   firebase emulators:start --only firestore
@@ -149,7 +154,10 @@ All options as provided by `python main.py --help`:
   ```powershell
   Copy-Item -LiteralPath "tests\fixtures\sow\arc_genomics\inputs\[V1] Exhibit A - Arc Genomics Platform.pdf" -Destination "inputs\"
   ```
-- **Outputs**: Written to `output/` by default.
+- **Outputs**: Written to `output/` by default for CLI runs.
+- **Streamlit Local Run Artifact Staging (Manual UAT)**: When generating artifacts through the Streamlit web interface during local testing:
+  - Each generation run stages files in an isolated temporary directory (`%TEMP%\startup_kit_app_run_<random_id>\` for Generate page runs, or `%TEMP%\startup_kit_review_<random_id>\` for Fact-Review-triggered runs).
+  - The standard way to retrieve generated deliverables is via the UI's own **"Download <Artifact>"** buttons, which save files directly to the browser's download folder.
 
 ### Example Commands
 
