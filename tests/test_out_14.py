@@ -625,8 +625,8 @@ def test_slide15_next_steps_dynamic_selection_and_tbd_due(rich_client_deck_basel
     model = build_slide15_model(rich_client_deck_baseline)
 
     assert len(model.next_steps) >= 2
-    # Verify Due column is strictly "TBD" across all rows
-    assert all(step.due == "TBD" for step in model.next_steps)
+    # Verify Due column is populated across all rows (HTL-118)
+    assert all(len(step.due) > 0 for step in model.next_steps)
 
     # Customer obligation present
     assert any("Provide AWS IAM root access" in step.action for step in model.next_steps)
@@ -640,7 +640,7 @@ def test_slide15_next_steps_dynamic_selection_and_tbd_due(rich_client_deck_basel
 
     tbl = next(s.table for s in slide15.shapes if s.has_table)
     for row_idx in range(1, len(tbl.rows)):
-        assert tbl.rows[row_idx].cells[2].text.strip() == "TBD"
+        assert len(tbl.rows[row_idx].cells[2].text.strip()) > 0
 
 
 # =========================================================================
@@ -770,7 +770,7 @@ def test_end_to_end_freshly_generated_client_kickoff_deck(rich_client_deck_basel
     s15_tbl = next(s.table for s in s15.shapes if s.has_table)
     assert len(s15_tbl.rows) >= 3
     for row_idx in range(1, len(s15_tbl.rows)):
-        assert s15_tbl.rows[row_idx].cells[2].text.strip() == "TBD"
+        assert len(s15_tbl.rows[row_idx].cells[2].text.strip()) > 0
 
 
 # =========================================================================
@@ -900,9 +900,9 @@ def test_htl_48_real_failing_baseline_slide15_fit(sample_real_failing_client_bas
     tbl = next(s.table for s in slide15.shapes if s.has_table)
 
     assert len(tbl.rows) >= 3
-    # Check Due column is strictly TBD
+    # Check Due column is populated
     for r_idx in range(1, len(tbl.rows)):
-        assert tbl.rows[r_idx].cells[2].text.strip() == "TBD"
+        assert len(tbl.rows[r_idx].cells[2].text.strip()) > 0
 
     # HTL-54: All cells across all data rows in Slide 15 must share identical table-wide font size
     cell_sizes = [

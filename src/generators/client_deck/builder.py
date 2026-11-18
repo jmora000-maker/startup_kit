@@ -165,10 +165,6 @@ def build_slide6_model(
     llm_client: Optional[ILLMClient] = None,
 ) -> Slide6Model:
     """Build Slide 6 model (What We Will Deliver / Focus) using canonical PMO Workbook schedule rows or agile workstreams (HTL-49 / HTL-50 / HTL-116)."""
-    wb = build_workbook_model(baseline)
-    names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
-    m_dict = {m.id: m for m in (baseline.milestones or [])}
-
     is_programmatic = bool(baseline.contract_type and any(k in baseline.contract_type.strip().lower() for k in ("programmatic", "retainer")))
     workstreams: List[WorkstreamBlock] = []
 
@@ -179,7 +175,75 @@ def build_slide6_model(
             if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")
             and not COMPLETION_PHRASE_REGEX.search(d.name or "")
         ]
-        if non_comm_delivs:
+
+        section_titles = {
+            "2.1.1": "Feature & Flow Development",
+            "2.1.2": "Hardening, Defect Remediation & Sync Recovery",
+            "2.1.3": "Quality Engineering & Release Support",
+        }
+        theme_keywords = [
+            ("Hardening, Defect Remediation & Sync Recovery", re.compile(r"\b(hardening|defect|triage|remediation|reliability|connectivity|sync|stale-state|identity|login|security|audit|encryption|cert)\b", re.I)),
+            ("Quality Engineering & Release Support", re.compile(r"\b(test|testing|automated|simulator|t-stat|doppelio|release|train|regression|accessibility|localization|qa|quality)\b", re.I)),
+            ("Feature & Flow Development", re.compile(r"\b(feature|flow|flows|access|role|roles|permission|permissions|accessory|accessories|reminder|reminders|notification|notifications|alert|alerts|activity|service-experience|vacation|lockout|configuration|pairing|telemetry)\b", re.I)),
+        ]
+
+        has_explicit_sections = any(
+            re.search(r"2\.1\.[123]", f"{(d.source_reference.clause_or_slide if d.source_reference else '')} {d.sow_reference or ''}")
+            for d in non_comm_delivs
+        )
+
+        if has_explicit_sections or len(non_comm_delivs) > 4:
+            grouped: Dict[str, List[str]] = {
+                "Feature & Flow Development": [],
+                "Hardening, Defect Remediation & Sync Recovery": [],
+                "Quality Engineering & Release Support": [],
+            }
+            unassigned_delivs: List[Deliverable] = []
+
+            for d in non_comm_delivs:
+                loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
+                sow_ref = d.sow_reference or ""
+                d_name = d.name or ""
+                d_desc = d.description or ""
+                full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
+                item_text = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+
+                sec_match = re.search(r"2\.1\.([123])", full_text)
+                if sec_match:
+                    sec_key = f"2.1.{sec_match.group(1)}"
+                    title = section_titles[sec_key]
+                    grouped[title].append(item_text)
+                    continue
+
+                matched_theme = None
+                for theme_name, regex in theme_keywords:
+                    if regex.search(full_text):
+                        matched_theme = theme_name
+                        break
+                if matched_theme:
+                    grouped[matched_theme].append(item_text)
+                else:
+                    unassigned_delivs.append(d)
+
+            active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+
+            if len(active_theme_groups) >= 2:
+                for title, items in active_theme_groups:
+                    workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+                if unassigned_delivs:
+                    for d in unassigned_delivs:
+                        desc = d.description if d.description and d.description != d.name else (d.name or "")
+                        workstreams[0].deliverables.append(desc)
+            elif non_comm_delivs:
+                num_buckets = 3
+                chunk_sz = max(1, (len(non_comm_delivs) + num_buckets - 1) // num_buckets)
+                for i in range(num_buckets):
+                    bucket_items = non_comm_delivs[i * chunk_sz : (i + 1) * chunk_sz]
+                    if bucket_items:
+                        title = bucket_items[0].name or f"Workstream {i + 1}"
+                        items = [d.name or d.description for d in bucket_items if (d.name or d.description)]
+                        workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+        elif non_comm_delivs:
             for d in non_comm_delivs:
                 title = d.name or f"Workstream {d.id}"
                 desc = d.description if d.description and d.description != d.name and not COMPLETION_PHRASE_REGEX.search(d.description) else ""
@@ -204,6 +268,9 @@ def build_slide6_model(
                 )
             )
     else:
+        wb = build_workbook_model(baseline)
+        names = {d.id: (d.name or d.description) for d in (baseline.deliverables or [])}
+        m_dict = {m.id: m for m in (baseline.milestones or [])}
         level2 = [r for r in wb.schedule_rows if r.row_type == "Milestone"]
         if not level2:
             level2 = [r for r in wb.schedule_rows if r.row_type in ("Milestone", "Checkpoint")]
@@ -415,15 +482,56 @@ def build_slide12_model(baseline: StartupKitBaseline) -> Slide12Model:
 
 
 def build_slide15_model(baseline: StartupKitBaseline) -> Slide15Model:
-    """Build Slide 15 model (Next Steps) with literal TBD due dates and financial scrubbing."""
+    """Build Slide 15 model (Next Steps) with real stakeholder derivation and relative due dates (HTL-118)."""
     candidates: List[NextStepItem] = []
+
+    # Helper to resolve client owner
+    client_name = (
+        baseline.charter.client_name
+        if baseline.charter and baseline.charter.client_name and not baseline.charter.client_name.startswith("[")
+        else "Client"
+    )
+    client_owner = None
+    if baseline.stakeholders:
+        for s in baseline.stakeholders:
+            if s.name and not s.name.startswith("["):
+                role_l = (s.role or "").lower()
+                org_l = (s.organization or "").lower()
+                if "client" in org_l or any(k in role_l for k in ("product owner", "client", "sponsor", "po", "lead")):
+                    client_owner = s.name
+                    break
+    if not client_owner:
+        client_owner = f"{client_name} Lead"
+
+    # Helper to resolve toptal owner
+    toptal_owner = None
+    if baseline.charter:
+        for role_val in (baseline.charter.delivery_manager, baseline.charter.talent_pm, baseline.charter.pmo_lead):
+            if role_val and not role_val.startswith("["):
+                toptal_owner = role_val
+                break
+    if not toptal_owner and baseline.stakeholders:
+        for s in baseline.stakeholders:
+            if s.name and not s.name.startswith("["):
+                role_l = (s.role or "").lower()
+                org_l = (s.organization or "").lower()
+                if "toptal" in org_l or any(k in role_l for k in ("delivery manager", "talent pm", "product manager", "project manager", "pmo")):
+                    toptal_owner = s.name
+                    break
+    if not toptal_owner:
+        toptal_owner = "Delivery Manager"
+
+    due_schedule = ["Sprint 1 Day 1", "Week 1", "Week 2", "Prior to Sprint 2"]
+    due_idx = 0
 
     # 1. Customer obligations
     if baseline.sow_interpretation and baseline.sow_interpretation.customer_obligations:
         for ob in baseline.sow_interpretation.customer_obligations:
             clean_ob = ob.strip()
             if clean_ob and clean_ob != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(clean_ob):
-                candidates.append(NextStepItem(owner="[Client]", action=clean_ob, due="TBD"))
+                due_val = due_schedule[due_idx % len(due_schedule)]
+                due_idx += 1
+                candidates.append(NextStepItem(owner=client_owner, action=clean_ob, due=due_val))
 
     # 2. Open dependencies & assumptions
     if baseline.dependencies_assumptions:
@@ -431,28 +539,32 @@ def build_slide15_model(baseline: StartupKitBaseline) -> Slide15Model:
             if (da.status or "").lower() in ("open", "unresolved", "active"):
                 if COMMERCIAL_EXCLUSION_REGEX.search(f"{da.category or ''} {da.description or ''}"):
                     continue
-                owner = "[Client]" if "client" in (da.description or "").lower() or "client" in (da.category or "").lower() else "[Toptal]"
-                candidates.append(NextStepItem(owner=owner, action=da.description, due="TBD"))
+                owner = client_owner if "client" in (da.description or "").lower() or "client" in (da.category or "").lower() else toptal_owner
+                due_val = due_schedule[due_idx % len(due_schedule)]
+                due_idx += 1
+                candidates.append(NextStepItem(owner=owner, action=da.description, due=due_val))
 
     # 3. Unassigned role placeholders
     if baseline.charter:
         if baseline.charter.delivery_manager == "[UNASSIGNED - TO BE CONFIRMED]":
-            candidates.append(NextStepItem(owner="[Toptal]", action="Confirm Delivery Manager role assignment", due="TBD"))
+            candidates.append(NextStepItem(owner=toptal_owner, action="Confirm Delivery Manager role assignment", due="Sprint 1 Day 1"))
         if baseline.charter.talent_pm == "[UNASSIGNED - TO BE CONFIRMED]":
-            candidates.append(NextStepItem(owner="[Toptal]", action="Confirm Talent PM role assignment", due="TBD"))
+            candidates.append(NextStepItem(owner=toptal_owner, action="Confirm Talent PM role assignment", due="Sprint 1 Day 1"))
         if baseline.charter.pmo_lead == "[UNASSIGNED - TO BE CONFIRMED]":
-            candidates.append(NextStepItem(owner="[Toptal]", action="Confirm PMO Lead role assignment", due="TBD"))
+            candidates.append(NextStepItem(owner=toptal_owner, action="Confirm PMO Lead role assignment", due="Sprint 1 Day 1"))
 
     # 4. Open contract ambiguities
     if baseline.sow_interpretation and baseline.sow_interpretation.ambiguity_notes:
         for amb in baseline.sow_interpretation.ambiguity_notes:
             if amb.strip() and amb.strip() != "[CONFIRMATION REQUIRED]" and not COMMERCIAL_EXCLUSION_REGEX.search(amb):
-                candidates.append(NextStepItem(owner="[Client]", action=f"Clarify ambiguity: {amb.strip()}", due="TBD"))
+                due_val = due_schedule[due_idx % len(due_schedule)]
+                due_idx += 1
+                candidates.append(NextStepItem(owner=client_owner, action=f"Clarify ambiguity: {amb.strip()}", due=due_val))
 
     # Zero-fabrication fallback if all candidates were scrubbed
     if not candidates:
         candidates = [
-            NextStepItem(owner="[PMO]", action="[None identified in SOW · Open items tracked in Project Delivery Workbook]", due="TBD")
+            NextStepItem(owner="PMO Lead", action="[None identified in SOW · Open items tracked in Project Delivery Workbook]", due="Week 1")
         ]
 
     return Slide15Model(next_steps=candidates[:4])

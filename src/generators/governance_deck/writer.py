@@ -46,7 +46,7 @@ from src.generators.client_deck.writer import (
     write_slide15,
 )
 from src.generators.governance_deck.builder import _build_acceptance_cards, parse_step_line
-from src.generators.governance_deck.spec import GovernanceDeckModel
+from src.generators.governance_deck.spec import EngagementOverviewModel, GovernanceDeckModel
 
 
 def resolve_governance_deck_template_path(
@@ -898,6 +898,61 @@ def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
             _set_paragraph_bullet_format(p_b, font_size_pt=uniform_sz, text=b)
 
 
+def write_slide14_programmatic_overview(slide, model: GovernanceDeckModel) -> None:
+    """Populate Slide 14 Overview (Engagement at a Glance) replacing template placeholders (HTL-118)."""
+    ov = getattr(model, "slide14_overview", None) or EngagementOverviewModel(
+        client_name=model.slide1.client_name,
+        project_name=model.slide1.project_name,
+    )
+    client_name = ov.client_name or model.slide1.client_name or "Client"
+    project_name = ov.project_name or model.slide1.project_name or "Engagement"
+
+    def _set_cell(cell, text: str, font_size: float = 9.0) -> None:
+        cell.text = ""
+        tf = cell.text_frame
+        tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+        p = tf.paragraphs[0]
+        r = p.add_run()
+        r.text = str(text)
+        r.font.name = "Proxima Nova"
+        r.font.size = Pt(font_size)
+        r.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+
+    # 1. Update Title Shape
+    for shp in slide.shapes:
+        if shp.has_text_frame:
+            tf = shp.text_frame
+            if "[Client]" in tf.text or "engagement at a glance" in tf.text.lower():
+                for p in tf.paragraphs:
+                    p.text = f"{client_name} engagement at a glance"
+                    for r in p.runs:
+                        r.font.name = "Proxima Nova"
+                        r.font.color.rgb = RGBColor(0x0F, 0x25, 0x6E)
+
+    # 2. Update Tables
+    for shp in slide.shapes:
+        if shp.has_table:
+            tbl = shp.table
+            # Engagement Details table (7x2)
+            if len(tbl.columns) == 2 and len(tbl.rows) >= 7:
+                _set_cell(tbl.cell(1, 1), client_name)
+                _set_cell(tbl.cell(2, 1), project_name)
+                _set_cell(tbl.cell(3, 1), ov.dates or "Active SOW Delivery")
+                _set_cell(tbl.cell(4, 1), ov.duration_cadence or "Two-week agile sprint cadence")
+                _set_cell(tbl.cell(5, 1), ov.working_window or "Remote delivery team with core US business hours overlap")
+                _set_cell(tbl.cell(6, 1), ov.tools_environments or "Jira, GitHub, Slack, target cloud environments")
+
+            # Client Stakeholders table (6x3)
+            elif len(tbl.columns) == 3 and len(tbl.rows) >= 6:
+                _set_cell(tbl.cell(1, 1), ov.sponsor_name or f"{client_name} Executive")
+                _set_cell(tbl.cell(2, 1), ov.product_owner_name or f"{client_name} Product Owner")
+                _set_cell(tbl.cell(3, 1), ov.approver_name or f"{client_name} Sign-Off Lead")
+                _set_cell(tbl.cell(4, 1), ov.tech_contact_name or f"{client_name} Tech Lead")
+                _set_cell(tbl.cell(5, 0), ov.other_stakeholder_role or "Delivery Lead / DM")
+                _set_cell(tbl.cell(5, 1), ov.other_stakeholder_name or "Toptal Delivery Manager")
+                _set_cell(tbl.cell(5, 2), ov.other_stakeholder_involvement or "Sprint governance; capacity & SOW alignment")
+
+
 def write_governance_deck(
     model: GovernanceDeckModel,
     target_path: Path,
@@ -971,7 +1026,7 @@ def write_governance_deck(
     if is_programmatic:
         # Programmatic Governance Deck flow (HTL-115)
         # Template has 18 slides (0..17).
-        layout_clean = prs_gov.slide_layouts[17] if len(prs_gov.slide_layouts) > 17 else prs_gov.slide_layouts[0]
+        layout_clean = prs_gov.slide_layouts[14] if len(prs_gov.slide_layouts) > 14 else prs_gov.slide_layouts[0]
 
         # 1. Slide 1 (Cover): write_slide1
         write_slide1(prs_gov.slides[0], model)
@@ -988,23 +1043,91 @@ def write_governance_deck(
                         if "Sprint sign-off" in p.text:
                             p.text = p.text.replace("Sprint sign-off", "Next steps")
 
-        # 3. Slide 8 (Ways of Working): update fee phrasing
-        s8 = prs_gov.slides[7]
-        for shp in s8.shapes:
-            if shp.has_text_frame and "against the not-to-exceed" in shp.text_frame.text:
-                for p in shp.text_frame.paragraphs:
-                    if "against the not-to-exceed" in p.text:
-                        p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+        # Slide 6: apply defensive font reduction and zero margins specifically to card bodies (HTL-118 Item 4)
+        s6 = prs_gov.slides[5]
+        s6_card_keywords = (
+            "Bring changes",
+            "Obtain Toptal",
+            "Implement the agreed",
+            "Keep the roadmap",
+            "Drive the team",
+            "Run backlog",
+        )
+        for shp in s6.shapes:
+            if shp.has_text_frame:
+                txt = shp.text_frame.text.strip()
+                # Target only card-body text boxes (height < 90pt and matching body text keywords)
+                if shp.height and shp.height.pt < 90 and any(k in txt for k in s6_card_keywords):
+                    tf = shp.text_frame
+                    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+                    for p in tf.paragraphs:
+                        p.line_spacing = 1.15
+                        for r in p.runs:
+                            if r.font:
+                                r.font.size = Pt(8.0)
 
+        # 3. Slide 8 (Ways of Working): update fee phrasing & defensive font sizing/margins on card bodies (HTL-118 Item 4)
+        s8 = prs_gov.slides[7]
+        s8_card_keywords = (
+            "within the agreed weekly capacity",
+            "against the not-to-exceed",
+            "Kept current throughout",
+            "How it works",
+            "What was verified",
+            "What the client",
+        )
+        for shp in s8.shapes:
+            if shp.has_text_frame:
+                tf = shp.text_frame
+                if "against the not-to-exceed" in tf.text:
+                    for p in tf.paragraphs:
+                        if "against the not-to-exceed" in p.text:
+                            p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+                txt = tf.text.strip()
+                # Target only card-body text boxes
+                if shp.height and shp.height.pt < 60 and any(k in txt for k in s8_card_keywords):
+                    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+                    for p in tf.paragraphs:
+                        p.line_spacing = 1.15
+                        for r in p.runs:
+                            if r.font:
+                                r.font.size = Pt(8.5)
+
+        # Slide 9: update fee phrasing & defensive font sizing/margins on card bodies (HTL-118 Item 4)
         s9 = prs_gov.slides[8]
+        s9_card_keywords = (
+            "The PMO, DM and PM",
+            "The PMO independently",
+            "PMO gives the DM",
+            "The DM leads the delivery",
+            "Sprint Plan, dependencies",
+            "Client signal:",
+            "Sprint Plan variance",
+        )
         for shp in s9.shapes:
-            if shp.has_text_frame and "against the not-to-exceed" in shp.text_frame.text:
-                for p in shp.text_frame.paragraphs:
-                    if "against the not-to-exceed" in p.text:
-                        p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+            if shp.has_text_frame:
+                tf = shp.text_frame
+                if "against the not-to-exceed" in tf.text:
+                    for p in tf.paragraphs:
+                        if "against the not-to-exceed" in p.text:
+                            p.text = p.text.replace("against the not-to-exceed", "within the agreed weekly capacity")
+                txt = tf.text.strip()
+                # Target only card-body text boxes
+                if shp.height and shp.height.pt < 60 and any(k in txt for k in s9_card_keywords):
+                    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+                    for p in tf.paragraphs:
+                        p.line_spacing = 1.12
+                        for r in p.runs:
+                            if r.font:
+                                r.font.size = Pt(8.0)
+
+        # Populate Slide 14 Overview (template slide index 12 - HTL-118 Item 6)
+        write_slide14_programmatic_overview(prs_gov.slides[12], model)
 
         # 4. Insert Change Decision Matrix immediately after Slide 11 (Slide 11+1)
         s_change_matrix = prs_gov.slides.add_slide(layout_clean)
+        s_change_matrix.background.fill.solid()
+        s_change_matrix.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
         for s in list(s_change_matrix.shapes):
             s_change_matrix.shapes._spTree.remove(s._element)
         write_slide11_change_decision_matrix(s_change_matrix, model)
@@ -1012,6 +1135,8 @@ def write_governance_deck(
 
         # 5. Insert Next Steps slide before closing slide (Slide 15 retained - HTL-115 Item 4)
         s_next_steps = prs_gov.slides.add_slide(layout_clean)
+        s_next_steps.background.fill.solid()
+        s_next_steps.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
         for s in list(s_next_steps.shapes):
             s_next_steps.shapes._spTree.remove(s._element)
         for s in prs_client.slides[14].shapes:

@@ -52,6 +52,7 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
     charter = baseline.charter
     sow_int = baseline.sow_interpretation
     is_fixed = variant == "Fixed Bid"
+    is_prog = variant == "Programmatic"
 
     # Row 1: Engagement Objective & Purpose
     purpose_parts = []
@@ -92,14 +93,21 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
     elif charter and charter.key_deliverables_summary:
         deliv_items.extend(charter.key_deliverables_summary)
     auth_r3 = _format_bullet_list(deliv_items, default_text="Formally contracted project deliverables and milestone gates.")
-    excl_r3 = (
-        "Uncontracted features, ancillary documentation not specified in deliverable acceptance criteria, and post-delivery custom enhancements without an approved Change Order."
-        if is_fixed else
-        "Requests exceeding approved weekly capacity allocations or unapproved work packages outside active work authorizations."
-    )
+    if is_fixed:
+        excl_r3 = (
+            "Uncontracted features, ancillary documentation not specified in deliverable acceptance criteria, and post-delivery custom enhancements without an approved Change Order."
+        )
+    elif is_prog:
+        excl_r3 = (
+            "Requests exceeding contracted weekly team capacity ceiling or unprioritized backlog items outside active sprint commitments."
+        )
+    else:
+        excl_r3 = (
+            "Requests exceeding approved weekly capacity allocations or unapproved work packages outside active work authorizations."
+        )
 
     # Row 4: Delivery Model & Service Boundaries (Neutral framing)
-    delivery_model_str = charter.delivery_model if (charter and charter.delivery_model) else "Toptal Talent Team (Agile/Milestone Hybrid)"
+    delivery_model_str = charter.delivery_model if (charter and charter.delivery_model) else ("Toptal Talent Team (Agile Sprints)" if is_prog else "Toptal Talent Team (Agile/Milestone Hybrid)")
     if is_fixed:
         auth_r4 = (
             f"Delivery structured under {delivery_model_str}. Team execution is bounded strictly to the contracted milestone "
@@ -108,6 +116,15 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         excl_r4 = (
             "Ongoing operational production support, uncontracted continuous consulting, ad-hoc organizational change management, "
             "and out-of-scope architectural investigations not tied to milestone acceptance."
+        )
+    elif is_prog:
+        auth_r4 = (
+            f"Delivery structured under {delivery_model_str}. Team execution is governed by agile sprint cadences and prioritized sprint "
+            "backlog commitments within contracted weekly capacity allocations. Services include sprint planning, backlog delivery, continuous engineering, and sprint demo acceptance."
+        )
+        excl_r4 = (
+            "24/7 on-call production support, ad-hoc scope expansion outside sprint grooming, "
+            "and team effort exceeding agreed weekly capacity allocations."
         )
     else:
         auth_r4 = (
@@ -147,6 +164,24 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         )
         excl_r6 = (
             "Unapproved work-at-risk, verbal scope changes, informal requirement additions, or work performed without a countersigned Change Order."
+        )
+    elif is_prog:
+        approved_rule = (
+            guardrails.approved_work_rule
+            if (guardrails and guardrails.approved_work_rule and "timesheet" not in guardrails.approved_work_rule.lower())
+            else "Only prioritized backlog items within contracted weekly team capacity are authorized for sprint execution."
+        )
+        change_trigger = (
+            guardrails.change_control_trigger
+            if (guardrails and guardrails.change_control_trigger and "NTE" not in guardrails.change_control_trigger and "burn" not in guardrails.change_control_trigger.lower() and "budget variance" not in guardrails.change_control_trigger.lower())
+            else "Scope shift requiring team composition or capacity adjustment, or roadmap redirection exceeding current velocity."
+        )
+        auth_r6 = (
+            f"Governance Tier: {gov_tier}. {approved_rule} Invoicing is based on contracted flat weekly retainer fees per active sprint cycle. "
+            f"Change trigger: {change_trigger}."
+        )
+        excl_r6 = (
+            "Unapproved team capacity expansion, unreviewed backlog work-at-risk, or delivery commitments outside the contracted agile retainer without an approved SOW Amendment."
         )
     else:
         approved_rule = guardrails.approved_work_rule if guardrails else "Only authorized work packages and prioritized tasks within agreed weekly effort caps are authorized for execution."

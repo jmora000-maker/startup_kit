@@ -22,6 +22,7 @@ from src.generators.governance_deck.spec import (
     AcceptanceCriterionRow,
     ApproachCard,
     ChangeMatrixCard,
+    EngagementOverviewModel,
     GovernanceDeckModel,
     NextStepItem,
     RiskItem,
@@ -897,6 +898,83 @@ def build_slide18_model(baseline: StartupKitBaseline) -> Slide18RisksModel:
     return Slide18RisksModel(risks=risk_items)
 
 
+def build_slide14_overview_model(baseline: StartupKitBaseline) -> EngagementOverviewModel:
+    """Build Slide 14 Overview model for Programmatic Kickoff (HTL-118)."""
+    client_name = (
+        baseline.charter.client_name
+        if baseline.charter and baseline.charter.client_name and not baseline.charter.client_name.startswith("[")
+        else "Client"
+    )
+    project_name = baseline.project_name or (
+        baseline.charter.project_name if baseline.charter and baseline.charter.project_name else "Engagement"
+    )
+
+    start_dt = baseline.sow_awarded_date or baseline.original_sow_start_date
+    start = str(start_dt)[:10] if start_dt and not str(start_dt).startswith("[") else "Project Kickoff"
+
+    end_dt = None
+    if baseline.milestones:
+        for m in reversed(baseline.milestones):
+            if m.external_date:
+                end_dt = m.external_date
+                break
+    end = str(end_dt)[:10] if end_dt and not str(end_dt).startswith("[") else "Target SOW Horizon"
+    dates_str = f"{start} to {end}" if start != "Project Kickoff" or end != "Target SOW Horizon" else "Active SOW Delivery"
+
+    num_sprints = len(baseline.milestones) if baseline.milestones else 0
+    sprints_str = f"{num_sprints} two-week sprints" if num_sprints > 0 else "Two-week agile sprint cadence"
+
+    envs = []
+    if baseline.sow_interpretation and baseline.sow_interpretation.platform_environment_commitments:
+        envs.extend(baseline.sow_interpretation.platform_environment_commitments)
+    tools_str = ", ".join(envs[:3]) if envs else "Jira, GitHub, Slack, target cloud environments"
+
+    # Stakeholders
+    sponsor = None
+    po = None
+    approver = None
+    tech = None
+    if baseline.stakeholders:
+        for s in baseline.stakeholders:
+            if s.name and not s.name.startswith("["):
+                role_l = (s.role or "").lower()
+                org_l = (s.organization or "").lower()
+                if "client" in org_l or "client" in role_l:
+                    if any(k in role_l for k in ("sponsor", "vp", "director", "exec")):
+                        sponsor = sponsor or s.name
+                    elif any(k in role_l for k in ("product", "po", "owner")):
+                        po = po or s.name
+                    elif any(k in role_l for k in ("approv", "sign-off", "signoff")):
+                        approver = approver or s.name
+                    elif any(k in role_l for k in ("tech", "architect", "engineer", "dev")):
+                        tech = tech or s.name
+                    else:
+                        if not po:
+                            po = s.name
+
+    dm_name = (
+        baseline.charter.delivery_manager
+        if baseline.charter and baseline.charter.delivery_manager and not baseline.charter.delivery_manager.startswith("[")
+        else "Delivery Lead"
+    )
+
+    return EngagementOverviewModel(
+        client_name=client_name,
+        project_name=project_name,
+        dates=dates_str,
+        duration_cadence=sprints_str,
+        working_window="Remote delivery team with core US business hours overlap",
+        tools_environments=tools_str,
+        sponsor_name=sponsor or f"{client_name} Executive",
+        product_owner_name=po or f"{client_name} Product Owner",
+        approver_name=approver or po or f"{client_name} Sign-Off Lead",
+        tech_contact_name=tech or f"{client_name} Tech Lead",
+        other_stakeholder_role="Delivery Lead / DM",
+        other_stakeholder_name=dm_name,
+        other_stakeholder_involvement="Sprint governance; capacity & SOW alignment",
+    )
+
+
 def build_slide19_model(baseline: StartupKitBaseline) -> Slide19NextStepsModel:
     """Build Slide 19 model (Next Steps) reusing client deck slide 15 extraction (HTL-72)."""
     s15 = client_build_slide15_model(baseline)
@@ -924,6 +1002,7 @@ def build_governance_deck_model(
     slide11 = build_slide11_model(baseline)
     slide13 = build_slide13_model(baseline, llm_client=llm_client)
     slide14 = build_slide14_model(baseline, llm_client=llm_client)
+    slide14_overview = build_slide14_overview_model(baseline)
     slide15 = build_slide15_model(baseline, wb=wb)
     slide16 = build_slide16_model(baseline)
     slide17 = build_slide17_model(baseline, wb=wb)
@@ -1257,6 +1336,7 @@ def build_governance_deck_model(
         slide11=slide11,
         slide13=slide13,
         slide14=slide14,
+        slide14_overview=slide14_overview,
         slide15=slide15,
         slide16=slide16,
         slide17=slide17,

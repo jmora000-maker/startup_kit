@@ -131,6 +131,24 @@ class Slide18RisksModel:
 
 
 @dataclass
+class EngagementOverviewModel:
+    """Model for Programmatic Slide 14 Overview table (Engagement at a glance - HTL-118)."""
+    client_name: str = ""
+    project_name: str = ""
+    dates: str = ""
+    duration_cadence: str = ""
+    working_window: str = ""
+    tools_environments: str = ""
+    sponsor_name: str = ""
+    product_owner_name: str = ""
+    approver_name: str = ""
+    tech_contact_name: str = ""
+    other_stakeholder_role: str = ""
+    other_stakeholder_name: str = ""
+    other_stakeholder_involvement: str = ""
+
+
+@dataclass
 class NextStepItem:
     """One next step row on Slide 19."""
     owner: str
@@ -155,6 +173,7 @@ class GovernanceDeckModel:
     slide19: Slide19NextStepsModel
     contract_type: str = ""
     slide11: Slide11ChangeMatrixModel = field(default_factory=Slide11ChangeMatrixModel)
+    slide14_overview: EngagementOverviewModel = field(default_factory=EngagementOverviewModel)
     slide15: Slide15AcceptanceCriteriaModel = field(default_factory=Slide15AcceptanceCriteriaModel)
     slide16: Slide16AcceptanceNarrativeModel = field(default_factory=Slide16AcceptanceNarrativeModel)
     slide17: Slide17ApproachModel = field(default_factory=Slide17ApproachModel)

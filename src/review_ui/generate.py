@@ -816,6 +816,7 @@ def render() -> None:
                 )
             else:
                 provider, model, mock, cache_mode = "", "", False, "off"
+            is_programmatic_gen = (contract_type or "").strip().lower() in ("programmatic", "retainer")
             st.caption("Outputs to produce")
             col1, col2, col3, col4, col5 = st.columns(5)
             client_deck = _persisted_checkbox(
@@ -824,9 +825,19 @@ def render() -> None:
             slides = _persisted_checkbox(
                 GENERATE_STORE, "gen_out_slides", "PS Governance Kickoff", False, widget_fn=col2.checkbox
             )
-            workbook = _persisted_checkbox(
-                GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col3.checkbox
-            )
+            if is_programmatic_gen:
+                workbook = False
+                col3.checkbox(
+                    "Delivery Workbook",
+                    value=False,
+                    disabled=True,
+                    help="Not applicable for Programmatic contracts (governed via sprint backlogs and PMO governance decks rather than fixed WBS workbooks).",
+                    key="gen_out_workbook_disabled",
+                )
+            else:
+                workbook = _persisted_checkbox(
+                    GENERATE_STORE, "gen_out_workbook", "Delivery Workbook", False, widget_fn=col3.checkbox
+                )
             scope_baseline = _persisted_checkbox(
                 GENERATE_STORE, "gen_out_scope_baseline", "Scope Baseline", False, widget_fn=col4.checkbox
             )
@@ -835,6 +846,8 @@ def render() -> None:
                 kit = _persisted_checkbox(
                     GENERATE_STORE, "gen_out_kit", "Startup Kit", False, widget_fn=col5.checkbox
                 )
+            if is_programmatic_gen:
+                st.caption("ℹ️ Delivery Workbook is disabled: Programmatic contracts use agile sprint backlogs and governance decks instead of fixed schedule workbooks.")
             # HTL-29: "Review before finalizing" toggle, checked by default.
             review_before_finalizing = _persisted_checkbox(
                 GENERATE_STORE, "gen_review_before_finalizing", "Review before finalizing", True

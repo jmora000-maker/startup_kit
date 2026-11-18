@@ -51,7 +51,7 @@ from src.orchestrator import StartupKitController, OutputSelection
 
 def _create_mock_baseline(contract_type: str = "Programmatic") -> StartupKitBaseline:
     milestones = [
-        Milestone(id="M-01", name="Sprint 1", target_date="2026-11-01", phase="Sprint 1", deliverable_id="DEL-01"),
+        Milestone(id="M-01", description="Sprint 1", external_date="2026-11-01", phase="Sprint 1"),
     ]
     charter = ProjectStartupCharter(
         project_name="HTL-115 Programmatic Project",
@@ -299,3 +299,135 @@ def test_htl_115_governance_deck_programmatic_adaptations(tmp_path: Path):
                     s19_texts.append(cell.text)
     s19_text = " ".join(s19_texts)
     assert "Next Steps" in s19_text or "PATH FORWARD" in s19_text or "Action" in s19_text or "Owner" in s19_text
+
+
+def test_htl_118_comprehensive_regression(tmp_path: Path):
+    """HTL-118: Verification for all 9 deployment blockers for Programmatic feature."""
+    from src.generators.scope_baseline.templates import build_table1_summary_rows
+    from src.review_ui.facts import build_fact_categories
+
+    baseline = _create_mock_baseline("Programmatic")
+
+    # 1. Table 1 Real Commercial Content
+    t1_rows = build_table1_summary_rows(baseline, "Programmatic")
+    t1_map = {r.dimension: r for r in t1_rows}
+
+    # Row 3
+    assert "contracted weekly team capacity ceiling" in t1_map["Authorized Deliverables & Work Streams"].excluded_scope
+    assert "timesheet" not in t1_map["Authorized Deliverables & Work Streams"].excluded_scope.lower()
+
+    # Row 4
+    assert "agile sprint cadences and prioritized sprint backlog commitments" in t1_map["Delivery Model & Service Boundaries"].authorized_work
+    assert "team effort exceeding agreed weekly capacity allocations" in t1_map["Delivery Model & Service Boundaries"].excluded_scope
+    assert "Not-to-Exceed" not in t1_map["Delivery Model & Service Boundaries"].excluded_scope
+    assert "NTE" not in t1_map["Delivery Model & Service Boundaries"].excluded_scope
+
+    # Row 6
+    assert "Invoicing is based on contracted flat weekly retainer fees" in t1_map["Commercial Controls & Governance"].authorized_work
+    assert "Scope shift requiring team composition or capacity adjustment" in t1_map["Commercial Controls & Governance"].authorized_work
+    assert "Unapproved team capacity expansion" in t1_map["Commercial Controls & Governance"].excluded_scope
+    assert "timesheets" not in t1_map["Commercial Controls & Governance"].authorized_work.lower()
+    assert "effort burn" not in t1_map["Commercial Controls & Governance"].authorized_work.lower()
+    assert "NTE ceiling" not in t1_map["Commercial Controls & Governance"].excluded_scope
+
+    # 3. Fact Review Milestones & Deliverable Phase relabeling
+    cats = build_fact_categories(baseline)
+    cat_map = {c.key: c for c in cats}
+    assert cat_map["milestones"].title == "Sprint Cadence & Roadmap Milestones"
+    assert "sprint cadences and backlog priorities" in cat_map["milestones"].note
+    assert cat_map["deliverable_phase_assignment"].title == "Deliverable workstream assignment"
+    assert "product capability workstreams" in cat_map["deliverable_phase_assignment"].note
+
+    # 4, 5, 6, 7/9. Governance Deck generation & verification
+    res_gov = export_governance_deck(baseline, tmp_path / "gov_deck_htl118")
+    prs_gov = pptx.Presentation(str(res_gov.file_path))
+
+    # Item 5: Slides 12 and 19 have solid white background (#FFFFFF)
+    for s_idx in [11, 18]:  # 0-indexed slide 12 and slide 19
+        s = prs_gov.slides[s_idx]
+        assert s.background.fill.type is not None
+        assert s.background.fill.fore_color.rgb == pptx.dml.color.RGBColor(0xFF, 0xFF, 0xFF)
+
+    # Item 6: Slide 14 Overview is populated with zero unfilled template bracket placeholders
+    s14 = prs_gov.slides[13]  # Slide 14
+    s14_text = " ".join(shp.text_frame.text for shp in s14.shapes if shp.has_text_frame)
+    for shp in s14.shapes:
+        if shp.has_table:
+            for row in shp.table.rows:
+                for cell in row.cells:
+                    s14_text += " " + cell.text
+    assert "[Client name]" not in s14_text
+    assert "[Engagement name]" not in s14_text
+    assert "[Start date]" not in s14_text
+    assert "[Name]" not in s14_text
+    assert "Carrier Smart Home" in s14_text
+    assert "HTL-115 Programmatic Project" in s14_text
+
+    # Items 7 & 9: Next Steps dynamic derivation
+    s19 = prs_gov.slides[18]  # Slide 19
+    s19_table = [shp.table for shp in s19.shapes if shp.has_table][0]
+    # Check that owner is resolved to real stakeholder / role and due is not static TBD
+    for row in list(s19_table.rows)[1:]:
+        owner_txt = row.cells[0].text.strip()
+        due_txt = row.cells[2].text.strip()
+        assert owner_txt != "[Client]"
+        assert owner_txt != "[Toptal]"
+        assert due_txt != "TBD"
+
+    # Item 8: Client Deck Workstream Mapping (HTL-118 Section 2 SOW Roadmap Grouping)
+    from src.generators.client_deck.builder import build_slide6_model
+    from src.core.models import SourceReference
+
+    carrier_delivs_with_sec = [
+        # 2.1.1 Feature & Flow Development
+        Deliverable(id="DEL-01", name="Multi-user home access, roles, and permissions", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
+        Deliverable(id="DEL-02", name="Accessory maintenance and reminder flows", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
+        Deliverable(id="DEL-03", name="Account-level notification preferences", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
+        Deliverable(id="DEL-04", name="Alert, activity, and service-experience surfaces", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
+        Deliverable(id="DEL-05", name="Vacation, lockout, and other device-configuration flows", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
+        # 2.1.2 Hardening, Defect Remediation & Sync Recovery
+        Deliverable(id="DEL-06", name="Identity, login, and security hardening", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
+        Deliverable(id="DEL-07", name="Defect triage, production-defect remediation, and reliability fixes", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
+        Deliverable(id="DEL-08", name="Connectivity, stale-state, and device-sync recovery", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
+        # 2.1.3 Quality Engineering & Release Support
+        Deliverable(id="DEL-09", name="Automated and targeted test coverage", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
+        Deliverable(id="DEL-10", name="Regression and release-train support on iOS and Android", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
+        Deliverable(id="DEL-11", name="Device simulator for T-Stat tool with Doppelio automation", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
+    ]
+    b_carrier = _create_mock_baseline("Programmatic")
+    b_carrier.deliverables = carrier_delivs_with_sec
+
+    s6_model_sec = build_slide6_model(b_carrier)
+    assert len(s6_model_sec.workstreams) == 3
+    assert s6_model_sec.workstreams[0].title == "Feature & Flow Development"
+    assert len(s6_model_sec.workstreams[0].deliverables) == 5
+    assert s6_model_sec.workstreams[1].title == "Hardening, Defect Remediation & Sync Recovery"
+    assert len(s6_model_sec.workstreams[1].deliverables) == 3
+    assert s6_model_sec.workstreams[2].title == "Quality Engineering & Release Support"
+    assert len(s6_model_sec.workstreams[2].deliverables) == 3
+
+    # Also verify semantic thematic grouping when section numbers are absent
+    carrier_delivs_no_sec = [
+        Deliverable(id=d.id, name=d.name, description=d.description, source_reference=SourceReference())
+        for d in carrier_delivs_with_sec
+    ]
+    b_carrier_no_sec = _create_mock_baseline("Programmatic")
+    b_carrier_no_sec.deliverables = carrier_delivs_no_sec
+    s6_model_no_sec = build_slide6_model(b_carrier_no_sec)
+    assert len(s6_model_no_sec.workstreams) == 3
+    assert s6_model_no_sec.workstreams[0].title == "Feature & Flow Development"
+    assert s6_model_no_sec.workstreams[1].title == "Hardening, Defect Remediation & Sync Recovery"
+    assert s6_model_no_sec.workstreams[2].title == "Quality Engineering & Release Support"
+
+    res_client = export_client_deck(b_carrier, tmp_path / "client_deck_htl118")
+    prs_client = pptx.Presentation(str(res_client.file_path))
+    s6_table_text = ""
+    for s in prs_client.slides:
+        for shp in s.shapes:
+            if shp.has_table:
+                for row in shp.table.rows:
+                    for cell in row.cells:
+                        s6_table_text += " " + cell.text
+    assert "Feature & Flow Development" in s6_table_text
+    assert "Hardening, Defect Remediation & Sync Recovery" in s6_table_text
+    assert "Quality Engineering & Release Support" in s6_table_text
