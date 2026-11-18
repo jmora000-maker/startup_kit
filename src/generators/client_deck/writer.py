@@ -995,7 +995,7 @@ def write_slide15(slide, model: ClientDeckModel) -> None:
 
         _format_table_cell(row.cells[0], step.owner, table_font_sz)
         _format_table_cell(row.cells[1], action_texts[i], table_font_sz)
-        _format_table_cell(row.cells[2], "TBD", table_font_sz)
+        _format_table_cell(row.cells[2], step.due or "TBD", table_font_sz)
 
     # If fewer than 3 steps, remove surplus data rows
     if num_steps < 3:
