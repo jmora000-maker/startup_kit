@@ -48,6 +48,21 @@ COMPLETION_PHRASE_REGEX = re.compile(
     re.IGNORECASE,
 )
 
+ADMIN_PROCESS_DELIVERABLE_REGEX = re.compile(
+    r"\b("
+    r"sprint\s*sign-?offs?|"
+    r"weekly\s*status\s*reports?|"
+    r"sprint\s*plans?|"
+    r"completion\s*sign-?offs?|"
+    r"work\s*documentation|"
+    r"licensing\s*inventory|"
+    r"ip\s*assignment|"
+    r"engagement\s*completion|"
+    r"status\s*reporting"
+    r")\b",
+    re.IGNORECASE,
+)
+
 
 def scrub_commercial_clauses(text: str) -> str:
     """Scrub financial and commercial clauses/sentences from continuous prose text (HTL-50 / HTL-54)."""
@@ -174,17 +189,18 @@ def build_slide6_model(
             d for d in raw_delivs
             if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")
             and not COMPLETION_PHRASE_REGEX.search(d.name or "")
+            and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(f"{d.name or ''} {d.description or ''}")
         ]
 
         section_titles = {
-            "2.1.1": "Feature & Flow Development",
-            "2.1.2": "Hardening, Defect Remediation & Sync Recovery",
-            "2.1.3": "Quality Engineering & Release Support",
+            "2.1.1": "Feature development",
+            "2.1.2": "Security and reliability",
+            "2.1.3": "Quality engineering and release support",
         }
         theme_keywords = [
-            ("Hardening, Defect Remediation & Sync Recovery", re.compile(r"\b(hardening|defect|triage|remediation|reliability|connectivity|sync|stale-state|identity|login|security|audit|encryption|cert)\b", re.I)),
-            ("Quality Engineering & Release Support", re.compile(r"\b(test|testing|automated|simulator|t-stat|doppelio|release|train|regression|accessibility|localization|qa|quality)\b", re.I)),
-            ("Feature & Flow Development", re.compile(r"\b(feature|flow|flows|access|role|roles|permission|permissions|accessory|accessories|reminder|reminders|notification|notifications|alert|alerts|activity|service-experience|vacation|lockout|configuration|pairing|telemetry)\b", re.I)),
+            ("Security and reliability", re.compile(r"\b(hardening|defect|triage|remediation|reliability|connectivity|sync|stale-state|identity|login|security|audit|encryption|cert)\b", re.I)),
+            ("Quality engineering and release support", re.compile(r"\b(test|testing|automated|simulator|t-stat|doppelio|release|train|regression|accessibility|localization|qa|quality)\b", re.I)),
+            ("Feature development", re.compile(r"\b(feature|flow|flows|access|role|roles|permission|permissions|accessory|accessories|reminder|reminders|notification|notifications|alert|alerts|activity|service-experience|vacation|lockout|configuration|pairing|telemetry)\b", re.I)),
         ]
 
         has_explicit_sections = any(
@@ -194,9 +210,9 @@ def build_slide6_model(
 
         if has_explicit_sections or len(non_comm_delivs) > 4:
             grouped: Dict[str, List[str]] = {
-                "Feature & Flow Development": [],
-                "Hardening, Defect Remediation & Sync Recovery": [],
-                "Quality Engineering & Release Support": [],
+                "Feature development": [],
+                "Security and reliability": [],
+                "Quality engineering and release support": [],
             }
             unassigned_delivs: List[Deliverable] = []
 
@@ -256,13 +272,14 @@ def build_slide6_model(
                 if s and s.strip() and s.strip() != "[CONFIRMATION REQUIRED]"
                 and not COMMERCIAL_EXCLUSION_REGEX.search(s)
                 and not COMPLETION_PHRASE_REGEX.search(s)
+                and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(s)
             ]
             for s in clean_scope:
                 workstreams.append(WorkstreamBlock(title=s, deliverables=[s], overflow_count=0))
         if not workstreams:
             workstreams.append(
                 WorkstreamBlock(
-                    title="Feature Development & Backlog Delivery",
+                    title="Feature development",
                     deliverables=["Sprint backlog features and roadmap workstream delivery"],
                     overflow_count=0,
                 )

@@ -50,7 +50,7 @@ def export_governance_deck(
 
     is_programmatic = bool(baseline.contract_type and any(k in baseline.contract_type.strip().lower() for k in ("programmatic", "retainer")))
     if is_programmatic:
-        total_slides = 20
+        total_slides = 22
     else:
         chunks_s14 = chunk_workstreams_for_deliverables_table(model.slide14.workstreams)
         total_s14_pages = len(chunks_s14)

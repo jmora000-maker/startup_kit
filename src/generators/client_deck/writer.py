@@ -1046,6 +1046,19 @@ def write_slide8_approach(slide, model: ClientDeckModel) -> None:
         for bs in list(onboarding_s6.shapes)[2:]:
             slide.shapes._spTree.append(copy.deepcopy(bs._element))
 
+        # Defensive font reduction and zero margins on copied card bodies (HTL-119 Item 3)
+        for s in list(slide.shapes):
+            if s.has_text_frame:
+                txt = s.text_frame.text.strip()
+                if any(k in txt for k in ("Kickoff call", "Access and environments", "Final regression", "Handoff documentation")):
+                    tf = s.text_frame
+                    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+                    for p in tf.paragraphs:
+                        p.line_spacing = 1.10
+                        for r in p.runs:
+                            if r.font:
+                                r.font.size = Pt(8.0)
+
 
 def write_slide9_cadence(slide, model: ClientDeckModel) -> None:
     """Populate Slide 9 (Operating Rhythm / Agile Cadence) for Programmatic contracts (HTL-116)."""

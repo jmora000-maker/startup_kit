@@ -899,7 +899,7 @@ def write_slide17_approach(slide, model: GovernanceDeckModel) -> None:
 
 
 def write_slide14_programmatic_overview(slide, model: GovernanceDeckModel) -> None:
-    """Populate Slide 14 Overview (Engagement at a Glance) replacing template placeholders (HTL-118)."""
+    """Populate Slide 14 Overview (Engagement at a Glance) replacing template placeholders (HTL-118 / HTL-119)."""
     ov = getattr(model, "slide14_overview", None) or EngagementOverviewModel(
         client_name=model.slide1.client_name,
         project_name=model.slide1.project_name,
@@ -907,7 +907,7 @@ def write_slide14_programmatic_overview(slide, model: GovernanceDeckModel) -> No
     client_name = ov.client_name or model.slide1.client_name or "Client"
     project_name = ov.project_name or model.slide1.project_name or "Engagement"
 
-    def _set_cell(cell, text: str, font_size: float = 9.0) -> None:
+    def _set_cell(cell, text: str, font_size: float = 9.0, bold: bool = False, color_rgb: Optional[RGBColor] = None) -> None:
         cell.text = ""
         tf = cell.text_frame
         tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
@@ -916,7 +916,8 @@ def write_slide14_programmatic_overview(slide, model: GovernanceDeckModel) -> No
         r.text = str(text)
         r.font.name = "Proxima Nova"
         r.font.size = Pt(font_size)
-        r.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
+        r.font.bold = bold
+        r.font.color.rgb = color_rgb or RGBColor(0x1D, 0x29, 0x39)
 
     # 1. Update Title Shape
     for shp in slide.shapes:
@@ -948,7 +949,7 @@ def write_slide14_programmatic_overview(slide, model: GovernanceDeckModel) -> No
                 _set_cell(tbl.cell(2, 1), ov.product_owner_name or f"{client_name} Product Owner")
                 _set_cell(tbl.cell(3, 1), ov.approver_name or f"{client_name} Sign-Off Lead")
                 _set_cell(tbl.cell(4, 1), ov.tech_contact_name or f"{client_name} Tech Lead")
-                _set_cell(tbl.cell(5, 0), ov.other_stakeholder_role or "Delivery Lead / DM")
+                _set_cell(tbl.cell(5, 0), ov.other_stakeholder_role or "Delivery Lead / DM", bold=True, color_rgb=RGBColor(0x0F, 0x25, 0x6E))
                 _set_cell(tbl.cell(5, 1), ov.other_stakeholder_name or "Toptal Delivery Manager")
                 _set_cell(tbl.cell(5, 2), ov.other_stakeholder_involvement or "Sprint governance; capacity & SOW alignment")
 
@@ -1133,7 +1134,29 @@ def write_governance_deck(
         write_slide11_change_decision_matrix(s_change_matrix, model)
         change_matrix_index = len(prs_gov.slides) - 1
 
-        # 5. Insert Next Steps slide before closing slide (Slide 15 retained - HTL-115 Item 4)
+        # 5. Insert What We Deliver slide (HTL-119 Item 4 Parity)
+        s_deliverables = prs_gov.slides.add_slide(layout_clean)
+        s_deliverables.background.fill.solid()
+        s_deliverables.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        for s in list(s_deliverables.shapes):
+            s_deliverables.shapes._spTree.remove(s._element)
+        for s in prs_client.slides[5].shapes:
+            s_deliverables.shapes._spTree.append(copy.deepcopy(s._element))
+        write_slide6(s_deliverables, client_deck_adapter)
+        deliverables_index = len(prs_gov.slides) - 1
+
+        # 6. Insert Initial Risk Register slide (HTL-119 Item 4 Parity)
+        s_risk = prs_gov.slides.add_slide(layout_clean)
+        s_risk.background.fill.solid()
+        s_risk.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        for s in list(s_risk.shapes):
+            s_risk.shapes._spTree.remove(s._element)
+        for s in prs_client.slides[11].shapes:
+            s_risk.shapes._spTree.append(copy.deepcopy(s._element))
+        write_slide12(s_risk, client_deck_adapter)
+        risk_index = len(prs_gov.slides) - 1
+
+        # 7. Insert Next Steps slide before closing slide (Slide 15 retained - HTL-115 Item 4)
         s_next_steps = prs_gov.slides.add_slide(layout_clean)
         s_next_steps.background.fill.solid()
         s_next_steps.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
@@ -1147,10 +1170,22 @@ def write_governance_deck(
         # Reorder into desired sequence:
         # Slides 0..10 (Slides 1..11)
         # change_matrix_index (Slide 12: Change Decision Matrix)
-        # Slides 11..16 (Slides 13..18)
-        # next_steps_index (Slide 19: Next Steps)
-        # Slide 17 (Slide 20: Closing slide)
-        desired_indices = list(range(11)) + [change_matrix_index] + list(range(11, 17)) + [next_steps_index, 17]
+        # 11: Section divider (Slide 13)
+        # 12: Engagement at a glance (Slide 14)
+        # deliverables_index (Slide 15: What we will deliver)
+        # 13: Ways of working divider (Slide 16)
+        # 14: Sprint cadence (Slide 17)
+        # 15: Sprint ceremonies (Slide 18)
+        # 16: Communication & tools (Slide 19)
+        # risk_index (Slide 20: Initial Risk Register)
+        # next_steps_index (Slide 21: Next Steps)
+        # Slide 17 (Slide 22: Closing slide)
+        desired_indices = (
+            list(range(11))
+            + [change_matrix_index, 11, 12, deliverables_index]
+            + list(range(13, 17))
+            + [risk_index, next_steps_index, 17]
+        )
         sldIdLst = prs_gov.slides._sldIdLst
         all_sld_ids = list(sldIdLst)
         for child in list(sldIdLst):
@@ -1164,10 +1199,13 @@ def write_governance_deck(
         apply_slide_header_formatting(prs_gov.slides[12], has_subtitle=False)
         apply_slide_header_formatting(prs_gov.slides[13], has_subtitle=False)
         apply_slide_header_formatting(prs_gov.slides[14], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[15], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[15])  # What we will deliver
         apply_slide_header_formatting(prs_gov.slides[16], has_subtitle=False)
         apply_slide_header_formatting(prs_gov.slides[17], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[18])  # Next steps
+        apply_slide_header_formatting(prs_gov.slides[18], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[19], has_subtitle=False)
+        apply_slide_header_formatting(prs_gov.slides[20])  # Risk register
+        apply_slide_header_formatting(prs_gov.slides[21])  # Next steps
 
         # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E
         for slide in prs_gov.slides:

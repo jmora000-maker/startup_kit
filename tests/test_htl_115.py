@@ -256,8 +256,8 @@ def test_htl_115_governance_deck_programmatic_adaptations(tmp_path: Path):
     res = export_governance_deck(baseline, tmp_path / "gov_deck_prog")
     prs = pptx.Presentation(str(res.file_path))
 
-    assert res.slides_count == 20
-    assert len(prs.slides) == 20
+    assert res.slides_count == 22
+    assert len(prs.slides) == 22
 
     # Slide 2 (Agenda): Unnumbered topics and "Next steps"
     s2 = prs.slides[1]
@@ -287,18 +287,18 @@ def test_htl_115_governance_deck_programmatic_adaptations(tmp_path: Path):
     assert "Authority: Product Manager leads" in s12_text
     assert "Authority: Client PO decides; Product Manager confirms capacity" in s12_text
 
-    # Slide 19 (Retained Next Steps): Next Steps table present before closing slide
-    s19 = prs.slides[18]
-    s19_texts = []
-    for shp in s19.shapes:
+    # Slide 21 (Retained Next Steps): Next Steps table present before closing slide
+    s21 = prs.slides[20]
+    s21_texts = []
+    for shp in s21.shapes:
         if shp.has_text_frame:
-            s19_texts.append(shp.text_frame.text)
+            s21_texts.append(shp.text_frame.text)
         if shp.has_table:
             for row in shp.table.rows:
                 for cell in row.cells:
-                    s19_texts.append(cell.text)
-    s19_text = " ".join(s19_texts)
-    assert "Next Steps" in s19_text or "PATH FORWARD" in s19_text or "Action" in s19_text or "Owner" in s19_text
+                    s21_texts.append(cell.text)
+    s21_text = " ".join(s21_texts)
+    assert "Next Steps" in s21_text or "PATH FORWARD" in s21_text or "Action" in s21_text or "Owner" in s21_text
 
 
 def test_htl_118_comprehensive_regression(tmp_path: Path):
@@ -342,8 +342,8 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
     res_gov = export_governance_deck(baseline, tmp_path / "gov_deck_htl118")
     prs_gov = pptx.Presentation(str(res_gov.file_path))
 
-    # Item 5: Slides 12 and 19 have solid white background (#FFFFFF)
-    for s_idx in [11, 18]:  # 0-indexed slide 12 and slide 19
+    # Item 5: Newly inserted slides have solid white background (#FFFFFF)
+    for s_idx in [11, 14, 19, 20]:  # 0-indexed slide 12 (Change Matrix), 15 (Deliverables), 20 (Risks), 21 (Next Steps)
         s = prs_gov.slides[s_idx]
         assert s.background.fill.type is not None
         assert s.background.fill.fore_color.rgb == pptx.dml.color.RGBColor(0xFF, 0xFF, 0xFF)
@@ -364,10 +364,10 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
     assert "HTL-115 Programmatic Project" in s14_text
 
     # Items 7 & 9: Next Steps dynamic derivation
-    s19 = prs_gov.slides[18]  # Slide 19
-    s19_table = [shp.table for shp in s19.shapes if shp.has_table][0]
+    s21 = prs_gov.slides[20]  # Slide 21 (Next Steps)
+    s21_table = [shp.table for shp in s21.shapes if shp.has_table][0]
     # Check that owner is resolved to real stakeholder / role and due is not static TBD
-    for row in list(s19_table.rows)[1:]:
+    for row in list(s21_table.rows)[1:]:
         owner_txt = row.cells[0].text.strip()
         due_txt = row.cells[2].text.strip()
         assert owner_txt != "[Client]"
@@ -379,17 +379,17 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
     from src.core.models import SourceReference
 
     carrier_delivs_with_sec = [
-        # 2.1.1 Feature & Flow Development
+        # 2.1.1 Feature development
         Deliverable(id="DEL-01", name="Multi-user home access, roles, and permissions", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
         Deliverable(id="DEL-02", name="Accessory maintenance and reminder flows", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
         Deliverable(id="DEL-03", name="Account-level notification preferences", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
         Deliverable(id="DEL-04", name="Alert, activity, and service-experience surfaces", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
         Deliverable(id="DEL-05", name="Vacation, lockout, and other device-configuration flows", source_reference=SourceReference(clause_or_slide="Section 2.1.1")),
-        # 2.1.2 Hardening, Defect Remediation & Sync Recovery
+        # 2.1.2 Security and reliability
         Deliverable(id="DEL-06", name="Identity, login, and security hardening", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
         Deliverable(id="DEL-07", name="Defect triage, production-defect remediation, and reliability fixes", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
         Deliverable(id="DEL-08", name="Connectivity, stale-state, and device-sync recovery", source_reference=SourceReference(clause_or_slide="Section 2.1.2")),
-        # 2.1.3 Quality Engineering & Release Support
+        # 2.1.3 Quality engineering and release support
         Deliverable(id="DEL-09", name="Automated and targeted test coverage", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
         Deliverable(id="DEL-10", name="Regression and release-train support on iOS and Android", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
         Deliverable(id="DEL-11", name="Device simulator for T-Stat tool with Doppelio automation", source_reference=SourceReference(clause_or_slide="Section 2.1.3")),
@@ -399,11 +399,11 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
 
     s6_model_sec = build_slide6_model(b_carrier)
     assert len(s6_model_sec.workstreams) == 3
-    assert s6_model_sec.workstreams[0].title == "Feature & Flow Development"
+    assert s6_model_sec.workstreams[0].title == "Feature development"
     assert len(s6_model_sec.workstreams[0].deliverables) == 5
-    assert s6_model_sec.workstreams[1].title == "Hardening, Defect Remediation & Sync Recovery"
+    assert s6_model_sec.workstreams[1].title == "Security and reliability"
     assert len(s6_model_sec.workstreams[1].deliverables) == 3
-    assert s6_model_sec.workstreams[2].title == "Quality Engineering & Release Support"
+    assert s6_model_sec.workstreams[2].title == "Quality engineering and release support"
     assert len(s6_model_sec.workstreams[2].deliverables) == 3
 
     # Also verify semantic thematic grouping when section numbers are absent
@@ -415,9 +415,9 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
     b_carrier_no_sec.deliverables = carrier_delivs_no_sec
     s6_model_no_sec = build_slide6_model(b_carrier_no_sec)
     assert len(s6_model_no_sec.workstreams) == 3
-    assert s6_model_no_sec.workstreams[0].title == "Feature & Flow Development"
-    assert s6_model_no_sec.workstreams[1].title == "Hardening, Defect Remediation & Sync Recovery"
-    assert s6_model_no_sec.workstreams[2].title == "Quality Engineering & Release Support"
+    assert s6_model_no_sec.workstreams[0].title == "Feature development"
+    assert s6_model_no_sec.workstreams[1].title == "Security and reliability"
+    assert s6_model_no_sec.workstreams[2].title == "Quality engineering and release support"
 
     res_client = export_client_deck(b_carrier, tmp_path / "client_deck_htl118")
     prs_client = pptx.Presentation(str(res_client.file_path))
@@ -428,6 +428,130 @@ def test_htl_118_comprehensive_regression(tmp_path: Path):
                 for row in shp.table.rows:
                     for cell in row.cells:
                         s6_table_text += " " + cell.text
-    assert "Feature & Flow Development" in s6_table_text
-    assert "Hardening, Defect Remediation & Sync Recovery" in s6_table_text
-    assert "Quality Engineering & Release Support" in s6_table_text
+    assert "Feature development" in s6_table_text
+    assert "Security and reliability" in s6_table_text
+    assert "Quality engineering and release support" in s6_table_text
+
+
+def test_htl_119_comprehensive_regression(tmp_path: Path):
+    """HTL-119: Verification for all 4 items for Programmatic model."""
+    from src.generators.governance_deck.builder import build_slide14_overview_model, condense_tools_and_environments
+    from src.generators.client_deck.builder import ADMIN_PROCESS_DELIVERABLE_REGEX, build_slide6_model
+    from src.core.models import SourceReference
+
+    # Item 1: Tools and Environments condensation and Slide 14 row 5 formatting
+    commitments = [
+        "Development, sustainment, and quality engineering cover the client's Smart Home iOS and Android applications.",
+        "Work is restricted to client-approved environments using client-provisioned tools and access.",
+        "Production data and client confidential information must remain within client-approved environments.",
+        "Client provides repositories, CI/CD pipelines, test/staging environments, required APIs, test devices/device cloud, test accounts, and the Doppelio environment.",
+    ]
+    condensed = condense_tools_and_environments(commitments)
+    assert len(condensed) <= 140
+    assert "iOS/Android platforms" in condensed
+    assert "Doppelio" in condensed
+    assert "CI/CD pipelines" in condensed
+    assert "Client repositories" in condensed
+    # Ensure no raw sentences
+    assert "Development, sustainment, and quality engineering" not in condensed
+
+    baseline = _create_mock_baseline("Programmatic")
+    if baseline.sow_interpretation:
+        baseline.sow_interpretation.platform_environment_commitments = commitments
+    ov = build_slide14_overview_model(baseline)
+    assert "iOS/Android platforms" in ov.tools_environments
+
+    res_gov = export_governance_deck(baseline, tmp_path / "gov_deck_htl119")
+    prs_gov = pptx.Presentation(str(res_gov.file_path))
+    s14 = prs_gov.slides[13]  # Slide 14
+    tbl_stakeholders = [shp.table for shp in s14.shapes if shp.has_table and len(shp.table.columns) == 3][0]
+    cell_r5_c0 = tbl_stakeholders.cell(5, 0)
+    p = cell_r5_c0.text_frame.paragraphs[0]
+    r = p.runs[0]
+    assert r.font.bold is True
+    assert r.font.color.rgb == pptx.dml.color.RGBColor(0x0F, 0x25, 0x6E)
+
+    # Item 2: ADMIN_PROCESS_DELIVERABLE_REGEX precision
+    admin_deliv_names = [
+        "Sprint sign-off package",
+        "Weekly status reports",
+        "Engagement completion sign-off",
+        "Work documentation",
+        "Sprint Plans and backlog alignment",
+        "Work-product licensing inventory",
+    ]
+    for ad in admin_deliv_names:
+        assert ADMIN_PROCESS_DELIVERABLE_REGEX.search(ad) is not None, f"Admin regex failed to match '{ad}'"
+
+    sec21_deliv_names = [
+        "Multi-user home access, roles, and permissions",
+        "Accessory maintenance and reminder flows",
+        "Account-level notification preferences",
+        "Alert, activity, and service-experience surfaces",
+        "Vacation, lockout, and other device-configuration flows",
+        "Identity, login, and security hardening",
+        "Defect triage, production-defect remediation, and reliability fixes",
+        "Connectivity, stale-state, and device-sync recovery",
+        "Automated and targeted test coverage",
+        "Regression and release-train support on iOS and Android",
+        "Device simulator for T-Stat tool with Doppelio automation",
+    ]
+    for fd in sec21_deliv_names:
+        assert ADMIN_PROCESS_DELIVERABLE_REGEX.search(fd) is None, f"Admin regex falsely matched feature deliverable '{fd}'"
+
+    # Verify that mixing all 11 feature delivs + 6 admin delivs results in exactly 3 clean workstreams with 0 admin items
+    all_delivs = [
+        Deliverable(id=f"DEL-{i+1:02d}", name=name, source_reference=SourceReference(clause_or_slide="Section 2.1.1" if i < 5 else ("Section 2.1.2" if i < 8 else "Section 2.1.3")))
+        for i, name in enumerate(sec21_deliv_names)
+    ] + [
+        Deliverable(id=f"DEL-{i+12:02d}", name=name, source_reference=SourceReference(clause_or_slide="Section 2.2" if i < 3 else "Section 5"))
+        for i, name in enumerate(admin_deliv_names)
+    ]
+    b_all = _create_mock_baseline("Programmatic")
+    b_all.deliverables = all_delivs
+    s6_all = build_slide6_model(b_all)
+    assert len(s6_all.workstreams) == 3
+    assert s6_all.workstreams[0].title == "Feature development"
+    assert len(s6_all.workstreams[0].deliverables) == 5
+    assert s6_all.workstreams[1].title == "Security and reliability"
+    assert len(s6_all.workstreams[1].deliverables) == 3
+    assert s6_all.workstreams[2].title == "Quality engineering and release support"
+    assert len(s6_all.workstreams[2].deliverables) == 3
+
+    # Item 3: Client Deck Slide 8 / Approach card bodies defensive font size (8.0pt) and zero margins
+    res_client = export_client_deck(b_all, tmp_path / "client_deck_htl119")
+    prs_client = pptx.Presentation(str(res_client.file_path))
+    s8_client = prs_client.slides[7]
+    for shp in s8_client.shapes:
+        if shp.has_text_frame:
+            txt = shp.text_frame.text.strip()
+            if any(k in txt for k in ("Kickoff call", "Access and environments", "Final regression", "Handoff documentation")):
+                assert shp.text_frame.margin_top == 0
+                assert shp.text_frame.margin_bottom == 0
+                for p in shp.text_frame.paragraphs:
+                    for r in p.runs:
+                        if r.font and r.font.size:
+                            assert r.font.size.pt <= 8.0
+
+    # Item 4: Parity slides in Programmatic Governance Deck (22 slides total)
+    assert len(prs_gov.slides) == 22
+    # Slide 15: What we will deliver (idx 14)
+    s15_gov = prs_gov.slides[14]
+    s15_gov_text = " ".join(shp.text_frame.text for shp in s15_gov.shapes if shp.has_text_frame)
+    for shp in s15_gov.shapes:
+        if shp.has_table:
+            for row in shp.table.rows:
+                for cell in row.cells:
+                    s15_gov_text += " " + cell.text
+    assert "ENGAGEMENT OVERVIEW" in s15_gov_text
+    assert "Focus" in s15_gov_text or "Feature development" in s15_gov_text
+
+    # Slide 20: Initial Risk Register (idx 19)
+    s20_gov = prs_gov.slides[19]
+    s20_gov_text = " ".join(shp.text_frame.text for shp in s20_gov.shapes if shp.has_text_frame)
+    for shp in s20_gov.shapes:
+        if shp.has_table:
+            for row in shp.table.rows:
+                for cell in row.cells:
+                    s20_gov_text += " " + cell.text
+    assert "INITIAL RISK REGISTER" in s20_gov_text or "Risk Description" in s20_gov_text or "Severity" in s20_gov_text

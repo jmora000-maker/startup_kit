@@ -898,8 +898,66 @@ def build_slide18_model(baseline: StartupKitBaseline) -> Slide18RisksModel:
     return Slide18RisksModel(risks=risk_items)
 
 
+def condense_tools_and_environments(commitments: List[str], max_chars: int = 140) -> str:
+    """Condense platform and environment commitments into a concise tools & environments summary phrase (HTL-119)."""
+    if not commitments:
+        return "Jira, GitHub, Slack, target cloud environments"
+
+    found_items = []
+    text_blob = " ".join(commitments)
+
+    if re.search(r"\biOS\b", text_blob, re.I) and re.search(r"\bAndroid\b", text_blob, re.I):
+        found_items.append("iOS/Android platforms")
+    elif re.search(r"\bmobile\b", text_blob, re.I):
+        found_items.append("Mobile platforms")
+
+    if re.search(r"\bDoppelio\b", text_blob, re.I):
+        found_items.append("Doppelio")
+    if re.search(r"\bCI/CD\b", text_blob, re.I) or re.search(r"\bpipelines?\b", text_blob, re.I):
+        found_items.append("CI/CD pipelines")
+    if re.search(r"\brepositor(y|ies)\b", text_blob, re.I) or re.search(r"\bGitHub\b|\bGitLab\b", text_blob, re.I):
+        found_items.append("Client repositories")
+    if re.search(r"\btest(ing)?\s+devices?\b|\bdevice\s+cloud\b", text_blob, re.I):
+        found_items.append("Test device cloud")
+    if re.search(r"\bstaging\b|\btest\s+environments?\b", text_blob, re.I):
+        found_items.append("Staging environments")
+    if re.search(r"\bJira\b", text_blob, re.I):
+        found_items.append("Jira")
+    if re.search(r"\bSlack\b|\bTeams\b", text_blob, re.I):
+        found_items.append("Slack")
+    if re.search(r"\bAWS\b|\bAzure\b|\bGCP\b|\bcloud\b", text_blob, re.I) and not any("cloud" in f.lower() for f in found_items):
+        found_items.append("Cloud environments")
+
+    if found_items:
+        res = ", ".join(found_items)
+        if len(res) <= max_chars:
+            return res
+
+    clauses = []
+    for c in commitments:
+        clean = re.sub(
+            r"^(Client provides|Work is restricted to|Development, sustainment, and quality engineering cover the)\s+",
+            "",
+            c.strip(),
+            flags=re.I,
+        )
+        clean = clean.rstrip(".")
+        if len(clean) < 60:
+            clauses.append(clean)
+    if clauses:
+        res = "; ".join(clauses[:3])
+        if len(res) <= max_chars:
+            return res
+        return res[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.")
+
+    first = commitments[0].rstrip(".")
+    if len(first) <= max_chars:
+        return first
+    return first[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;.")
+
+
 def build_slide14_overview_model(baseline: StartupKitBaseline) -> EngagementOverviewModel:
-    """Build Slide 14 Overview model for Programmatic Kickoff (HTL-118)."""
+    """Build Slide 14 Overview model for Programmatic Kickoff (HTL-118 / HTL-119)."""
     client_name = (
         baseline.charter.client_name
         if baseline.charter and baseline.charter.client_name and not baseline.charter.client_name.startswith("[")
@@ -927,7 +985,7 @@ def build_slide14_overview_model(baseline: StartupKitBaseline) -> EngagementOver
     envs = []
     if baseline.sow_interpretation and baseline.sow_interpretation.platform_environment_commitments:
         envs.extend(baseline.sow_interpretation.platform_environment_commitments)
-    tools_str = ", ".join(envs[:3]) if envs else "Jira, GitHub, Slack, target cloud environments"
+    tools_str = condense_tools_and_environments(envs)
 
     # Stakeholders
     sponsor = None
