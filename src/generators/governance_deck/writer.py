@@ -1134,16 +1134,26 @@ def write_governance_deck(
         write_slide11_change_decision_matrix(s_change_matrix, model)
         change_matrix_index = len(prs_gov.slides) - 1
 
-        # 5. Insert What We Deliver slide (HTL-119 Item 4 Parity)
-        s_deliverables = prs_gov.slides.add_slide(layout_clean)
-        s_deliverables.background.fill.solid()
-        s_deliverables.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-        for s in list(s_deliverables.shapes):
-            s_deliverables.shapes._spTree.remove(s._element)
-        for s in prs_client.slides[5].shapes:
-            s_deliverables.shapes._spTree.append(copy.deepcopy(s._element))
-        write_slide6(s_deliverables, client_deck_adapter)
-        deliverables_index = len(prs_gov.slides) - 1
+        # 5. Insert What We Deliver slide(s) (HTL-119 Item 4 Parity / HTL-120 Dynamic Pagination)
+        chunks_s6 = chunk_workstreams_for_deliverables_table(client_deck_adapter.slide6.workstreams)
+        total_s6_pages = len(chunks_s6)
+        deliverables_indices = []
+        for c_idx, chunk_ws in enumerate(chunks_s6):
+            s_deliverables = prs_gov.slides.add_slide(layout_clean)
+            s_deliverables.background.fill.solid()
+            s_deliverables.background.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            for s in list(s_deliverables.shapes):
+                s_deliverables.shapes._spTree.remove(s._element)
+            for s in prs_client.slides[5].shapes:
+                s_deliverables.shapes._spTree.append(copy.deepcopy(s._element))
+            write_slide6_deliverables_page(
+                s_deliverables,
+                chunk_ws,
+                client_deck_adapter,
+                page_num=c_idx + 1,
+                total_pages=total_s6_pages,
+            )
+            deliverables_indices.append(len(prs_gov.slides) - 1)
 
         # 6. Insert Initial Risk Register slide (HTL-119 Item 4 Parity)
         s_risk = prs_gov.slides.add_slide(layout_clean)
@@ -1172,17 +1182,18 @@ def write_governance_deck(
         # change_matrix_index (Slide 12: Change Decision Matrix)
         # 11: Section divider (Slide 13)
         # 12: Engagement at a glance (Slide 14)
-        # deliverables_index (Slide 15: What we will deliver)
-        # 13: Ways of working divider (Slide 16)
-        # 14: Sprint cadence (Slide 17)
-        # 15: Sprint ceremonies (Slide 18)
-        # 16: Communication & tools (Slide 19)
-        # risk_index (Slide 20: Initial Risk Register)
-        # next_steps_index (Slide 21: Next Steps)
-        # Slide 17 (Slide 22: Closing slide)
+        # deliverables_indices (Slide 15...: What we will deliver)
+        # 13: Ways of working divider
+        # 14: Sprint cadence
+        # 15: Sprint ceremonies
+        # 16: Communication & tools
+        # risk_index: Initial Risk Register
+        # next_steps_index: Next Steps
+        # Slide 17: Closing slide
         desired_indices = (
             list(range(11))
-            + [change_matrix_index, 11, 12, deliverables_index]
+            + [change_matrix_index, 11, 12]
+            + deliverables_indices
             + list(range(13, 17))
             + [risk_index, next_steps_index, 17]
         )
@@ -1194,18 +1205,20 @@ def write_governance_deck(
             sldIdLst.append(all_sld_ids[idx])
 
         # Apply header formatting
-        for s_idx in [1, 3, 4, 5, 6, 7, 8, 9, 10]:
-            apply_slide_header_formatting(prs_gov.slides[s_idx], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[12], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[13], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[14], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[15])  # What we will deliver
-        apply_slide_header_formatting(prs_gov.slides[16], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[17], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[18], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[19], has_subtitle=False)
-        apply_slide_header_formatting(prs_gov.slides[20])  # Risk register
-        apply_slide_header_formatting(prs_gov.slides[21])  # Next steps
+        for s_idx in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
+            if s_idx < len(prs_gov.slides):
+                apply_slide_header_formatting(prs_gov.slides[s_idx], has_subtitle=False)
+        for d_idx in range(14, 14 + len(deliverables_indices)):
+            if d_idx < len(prs_gov.slides):
+                apply_slide_header_formatting(prs_gov.slides[d_idx])  # What we will deliver
+        offset = 14 + len(deliverables_indices)
+        for s_idx in [offset, offset + 1, offset + 2, offset + 3]:
+            if s_idx < len(prs_gov.slides):
+                apply_slide_header_formatting(prs_gov.slides[s_idx], has_subtitle=False)
+        if offset + 4 < len(prs_gov.slides):
+            apply_slide_header_formatting(prs_gov.slides[offset + 4])  # Risk register
+        if offset + 5 < len(prs_gov.slides):
+            apply_slide_header_formatting(prs_gov.slides[offset + 5])  # Next steps
 
         # Ensure any remaining template shapes with legacy #041133 are sanitized to canonical #0F256E
         for slide in prs_gov.slides:

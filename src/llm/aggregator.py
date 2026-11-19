@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import timedelta, date
 from typing import List, Optional, Set
-from src.config import sanitize_report_text, extract_sow_references, detect_sow_reference_kind
+from src.config import sanitize_report_text, extract_sow_references, detect_sow_reference_kind, strip_deliverable_boilerplate
 from src.generators.pmo_workbook.mapping import tokenize_v2, natural_sort_key, strip_work_package_prefix
 from src.generators.pmo_workbook.builder import extract_story_ids_for_deliverable
 from src.core.models import (
@@ -225,8 +225,8 @@ class BaselineAggregator:
                         add_question(f"SOW work item '{s}' cited in contract ambiguity {ca.anomaly_id} is not mapped to any baseline deliverable. [CONFIRMATION REQUIRED]")
 
         for deliv in deliverables:
-            deliv.description = sanitize_report_text(deliv.description)
-            deliv.name = sanitize_report_text(deliv.name or deliv.description)
+            deliv.description = sanitize_report_text(strip_deliverable_boilerplate(deliv.description))
+            deliv.name = sanitize_report_text(strip_deliverable_boilerplate(deliv.name or deliv.description))
             if deliv.acceptance_criteria:
                 deliv.acceptance_criteria = [sanitize_report_text(c) for c in deliv.acceptance_criteria if c and sanitize_report_text(c)]
             if not deliv.acceptance_criteria:

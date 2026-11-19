@@ -97,6 +97,28 @@ def sanitize_report_text(text: Optional[str]) -> str:
     return cleaned.strip()
 
 
+def strip_deliverable_boilerplate(text: Optional[str]) -> str:
+    """HTL-120: Strip repetitive contractual governance disclaimers from deliverable descriptions and titles."""
+    if not text:
+        return "" if text is None else str(text)
+    s = str(text)
+    # Remove "...when committed in an agreed sprint; completion of the entire roadmap is not guaranteed."
+    s = re.sub(
+        r'\s*\(?\s*(?:(?:when|upon)\s+committed\s+in\s+an\s+agreed\s+sprint|subject\s+to\s+sprint\s+commitment)?\s*(?:;|,)?\s*completion\s+of\s+the\s+entire\s+roadmap\s+is\s+not\s+guaranteed\.?\)?',
+        '',
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(
+        r'\s+when\s+committed\s+in\s+an\s+agreed\s+sprint\.?$',
+        '',
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(r'[,;:\s]+$', '', s)
+    return s.strip()
+
+
 def sanitize_financial_text(text: Optional[str]) -> str:
     """HTL-77: Systematically strip raw dollar figures, currency amounts, hourly rates, and milestone fees from text.
     

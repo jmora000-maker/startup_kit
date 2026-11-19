@@ -9,6 +9,7 @@ from src.core.models import (
     RiskAssumption,
     StartupKitBaseline,
 )
+from src.config import strip_deliverable_boilerplate
 from src.generators.kit_values import kit_header_values
 from src.generators.pmo_workbook.builder import build_workbook_model
 from src.generators.pmo_workbook.workstreams import parse_milestone_phase
@@ -222,7 +223,8 @@ def build_slide6_model(
                 d_name = d.name or ""
                 d_desc = d.description or ""
                 full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
-                item_text = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+                raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+                item_text = strip_deliverable_boilerplate(raw_item)
 
                 sec_match = re.search(r"2\.1\.([123])", full_text)
                 if sec_match:
@@ -249,7 +251,7 @@ def build_slide6_model(
                 if unassigned_delivs:
                     for d in unassigned_delivs:
                         desc = d.description if d.description and d.description != d.name else (d.name or "")
-                        workstreams[0].deliverables.append(desc)
+                        workstreams[0].deliverables.append(strip_deliverable_boilerplate(desc))
             elif non_comm_delivs:
                 num_buckets = 3
                 chunk_sz = max(1, (len(non_comm_delivs) + num_buckets - 1) // num_buckets)
@@ -257,13 +259,14 @@ def build_slide6_model(
                     bucket_items = non_comm_delivs[i * chunk_sz : (i + 1) * chunk_sz]
                     if bucket_items:
                         title = bucket_items[0].name or f"Workstream {i + 1}"
-                        items = [d.name or d.description for d in bucket_items if (d.name or d.description)]
+                        items = [strip_deliverable_boilerplate(d.name or d.description) for d in bucket_items if (d.name or d.description)]
                         workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
         elif non_comm_delivs:
             for d in non_comm_delivs:
                 title = d.name or f"Workstream {d.id}"
                 desc = d.description if d.description and d.description != d.name and not COMPLETION_PHRASE_REGEX.search(d.description) else ""
-                items = [desc] if desc else [title]
+                clean_desc = strip_deliverable_boilerplate(desc)
+                items = [clean_desc] if clean_desc else [title]
                 workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
         elif baseline.charter and baseline.charter.high_level_scope:
             clean_scope = [

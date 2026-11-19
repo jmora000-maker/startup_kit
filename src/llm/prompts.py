@@ -68,13 +68,13 @@ INSTRUCTIONS:
 1. When the SOW presents Work Output as distinct bullet points, table rows, or numbered scope items (e.g. under Milestones or in a Work Output / Acceptance Criteria table), extract EVERY single distinct, separately-bulleted Work Output item as its own separate Deliverable object (strict 1:1 mapping, no consolidation or merging of distinct bullets into single deliverables).
 2. For SOWs that do NOT use bulleted or numbered Work Output lists (e.g. narrative prose paragraphs), extract each distinct contractual commitment or deliverable stated in the text without artificially inflating or inventing items, preserving the true granularity stated in the source.
 3. For each deliverable, attach its exact paired Acceptance Criteria from the SOW (e.g., from the corresponding row or bullet in the Acceptance Criteria table). Extract each distinct criteria item as its own separate string in a list (e.g. ['Criterion 1', 'Criterion 2']) — do not combine multiple distinct criteria into a single joined string. Ensure every Acceptance Criteria bullet corresponding to a given Work Output bullet is preserved and attached to that bullet's own deliverable — never dropped or reassigned to a different deliverable.
-4. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents.
+4. Keep descriptions clear, direct, and self-contained (1-2 sentences maximum). Do NOT mention or refer to the SOW or other documents. Do NOT append repetitive contractual governance disclaimers (such as 'when committed in an agreed sprint; completion of the entire roadmap is not guaranteed') to individual deliverable descriptions or names; state the deliverable scope itself.
 5. If explicit acceptance criteria are provided in the text, extract them concisely and directly as a list of distinct strings without referencing documents. If NOT explicitly stated, you MUST set acceptance_criteria to an empty list [].
 
 For each deliverable:
 - id: Sequential identifier (e.g., DEL-01, DEL-02, DEL-03...)
-- name: Concise title of the deliverable
-- description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents.
+- name: Concise title of the deliverable (deliverable outcome only, no contractual disclaimers)
+- description: Clear, concise, and self-contained statement of the deliverable outcome. Do NOT mention or refer to the SOW or other documents. Do NOT append contractual governance disclaimers.
 - owner: Named owner or role if stated, else 'Unassigned'.
 - acceptance_criteria: List of distinct explicit acceptance criteria strings if provided in the text (e.g. ['Criterion 1', 'Criterion 2']), or empty list [] if not explicitly stated.
 - sow_reference: SOW work item references covered (e.g. story IDs, deliverable numbers, task codes, or synthetic work item codes such as WO-M1-01) if mentioned, else null. Do NOT include section or clause citations here; section/clause locations belong in source_reference.
