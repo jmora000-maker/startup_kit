@@ -51,19 +51,22 @@ COMPLETION_PHRASE_REGEX = re.compile(
 
 ADMIN_PROCESS_DELIVERABLE_REGEX = re.compile(
     r"\b("
+    r"weekly\s*(?:project\s*)?status\s*reports?|"
+    r"status\s*reporting|"
     r"sprint\s*sign-?offs?|"
-    r"weekly\s*status\s*reports?|"
-    r"sprint\s*plans?(?:\s+(?:and|&)\s+backlog|\s+alignment)?|"
-    r"sprint\s*planning|"
+    r"sprint\s*demos?\s+and\s+sprint\s+sign-?offs?|"
+    r"^\s*sprint\s*plans?\s*$|"
+    r"sprint\s*planning(?:\s+documents?|\s+deliverables?)?|"
+    r"sprint\s*plans?\s+(?:documents?|deliverables?|and\s+backlog)|"
     r"(?:final\s+)?(?:engagement\s+)?(?:completion\s+)?sign-?offs?(?:\s+documents?)?|"
-    r"sign-?off\s+documents?\s+confirming\s+completion|"
+    r"sign-?off\s+documents?\s+(?:confirming|for)\s+completion|"
     r"completion\s+of\s+(?:the\s+)?engagement|"
     r"engagement\s*completion|"
-    r"(?:project|work|engagement)\s*documentation|"
-    r"documentation\s+for\s+all\s+work|"
+    r"(?:project|work|engagement|contract)\s*documentation|"
+    r"documentation\s+(?:of|for|covering|on|regarding)\s+(?:all\s+)?work|"
+    r"documentation\s+covering\s+all\s+work\s+performed|"
     r"licensing\s*inventory|"
-    r"ip\s*assignment|"
-    r"status\s*reporting"
+    r"ip\s*assignment"
     r")\b",
     re.IGNORECASE,
 )
@@ -214,8 +217,10 @@ def build_slide6_model(
             comb = f"{d_name} {d_desc}"
             if COMMERCIAL_EXCLUSION_REGEX.search(comb) or COMPLETION_PHRASE_REGEX.search(d_name):
                 continue
-            desc_no_agreed = re.sub(r"as agreed in [^.]*sprint plans?", "", d_desc, flags=re.I)
-            if ADMIN_PROCESS_DELIVERABLE_REGEX.search(f"{d_name} {desc_no_agreed}"):
+            is_substantive = bool(re.search(r"\b(?:work\s+items?|features?|development|simulator|application)\b", d_name, re.I))
+            name_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_name)
+            desc_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_desc)
+            if name_admin or (desc_admin and not is_substantive):
                 continue
             non_comm_delivs.append(d)
 
@@ -262,9 +267,9 @@ def build_slide6_model(
             else:
                 grouped["Feature development"].append(item_text)
 
-        # Step B: If fewer than 2 active theme groups resulted, enrich from high_level_scope
+        # Step B: If fewer than 3 active theme groups resulted (or any core section is empty), enrich from high_level_scope
         active_theme_groups = [(k, v) for k, v in grouped.items() if v]
-        if len(active_theme_groups) < 2 and baseline.charter and baseline.charter.high_level_scope:
+        if len(active_theme_groups) < 3 and baseline.charter and baseline.charter.high_level_scope:
             clean_scope = [
                 s.strip().rstrip(";. ")
                 for s in baseline.charter.high_level_scope
