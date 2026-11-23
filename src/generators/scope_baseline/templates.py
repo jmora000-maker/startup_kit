@@ -1,6 +1,7 @@
 """Deterministic extraction templates and commercial framing rules for Scope Baseline (HTL-108)."""
 
 import logging
+import re
 from typing import List, Optional
 from src.core.models import StartupKitBaseline
 from src.generators.scope_baseline.models import (
@@ -47,6 +48,25 @@ def _format_bullet_list(items: List[str], default_text: str = "None stated in ba
     return "\n".join(f"• {item}" if not item.startswith("•") else item for item in clean)
 
 
+def _is_duplicate_exclusion(candidate: str, existing_items: List[str], threshold: float = 0.55) -> bool:
+    """Check if candidate exclusion substantially overlaps with an existing exclusion (HTL-122)."""
+    cand_tokens = set(re.findall(r"\w{4,}", candidate.lower()))
+    if not cand_tokens:
+        return candidate.strip().lower() in [e.strip().lower() for e in existing_items]
+    for existing in existing_items:
+        ex_tokens = set(re.findall(r"\w{4,}", existing.lower()))
+        if not ex_tokens:
+            continue
+        overlap = len(cand_tokens & ex_tokens) / len(cand_tokens | ex_tokens)
+        if overlap >= threshold:
+            return True
+        if ("design" in cand_tokens or "visual" in cand_tokens) and ("design" in ex_tokens or "visual" in ex_tokens):
+            return True
+        if ("submission" in cand_tokens or "release" in cand_tokens) and ("submission" in ex_tokens or "release" in ex_tokens) and "client" in cand_tokens and "client" in ex_tokens:
+            return True
+    return False
+
+
 def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> List[ScopeBaselineSummaryRow]:
     """Build the 6 rows for Table 1: Scope Baseline Summary."""
     charter = baseline.charter
@@ -64,11 +84,20 @@ def build_table1_summary_rows(baseline: StartupKitBaseline, variant: str) -> Lis
         purpose_parts.append("Key Objectives:\n" + _format_bullet_list(charter.delivery_objectives))
     auth_r1 = "\n\n".join(purpose_parts) if purpose_parts else "Authorized project delivery objectives as defined in the project charter and baseline."
 
-    excl_parts = []
+    raw_exclusions = []
     if charter and charter.exclusions:
-        excl_parts.extend(charter.exclusions)
+        raw_exclusions.extend(charter.exclusions)
     if sow_int and sow_int.out_of_scope_items:
-        excl_parts.extend(sow_int.out_of_scope_items)
+        raw_exclusions.extend(sow_int.out_of_scope_items)
+
+    deduped_excl: List[str] = []
+    for item in raw_exclusions:
+        cleaned = item.strip().rstrip(".")
+        if not cleaned or cleaned == "[CONFIRMATION REQUIRED]":
+            continue
+        if not _is_duplicate_exclusion(cleaned, deduped_excl, threshold=0.55):
+            deduped_excl.append(cleaned)
+    excl_parts = deduped_excl
     excl_r1 = _format_bullet_list(excl_parts, default_text="Any strategic initiatives, uncontracted transformation work, or activities outside stated project objectives.")
 
     # Row 2: Application Scope & Boundary

@@ -8,6 +8,7 @@ from lxml import etree
 import pptx
 from pptx.util import Length, Pt
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
 
 from src.config import CLIENT_DECK_TEMPLATE_PATH
 from src.generators.deck_header import apply_slide_header_formatting
@@ -671,7 +672,33 @@ def write_slide6_deliverables_page(
         if shp._element not in preserved_elements:
             slide.shapes._spTree.remove(shp._element)
 
-    # 4. Populate Right Dark Panel (Solution Overview & Out of Scope - HTL-96 / HTL-113)
+    # 4. Populate Right Dark Panel (Solution Overview & Out of Scope - HTL-96 / HTL-113 / HTL-122)
+    # Ensure Right Dark Navy Panel exists behind textboxes (matching template layout shape 81 - HTL-122)
+    panel_left = 6167767   # ~6.74 in
+    panel_top = 0
+    panel_width = 2976000  # ~3.25 in
+    panel_height = 5143500 # ~5.62 in (slide height)
+
+    panel_shape = None
+    for shp in slide.shapes:
+        if getattr(shp, "shape_id", None) == 81 or (hasattr(shp, "name") and "Shape;81;" in shp.name):
+            panel_shape = shp
+            break
+        if not shp.has_text_frame and not shp.has_table:
+            if abs(shp.left - panel_left) < 100000 and shp.width >= 2800000:
+                panel_shape = shp
+                break
+
+    if panel_shape is None:
+        panel_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, panel_left, panel_top, panel_width, panel_height)
+        panel_shape.fill.solid()
+        panel_shape.fill.fore_color.rgb = RGBColor(0x0F, 0x25, 0x6E)
+        panel_shape.line.fill.background()
+        # Move panel behind text frames in shape tree
+        sp_elem = panel_shape._element
+        slide.shapes._spTree.remove(sp_elem)
+        slide.shapes._spTree.insert(2, sp_elem)
+
     white_color = RGBColor(255, 255, 255)
     so_top = 580000       # 0.634 in
     so_left = 6347125     # 6.941 in
@@ -857,7 +884,8 @@ def write_slide6_deliverables_page(
                 r_desc.font.bold = False
                 r_desc.font.color.rgb = RGBColor(0x1D, 0x29, 0x39)
             else:
-                p.text = f"• {deliv_str}" if len(delivs) > 1 and not deliv_str.startswith("•") else deliv_str
+                clean_deliv = deliv_str.strip()
+                p.text = f"• {clean_deliv}" if not clean_deliv.startswith("•") else clean_deliv
                 for r in p.runs:
                     r.font.name = "Proxima Nova"
                     r.font.size = Pt(7.5)

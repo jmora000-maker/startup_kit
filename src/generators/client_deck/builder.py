@@ -180,6 +180,23 @@ def build_slide5_model(
     )
 
 
+def _is_duplicate_scope_item(candidate: str, existing_items: List[str], threshold: float = 0.55) -> bool:
+    """Check if candidate text substantially overlaps with any already-present item (HTL-122)."""
+    cand_tokens = set(re.findall(r"\w{4,}", candidate.lower()))
+    if not cand_tokens:
+        return candidate.strip().lower() in [e.strip().lower() for e in existing_items]
+    for existing in existing_items:
+        ex_tokens = set(re.findall(r"\w{4,}", existing.lower()))
+        if not ex_tokens:
+            continue
+        overlap = len(cand_tokens & ex_tokens) / len(cand_tokens | ex_tokens)
+        if overlap >= threshold:
+            return True
+        if ("simulator" in cand_tokens or "doppelio" in cand_tokens) and ("simulator" in ex_tokens or "doppelio" in ex_tokens):
+            return True
+    return False
+
+
 def build_slide6_model(
     baseline: StartupKitBaseline,
     llm_client: Optional[ILLMClient] = None,
@@ -263,7 +280,7 @@ def build_slide6_model(
                         matched_theme = theme_name
                         break
                 target = matched_theme or "Feature development"
-                if s not in grouped[target]:
+                if not _is_duplicate_scope_item(s, grouped[target]):
                     grouped[target].append(s)
 
             active_theme_groups = [(k, v) for k, v in grouped.items() if v]
