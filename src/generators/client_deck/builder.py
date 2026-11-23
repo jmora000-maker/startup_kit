@@ -185,11 +185,21 @@ def build_slide5_model(
 
 def _is_duplicate_scope_item(candidate: str, existing_items: List[str], threshold: float = 0.55) -> bool:
     """Check if candidate text substantially overlaps with any already-present item (HTL-122)."""
-    cand_tokens = set(re.findall(r"\w{4,}", candidate.lower()))
+    cand_lower = candidate.strip().lower()
+    if not cand_lower:
+        return False
+    cand_nums = set(re.findall(r"\b\d+\b", cand_lower))
+    cand_tokens = set(re.findall(r"\w{3,}", cand_lower))
     if not cand_tokens:
-        return candidate.strip().lower() in [e.strip().lower() for e in existing_items]
+        return cand_lower in [e.strip().lower() for e in existing_items]
     for existing in existing_items:
-        ex_tokens = set(re.findall(r"\w{4,}", existing.lower()))
+        ex_lower = existing.strip().lower()
+        if cand_lower == ex_lower:
+            return True
+        ex_nums = set(re.findall(r"\b\d+\b", ex_lower))
+        if cand_nums and ex_nums and cand_nums != ex_nums:
+            continue
+        ex_tokens = set(re.findall(r"\w{3,}", ex_lower))
         if not ex_tokens:
             continue
         overlap = len(cand_tokens & ex_tokens) / len(cand_tokens | ex_tokens)
@@ -209,21 +219,6 @@ def build_slide6_model(
     workstreams: List[WorkstreamBlock] = []
 
     if is_programmatic:
-        raw_delivs = baseline.deliverables or []
-        non_comm_delivs = []
-        for d in raw_delivs:
-            d_name = d.name or ""
-            d_desc = d.description or ""
-            comb = f"{d_name} {d_desc}"
-            if COMMERCIAL_EXCLUSION_REGEX.search(comb) or COMPLETION_PHRASE_REGEX.search(d_name):
-                continue
-            is_substantive = bool(re.search(r"\b(?:work\s+items?|features?|development|simulator|application)\b", d_name, re.I))
-            name_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_name)
-            desc_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_desc)
-            if name_admin or (desc_admin and not is_substantive):
-                continue
-            non_comm_delivs.append(d)
-
         section_titles = {
             "2.1.1": "Feature development",
             "2.1.2": "Security and reliability",
@@ -241,57 +236,150 @@ def build_slide6_model(
             "Quality engineering and release support": [],
         }
 
-        # Step A: Populate from surviving non-commercial deliverables
-        for d in non_comm_delivs:
-            loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
-            sow_ref = d.sow_reference or ""
+        # Filter non-commercial functional deliverables
+        raw_delivs = baseline.deliverables or []
+        non_comm_delivs = []
+        for d in raw_delivs:
             d_name = d.name or ""
             d_desc = d.description or ""
-            full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
-            raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
-            item_text = strip_deliverable_boilerplate(raw_item)
-
-            sec_match = re.search(r"2\.1\.([123])", full_text)
-            if sec_match:
-                sec_key = f"2.1.{sec_match.group(1)}"
-                grouped[section_titles[sec_key]].append(item_text)
+            comb = f"{d_name} {d_desc}"
+            if COMMERCIAL_EXCLUSION_REGEX.search(comb) or COMPLETION_PHRASE_REGEX.search(d_name):
                 continue
+            is_substantive = bool(re.search(r"\b(?:work\s+items?|features?|development|simulator|application)\b", d_name, re.I))
+            name_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_name)
+            desc_admin = ADMIN_PROCESS_DELIVERABLE_REGEX.search(d_desc)
+            if name_admin or (desc_admin and not is_substantive):
+                continue
+            non_comm_delivs.append(d)
 
-            matched_theme = None
-            for theme_name, regex in theme_keywords:
-                if regex.search(full_text):
-                    matched_theme = theme_name
-                    break
-            if matched_theme:
-                grouped[matched_theme].append(item_text)
-            else:
-                grouped["Feature development"].append(item_text)
+        # PRIMARY SOURCE: Contractual roadmap scope items from high_level_scope (HTL-124)
+        raw_scope = (baseline.charter.high_level_scope if baseline.charter and baseline.charter.high_level_scope else [])
+        clean_scope = [
+            s.strip().rstrip(";. ")
+            for s in raw_scope
+            if s and s.strip() and s.strip() != "[CONFIRMATION REQUIRED]"
+            and not COMMERCIAL_EXCLUSION_REGEX.search(s)
+            and not COMPLETION_PHRASE_REGEX.search(s)
+            and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(s)
+        ]
 
-        # Step B: If fewer than 3 active theme groups resulted (or any core section is empty), enrich from high_level_scope
-        active_theme_groups = [(k, v) for k, v in grouped.items() if v]
-        if len(active_theme_groups) < 3 and baseline.charter and baseline.charter.high_level_scope:
-            clean_scope = [
-                s.strip().rstrip(";. ")
-                for s in baseline.charter.high_level_scope
-                if s and s.strip() and s.strip() != "[CONFIRMATION REQUIRED]"
-                and not COMMERCIAL_EXCLUSION_REGEX.search(s)
-                and not COMPLETION_PHRASE_REGEX.search(s)
-                and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(s)
-            ]
+        # Decide primary source: if deliverables has explicit section tags or is more granular than clean_scope,
+        # prioritize deliverables; otherwise use clean_scope (HTL-124).
+        has_explicit_sections_deliv = any(
+            re.search(r"2\.1\.[123]", f"{(d.source_reference.clause_or_slide if d.source_reference else '')} {d.sow_reference or ''}")
+            for d in non_comm_delivs
+        )
+        has_explicit_sections_scope = any(
+            re.search(r"2\.1\.[123]", s)
+            for s in clean_scope
+        )
+
+        use_scope_as_primary = bool(clean_scope and (has_explicit_sections_scope or len(clean_scope) >= len(non_comm_delivs) or not non_comm_delivs) and not (has_explicit_sections_deliv and len(non_comm_delivs) > len(clean_scope)))
+
+        if use_scope_as_primary:
             for s in clean_scope:
-                matched_theme = None
-                for theme_name, regex in theme_keywords:
-                    if regex.search(s):
-                        matched_theme = theme_name
-                        break
-                target = matched_theme or "Feature development"
-                if not _is_duplicate_scope_item(s, grouped[target]):
-                    grouped[target].append(s)
+                sec_match = re.search(r"2\.1\.([123])", s)
+                if sec_match:
+                    sec_key = f"2.1.{sec_match.group(1)}"
+                    target = section_titles[sec_key]
+                    clean_s = re.sub(r"^(?:Section\s*)?2\.1\.[123][\s:.-]*", "", s, flags=re.I).strip()
+                else:
+                    matched_theme = None
+                    for theme_name, regex in theme_keywords:
+                        if regex.search(s):
+                            matched_theme = theme_name
+                            break
+                    target = matched_theme or "Feature development"
+                    clean_s = s
 
+                # Strip redundant category header if present (e.g. "Feature development: ...")
+                clean_s = re.sub(r"^(?:Feature development|Security and reliability|Quality engineering(?: and release support)?)\s*:\s*", "", clean_s, flags=re.I).strip()
+
+                if not _is_duplicate_scope_item(clean_s, grouped[target]):
+                    grouped[target].append(clean_s)
+
+            # If fewer than 3 active theme groups resulted, enrich missing themes from deliverables
             active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+            if len(active_theme_groups) < 3 and non_comm_delivs:
+                for d in non_comm_delivs:
+                    loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
+                    sow_ref = d.sow_reference or ""
+                    d_name = d.name or ""
+                    d_desc = d.description or ""
+                    full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
+                    raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+                    item_text = strip_deliverable_boilerplate(raw_item)
 
-        for title, items in active_theme_groups:
-            workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+                    sec_match = re.search(r"2\.1\.([123])", full_text)
+                    if sec_match:
+                        sec_key = f"2.1.{sec_match.group(1)}"
+                        target = section_titles[sec_key]
+                    else:
+                        matched_theme = None
+                        for theme_name, regex in theme_keywords:
+                            if regex.search(full_text):
+                                matched_theme = theme_name
+                                break
+                        target = matched_theme or "Feature development"
+
+                    if not _is_duplicate_scope_item(item_text, grouped[target]):
+                        grouped[target].append(item_text)
+        else:
+            for d in non_comm_delivs:
+                loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
+                sow_ref = d.sow_reference or ""
+                d_name = d.name or ""
+                d_desc = d.description or ""
+                full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
+                raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+                item_text = strip_deliverable_boilerplate(raw_item)
+
+                sec_match = re.search(r"2\.1\.([123])", full_text)
+                if sec_match:
+                    sec_key = f"2.1.{sec_match.group(1)}"
+                    target = section_titles[sec_key]
+                else:
+                    matched_theme = None
+                    for theme_name, regex in theme_keywords:
+                        if regex.search(full_text):
+                            matched_theme = theme_name
+                            break
+                    target = matched_theme or "Feature development"
+
+                if not _is_duplicate_scope_item(item_text, grouped[target]):
+                    grouped[target].append(item_text)
+
+            # If fewer than 3 active theme groups resulted, enrich missing themes from clean_scope
+            active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+            if len(active_theme_groups) < 3 and clean_scope:
+                for s in clean_scope:
+                    matched_theme = None
+                    for theme_name, regex in theme_keywords:
+                        if regex.search(s):
+                            matched_theme = theme_name
+                            break
+                    target = matched_theme or "Feature development"
+                    clean_s = re.sub(r"^(?:Feature development|Security and reliability|Quality engineering(?: and release support)?)\s*:\s*", "", s, flags=re.I).strip()
+                    if not _is_duplicate_scope_item(clean_s, grouped[target]):
+                        grouped[target].append(clean_s)
+
+        active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+
+        if len(active_theme_groups) >= 2:
+            for title, items in active_theme_groups:
+                workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+        elif active_theme_groups:
+            title, items = active_theme_groups[0]
+            if len(items) > 4:
+                num_buckets = 3
+                chunk_sz = max(1, (len(items) + num_buckets - 1) // num_buckets)
+                for i in range(num_buckets):
+                    b_items = items[i * chunk_sz : (i + 1) * chunk_sz]
+                    if b_items:
+                        b_title = b_items[0] if len(b_items[0]) <= 50 else f"{title} Part {i + 1}"
+                        workstreams.append(WorkstreamBlock(title=b_title, deliverables=b_items, overflow_count=0))
+            else:
+                workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
 
         if not workstreams:
             workstreams.append(

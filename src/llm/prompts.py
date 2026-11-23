@@ -34,6 +34,12 @@ CONSTRAINTS:
 - Keep the executive summary strictly between 2-3 concise sentences covering project objectives, tech stack, and scope.
 - Ensure all text is self-contained and does NOT mention or reference the SOW, contracts, or source documents.
 
+SCOPE EXTRACTION INSTRUCTIONS (HIGH-LEVEL SCOPE):
+- high_level_scope: Extract each distinct in-scope functional requirement, feature capability, or product roadmap scope item.
+- CRITICAL 1:1 GRANULARITY: When the SOW presents technical scope, roadmap workstreams, or services as distinct bullet points or subsections (e.g. under Section 2 Scope of Services / Product Roadmap / Workstreams, such as Sections 2.1.1, 2.1.2, 2.1.3), extract EVERY single distinct, separately-bulleted item as its own separate string in high_level_scope (strict 1:1 mapping, preserving all individual bullets separately).
+- Do NOT merge, group, or consolidate multiple distinct bullets or entire subsections into single compound or colon-separated summary sentences (e.g. do NOT write 'Feature development: feature 1, feature 2...'). Extract 'Feature 1', 'Feature 2', etc. as separate array items.
+- If section numbers or subsection headings are attached (e.g. '2.1.1 Feature development'), preserve the section citation with the item or extract the individual bullet items directly.
+
 PROBLEM STATEMENT & GAP-FILLING INSTRUCTIONS:
 - First check the PRIMARY SOURCE OF TRUTH (SOW) for client problem statements or current-state pain points.
 - If the SOW states no problem statement, but SUPPORTING DOCUMENTS describe concrete current-state operational bottlenecks, legacy limitations, or business challenges, extract the problem statement from those supporting documents.
@@ -53,6 +59,8 @@ Extract:
 - talent_pm: Named Talent Project Manager if mentioned, else null.
 - pmo_lead: Named PMO Lead if mentioned, else null.
 - executive_summary: A concise 2-3 sentence summary of project objectives, tech stack, and scope. Ensure the summary is self-contained and does NOT mention or reference the SOW or input documents.
+- high_level_scope: List of distinct in-scope functional and technical roadmap scope items (preserving 1:1 bullet-level granularity from Section 2 / Scope of Services without merging bullets into summary sentences).
+- exclusions: List of explicit out-of-scope items and exclusions.
 - problem_statement: 1-2 concise sentences stating the client's concrete current-state pain point or operational bottleneck (strictly under 180 characters total). Set to null if not stated in source documents.
 - solution_overview: A cohesive 2-3 sentence narrative synthesizing the technical approach, key workstreams, and delivery cadence into an integrated client solution (strictly under 300 characters total, using active verbs, focused on business value, not a bare list of deliverable titles).
 - success_criteria_summary: A natural 2-3 sentence narrative framed around customer outcomes and business value (what the client actually gets or can now do/decide), avoiding raw internal delivery metrics or acceptance percentage thresholds.
