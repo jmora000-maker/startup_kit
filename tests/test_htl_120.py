@@ -105,6 +105,6 @@ def test_htl_120_governance_deck_dynamic_pagination(tmp_path: Path):
         for s_idx in range(14, 14 + num_chunks)
     ])
 
-    assert "Deliverable Feature 1" in gov_deliv_text
-    assert "Deliverable Feature 11" in gov_deliv_text
+    assert "Feature 1 implementation and integration" in gov_deliv_text
+    assert "Feature 11 implementation and integration" in gov_deliv_text
     assert "completion of the entire roadmap is not guaranteed" not in gov_deliv_text

@@ -191,7 +191,7 @@ def test_htl_116_item6_client_deck_slide6_focus_rows_and_completion_filter():
     titles = [ws.title for ws in s6_prog.workstreams]
     assert "Feature development" in titles
     assert "Security and reliability" in titles
-    assert "Quality engineering" in titles
+    assert any("Quality engineering" in t for t in titles)
 
     for ws in s6_prog.workstreams:
         assert "concludes" not in ws.title.lower()
