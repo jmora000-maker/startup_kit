@@ -89,13 +89,14 @@ def _replace_shape_text(
         tf._txBody.remove(p._p)
 
     first_p.text = new_text
-    if first_p.runs:
-        first_p.runs[0].font.name = font_name
-        first_p.runs[0].font.size = font_size
-        if bold is not None:
-            first_p.runs[0].font.bold = bold
-        if font_color_rgb is not None:
-            first_p.runs[0].font.color.rgb = font_color_rgb
+    for p in tf.paragraphs:
+        for r in p.runs:
+            r.font.name = font_name
+            r.font.size = font_size
+            if bold is not None:
+                r.font.bold = bold
+            if font_color_rgb is not None:
+                r.font.color.rgb = font_color_rgb
 
 
 def _format_table_cell(

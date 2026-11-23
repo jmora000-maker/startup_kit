@@ -53,12 +53,16 @@ ADMIN_PROCESS_DELIVERABLE_REGEX = re.compile(
     r"\b("
     r"sprint\s*sign-?offs?|"
     r"weekly\s*status\s*reports?|"
-    r"sprint\s*plans?|"
-    r"completion\s*sign-?offs?|"
-    r"work\s*documentation|"
+    r"sprint\s*plans?(?:\s+(?:and|&)\s+backlog|\s+alignment)?|"
+    r"sprint\s*planning|"
+    r"(?:final\s+)?(?:engagement\s+)?(?:completion\s+)?sign-?offs?(?:\s+documents?)?|"
+    r"sign-?off\s+documents?\s+confirming\s+completion|"
+    r"completion\s+of\s+(?:the\s+)?engagement|"
+    r"engagement\s*completion|"
+    r"(?:project|work|engagement)\s*documentation|"
+    r"documentation\s+for\s+all\s+work|"
     r"licensing\s*inventory|"
     r"ip\s*assignment|"
-    r"engagement\s*completion|"
     r"status\s*reporting"
     r")\b",
     re.IGNORECASE,
@@ -186,12 +190,17 @@ def build_slide6_model(
 
     if is_programmatic:
         raw_delivs = baseline.deliverables or []
-        non_comm_delivs = [
-            d for d in raw_delivs
-            if not COMMERCIAL_EXCLUSION_REGEX.search(f"{d.name or ''} {d.description or ''}")
-            and not COMPLETION_PHRASE_REGEX.search(d.name or "")
-            and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(f"{d.name or ''} {d.description or ''}")
-        ]
+        non_comm_delivs = []
+        for d in raw_delivs:
+            d_name = d.name or ""
+            d_desc = d.description or ""
+            comb = f"{d_name} {d_desc}"
+            if COMMERCIAL_EXCLUSION_REGEX.search(comb) or COMPLETION_PHRASE_REGEX.search(d_name):
+                continue
+            desc_no_agreed = re.sub(r"as agreed in [^.]*sprint plans?", "", d_desc, flags=re.I)
+            if ADMIN_PROCESS_DELIVERABLE_REGEX.search(f"{d_name} {desc_no_agreed}"):
+                continue
+            non_comm_delivs.append(d)
 
         section_titles = {
             "2.1.1": "Feature development",
@@ -204,71 +213,41 @@ def build_slide6_model(
             ("Feature development", re.compile(r"\b(feature|flow|flows|access|role|roles|permission|permissions|accessory|accessories|reminder|reminders|notification|notifications|alert|alerts|activity|service-experience|vacation|lockout|configuration|pairing|telemetry)\b", re.I)),
         ]
 
-        has_explicit_sections = any(
-            re.search(r"2\.1\.[123]", f"{(d.source_reference.clause_or_slide if d.source_reference else '')} {d.sow_reference or ''}")
-            for d in non_comm_delivs
-        )
+        grouped: Dict[str, List[str]] = {
+            "Feature development": [],
+            "Security and reliability": [],
+            "Quality engineering and release support": [],
+        }
 
-        if has_explicit_sections or len(non_comm_delivs) > 4:
-            grouped: Dict[str, List[str]] = {
-                "Feature development": [],
-                "Security and reliability": [],
-                "Quality engineering and release support": [],
-            }
-            unassigned_delivs: List[Deliverable] = []
+        # Step A: Populate from surviving non-commercial deliverables
+        for d in non_comm_delivs:
+            loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
+            sow_ref = d.sow_reference or ""
+            d_name = d.name or ""
+            d_desc = d.description or ""
+            full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
+            raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
+            item_text = strip_deliverable_boilerplate(raw_item)
 
-            for d in non_comm_delivs:
-                loc = (d.source_reference.clause_or_slide if d.source_reference else "") or ""
-                sow_ref = d.sow_reference or ""
-                d_name = d.name or ""
-                d_desc = d.description or ""
-                full_text = f"{loc} {sow_ref} {d_name} {d_desc}"
-                raw_item = d_desc if d_desc and d_desc != d_name and not COMPLETION_PHRASE_REGEX.search(d_desc) else d_name
-                item_text = strip_deliverable_boilerplate(raw_item)
+            sec_match = re.search(r"2\.1\.([123])", full_text)
+            if sec_match:
+                sec_key = f"2.1.{sec_match.group(1)}"
+                grouped[section_titles[sec_key]].append(item_text)
+                continue
 
-                sec_match = re.search(r"2\.1\.([123])", full_text)
-                if sec_match:
-                    sec_key = f"2.1.{sec_match.group(1)}"
-                    title = section_titles[sec_key]
-                    grouped[title].append(item_text)
-                    continue
+            matched_theme = None
+            for theme_name, regex in theme_keywords:
+                if regex.search(full_text):
+                    matched_theme = theme_name
+                    break
+            if matched_theme:
+                grouped[matched_theme].append(item_text)
+            else:
+                grouped["Feature development"].append(item_text)
 
-                matched_theme = None
-                for theme_name, regex in theme_keywords:
-                    if regex.search(full_text):
-                        matched_theme = theme_name
-                        break
-                if matched_theme:
-                    grouped[matched_theme].append(item_text)
-                else:
-                    unassigned_delivs.append(d)
-
-            active_theme_groups = [(k, v) for k, v in grouped.items() if v]
-
-            if len(active_theme_groups) >= 2:
-                for title, items in active_theme_groups:
-                    workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
-                if unassigned_delivs:
-                    for d in unassigned_delivs:
-                        desc = d.description if d.description and d.description != d.name else (d.name or "")
-                        workstreams[0].deliverables.append(strip_deliverable_boilerplate(desc))
-            elif non_comm_delivs:
-                num_buckets = 3
-                chunk_sz = max(1, (len(non_comm_delivs) + num_buckets - 1) // num_buckets)
-                for i in range(num_buckets):
-                    bucket_items = non_comm_delivs[i * chunk_sz : (i + 1) * chunk_sz]
-                    if bucket_items:
-                        title = bucket_items[0].name or f"Workstream {i + 1}"
-                        items = [strip_deliverable_boilerplate(d.name or d.description) for d in bucket_items if (d.name or d.description)]
-                        workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
-        elif non_comm_delivs:
-            for d in non_comm_delivs:
-                title = d.name or f"Workstream {d.id}"
-                desc = d.description if d.description and d.description != d.name and not COMPLETION_PHRASE_REGEX.search(d.description) else ""
-                clean_desc = strip_deliverable_boilerplate(desc)
-                items = [clean_desc] if clean_desc else [title]
-                workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
-        elif baseline.charter and baseline.charter.high_level_scope:
+        # Step B: If fewer than 2 active theme groups resulted, enrich from high_level_scope
+        active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+        if len(active_theme_groups) < 2 and baseline.charter and baseline.charter.high_level_scope:
             clean_scope = [
                 s.strip().rstrip(";. ")
                 for s in baseline.charter.high_level_scope
@@ -278,7 +257,20 @@ def build_slide6_model(
                 and not ADMIN_PROCESS_DELIVERABLE_REGEX.search(s)
             ]
             for s in clean_scope:
-                workstreams.append(WorkstreamBlock(title=s, deliverables=[s], overflow_count=0))
+                matched_theme = None
+                for theme_name, regex in theme_keywords:
+                    if regex.search(s):
+                        matched_theme = theme_name
+                        break
+                target = matched_theme or "Feature development"
+                if s not in grouped[target]:
+                    grouped[target].append(s)
+
+            active_theme_groups = [(k, v) for k, v in grouped.items() if v]
+
+        for title, items in active_theme_groups:
+            workstreams.append(WorkstreamBlock(title=title, deliverables=items, overflow_count=0))
+
         if not workstreams:
             workstreams.append(
                 WorkstreamBlock(
