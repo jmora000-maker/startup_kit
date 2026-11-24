@@ -1032,7 +1032,7 @@ def write_governance_deck(
         # 1. Slide 1 (Cover): write_slide1
         write_slide1(prs_gov.slides[0], model)
 
-        # 2. Slide 2 (Agenda): Remove 01-08 numbers and update 8 topics (HTL-115 Item 4)
+        # 2. Slide 2 (Agenda): Remove 01-08 numbers and update 8 topics (HTL-115 Item 4 / HTL-125)
         s2 = prs_gov.slides[1]
         for shp in s2.shapes:
             if shp.has_text_frame:
@@ -1043,6 +1043,10 @@ def write_governance_deck(
                     for p in shp.text_frame.paragraphs:
                         if "Sprint sign-off" in p.text:
                             p.text = p.text.replace("Sprint sign-off", "Next steps")
+                            for r in p.runs:
+                                r.font.name = "Proxima Nova"
+                                r.font.size = Pt(11.0)
+                                r.font.bold = False
 
         # Slide 6: apply defensive font reduction and zero margins specifically to card bodies (HTL-118 Item 4)
         s6 = prs_gov.slides[5]

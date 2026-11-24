@@ -259,12 +259,23 @@ def test_htl_115_governance_deck_programmatic_adaptations(tmp_path: Path):
     assert res.slides_count == 22
     assert len(prs.slides) == 22
 
-    # Slide 2 (Agenda): Unnumbered topics and "Next steps"
+    # Slide 2 (Agenda): Unnumbered topics and "Next steps" (HTL-115 / HTL-125)
     s2 = prs.slides[1]
     s2_text = " ".join(shp.text_frame.text for shp in s2.shapes if shp.has_text_frame)
     assert "Next steps" in s2_text
     for num_str in ["01", "02", "03", "04", "05", "06", "07", "08"]:
         assert num_str not in [shp.text_frame.text.strip() for shp in s2.shapes if shp.has_text_frame]
+
+    # HTL-125: Verify all 8 agenda item shapes (including "Next steps") have explicit font=Proxima Nova, size=11.0, bold=False
+    agenda_shapes = [shp for shp in s2.shapes if shp.has_text_frame and shp.shape_id in (107, 110, 113, 116, 122, 125, 128, 131)]
+    assert len(agenda_shapes) == 8
+    for shp in agenda_shapes:
+        runs = [r for p in shp.text_frame.paragraphs for r in p.runs]
+        assert len(runs) >= 1
+        for r in runs:
+            assert r.font.name == "Proxima Nova", f"Shape {shp.shape_id} ({shp.text_frame.text!r}) font is {r.font.name}"
+            assert r.font.size is not None and r.font.size.pt == 11.0, f"Shape {shp.shape_id} ({shp.text_frame.text!r}) size is {r.font.size}"
+            assert r.font.bold is False, f"Shape {shp.shape_id} ({shp.text_frame.text!r}) bold is {r.font.bold}"
 
     # Slide 8 (Ways of Working): Fee phrasing
     s8 = prs.slides[7]
